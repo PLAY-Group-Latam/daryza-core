@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_super_admin', 
+
     ];
 
     /**
@@ -48,5 +50,13 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+      /**
+     * Determina si el usuario es superadministrador.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->is_super_admin;
     }
 }

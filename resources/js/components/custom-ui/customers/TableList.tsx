@@ -1,21 +1,26 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
-import users from '@/routes/users';
-import { Paginated } from '@/types';
-import { User } from '@/types/user';
+import customers from '@/routes/customers';
+import { Customer } from '@/types/customers';
 import { ColumnDef } from '@tanstack/react-table';
-import { Edit, Trash } from 'lucide-react';
+import { Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
 import { DataTable } from '../tables/DataTable';
-import { CreateOrUpdateUserModal } from './CreateOrUpdateUserModal';
 
 interface TableListProps {
-    data: Paginated<User>;
+    data: Paginated<Customer>;
 }
 
-export const columns: ColumnDef<User>[] = [
-    { accessorKey: 'name', header: 'Nombre' },
+export const columns: ColumnDef<Customer>[] = [
+    { accessorKey: 'full_name', header: 'Nombre' },
     { accessorKey: 'email', header: 'Email' },
+    {
+        accessorKey: 'phone',
+        header: 'Teléfono',
+        cell: ({ row }) => <span>{row.original.phone || '-'}</span>,
+    },
     {
         accessorKey: 'created_at',
         header: 'Creado el',
@@ -23,7 +28,6 @@ export const columns: ColumnDef<User>[] = [
             <span>{formatDate(row.original.created_at, true)}</span>
         ),
     },
-
     {
         accessorKey: 'updated_at',
         header: 'Actualizado el',
@@ -35,33 +39,16 @@ export const columns: ColumnDef<User>[] = [
         id: 'actions',
         header: 'Acciones',
         cell: ({ row }) => {
-            const user = row.original;
+            const customer = row.original;
 
             return (
                 <div className="flex items-center gap-2">
-                    <CreateOrUpdateUserModal
-                        user={user}
-                        trigger={
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="secondary"
-                            >
-                                <Edit />
-                            </Button>
-                        }
-                    />
-
                     <ConfirmDeleteAlert
-                        resourceId={user.id}
-                        resourceName={user.name}
-                        routes={users}
+                        resourceId={customer.id}
+                        resourceName={customer.full_name}
+                        routes={customers}
                         trigger={
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="bg-red-800!"
-                            >
+                            <Button variant="destructive" size="icon">
                                 <Trash />
                             </Button>
                         }

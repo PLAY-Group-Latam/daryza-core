@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/incompatible-library */
-
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -9,57 +8,36 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Paginated } from '@/types';
 import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
     useReactTable,
 } from '@tanstack/react-table';
 import * as React from 'react';
+import { DataTablePagination } from './data-table-pagination';
 
 interface DataTableProps<T> {
     columns: ColumnDef<T>[];
-    data: T[];
-    pageCount?: number; // para paginación manual
-    pageIndex?: number;
-    pageSize?: number;
-    onPaginationChange?: (pageIndex: number, pageSize: number) => void;
+    data: Paginated<T>;
 }
 
-export function DataTable<T>({
-    columns,
-    data,
-    pageCount,
-    pageIndex = 0,
-    pageSize = 10,
-    onPaginationChange,
-}: DataTableProps<T>) {
+export function DataTable<T>({ columns, data }: DataTableProps<T>) {
     const [globalFilter, setGlobalFilter] = React.useState('');
 
     const table = useReactTable({
-        data,
+        data: data.data,
         columns,
         state: {
             globalFilter,
-            pagination: { pageIndex, pageSize },
         },
-        manualPagination: !!pageCount, // si hay pageCount, la paginación es controlada desde fuera
-        pageCount,
+        manualPagination: true,
+        pageCount: data.last_page,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         onGlobalFilterChange: setGlobalFilter,
-        onPaginationChange: (updater) => {
-            if (onPaginationChange) {
-                const newState =
-                    typeof updater === 'function'
-                        ? updater({ pageIndex, pageSize })
-                        : updater;
-                onPaginationChange(newState.pageIndex, newState.pageSize);
-            }
-        },
     });
 
     return (
@@ -72,7 +50,8 @@ export function DataTable<T>({
                     className="max-w-sm"
                 />
             </div>
-            <div className="overflow-x-auto rounded-md border">
+
+            <div className="mb-4 overflow-x-auto rounded-md border">
                 <Table>
                     <TableHeader className="sticky top-0 z-10 bg-muted">
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -88,6 +67,7 @@ export function DataTable<T>({
                             </TableRow>
                         ))}
                     </TableHeader>
+
                     <TableBody>
                         {table.getRowModel().rows.length === 0 ? (
                             <TableRow>
@@ -115,7 +95,8 @@ export function DataTable<T>({
                     </TableBody>
                 </Table>
             </div>
-            {/* aquí puedes agregar tu componente DataTablePagination si quieres */}
+
+            <DataTablePagination table={table} paginated={data} />
         </div>
     );
 }

@@ -51,7 +51,6 @@ export function ConfirmDeleteAlert({
     routes,
     trigger,
     confirmWord = 'ELIMINAR',
-    successMessage = 'Registro eliminado correctamente',
 }: ConfirmDeleteAlertProps) {
     const [input, setInput] = useState('');
     const [open, setOpen] = useState(false);
@@ -68,7 +67,6 @@ export function ConfirmDeleteAlert({
                     method={method}
                     action={url}
                     onSuccess={() => {
-                        toast.success(successMessage);
                         setInput('');
                         setOpen(false);
                     }}

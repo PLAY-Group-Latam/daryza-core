@@ -2,7 +2,8 @@ import { CreateOrUpdateUserModal } from '@/components/custom-ui/users/CreateOrUp
 import TableList from '@/components/custom-ui/users/TableList';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, User } from '@/types';
+import { BreadcrumbItem } from '@/types';
+import { PaginatedUsers } from '@/types/user';
 import { Head, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
@@ -14,8 +15,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Index() {
-    const { users } = usePage<{ users: User[] }>().props;
-    console.log(users);
+    const { paginatedUsers } = usePage<{ paginatedUsers: PaginatedUsers }>()
+        .props;
+    console.log(paginatedUsers);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lista de Usuarios" />
@@ -32,7 +34,7 @@ export default function Index() {
                         }
                     />
                 </div>
-                <TableList data={users} />
+                <TableList data={paginatedUsers} />
             </div>
         </AppLayout>
     );

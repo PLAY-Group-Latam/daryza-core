@@ -1,5 +1,6 @@
 import { InertiaLinkProps } from '@inertiajs/react';
 import { LucideIcon } from 'lucide-react';
+import { User } from './user';
 
 export interface Auth {
     user: User;
@@ -28,20 +29,8 @@ export interface SharedData {
     auth: Auth;
     sidebarOpen: boolean;
     flash: {
-        type: flashType;
+        type?: 'success' | 'error' | 'info' | 'warning';
         message: string;
     };
     [key: string]: unknown;
-}
-
-export interface User {
-    id: number;
-    name: string;
-    email: string;
-    avatar?: string;
-    email_verified_at: string | null;
-    two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
 }

@@ -14,11 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import users from '@/routes/users';
-import { User } from '@/types';
+import { User } from '@/types/user';
 import { Form } from '@inertiajs/react';
 import { ChevronDown, LoaderCircle, Lock } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 interface UserModalProps {
     user?: User | null;
@@ -54,12 +53,7 @@ export function CreateOrUpdateUserModal({ user, trigger }: UserModalProps) {
                     method={method}
                     action={action}
                     onSuccess={() => {
-                        toast.success(
-                            isEdit
-                                ? 'Usuario actualizado correctamente'
-                                : 'Usuario creado correctamente',
-                        );
-                        setOpen(false); // 👈 cierra el modal al éxito
+                        setOpen(false);
                     }}
                     resetOnSuccess={!isEdit}
                 >
@@ -122,7 +116,7 @@ export function CreateOrUpdateUserModal({ user, trigger }: UserModalProps) {
                             )}
                             {isEdit && (
                                 <details className="group relative">
-                                    <summary className="flex w-max cursor-default items-center justify-center gap-2 rounded-md border border-input bg-transparent px-3.5 py-2 text-sm text-white transition-colors hover:bg-transparent">
+                                    <summary className="flex w-max cursor-default items-center justify-center gap-2 rounded-md border border-input bg-transparent px-3.5 py-2 text-sm text-black transition-colors hover:bg-transparent dark:text-white">
                                         <Lock className="size-4" />
                                         Cambiar Contraseña
                                         <ChevronDown className="size-4 transition-transform duration-200 group-open:rotate-180" />

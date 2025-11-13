@@ -14,14 +14,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+         // ✅ Super Admin fijo del sistema
         User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => 'superadmin@example.com'],
             [
-                'name' => 'Test User',
+                'name' => 'Super Admin',
                 'password' => Hash::make('12345'),
                 'email_verified_at' => now(),
+                'is_super_admin' => true, // 👈 Importante
             ]
         );
     }
