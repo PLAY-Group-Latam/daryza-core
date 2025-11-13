@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
-        'password' => Hash::make('password'),
+                'password' => Hash::make('12345'),
                 'email_verified_at' => now(),
             ]
         );

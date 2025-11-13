@@ -36,7 +36,8 @@ export default function Password() {
                     />
 
                     <Form
-                        {...PasswordController.update.form()}
+                        method={PasswordController.update().method}
+                        action={PasswordController.update().url}
                         options={{
                             preserveScroll: true,
                         }}
