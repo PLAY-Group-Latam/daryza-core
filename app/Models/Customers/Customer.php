@@ -4,13 +4,15 @@ namespace App\Models\Customers;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Customer extends Model
+class Customer extends Authenticatable
 {
-    use HasFactory, HasUlids, SoftDeletes;
+    use HasFactory, HasUlids, SoftDeletes, HasApiTokens, Notifiable;
 
     protected $fillable = [
         'full_name',
@@ -41,11 +43,11 @@ class Customer extends Model
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => ucwords(strtolower($value)),
+            get: fn($value) => ucwords(strtolower($value)),
         );
     }
 
-    
+
     /**
      * Mutador: asegurar que el email siempre se guarde en minúsculas.
      */

@@ -6,7 +6,7 @@ import { Head, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Lista de CLientes',
+        title: 'Lista de clientes',
         href: '/clientes',
     },
 ];
@@ -15,7 +15,6 @@ export default function Index() {
     const { paginatedCustomers } = usePage<{
         paginatedCustomers: PaginatedCustomers;
     }>().props;
-    console.log(paginatedCustomers);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lista de CLientes" />

@@ -17,7 +17,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Index() {
     const { paginatedUsers } = usePage<{ paginatedUsers: PaginatedUsers }>()
         .props;
-    console.log(paginatedUsers);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lista de Usuarios" />
