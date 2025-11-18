@@ -6,8 +6,8 @@ use App\Http\Api\Traits\ApiTrait;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
-use App\Models\Customers\Customer;
-use Illuminate\Support\Facades\Hash;
+
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CustomerAuthController extends Controller
 {
@@ -22,63 +22,44 @@ class CustomerAuthController extends Controller
   {
     $customer = $this->customerService->create($request->validated());
 
-    $token = $customer->createToken('customer_token')->plainTextToken;
+    $token = JWTAuth::fromUser($customer);
 
-    return $this->created('Cliente registrado correctamente.', [
-      'token' => $token,
-      'user' => $customer
-    ]);
+
+    return $this->successWithCookie(
+      'Cliente registrado correctamente',
+      ['user' => $customer],
+      $token
+    );
   }
-
   public function login(LoginCustomerRequest $request)
   {
-    $customer = $this->customerService->validateCredentials($request->validated());
+    $credentials = $request->only('email', 'password'); 
 
-    if (!$customer) {
+    /** @var \Tymon\JWTAuth\JWTGuard $auth */
+    $auth = auth('api');
+
+    if (!$token = $auth->attempt($credentials)) {
       return $this->error('Credenciales incorrectas.', 401);
     }
 
-    $token = $customer->createToken('customer_token')->plainTextToken;
+    $customer = auth('api')->user();
 
-    return $this->success('Login exitoso.', [
-      'token' => $token,
-      'user' => $customer,
-    ]);
+
+    return $this->successWithCookie(
+      'Login exitoso',
+      ['user' => $customer],
+      $token
+    );
   }
 
-  // public function edit(Customer $customer)
-  // {
-  //     $customer->load(['billingProfiles', 'addresses']);
+  // Logout (opcional)
 
-  //     return Inertia::render('customers/Edit', [
-  //         'customer' => $customer,
-  //     ]);
-  // }
+  public function logout()
+  {
+    JWTAuth::invalidate(JWTAuth::getToken()); // invalida token actual
 
-  // public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
-  // {
-  //     $this->customerService->update($customer, $request->validated());
+    $expiredCookie = cookie('jwt', '', -1);
 
-  //     return back()->with('flash', [
-  //         'type' => 'success',
-  //         'message' => 'Cliente actualizado correctamente.',
-  //     ]);
-  // }
-
-  // public function destroy(Customer $customer): RedirectResponse
-  // {
-  //     try {
-  //         $this->customerService->delete($customer);
-
-  //         return back()->with('flash', [
-  //             'type' => 'success',
-  //             'message' => 'Cliente eliminado correctamente.',
-  //         ]);
-  //     } catch (\Exception $e) {
-  //         return back()->with('flash', [
-  //             'type' => 'error',
-  //             'message' => $e->getMessage(),
-  //         ]);
-  //     }
-  // }
+    return $this->success('Logout exitoso')->withCookie($expiredCookie);
+  }
 }

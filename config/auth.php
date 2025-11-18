@@ -40,8 +40,8 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'customer' => [
-            'driver' => 'session', // o 'sanctum' si quieres tokens API
+        'api' => [
+            'driver' => 'jwt',
             'provider' => 'customers',
         ],
     ],

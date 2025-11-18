@@ -24,9 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         // middleware api
-        $middleware->api(append: [
-            // \App\Http\Api\v1\Middleware\ForceJsonResponse::class,
-        ]);
+        // $middleware->api(append: [
+        //     // \App\Http\Api\v1\Middleware\ForceJsonResponse::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 

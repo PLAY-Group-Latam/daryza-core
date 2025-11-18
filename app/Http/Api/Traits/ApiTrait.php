@@ -27,18 +27,43 @@ trait ApiTrait
     ], $status);
   }
 
-  public function paginated($message = null, $paginator)
+  // public function paginated($message = null, $paginator)
+  // {
+  //   return response()->json([
+  //     'success' => true,
+  //     'message' => $message,
+  //     'data'    => $paginator->items(),
+  //     'meta'    => [
+  //       'total'        => $paginator->total(),
+  //       'current_page' => $paginator->currentPage(),
+  //       'per_page'     => $paginator->perPage(),
+  //       'last_page'    => $paginator->lastPage(),
+  //     ]
+  //   ]);
+  // }
+
+  // Nuevo método para generar cookie JWT con soporte local/prod
+  public function jwtCookie($token, $minutes = 60)
   {
-    return response()->json([
-      'success' => true,
-      'message' => $message,
-      'data'    => $paginator->items(),
-      'meta'    => [
-        'total'        => $paginator->total(),
-        'current_page' => $paginator->currentPage(),
-        'per_page'     => $paginator->perPage(),
-        'last_page'    => $paginator->lastPage(),
-      ]
-    ]);
+    $isProd = config('app.env') === 'production';
+
+    return cookie(
+      'jwt',               // nombre de la cookie
+      $token,              // valor del token
+      $minutes,            // duración en minutos
+      '/',                 // path
+      $isProd ? '.tudominio.com' : null, // dominio en prod, null en local
+      $isProd,             // secure = true solo en producción
+      true,                // httpOnly siempre
+      false,               // raw
+      $isProd ? 'Strict' : 'Lax' // sameSite más estricto en prod
+    );
+  }
+
+  // Nuevo método para responder con cookie usando el helper
+  public function successWithCookie($message, $data, $token, $minutes = 60, $status = 200)
+  {
+    return $this->success($message, $data, $status)
+      ->withCookie($this->jwtCookie($token, $minutes));
   }
 }

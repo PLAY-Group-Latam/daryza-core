@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class Customer extends Authenticatable
+class Customer extends Authenticatable implements JWTSubject
 {
-    use HasFactory, HasUlids, SoftDeletes, HasApiTokens, Notifiable;
+    use HasFactory, HasUlids, SoftDeletes, Notifiable;
 
     protected $fillable = [
         'full_name',
@@ -24,6 +24,12 @@ class Customer extends Authenticatable
         'dni',
     ];
 
+
+    protected $hidden = [
+        'password',
+        // 'token',
+        // 'remember_token',
+    ];
     /**
      * Relaciones
      */
@@ -54,5 +60,19 @@ class Customer extends Authenticatable
     public function setEmailAttribute($value)
     {
         $this->attributes['email'] = strtolower(trim($value));
+    }
+
+
+
+       // Identificador único del usuario para JWT
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    // Claims personalizados para JWT (opcional)
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 }

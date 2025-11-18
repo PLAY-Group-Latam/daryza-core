@@ -34,17 +34,5 @@ class CustomerService
     return $customer;
   }
 
-  /**
-   * Validar credenciales y retornar el cliente si son correctas.
-   */
-  public function validateCredentials(array $data): ?Customer
-  {
-    $customer = Customer::where('email', $data['email'])->first();
 
-    if (!$customer || !Hash::check($data['password'], $customer->password)) {
-      return null;
-    }
-
-    return $customer;
-  }
 }
