@@ -15,9 +15,6 @@ class CustomerAuthController extends Controller
 
   public function __construct(protected CustomerService $customerService) {}
 
-
-
-
   public function register(RegisterCustomerRequest $request)
   {
     $customer = $this->customerService->create($request->validated());
@@ -33,7 +30,7 @@ class CustomerAuthController extends Controller
   }
   public function login(LoginCustomerRequest $request)
   {
-    $credentials = $request->only('email', 'password'); 
+    $credentials = $request->only('email', 'password');
 
     /** @var \Tymon\JWTAuth\JWTGuard $auth */
     $auth = auth('api');
