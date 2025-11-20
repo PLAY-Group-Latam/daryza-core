@@ -19,8 +19,7 @@ COPY . /var/www
 RUN composer install --no-dev --optimize-autoloader
 
 # Instalar dependencias JS y build frontend
-RUN npm install --legacy-peer-deps
-RUN npm run build
+# RUN npm install
 
 # Permisos
 RUN chown -R www-data:www-data /var/www \
