@@ -18,9 +18,6 @@ COPY . /var/www
 # Instalar dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
 
-# Instalar dependencias JS y build frontend
-# RUN npm install
-
 # Permisos
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
