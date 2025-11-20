@@ -3,4 +3,4 @@ set -ex
 
 
 # 4️⃣ Arrancar PHP-FPM
-php-fpm &
+php-fpm -F
