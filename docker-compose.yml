@@ -9,12 +9,6 @@ services:
       APP_ENV: production
       APP_DEBUG: false
       APP_KEY: ${APP_KEY}
-      DB_CONNECTION: pgsql
-      DB_HOST: postgresql
-      DB_PORT: 5432
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - .:/var/www
       - './infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini'
