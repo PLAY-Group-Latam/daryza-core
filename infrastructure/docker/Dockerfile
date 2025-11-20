@@ -17,24 +17,24 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # 5️⃣ Copiar archivos de dependencias y cachear
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+# ⚠️ Ignorar scripts para no fallar por artisan aún inexistente
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-scripts
 
+# 6️⃣ Copiar package.json y package-lock.json / yarn.lock
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# 6️⃣ Copiar el resto del código de la aplicación
+# 7️⃣ Copiar el resto del código de la aplicación
 COPY . /var/www
 
-# 7️⃣ Ajustar permisos
+# 8️⃣ Ajustar permisos
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
 
-# 8️⃣ Copiar script de arranque
+# 9️⃣ Copiar script de arranque
 COPY infrastructure/scripts/default.sh /usr/local/bin/docker.sh
 RUN chmod +x /usr/local/bin/docker.sh
 
-# 9️⃣ Comando por defecto: ejecuta el script
-#    El script ahora puede:
-#      - arrancar PHP-FPM
-#      - compilar frontend con Vite
+# 🔟 Comando por defecto: ejecuta el script
+#    En default.sh puedes hacer: php artisan package:discover y compilar frontend
 CMD ["/usr/local/bin/docker.sh"]
