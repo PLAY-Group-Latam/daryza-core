@@ -18,6 +18,12 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . /var/www
 RUN composer install --no-dev --optimize-autoloader
 
+# Copiar el resto del proyecto
+COPY . /var/www
+
+# Copiar .env antes de usar Artisan
+COPY .env /var/www/.env
+
 RUN npm install --legacy-peer-deps && npm run build 
 
 RUN chown -R www-data:www-data /var/www \
