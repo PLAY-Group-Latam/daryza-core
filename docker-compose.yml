@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: laravel_app
+    container_name: daryza_app
     restart: unless-stopped
     environment:
       APP_ENV: production
@@ -26,7 +26,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: laravel_nginx
+    container_name: daryza_nginx
     restart: unless-stopped
     ports:
       - '8082:80'
@@ -40,7 +40,7 @@ services:
 
   postgresql:
     image: postgres:15
-    container_name: laravel_postgresql
+    container_name: daryza_postgresql
     restart: unless-stopped
     ports:
       - '${FORWARD_DB_PORT:-5432}:5432'
