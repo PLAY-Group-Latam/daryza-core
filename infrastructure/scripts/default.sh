@@ -1,17 +1,23 @@
 #!/bin/bash
-set -e 
-# starting php-fpm in the background
-php-fpm & 
+set -ex
 
-# waiting for app is completly booted
-sleep 5
+# 1️⃣ Limpiar caches de Laravel
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
 
-echo "building the frontend..."
-npm run build
-
-echo "starting workers..."
-while true; do
-  php artisan queue:work --verbose --tries=3 --timeout=90 >> storage/logs/queue.log 2>&1 || true
-  echo "queue crashed, restarting in 5 seconds..."
-  sleep 5
+# 2️⃣ Migrar base de datos (esperar a que Postgres esté listo)
+until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USERNAME; do
+  echo "Waiting for database..."
+  sleep 2
 done
+
+php artisan migrate --force
+
+# 3️⃣ Permisos
+chown -R www-data:www-data /var/www
+chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+
+# 4️⃣ Arrancar PHP-FPM
+php-fpm
