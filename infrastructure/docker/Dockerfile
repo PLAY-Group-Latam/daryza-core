@@ -12,16 +12,21 @@ WORKDIR /var/www
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copiar y instalar dependencias PHP
+# Copiar solo composer.json y composer.lock para aprovechar cache
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader
 
-# Copiar y instalar dependencias JS
+# Instalar dependencias PHP sin ejecutar scripts
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Copiar el resto del proyecto (incluye artisan)
+COPY . /var/www
+
+# Ejecutar scripts de Composer ahora que artisan existe
+RUN php artisan package:discover --ansi
+
+# Instalar dependencias JS
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-
-# Copiar el resto de la app
-COPY . /var/www
 
 # Ajustar permisos
 RUN chown -R www-data:www-data /var/www \
