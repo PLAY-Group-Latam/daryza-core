@@ -1,17 +1,24 @@
 #!/bin/bash
-set -e 
-# starting php-fpm in the background
-php-fpm & 
+set -e
 
-# waiting for app is completly booted
-sleep 5
+# 1️⃣ Compilar frontend si existe package.json
+if [ -f package.json ]; then
+  echo "🟢 Building frontend..."
+  npm install --legacy-peer-deps
+  npm run build
+fi
 
-echo "building the frontend..."
-npm run build
+# 2️⃣ Limpiar caché de Laravel
+echo "🟢 Clearing Laravel caches..."
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
 
-echo "starting workers..."
-while true; do
-  php artisan queue:work --verbose --tries=3 --timeout=90 >> storage/logs/queue.log 2>&1 || true
-  echo "queue crashed, restarting in 5 seconds..."
-  sleep 5
-done
+# 3️⃣ Ajustar permisos
+chown -R www-data:www-data /var/www
+chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+
+# 4️⃣ Iniciar PHP-FPM en primer plano
+echo "🟢 Starting PHP-FPM..."
+php-fpm
