@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex  # mostrar comandos y salir al primer error
 
 # 1️⃣ Compilar frontend si existe package.json
 if [ -f package.json ]; then
