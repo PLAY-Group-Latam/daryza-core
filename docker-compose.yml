@@ -18,7 +18,6 @@ services:
     volumes:
       - .:/var/www
       - './infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini'
-      - ./.env:/var/www/.env # Montar el .env real
 
     depends_on:
       - postgresql
