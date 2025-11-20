@@ -16,7 +16,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 
 # Instalar dependencias PHP sin ejecutar scripts
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+RUN composer install --no-dev --optimize-autoloader
 
 # Copiar el resto del proyecto (incluye artisan)
 COPY . /var/www
