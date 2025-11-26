@@ -48,15 +48,15 @@ trait ApiTrait
     $isProd = config('app.env') === 'production';
 
     return cookie(
-      'jwt',               // nombre de la cookie
-      $token,              // valor del token
-      $minutes,            // duración en minutos
-      '/',                 // path
-      $isProd ? '.tudominio.com' : null, // dominio en prod, null en local
-      $isProd,             // secure = true solo en producción
-      true,                // httpOnly siempre
-      false,               // raw
-      $isProd ? 'Strict' : 'Lax' // sameSite más estricto en prod
+      name: 'jwt',
+      value: $token,
+      minutes: $minutes,
+      path: '/',
+      domain: $isProd ? '.tudominio.com' : null, // dominio en prod, null en local
+      secure: $isProd,
+      httpOnly: true,
+      raw: false,
+      sameSite: $isProd ? 'None' : 'Lax'
     );
   }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Api\v1\Middleware\JwtFromCookie;
 use App\Http\Web\Middleware\HandleAppearance;
 use App\Http\Web\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -23,28 +24,29 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
-        // middleware api
-        // $middleware->api(append: [
-        //     // \App\Http\Api\v1\Middleware\ForceJsonResponse::class,
-        // ]);
+
+        $middleware->api(prepend: [
+            JwtFromCookie::class,
+        ]);
+
+        $middleware->api(append: [
+            // otros middleware si los necesitas
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
-        // 1️⃣ Errores de validación
         $exceptions->renderable(function (\Illuminate\Validation\ValidationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Errores de validación',
                     'errors' => $e->errors(),
-                ], 422); // siempre entero, OK
+                ], 422);
             }
         });
 
-        // 2️⃣ Otros errores generales
         $exceptions->renderable(function (\Throwable $e, $request) {
             if ($request->is('api/*')) {
-                // Asegurar código de status HTTP válido
                 $status = (int) $e->getCode();
                 if ($status < 100 || $status >= 600) {
                     $status = 500; // fallback

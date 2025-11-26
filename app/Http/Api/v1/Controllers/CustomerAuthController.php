@@ -2,7 +2,6 @@
 
 namespace App\Http\Api\v1\Controllers;
 
-use App\Http\Api\Traits\ApiTrait;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
@@ -11,7 +10,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CustomerAuthController extends Controller
 {
-  use ApiTrait;
 
   public function __construct(protected CustomerService $customerService) {}
 
@@ -28,6 +26,7 @@ class CustomerAuthController extends Controller
       $token
     );
   }
+
   public function login(LoginCustomerRequest $request)
   {
     $credentials = $request->only('email', 'password');
@@ -49,7 +48,22 @@ class CustomerAuthController extends Controller
     );
   }
 
-  // Logout (opcional)
+  public function me()
+  {
+    $user = auth('api')->user();
+
+    if (!$user) {
+      return $this->error(
+        'Usuario no autenticado',
+        null,
+        401
+      );
+    }
+    return $this->success(
+      'Usuario autenticado correctamente',
+      ['user' => $user->toArray()]
+    );
+  }
 
   public function logout()
   {
@@ -57,6 +71,6 @@ class CustomerAuthController extends Controller
 
     $expiredCookie = cookie('jwt', '', -1);
 
-    return $this->success('Logout exitoso')->withCookie($expiredCookie);
+    return $this->success('Cerrar sesión exitosamente')->withCookie($expiredCookie);
   }
 }
