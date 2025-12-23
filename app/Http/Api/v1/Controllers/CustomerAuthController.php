@@ -5,7 +5,7 @@ namespace App\Http\Api\v1\Controllers;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
-
+use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CustomerAuthController extends Controller
@@ -67,10 +67,15 @@ class CustomerAuthController extends Controller
 
   public function logout()
   {
-    JWTAuth::invalidate(JWTAuth::getToken()); // invalida token actual
+    try {
+      if ($token = JWTAuth::getToken()) {
+        JWTAuth::invalidate($token);
+      }
+    } catch (JWTException $e) {
+      // no hacemos nada, logout debe continuar
+    }
 
-    $expiredCookie = cookie('jwt', '', -1);
-
-    return $this->success('Cerrar sesión exitosamente')->withCookie($expiredCookie);
+    return $this->success('Cerró sesión exitosamente')
+      ->withCookie(cookie()->forget('jwt'));
   }
 }

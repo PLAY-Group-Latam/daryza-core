@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Settings;
+namespace App\Http\Web\Controllers\Settings;
 
 use App\Http\Web\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
