@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000', 'https://daryza.vercel.app', 'https://dev-daryza.playgrouplatam.com'], // tu frontend
+    'allowed_origins' => ['http://localhost:3000', 'https://dev-daryza.playgrouplatam.com'], // tu frontend
 
     'allowed_origins_patterns' => [],
 
