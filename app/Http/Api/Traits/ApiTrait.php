@@ -52,7 +52,7 @@ trait ApiTrait
       value: $token,
       minutes: $minutes,
       path: '/',
-      domain: $isProd ? '.playgrouplatam.com' : null, // dominio en prod, null en local
+      domain: $isProd ? '.daryza.vercel.app' : null, // dominio en prod, null en local
       secure: $isProd,
       httpOnly: true,
       raw: false,
