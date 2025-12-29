@@ -52,10 +52,11 @@ trait ApiTrait
       value: $token,
       minutes: $minutes,
       path: '/',
+      domain: $isProd ? '.playgrouplatam.com' : null, // dominio en prod, null en local
       secure: $isProd,
       httpOnly: true,
       raw: false,
-      sameSite: $isProd ? 'Lax' : 'Lax'
+      sameSite: $isProd ? 'None' : 'Lax'
     );
   }
 
