@@ -56,7 +56,7 @@ trait ApiTrait
       secure: $isProd,
       httpOnly: true,
       raw: false,
-      sameSite:  'Lax'
+      sameSite: $isProd ? 'None' : 'Lax'
     );
   }
 
