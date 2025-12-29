@@ -52,11 +52,11 @@ trait ApiTrait
       value: $token,
       minutes: $minutes,
       path: '/',
-      domain:  '.vercel.app', // dominio en prod, null en local
-      secure: false,
+      domain: $isProd ? '.playgrouplatam.com' : null, // dominio en prod, null en local
+      secure: $isProd,
       httpOnly: true,
       raw: false,
-      sameSite:'Lax'
+      sameSite: $isProd ? 'None' : 'Lax'
     );
   }
 
