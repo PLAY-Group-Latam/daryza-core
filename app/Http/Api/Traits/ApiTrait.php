@@ -52,11 +52,10 @@ trait ApiTrait
       value: $token,
       minutes: $minutes,
       path: '/',
-      domain: $isProd ? 'https://daryza.vercel.app' : null, // dominio en prod, null en local
       secure: $isProd,
       httpOnly: true,
       raw: false,
-      sameSite: $isProd ? 'None' : 'Lax'
+      sameSite: $isProd ? 'Lax' : 'Lax'
     );
   }
 
