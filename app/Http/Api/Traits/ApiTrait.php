@@ -52,11 +52,11 @@ trait ApiTrait
       value: $token,
       minutes: $minutes,
       path: '/',
-      domain: $isProd ? '.vercel.app' : null, // dominio en prod, null en local
-      secure: $isProd,
+      domain:  '.vercel.app', // dominio en prod, null en local
+      secure: false,
       httpOnly: true,
       raw: false,
-      sameSite: $isProd ? 'None' : 'Lax'
+      sameSite:'Lax'
     );
   }
 
