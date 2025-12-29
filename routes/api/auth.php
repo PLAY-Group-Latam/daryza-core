@@ -8,6 +8,9 @@ Route::prefix('auth')->group(function () {
     // Registro
     Route::post('register', [CustomerAuthController::class, 'register']);
     Route::post('login', [CustomerAuthController::class, 'login']);
+     // 🔥 LOGIN CON GOOGLE
+    Route::post('google', [CustomerAuthController::class, 'loginWithGoogle']);
+
     // Rutas protegidas por JWT (auth:api)
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [CustomerAuthController::class, 'logout']);

@@ -34,5 +34,18 @@ class CustomerService
     return $customer;
   }
 
-
+  public function findOrCreateFromGoogle(array $data): Customer
+  {
+    return Customer::updateOrCreate(
+      [
+        'email' => $data['email'], // el email manda
+      ],
+      [
+        'full_name' => $data['full_name'],
+        'google_id' => $data['google_id'],
+        'photo'     => $data['photo'] ?? null,
+        'password'  => null, // usuario Google NO usa password
+      ]
+    );
+  }
 }
