@@ -12,7 +12,7 @@ class CustomerService
     /**
      * Crear un cliente junto con sus perfiles de facturación y direcciones.
      */
-     public function create(array $data): Customer
+    public function create(array $data): Customer
     {
         // Hash de password si viene en los datos
         if (!empty($data['password'])) {
@@ -21,6 +21,17 @@ class CustomerService
 
         // Crear y retornar el cliente
         return Customer::create($data);
+    }
+
+    public function updatePassword(string $id, string $newPassword): Customer
+    {
+        $customer = Customer::findOrFail($id);
+
+        $customer->update([
+            'password' => Hash::make($newPassword),
+        ]);
+
+        return $customer;
     }
 
     /**

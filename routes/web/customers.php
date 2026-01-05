@@ -7,6 +7,11 @@ Route::middleware('auth')->group(function () {
   Route::resource('clientes', CustomerController::class)
     ->names('customers')
     ->parameters([
-      'customers' => 'customer',
+      'clientes' => 'customer',
     ]);
+
+  Route::put(
+    'clientes/{customer}/password',
+    [CustomerController::class, 'updatePassword']
+  )->name('customers.password.update');
 });

@@ -1,13 +1,11 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
-import customers from '@/routes/customers';
 import { Customer } from '@/types/customers';
 import { ColumnDef } from '@tanstack/react-table';
-import { Trash } from 'lucide-react';
-import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
 import { DataTable } from '../tables/DataTable';
+import { ModalChangePassword } from './ModalChangePassword';
+import { ModalProfileDetails } from './ModalProfileDetails';
 
 interface TableListProps {
     data: Paginated<Customer>;
@@ -43,16 +41,8 @@ export const columns: ColumnDef<Customer>[] = [
 
             return (
                 <div className="flex items-center gap-2">
-                    <ConfirmDeleteAlert
-                        resourceId={customer.id}
-                        resourceName={customer.full_name}
-                        routes={customers}
-                        trigger={
-                            <Button variant="destructive" size="icon">
-                                <Trash />
-                            </Button>
-                        }
-                    />
+                    <ModalProfileDetails customer={customer} />
+                    <ModalChangePassword customer={customer} />
                 </div>
             );
         },

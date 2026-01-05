@@ -2,11 +2,13 @@
 
 namespace App\Http\Web\Controllers;
 
+use App\Actions\Web\Customers\UpdateCustomerPassword;
 use App\Http\Web\Requests\Customers\StoreCustomerRequest;
 use App\Http\Web\Requests\Customers\UpdateCustomerRequest;
 use App\Http\Web\Services\CustomerService;
 use App\Models\Customers\Customer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CustomerController extends Controller
@@ -38,6 +40,19 @@ class CustomerController extends Controller
             'type' => 'success',
             'message' => 'Cliente creado correctamente.',
         ]);
+    }
+
+    public function updatePassword(
+        Request $request,
+        string $customer,
+        UpdateCustomerPassword $action
+    ) {
+        $action->execute($customer, $request);
+
+        return back()->with(
+            'success',
+            'La contraseña del cliente se actualizó correctamente.'
+        );
     }
 
     // public function edit(Customer $customer)

@@ -2,23 +2,15 @@ import { CreateOrUpdateUserModal } from '@/components/custom-ui/users/CreateOrUp
 import TableList from '@/components/custom-ui/users/TableList';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
 import { PaginatedUsers } from '@/types/user';
 import { Head, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Lista de usuarios',
-        href: '/usuarios',
-    },
-];
 
 export default function Index() {
     const { paginatedUsers } = usePage<{ paginatedUsers: PaginatedUsers }>()
         .props;
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Lista de Usuarios" />
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
