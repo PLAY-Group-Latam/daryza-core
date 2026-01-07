@@ -12,7 +12,7 @@ class Department extends Model
     use HasFactory, HasUlids;
 
     protected $fillable = [
-        'ubigeo_code',
+        'ubigeo_id',
         'name',
         'iso_code',
         'label',

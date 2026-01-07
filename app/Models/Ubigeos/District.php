@@ -12,7 +12,7 @@ class District extends Model
     use HasFactory, HasUlids;
 
     protected $fillable = [
-        'ubigeo_code',
+        'ubigeo_id',
         'name',
         'label',
         'searchable',

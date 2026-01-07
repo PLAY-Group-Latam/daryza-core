@@ -5,6 +5,7 @@ namespace App\Http\Api\v1\Controllers;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
+use App\Models\Customers\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -91,6 +92,23 @@ class CustomerAuthController extends Controller
   }
 
 
+
+  public function logout()
+  {
+    try {
+      if ($token = JWTAuth::getToken()) {
+        JWTAuth::invalidate($token);
+      }
+    } catch (JWTException $e) {
+      // no hacemos nada, logout debe continuar
+    }
+
+    return $this->success('Cerró sesión exitosamente')
+      ->withCookie(cookie()->forget('jwt'));
+  }
+
+
+
   public function me()
   {
     $user = auth('api')->user();
@@ -108,17 +126,35 @@ class CustomerAuthController extends Controller
     );
   }
 
-  public function logout()
+  public function storeAddress(Request $request, Customer $customer)
   {
-    try {
-      if ($token = JWTAuth::getToken()) {
-        JWTAuth::invalidate($token);
-      }
-    } catch (JWTException $e) {
-      // no hacemos nada, logout debe continuar
+    $validated = $request->validate([
+      'address' => 'required|string|max:255',
+      'department_id' => 'required|exists:departments,id',
+      'province_id' => 'required|exists:provinces,id',
+      'district_id' => 'required|exists:districts,id',
+      'country' => 'string|nullable',
+      'postal_code' => 'string|nullable',
+      'reference' => 'string|nullable',
+    ]);
+
+    $address = $customer->addresses()->create($validated);
+
+    return $this->success(
+      'Dirección guardada correctamente',
+      $address
+    );
+  }
+
+  public function getAddress(Customer $customer)
+  {
+    // Trae solo la última dirección del cliente
+    $address = $customer->addresses()->latest()->first();
+
+    if (!$address) {
+      return $this->success('No se encontró ninguna dirección', ['data' => null]);
     }
 
-    return $this->success('Cerró sesión exitosamente')
-      ->withCookie(cookie()->forget('jwt'));
+    return $this->success('Dirección obtenida', ['data' => $address]);
   }
 }
