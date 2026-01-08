@@ -33,10 +33,11 @@ class Customer extends Authenticatable implements JWTSubject
     /**
      * Relaciones
      */
-    public function billingProfiles()
+    public function billingProfile()
     {
-        return $this->hasMany(BillingProfile::class);
+        return $this->hasOne(BillingProfile::class);
     }
+
 
     public function addresses()
     {
@@ -64,7 +65,7 @@ class Customer extends Authenticatable implements JWTSubject
 
 
 
-       // Identificador único del usuario para JWT
+    // Identificador único del usuario para JWT
     public function getJWTIdentifier()
     {
         return $this->getKey();
