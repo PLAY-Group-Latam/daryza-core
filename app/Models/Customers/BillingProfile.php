@@ -15,6 +15,13 @@ class BillingProfile extends Model
         'social_reason',
         'customer_id',
     ];
+    
+     protected $hidden = [
+        'id',
+        'customer_id',
+        'created_at',
+        'updated_at',
+    ];
 
     /**
      * Relaciones

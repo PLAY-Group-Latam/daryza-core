@@ -26,6 +26,26 @@ class Address extends Model
     ];
 
     /**
+     * Campos calculados que se agregan al JSON
+     */
+    protected $appends = [
+        'label',
+    ];
+
+    // protected $with = [
+    //     'department:id,name',
+    //     'province:id,name',
+    //     'district:id,name',
+    // ];
+
+    protected $hidden = [
+      
+        'department',
+        'province',
+        'district',
+    ];
+
+    /**
      * Relaciones
      */
     public function customer()
@@ -49,12 +69,17 @@ class Address extends Model
     }
 
     /**
-     * Accesor moderno — ejemplo para label completo
+     * Accesor moderno — label completo
      */
     protected function label(): Attribute
     {
         return Attribute::make(
-            get: fn() => "{$this->address}, {$this->district?->name}, {$this->province?->name}, {$this->department?->name}"
+            get: fn() =>
+            trim(collect([
+                $this->district?->name,
+                $this->province?->name,
+                $this->department?->name,
+            ])->filter()->implode(', '))
         );
     }
 }

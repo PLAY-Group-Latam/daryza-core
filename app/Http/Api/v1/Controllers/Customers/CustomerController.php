@@ -3,30 +3,24 @@
 namespace App\Http\Api\v1\Controllers\Customers;
 
 use App\Http\Api\v1\Controllers\Controller;
-
+use App\Http\Api\v1\Requests\Customers\UpdateCustomerRequest;
+use App\Models\Customers\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
 {
   /**
    * Actualiza los datos del usuario logueado
    */
-  public function update(Request $request)
+  public function update(UpdateCustomerRequest $request)
   {
-    $customer = auth('api')->user();
+    $customer = Customer::findOrFail(auth('api')->id());
 
-    // Validación básica
-    $data = $request->validate([
-      'full_name' => 'required|string|max:255',
-      'email' => 'required|email',
-      'dni' => 'required|string|size:8',
-      'phone' => 'required|string|size:9',
-      'is_company' => 'boolean',
-      'ruc' => 'nullable|string|size:11',
-      'social_reason' => 'nullable|string|max:255',
-    ]);
+    $data = $request->validated();
 
-    // 1️⃣ Actualizar datos personales
+    // Log::info('Datos recibidos en updateCustomer:', $data);
+
     $customer->update([
       'full_name' => $data['full_name'],
       'email' => $data['email'],
@@ -34,18 +28,16 @@ class CustomerController extends Controller
       'phone' => $data['phone'],
     ]);
 
-    // 2️⃣ Si es empresa, crear o actualizar billing_profile
     if (!empty($data['is_company'])) {
       $customer->billingProfile()->updateOrCreate(
+        ['customer_id' => $customer->id],
         [
           'ruc' => $data['ruc'],
           'social_reason' => $data['social_reason'],
         ]
       );
-    } 
-
-    return $this->success('Datos actualizados correctamente', [
-      $customer->load('billingProfile')
-    ]);
+    }
+    
+    return $this->success('Datos actualizados correctamente', $customer);
   }
 }

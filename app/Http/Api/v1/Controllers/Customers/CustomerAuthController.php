@@ -6,6 +6,7 @@ use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
+use App\Models\Customers\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -121,19 +122,11 @@ class CustomerAuthController extends Controller
       );
     }
 
-    // Cargar solo billingProfile
     $user->load('billingProfile');
-
-    // Convierte el user a array
-    $userArray = $user->toArray();
-    $userArray = array_merge($user->toArray(), [
-      'ruc' => $user->billingProfile?->ruc,
-      'social_reason' => $user->billingProfile?->social_reason,
-    ]);
 
     return $this->success(
       'Usuario autenticado correctamente',
-      ['user' => $userArray]
+      ['user' => $user]
     );
   }
 }

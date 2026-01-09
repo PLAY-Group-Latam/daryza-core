@@ -32,7 +32,11 @@ export function ModalChangePassword({ customer }: Props) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    title="Cambio de contraseña"
+                >
                     <Lock className="size-4" />
                 </Button>
             </DialogTrigger>

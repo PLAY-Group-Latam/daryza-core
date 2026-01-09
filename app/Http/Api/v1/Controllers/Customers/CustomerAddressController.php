@@ -20,8 +20,10 @@ class CustomerAddressController extends Controller
             'reference'     => 'string|nullable',
         ]);
 
-        $address = $customer->addresses()->create($validated);
-
+    $address = $customer->addresses()->updateOrCreate(
+        ['customer_id' => $customer->id], // Condición de búsqueda
+        $validated // Campos a actualizar o crear
+    );
         return $this->success(
             'Dirección guardada correctamente',
             $address

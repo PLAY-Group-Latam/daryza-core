@@ -1,4 +1,9 @@
 // types/customerMetrics.ts
+export interface BillingProfile {
+    ruc: string;
+    social_reason: string;
+}
+
 export interface CustomerMetrics {
     total_orders: number;
     total_spent: number;
@@ -11,10 +16,12 @@ export interface LocationItem {
 export interface Address {
     address: string;
     reference?: string | null;
-    postal_code: string;
+    postal_code?: string;
     department: LocationItem;
     province: LocationItem;
     district: LocationItem;
+    country?: string;
+    label?: string;
 }
 
 export interface Customer {
@@ -28,8 +35,9 @@ export interface Customer {
     dni?: string | null;
     created_at?: string;
     updated_at?: string;
-    address?: Address;
+    addresses?: Address[];
     metrics?: CustomerMetrics;
+    billing_profile?: BillingProfile | null;
 }
 
 export type PaginatedCustomers = Paginated<Customer>;
