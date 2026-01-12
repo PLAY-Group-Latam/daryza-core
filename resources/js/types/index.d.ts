@@ -17,16 +17,6 @@ export interface NavGroup {
 }
 interface BaseNavItem {
     title: string;
-}
-
-export interface NavChild {
-    title: string;
-    href: NonNullable<InertiaLinkProps['href']>;
-}
-
-export interface NavItem {
-    title: string;
-    href?: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     children?: NavChild[];
 }
