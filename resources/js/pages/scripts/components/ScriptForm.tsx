@@ -15,6 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit, Loader2 } from 'lucide-react';
+import { route } from '@/lib/helpers/route';
+import { toast } from 'sonner';
+
+
 
 /* ------------------------------------------------------------------
    TYPES
@@ -91,16 +95,28 @@ export function ScriptForm({ script = null }: ScriptFormProps) {
     ------------------------------------------ */
     function onSubmit(data: ScriptFormValues) {
         if (script) {
-            router.put(route('scripts.update', script.id), data, {
+            router.put(route('scripts.update', { script: script.id}), data, {
                 onStart: () => setIsSubmitting(true),
                 onFinish: () => setIsSubmitting(false),
-                onSuccess: () => setOpen(false),
+                onSuccess: () => {
+                    setOpen(false)
+                    toast.success('El script se actualizó exitosamente.');
+                },
+                onError: (error) => {
+                    console.log(error);
+                },
             });
         } else {
             router.post(route('scripts.store'), data, {
                 onStart: () => setIsSubmitting(true),
                 onFinish: () => setIsSubmitting(false),
-                onSuccess: () => setOpen(false),
+                onSuccess: () => {
+                    setOpen(false)
+                    toast.success('El script agregó exitosamente.');
+                },
+                onError: (error) => {
+                    console.log(error);
+                },
             });
         }
     }

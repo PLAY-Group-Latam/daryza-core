@@ -20,3 +20,4 @@ interface Paginated<T> {
     to: number | null;
     total: number;
 }
+

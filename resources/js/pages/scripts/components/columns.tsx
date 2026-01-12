@@ -1,8 +1,8 @@
-import {ConfirmDeleteAlert as ModalDelete} from '@/components/custom-ui/ConfirmDeleteAlert';
 import { Badge } from '@/components/ui/badge';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { Script, ScriptForm } from './ScriptForm';
+import ModalDelete from '@/components/modal-eliminate';
 
 export const columns: ColumnDef<Script>[] = [
     {
