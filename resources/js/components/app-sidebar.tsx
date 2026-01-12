@@ -15,7 +15,7 @@ import customers from '@/routes/customers';
 import users from '@/routes/users';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, User, Users } from 'lucide-react';
+import { CreditCard, FileCode, LayoutGrid, SearchCheck, Store, Truck, User, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -34,6 +34,33 @@ const mainNavItems: NavItem[] = [
         href: users.index(),
         icon: Users,
     },
+    {
+     title: 'Configuración',
+     icon: Store,
+     children: [
+        {
+            title: 'Delivery Zonas',
+            href: '/delivery-zones',
+            icon: Truck,
+        },
+        {
+            title: 'Cuentas Bancarias',
+            href: '/cuentas-bancarias',
+            icon: CreditCard,
+        },
+        {
+            title: 'Seo',
+            href: '/seo',
+            icon: SearchCheck,
+        },
+        {
+            title: 'Scripts',
+            href: '/scripts',
+            icon: FileCode,
+        },
+     ],
+    },
+
 ];
 
 const footerNavItems: NavItem[] = [
