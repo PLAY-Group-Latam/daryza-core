@@ -19,3 +19,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__ . '/settings.php';
 require __DIR__ . '/users.php';
 require __DIR__ . '/customers.php';
+require __DIR__ . '/products.php';

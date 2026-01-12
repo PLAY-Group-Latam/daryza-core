@@ -6,7 +6,6 @@ use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
-use App\Models\Customers\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tymon\JWTAuth\Exceptions\JWTException;

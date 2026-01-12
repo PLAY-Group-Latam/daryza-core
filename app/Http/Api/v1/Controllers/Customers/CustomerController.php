@@ -5,8 +5,7 @@ namespace App\Http\Api\v1\Controllers\Customers;
 use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Customers\UpdateCustomerRequest;
 use App\Models\Customers\Customer;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+
 
 class CustomerController extends Controller
 {
