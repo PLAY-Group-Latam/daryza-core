@@ -9,10 +9,10 @@ export default function Index() {
     }>().props;
     return (
         <AppLayout>
-            <Head title="Lista de CLientes" />
+            <Head title="Lista de Clientes" />
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <h1 className="text-lg font-bold lg:text-2xl">
-                    Lista de CLientes
+                    Lista de Clientes
                 </h1>
                 <TableList data={paginatedCustomers} />
             </div>

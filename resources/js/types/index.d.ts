@@ -15,13 +15,24 @@ export interface NavGroup {
     title: string;
     items: NavItem[];
 }
-
-export interface NavItem {
+interface BaseNavItem {
     title: string;
-    href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
 }
+
+interface ParentNavItem extends BaseNavItem {
+    children: ChildNavItem[]; // Tiene hijos, no puede tener href
+    href?: never; // href no puede existir en el padre
+}
+
+interface ChildNavItem extends BaseNavItem {
+    href: NonNullable<InertiaLinkProps['href']>;
+    children?: never; // No puede tener hijos
+}
+
+export type NavItem = ParentNavItem | ChildNavItem;
+
 
 export interface SharedData {
     name: string;
