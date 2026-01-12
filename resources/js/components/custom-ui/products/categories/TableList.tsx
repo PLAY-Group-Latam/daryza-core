@@ -27,10 +27,7 @@ export const columns: ColumnDef<Category>[] = [
             return <span>{parent ? parent.name : 'Principal'}</span>;
         },
     },
-    {
-        accessorKey: 'order',
-        header: 'Orden',
-    },
+
     {
         accessorKey: 'is_active',
         header: 'Estado',
@@ -84,7 +81,12 @@ export const columns: ColumnDef<Category>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
-    if (!data) return null;
-
+    if (!data) {
+        return (
+            <div className="p-4 text-center text-gray-500">
+                No hay categorías disponibles.
+            </div>
+        );
+    }
     return <DataTable columns={columns} data={data} />;
 }
