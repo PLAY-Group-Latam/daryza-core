@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Api\v1\Controllers\CustomerAuthController;
+use App\Http\Api\v1\Controllers\Customers\CustomerAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {

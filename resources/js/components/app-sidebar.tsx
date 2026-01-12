@@ -13,9 +13,9 @@ import {
 import { dashboard } from '@/routes';
 import customers from '@/routes/customers';
 import users from '@/routes/users';
-import { type NavItem } from '@/types';
+import { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { CreditCard, FileCode, LayoutGrid, SearchCheck, Store, Truck, User, Users } from 'lucide-react';
+import { CreditCard, FileCode, Apple, LayoutGrid, SearchCheck, Store, Truck, User, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -33,6 +33,16 @@ const mainNavItems: NavItem[] = [
         title: 'Usuarios',
         href: users.index(),
         icon: Users,
+    },
+    {
+        title: 'Productos',
+        icon: Apple,
+        children: [
+            {
+                title: 'Categorías',
+                href: '/productos/categorias',
+            },
+        ],
     },
     {
      title: 'Configuración',

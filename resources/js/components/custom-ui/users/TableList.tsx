@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import users from '@/routes/users';
-import { Paginated } from '@/types';
 import { User } from '@/types/user';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
@@ -44,8 +43,9 @@ export const columns: ColumnDef<User>[] = [
                         trigger={
                             <Button
                                 type="button"
+                                variant="outline"
                                 size="icon"
-                                variant="secondary"
+                                title="Editar Usuario"
                             >
                                 <Edit />
                             </Button>
@@ -60,7 +60,8 @@ export const columns: ColumnDef<User>[] = [
                             <Button
                                 variant="destructive"
                                 size="icon"
-                                className="bg-red-800!"
+                                title="Eliminar Usuario"
+                                className="bg-red-700!"
                             >
                                 <Trash />
                             </Button>
