@@ -8,12 +8,8 @@ import {
     SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuBadge,
-    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
@@ -21,7 +17,6 @@ import {
 import { resolveUrl } from '@/lib/utils';
 import { NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();

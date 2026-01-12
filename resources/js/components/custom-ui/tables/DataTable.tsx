@@ -8,7 +8,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Paginated } from '@/types';
 import {
     ColumnDef,
     flexRender,
