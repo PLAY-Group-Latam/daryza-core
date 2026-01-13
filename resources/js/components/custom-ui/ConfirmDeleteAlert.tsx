@@ -80,7 +80,7 @@ export function ConfirmDeleteAlert({
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="space-y-2">
                                     Esta acción no se puede deshacer. Esto
-                                    eliminará permanentemente
+                                    eliminará permanentemente {''}
                                     <span className="font-semibold">
                                         {resourceName ?? 'este registro'}
                                     </span>

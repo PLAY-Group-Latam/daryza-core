@@ -15,16 +15,17 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { UploadImageForm } from '@/components/uploadImageForm';
 import categories from '@/routes/products/categories';
-import { Category } from '@/types/products';
+import { Category, CategorySelect } from '@/types/products';
 import { router } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { SlugInput } from '../../slug-text';
+import { CategoryTreeSelect } from './CategoryTreeSelect';
 
 interface CategoryModalProps {
     category?: Category | null;
-    parentCategories?: Category[];
+    parentCategories?: CategorySelect[];
     trigger: React.ReactNode;
 }
 
@@ -44,7 +45,7 @@ export function ModalFormCategories({
 }: CategoryModalProps) {
     const isEdit = Boolean(category);
     const [open, setOpen] = useState(false);
-
+    console.log('select categoriesss:', parentCategories);
     // 1️⃣ Inicializamos RHF
     const {
         register,
@@ -81,25 +82,29 @@ export function ModalFormCategories({
     }, [category, open, reset]);
 
     // 3️⃣ Envío usando Inertia
-    const onSubmit = (data: FormValues) => {
+    const onSubmit = async (data: FormValues) => {
         const routeOptions = isEdit
             ? categories.update(category!.id)
             : categories.store();
 
-        router.post(
-            routeOptions.url,
-            {
-                ...data,
-                _method: isEdit ? 'put' : 'post',
-                forceFormData: true, // importante para subir archivos
-            },
-            {
-                onSuccess: () => {
-                    setOpen(false);
-                    reset();
+        await new Promise<void>((resolve) => {
+            router.post(
+                routeOptions.url,
+                {
+                    ...data,
+                    _method: isEdit ? 'put' : 'post',
+                    forceFormData: true,
                 },
-            },
-        );
+                {
+                    onSuccess: () => {
+                        setOpen(false);
+                        reset();
+                        resolve();
+                    },
+                    onError: () => resolve(),
+                },
+            );
+        });
     };
 
     return (
@@ -138,28 +143,23 @@ export function ModalFormCategories({
                                 </div>
 
                                 {/* Parent Category */}
-                                <div className="flex flex-col gap-2">
-                                    <Label htmlFor="parent_id">
-                                        Categoría Padre
-                                    </Label>
-                                    <select
-                                        id="parent_id"
-                                        {...register('parent_id')}
-                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    >
-                                        <option value="">Principal</option>{' '}
-                                        {/* <--- aquí */}
-                                        {parentCategories
-                                            ?.filter(
-                                                (c) => c.id !== category?.id,
-                                            )
-                                            .map((c) => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.name}
-                                                </option>
-                                            ))}
-                                    </select>
-                                </div>
+                                <Controller
+                                    name="parent_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <div className="flex flex-col gap-2">
+                                            <Label>Categoría Padre</Label>
+
+                                            <CategoryTreeSelect
+                                                categories={
+                                                    parentCategories || []
+                                                }
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                            />
+                                        </div>
+                                    )}
+                                />
                             </div>
                             {/* Slug */}
                             <Controller
@@ -200,10 +200,13 @@ export function ModalFormCategories({
                                 name="image"
                                 control={control}
                                 render={({ field: { value, onChange } }) => (
-                                    <UploadImageForm
-                                        value={value}
-                                        onFileChange={onChange}
-                                    />
+                                    <div className="flex flex-col items-start gap-2">
+                                        <Label>Imagen</Label>
+                                        <UploadImageForm
+                                            value={value}
+                                            onFileChange={onChange}
+                                        />
+                                    </div>
                                 )}
                             />
                         </div>

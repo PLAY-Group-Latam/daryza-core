@@ -2,15 +2,42 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
-import { Category } from '@/types/products';
-import { DataTable } from '../../tables/DataTable';
+import categories from '@/routes/products/categories';
+import { Category, CategorySelect } from '@/types/products';
+import { ChevronRight, Edit, Trash } from 'lucide-react';
+import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
+import { DataTableExpandable } from '../../tables/DataTableExpandable';
+import { ModalFormCategories } from './ModalFormCategories';
 
 interface TableListProps {
     data: Paginated<Category>;
+    parentCategories?: CategorySelect[];
 }
 
-export const columns: ColumnDef<Category>[] = [
+const columns = (
+    parentCategories: CategorySelect[] = [],
+): ColumnDef<Category>[] => [
+    {
+        id: 'expander',
+        header: () => null,
+        cell: ({ row }) => {
+            if (!row.original.children || row.original.children.length === 0)
+                return null;
+
+            return (
+                <span
+                    className={`flex w-fit items-center justify-center transition-transform duration-200 ${
+                        row.getIsExpanded() ? 'rotate-90' : ''
+                    }`}
+                >
+                    <ChevronRight className="size-4" />
+                </span>
+            );
+        },
+        enableSorting: false,
+    },
     {
         accessorKey: 'name',
         header: 'Nombre',
@@ -18,14 +45,6 @@ export const columns: ColumnDef<Category>[] = [
     {
         accessorKey: 'slug',
         header: 'Slug',
-    },
-    {
-        accessorKey: 'parent',
-        header: 'Categoría padre',
-        cell: ({ row }) => {
-            const parent = row.original.parent;
-            return <span>{parent ? parent.name : 'Principal'}</span>;
-        },
     },
 
     {
@@ -65,22 +84,44 @@ export const columns: ColumnDef<Category>[] = [
             console.log(category);
             return (
                 <div className="flex items-center gap-2">
-                    {/* Luego aquí metes tus modales o botones */}
-                    {/* <EditCategoryModal category={category} /> */}
-                    {/* <DeleteCategoryModal category={category} /> */}
-                    <button className="text-blue-600 hover:underline">
-                        Editar
-                    </button>
-                    <button className="text-red-600 hover:underline">
-                        Eliminar
-                    </button>
+                    <ModalFormCategories
+                        category={category}
+                        parentCategories={parentCategories} // Aquí pasamos los padres
+                        trigger={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                title="Editar Categoría"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Edit />
+                            </Button>
+                        }
+                    />
+                    <ConfirmDeleteAlert
+                        resourceId={category.id}
+                        resourceName={category.name}
+                        routes={categories}
+                        trigger={
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                title="Eliminar Categoría"
+                                className="bg-red-700!"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Trash />
+                            </Button>
+                        }
+                    />
                 </div>
             );
         },
     },
 ];
 
-export default function TableList({ data }: TableListProps) {
+export default function TableList({ data, parentCategories }: TableListProps) {
     if (!data) {
         return (
             <div className="p-4 text-center text-gray-500">
@@ -88,5 +129,7 @@ export default function TableList({ data }: TableListProps) {
             </div>
         );
     }
-    return <DataTable columns={columns} data={data} />;
+    const tableColumns = columns(parentCategories);
+
+    return <DataTableExpandable columns={tableColumns} data={data} />;
 }

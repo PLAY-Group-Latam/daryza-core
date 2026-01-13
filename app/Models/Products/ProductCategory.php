@@ -43,12 +43,29 @@ class ProductCategory extends Model
     {
         return $this->belongsTo(ProductCategory::class, 'parent_id');
     }
+    public function depth(): int
+    {
+        $level = 1;
+        $current = $this->parent;
+
+        while ($current) {
+            $level++;
+            $current = $current->parent;
+        }
+
+        return $level;
+    }
+
+    public function canCreateChild(): bool
+    {
+        return $this->depth() < 2;
+    }
 
     // Categorías hijas
     public function children()
     {
         return $this->hasMany(ProductCategory::class, 'parent_id')
-                    ->orderBy('order');
+            ->orderBy('order');
     }
 
     /*
@@ -57,13 +74,11 @@ class ProductCategory extends Model
     |--------------------------------------------------------------------------
     */
 
-    // Solo categorías activas
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    // Categorías principales (sin padre)
     public function scopeRoots($query)
     {
         return $query->whereNull('parent_id');

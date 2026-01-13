@@ -2,16 +2,17 @@ import { ModalFormCategories } from '@/components/custom-ui/products/categories/
 import TableList from '@/components/custom-ui/products/categories/TableList';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { PaginatedProductCategories } from '@/types/products';
+import { CategorySelect, PaginatedProductCategories } from '@/types/products';
 import { Head, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { paginatedProductCategories } = usePage<{
+    const { paginatedProductCategories, categoriesForSelect } = usePage<{
         paginatedProductCategories: PaginatedProductCategories;
+        categoriesForSelect: CategorySelect[];
     }>().props;
 
-    console.log(paginatedProductCategories.data);
+    // console.log(paginatedProductCategories.data);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />
@@ -21,7 +22,7 @@ export default function Index() {
                         Lista de Categorías
                     </h1>
                     <ModalFormCategories
-                        parentCategories={paginatedProductCategories.data} // <--- aquí
+                        parentCategories={categoriesForSelect}
                         trigger={
                             <Button variant="default">
                                 <Plus className="mr-1 h-4 w-4" /> Crear
@@ -31,7 +32,10 @@ export default function Index() {
                     />
                 </div>
 
-                <TableList data={paginatedProductCategories} />
+                <TableList
+                    data={paginatedProductCategories}
+                    parentCategories={categoriesForSelect}
+                />
             </div>
         </AppLayout>
     );

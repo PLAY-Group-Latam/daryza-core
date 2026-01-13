@@ -17,3 +17,13 @@ export interface Category {
 }
 
 export type PaginatedProductCategories = Paginated<Category>;
+
+// types/productCategories.ts
+
+export type CategorySelect = {
+    id: string;
+    name: string;
+    parent_id: string | null;
+    order: number;
+    children: CategorySelect[];
+};
