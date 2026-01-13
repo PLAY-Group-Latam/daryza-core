@@ -79,23 +79,10 @@ class ProductCategoryController extends Controller
     {
         $category = ProductCategory::findOrFail($id);
 
-        // Validación
-        $request->validate([
-            'name'      => 'required|string|max:255',
-            'slug'      => 'nullable|string|max:255|unique:product_categories,slug,' . $category->id,
-            'image'     => 'nullable|file|image|max:2048', 
-            'parent_id' => 'nullable|exists:product_categories,id|not_in:' . $category->id,
-            'order'     => 'nullable|integer|min:0',
-            'is_active' => 'nullable|boolean',
-        ]);
+        $data = $request->validated();
 
-        $data = [
-            'name'      => $request->name,
-            'slug'      => $request->slug ?? Str::slug($request->name),
-            'parent_id' => $request->parent_id,
-            'order'     => $request->order ?? 0,
-            'is_active' => $request->is_active ?? true,
-        ];
+
+       
 
         // Manejo de imagen
         if ($request->hasFile('image')) {

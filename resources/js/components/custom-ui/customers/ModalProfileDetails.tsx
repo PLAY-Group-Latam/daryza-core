@@ -22,7 +22,7 @@ interface ModalProfileDetailsProps {
 }
 
 export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
-    console.log('clientessssssssss', customer);
+    // console.log('clientessssssssss', customer);
     const metrics = [
         {
             label: 'Total de pedidos',

@@ -45,7 +45,7 @@ export function ModalFormCategories({
 }: CategoryModalProps) {
     const isEdit = Boolean(category);
     const [open, setOpen] = useState(false);
-    console.log('select categoriesss:', parentCategories);
+    // console.log('select categoriesss:', parentCategories);
     // 1️⃣ Inicializamos RHF
     const {
         register,

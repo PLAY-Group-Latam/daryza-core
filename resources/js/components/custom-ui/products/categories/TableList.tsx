@@ -81,7 +81,7 @@ const columns = (
         header: 'Acciones',
         cell: ({ row }) => {
             const category = row.original;
-            console.log(category);
+            // console.log(category);
             return (
                 <div className="flex items-center gap-2">
                     <ModalFormCategories
