@@ -6,8 +6,8 @@ export function flattenTree(
 ): CategorySelect[] {
     for (const node of nodes) {
         acc.push(node);
-        if (node.children?.length) {
-            flattenTree(node.children, acc);
+        if (node.active_children?.length) {
+            flattenTree(node.active_children, acc);
         }
     }
     return acc;
@@ -22,14 +22,14 @@ export function filterTree(
     return nodes
         .map((node) => {
             const matchesSelf = node.name.toLowerCase().includes(lower);
-            const filteredChildren = node.children
-                ? filterTree(node.children, term)
+            const filteredChildren = node.active_children
+                ? filterTree(node.active_children, term)
                 : [];
 
             if (matchesSelf || filteredChildren.length) {
                 return {
                     ...node,
-                    children: filteredChildren,
+                    active_children: filteredChildren,
                 };
             }
 
