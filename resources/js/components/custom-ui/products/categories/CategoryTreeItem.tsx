@@ -40,7 +40,7 @@ export function TreeItem({
                 )}
             </CommandItem>
 
-            {node.children?.map((child) => (
+            {node.active_children?.map((child) => (
                 <TreeItem
                     key={child.id}
                     node={child}

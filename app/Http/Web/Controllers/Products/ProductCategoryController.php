@@ -7,6 +7,7 @@ use App\Http\Web\Requests\Products\StoreCategoryRequest;
 use App\Http\Web\Requests\Products\UpdateCategoryRequest;
 use App\Models\Products\ProductCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -19,32 +20,21 @@ class ProductCategoryController extends Controller
     {
         $perPage = request()->input('per_page', 10);
 
-        $categories = ProductCategory::with('children.children')
-            ->roots()
+        $categories = ProductCategory::roots()
+            ->with('children')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        $categoriesForSelect = ProductCategory::active()
-            ->select('id', 'name', 'parent_id', 'order')
-            ->with([
-                'children' => function ($q) {
-                    $q->select('id', 'name', 'parent_id', 'order')
-                        ->with([
-                            'children' => function ($q) {
-                                $q->select('id', 'name', 'parent_id', 'order');
-                            }
-                        ]);
-                }
-            ])
-            ->roots()
-            ->orderBy('order')
-            ->get();
+        $categoriesForSelect = ProductCategory::roots()
+            ->active()
+            ->with('activeChildren')
+            ->get(['id', 'name', 'parent_id', 'order']);
 
+        // Log::info('Categories for select:', $categoriesForSelect->toArray());
 
         return Inertia::render('products/categories/Index', [
             'paginatedProductCategories' => $categories,
             'categoriesForSelect' => $categoriesForSelect,
-
         ]);
     }
 
@@ -81,17 +71,12 @@ class ProductCategoryController extends Controller
 
         $data = $request->validated();
 
-
-       
-
-        // Manejo de imagen
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
         }
 
-        // Validación de jerarquía (no permitir más de 2 niveles)
         if (!empty($data['parent_id'])) {
-            $parent = ProductCategory::with('parent')->findOrFail($data['parent_id']);
+            $parent = ProductCategory::findOrFail($data['parent_id']);
             if (!$parent->canCreateChild()) {
                 return back()->withErrors([
                     'parent_id' => 'No se puede asignar esta categoría como padre. El máximo permitido es de 2 niveles.'
@@ -99,10 +84,16 @@ class ProductCategoryController extends Controller
             }
         }
 
+        $previousIsActive = $category->is_active;
         $category->update($data);
+
+        if ($previousIsActive && ! $category->is_active) {
+            $category->deactivateDescendants();
+        }
 
         return back()->with('success', 'Categoría actualizada correctamente.');
     }
+
     /**
      * Eliminar una categoría
      * (gracias al cascade se borran sus hijas)

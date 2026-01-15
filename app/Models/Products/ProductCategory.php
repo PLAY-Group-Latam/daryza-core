@@ -32,17 +32,38 @@ class ProductCategory extends Model
      */
     protected $keyType = 'string';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relaciones
-    |--------------------------------------------------------------------------
-    */
 
     // Categoría padre
     public function parent()
     {
         return $this->belongsTo(ProductCategory::class, 'parent_id');
     }
+
+    public function children()
+    {
+        return $this->hasMany(ProductCategory::class, 'parent_id')
+            ->orderBy('order')
+            ->with('children');
+    }
+
+    public function activeChildren()
+    {
+        return $this->hasMany(ProductCategory::class, 'parent_id')
+            ->active()
+            ->orderBy('order')
+            ->with('activeChildren');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeRoots($query)
+    {
+        return $query->whereNull('parent_id');
+    }
+
     public function depth(): int
     {
         $level = 1;
@@ -61,26 +82,8 @@ class ProductCategory extends Model
         return $this->depth() < 2;
     }
 
-    // Categorías hijas
-    public function children()
+    public function deactivateDescendants(): void
     {
-        return $this->hasMany(ProductCategory::class, 'parent_id')
-            ->orderBy('order');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes útiles
-    |--------------------------------------------------------------------------
-    */
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    public function scopeRoots($query)
-    {
-        return $query->whereNull('parent_id');
+        $this->children()->update(['is_active' => false]);
     }
 }

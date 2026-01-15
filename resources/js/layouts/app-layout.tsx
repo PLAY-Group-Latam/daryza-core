@@ -10,7 +10,7 @@ interface AppLayoutProps {
 }
 
 export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
-    useFlashMessage(); // 👈 lo inicializas aquí
+    useFlashMessage();
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>

@@ -45,8 +45,7 @@ export function ModalFormCategories({
 }: CategoryModalProps) {
     const isEdit = Boolean(category);
     const [open, setOpen] = useState(false);
-    // console.log('select categoriesss:', parentCategories);
-    // 1️⃣ Inicializamos RHF
+
     const {
         register,
         control,
@@ -65,7 +64,6 @@ export function ModalFormCategories({
         },
     });
 
-    // 2️⃣ Reset cuando se abre modal o cambia categoría
     useEffect(() => {
         if (open) {
             reset({
@@ -81,8 +79,8 @@ export function ModalFormCategories({
         }
     }, [category, open, reset]);
 
-    // 3️⃣ Envío usando Inertia
     const onSubmit = async (data: FormValues) => {
+        console.log('data enviada', data);
         const routeOptions = isEdit
             ? categories.update(category!.id)
             : categories.store();
@@ -93,9 +91,9 @@ export function ModalFormCategories({
                 {
                     ...data,
                     _method: isEdit ? 'put' : 'post',
-                    forceFormData: true,
                 },
                 {
+                    forceFormData: true,
                     onSuccess: () => {
                         setOpen(false);
                         reset();

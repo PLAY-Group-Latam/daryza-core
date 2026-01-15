@@ -7,7 +7,7 @@ use App\Models\Ubigeos\Province;
 
 class UbigeoController extends Controller
 {
-  // 1️⃣ Departamentos
+
   public function departments()
   {
     $departments = Department::select('id', 'name')
@@ -17,7 +17,6 @@ class UbigeoController extends Controller
     return $this->success('Departamentos cargados', $departments);
   }
 
-  // 2️⃣ Provincias por departamento
   public function provinces(string $departmentId)
   {
     $provinces = Department::findOrFail($departmentId)
@@ -29,7 +28,6 @@ class UbigeoController extends Controller
     return $this->success('Provincias cargadas', $provinces);
   }
 
-  // 3️⃣ Distritos por provincia
   public function districts(string $provinceId)
   {
     $districts = Province::findOrFail($provinceId)

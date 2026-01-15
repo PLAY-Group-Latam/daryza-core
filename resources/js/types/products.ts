@@ -25,5 +25,5 @@ export type CategorySelect = {
     name: string;
     parent_id: string | null;
     order: number;
-    children: CategorySelect[];
+    active_children: CategorySelect[];
 };

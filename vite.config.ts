@@ -2,7 +2,6 @@ import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
-import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -23,14 +22,25 @@ export default defineConfig({
         }),
     ],
 
+    // server: {
+    //     host: true,
+    //     port: 5173,
+    //     strictPort: true,
+    //     watch: {
+    //         ignored: ['**/vendor/**', '**/node_modules/**'],
+    //     },
+    // },
     server: {
-       host: true,
-       port: 5173,
-       strictPort: true,
+        host: 'localhost',
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: 'localhost',
+            port: 5173,
+        },
         watch: {
-            ignored: ['**/vendor/**', '**/node_modules/**']
-        }
-
+            ignored: ['**/vendor/**', '**/node_modules/**'],
+        },
     },
 
     esbuild: {

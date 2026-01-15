@@ -12,7 +12,7 @@ export default function Index() {
         categoriesForSelect: CategorySelect[];
     }>().props;
 
-    // console.log(paginatedProductCategories.data);
+    console.log(categoriesForSelect);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />

@@ -9,7 +9,7 @@ class UpdateCategoryRequest extends FormRequest
 {
     public function rules(): array
     {
-        $categoryId = $this->route('category'); // obtiene el ID de la categoría desde la ruta
+        $categoryId = $this->route('categories'); // obtiene el ID de la categoría desde la ruta
 
         return [
             'name' => ['required', 'string', 'max:255'],

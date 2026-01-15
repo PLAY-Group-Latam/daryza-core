@@ -11,7 +11,7 @@ class StoreCategoryRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('product_categories')->ignore($this->category)],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('product_categories')],
             'parent_id' => ['nullable', 'exists:product_categories,id'],
             'order' => ['nullable', 'integer'],
             'is_active' => ['required', 'boolean'],
