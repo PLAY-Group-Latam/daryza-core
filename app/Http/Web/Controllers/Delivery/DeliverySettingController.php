@@ -29,10 +29,8 @@ class DeliverySettingController extends Controller
             $data
         );
 
-        return redirect()->route("delivery-zones.index")->with([
-            'type' => 'success',
-            'message' => 'Configuración guardada correctamente',
-        ]);
+        return redirect()->route("delivery-zones.index")->
+            with('success', 'Configuración guardada correctamente');
     }
 
 }

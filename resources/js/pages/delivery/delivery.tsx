@@ -26,8 +26,6 @@ interface DeliveryProps {
 export default function Delivery({ departments, settings }: DeliveryProps) {
     const [data, setData] = useState<Department[]>(departments);
 
-    useFlashMessage();
-
     useEffect(() => {
         // This effect can be used to update the component state if needed
         setData(departments);

@@ -62,10 +62,7 @@ class DeliveryZoneController extends Controller
             ]
         );
 
-        return redirect()->refresh()->with([
-            'type' => 'success',
-            'message' => 'Zona de entrega guardada correctamente',
-        ]);
+        return back()->with('success', 'Zona de entrega guardada correctamente');
     }
 
 
@@ -75,11 +72,7 @@ class DeliveryZoneController extends Controller
     public function destroy(DeliveryZone $deliveryZone)
     {
         $deliveryZone->delete();
-
-        return redirect()->route('delivery-zones.index')->with([
-            'type' => 'success',
-            'message' => 'Zona de entrega eliminada correctamente',
-        ]);
+        return back()->with('success', 'Zona de entrega eliminada correctamente');
     }
 }
 

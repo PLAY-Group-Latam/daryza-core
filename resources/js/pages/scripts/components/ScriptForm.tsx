@@ -105,7 +105,6 @@ export function ScriptForm({ script = null }: ScriptFormProps) {
                 onFinish: () => setIsSubmitting(false),
                 onSuccess: () => {
                     setOpen(false);
-                    toast.success('El script se actualizó exitosamente.');
                 },
                 onError: (errors) => {
                     console.error(errors);
@@ -121,7 +120,6 @@ export function ScriptForm({ script = null }: ScriptFormProps) {
                 onFinish: () => setIsSubmitting(false),
                 onSuccess: () => {
                     setOpen(false);
-                    toast.success('El script se agregó exitosamente.');
                 },
                 onError: (errors) => {
                     console.error(errors);

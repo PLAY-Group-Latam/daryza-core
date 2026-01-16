@@ -57,9 +57,6 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
             method: storeRoute.method,
             data,
             preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Zona de entrega guardada correctamente');
-            },
             onError: (errors) => {
                 console.error(errors);
             },
@@ -78,9 +75,6 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
         router.visit(deleteRoute.url, {
             method: deleteRoute.method,
             preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Zona de entrega eliminada correctamente');
-            },
             onError: (errors) => {
                 console.error('Error:', errors);
             },

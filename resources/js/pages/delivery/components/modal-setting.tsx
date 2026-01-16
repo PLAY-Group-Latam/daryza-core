@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DeliverySetting } from '@/models/DeliverySetting';
+import deliverySettings from '@/routes/delivery-settings';
 import { Transition } from '@headlessui/react';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { Settings2Icon } from 'lucide-react';
 import { FormEventHandler, useRef, useState } from 'react';
 
@@ -33,9 +34,11 @@ export function ModalSetting({ settings }: ModalSettingProps) {
         e.preventDefault();
         //ver los valores de los inputs
 
-        post(route('delivery-settings.store'), {
+        const storeRoute = deliverySettings.store()
+        router.visit(storeRoute.url, {
+            method: storeRoute.method,
+            data,
             preserveScroll: true,
-            onSuccess: () => { setIsOpen(false)},
             onError: (error) => {
                 if (error.minimum_order_amount) {
                     reset('minimum_order_amount');
@@ -46,6 +49,7 @@ export function ModalSetting({ settings }: ModalSettingProps) {
                     reset('order_amount_threshold');
                     amountInput.current?.focus();
                 }
+                console.error(error);
             },
         });
     };
