@@ -97,6 +97,7 @@ export function ModalFormCategories({
                     onSuccess: () => {
                         setOpen(false);
                         reset();
+
                         resolve();
                     },
                     onError: () => resolve(),
@@ -173,23 +174,53 @@ export function ModalFormCategories({
                                 )}
                             />
 
-                            {/* Switch Activo */}
-                            <Controller
-                                name="is_active"
-                                control={control}
-                                render={({ field: { value, onChange } }) => (
-                                    <div className="flex flex-col items-start gap-2">
-                                        <Label htmlFor="is_active">
-                                            Activo
-                                        </Label>
-                                        <Switch
-                                            id="is_active"
-                                            checked={value}
-                                            onCheckedChange={onChange}
+                            <div className="flex items-start gap-4">
+                                {/* Order - solo al editar */}
+                                {isEdit && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="order">
+                                                Orden de aparición
+                                            </Label>
+                                        </div>
+                                        <Controller
+                                            name="order"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    id="order"
+                                                    type="number"
+                                                    {...field}
+                                                    placeholder="0"
+                                                />
+                                            )}
+                                        />
+                                        <InputError
+                                            message={errors.order?.message}
                                         />
                                     </div>
                                 )}
-                            />
+
+                                {/* Switch Activo */}
+                                <Controller
+                                    name="is_active"
+                                    control={control}
+                                    render={({
+                                        field: { value, onChange },
+                                    }) => (
+                                        <div className="flex flex-col items-start gap-2">
+                                            <Label htmlFor="is_active">
+                                                Activo
+                                            </Label>
+                                            <Switch
+                                                id="is_active"
+                                                checked={value}
+                                                onCheckedChange={onChange}
+                                            />
+                                        </div>
+                                    )}
+                                />
+                            </div>
                         </div>
 
                         {/* Imagen */}

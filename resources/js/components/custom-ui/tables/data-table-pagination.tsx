@@ -7,7 +7,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useServerPagination } from '@/lib/utils/useServerPagination';
-import { Paginated } from '@/types';
 import { Table } from '@tanstack/react-table';
 import {
     ChevronLeft,

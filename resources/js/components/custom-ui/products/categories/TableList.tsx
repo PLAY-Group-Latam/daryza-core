@@ -9,8 +9,7 @@ import categories from '@/routes/products/categories';
 import { Category, CategorySelect } from '@/types/products';
 import { ChevronRight, Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
-import { DataTableExpandable } from '../../tables/DataTableExpandable';
-import { DragCell } from '../../tables/DragHandle';
+import { DataTableExpandable } from '../../tables/table-dnd-expanded/DataTableExpandable';
 import { ModalFormCategories } from './ModalFormCategories';
 
 interface TableListProps {
@@ -21,12 +20,6 @@ interface TableListProps {
 const columns = (
     parentCategories: CategorySelect[] = [],
 ): ColumnDef<Category>[] => [
-    {
-        id: 'drag',
-        header: () => null,
-        cell: () => <DragCell />,
-        enableSorting: false,
-    },
     {
         id: 'expander',
         header: () => null,

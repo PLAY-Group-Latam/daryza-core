@@ -74,14 +74,14 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
         };
 
         return (
-            <div className={cn('space-y-2', className)}>
+            <div className={cn('w-full space-y-2', className)}>
                 <div className="flex items-center justify-between">
                     <Label htmlFor={id} className="text-sm font-medium">
                         {label}
                     </Label>
                     {isManuallyEdited && (
                         <span className="flex animate-in items-center gap-1 text-[10px] text-amber-600 fade-in">
-                            <Unlock className="h-3 w-3" /> Manual
+                            <Unlock className="h-3 w-3" /> Editar Manual
                         </span>
                     )}
                 </div>
