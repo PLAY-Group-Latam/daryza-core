@@ -15,7 +15,6 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
-        "tightenco/ziggy": "^2.4",
         "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
