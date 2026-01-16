@@ -9,3 +9,8 @@ Route::prefix('v1')
     require __DIR__ . '/ubigeos.php';
     require __DIR__ . '/customer.php';
   });
+
+Route::prefix('v1')
+  ->group(function() {
+    require __DIR__ . '/script.php';
+  });

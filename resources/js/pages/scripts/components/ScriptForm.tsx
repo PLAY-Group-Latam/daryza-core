@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit, Loader2 } from 'lucide-react';
-import { route } from '@/lib/helpers/route';
 import { toast } from 'sonner';
+import scripts from '@/routes/scripts';
 
 
 
@@ -54,6 +54,7 @@ interface ScriptFormProps {
    COMPONENT
 ------------------------------------------------------------------- */
 export function ScriptForm({ script = null }: ScriptFormProps) {
+    const isEdit = Boolean(script);
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -94,28 +95,36 @@ export function ScriptForm({ script = null }: ScriptFormProps) {
        Submit
     ------------------------------------------ */
     function onSubmit(data: ScriptFormValues) {
-        if (script) {
-            router.put(route('scripts.update', { script: script.id}), data, {
+        if (isEdit && script) {
+            const route = scripts.update({ script: script.id });
+
+            router.visit(route.url, {
+                method: route.method,
+                data,
                 onStart: () => setIsSubmitting(true),
                 onFinish: () => setIsSubmitting(false),
                 onSuccess: () => {
-                    setOpen(false)
+                    setOpen(false);
                     toast.success('El script se actualizó exitosamente.');
                 },
-                onError: (error) => {
-                    console.log(error);
+                onError: (errors) => {
+                    console.error(errors);
                 },
             });
         } else {
-            router.post(route('scripts.store'), data, {
+            const route = scripts.store();
+
+            router.visit(route.url, {
+                method: route.method,
+                data,
                 onStart: () => setIsSubmitting(true),
                 onFinish: () => setIsSubmitting(false),
                 onSuccess: () => {
-                    setOpen(false)
-                    toast.success('El script agregó exitosamente.');
+                    setOpen(false);
+                    toast.success('El script se agregó exitosamente.');
                 },
-                onError: (error) => {
-                    console.log(error);
+                onError: (errors) => {
+                    console.error(errors);
                 },
             });
         }
