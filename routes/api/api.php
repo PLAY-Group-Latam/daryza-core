@@ -8,6 +8,7 @@ Route::prefix('v1')
     require __DIR__ . '/auth.php';
     require __DIR__ . '/ubigeos.php';
     require __DIR__ . '/customer.php';
+    require __DIR__ . '/products.php';
   });
 
 Route::prefix('v1')

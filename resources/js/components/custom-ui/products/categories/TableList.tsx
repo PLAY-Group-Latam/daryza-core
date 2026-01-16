@@ -4,11 +4,13 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
+import { cn } from '@/lib/utils';
 import categories from '@/routes/products/categories';
 import { Category, CategorySelect } from '@/types/products';
 import { ChevronRight, Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
 import { DataTableExpandable } from '../../tables/DataTableExpandable';
+import { DragCell } from '../../tables/DragHandle';
 import { ModalFormCategories } from './ModalFormCategories';
 
 interface TableListProps {
@@ -20,23 +22,38 @@ const columns = (
     parentCategories: CategorySelect[] = [],
 ): ColumnDef<Category>[] => [
     {
+        id: 'drag',
+        header: () => null,
+        cell: () => <DragCell />,
+        enableSorting: false,
+    },
+    {
         id: 'expander',
         header: () => null,
         cell: ({ row }) => {
-            if (!row.original.children || row.original.children.length === 0)
-                return null;
+            if (!row.original.children?.length) return null;
 
             return (
-                <span
-                    className={`flex w-fit items-center justify-center transition-transform duration-200 ${
-                        row.getIsExpanded() ? 'rotate-90' : ''
-                    }`}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation(); // evita que el click active el drag
+                        row.toggleExpanded();
+                    }}
+                    className={cn(
+                        'flex items-center justify-center transition-transform',
+                        row.getIsExpanded() && 'rotate-90',
+                    )}
                 >
-                    <ChevronRight className="size-4" />
-                </span>
+                    <ChevronRight className="h-4 w-4" />
+                </button>
             );
         },
         enableSorting: false,
+    },
+
+    {
+        accessorKey: 'order',
+        header: 'Nº',
     },
     {
         accessorKey: 'name',

@@ -10,6 +10,16 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
+    closestCenter,
+    DndContext,
+    DragEndEvent,
+    KeyboardSensor,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
     ColumnDef,
     ExpandedState,
     flexRender,
@@ -21,6 +31,15 @@ import {
 import * as React from 'react';
 import { DataTablePagination } from './data-table-pagination';
 
+import {
+    arrayMove,
+    SortableContext,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { DraggableRow } from './DraggtableRow';
+
 interface DataTableProps<T extends { children?: T[]; id: string | number }> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
@@ -31,6 +50,7 @@ export function DataTableExpandable<
 >({ columns, data }: DataTableProps<T>) {
     const [globalFilter, setGlobalFilter] = React.useState('');
     const [expanded, setExpanded] = React.useState<ExpandedState>({});
+    const [rows, setRows] = React.useState<T[]>(data.data);
 
     // Filtrado recursivo para padres e hijos
     // const filteredData = React.useMemo(() => {
@@ -60,7 +80,7 @@ export function DataTableExpandable<
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
-        data: data.data,
+        data: rows,
         columns,
         state: { globalFilter, expanded },
         onExpandedChange: setExpanded,
@@ -70,9 +90,29 @@ export function DataTableExpandable<
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getExpandedRowModel: getExpandedRowModel(),
-        getRowCanExpand: (row) => !!row.original.children?.length, // permite expandir si hay hijos
-        getSubRows: (row) => row.children, // aquí indicamos que los hijos están en children
+        getRowCanExpand: (row) => !!row.original.children?.length,
+        getSubRows: (row) => row.children,
     });
+    const sensors = useSensors(
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 3,
+            },
+        }),
+        useSensor(TouchSensor),
+        useSensor(KeyboardSensor),
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        setRows((prev) => {
+            const oldIndex = prev.findIndex((i) => i.id === active.id);
+            const newIndex = prev.findIndex((i) => i.id === over.id);
+            return arrayMove(prev, oldIndex, newIndex);
+        });
+    };
 
     return (
         <div className="w-full space-y-6">
@@ -104,39 +144,48 @@ export function DataTableExpandable<
                         ))}
                     </TableHeader>
 
-                    <TableBody>
-                        {table.getRowModel().rows.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="text-center"
-                                >
-                                    No hay registros
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    className={`cursor-pointer hover:bg-gray-100 ${row.depth > 0 ? 'bg-gray-100' : ''} `}
-                                    onClick={() => {
-                                        if (row.getCanExpand()) {
-                                            row.toggleExpanded();
-                                        }
-                                    }}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            )}
+                    <DndContext
+                        sensors={sensors} // 🔑 agregamos los sensores
+                        collisionDetection={closestCenter}
+                        modifiers={[restrictToVerticalAxis]} // ✅ limita solo vertical
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={table
+                                .getRowModel()
+                                .rows.map((r) => r.original.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <TableBody className="relative">
+                                {table.getRowModel().rows.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="text-center"
+                                        >
+                                            No hay registros
                                         </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
+                                    </TableRow>
+                                ) : (
+                                    table.getRowModel().rows.map((row) => (
+                                        <DraggableRow key={row.id} row={row}>
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <TableCell key={cell.id}>
+                                                        {flexRender(
+                                                            cell.column
+                                                                .columnDef.cell,
+                                                            cell.getContext(),
+                                                        )}
+                                                    </TableCell>
+                                                ))}
+                                        </DraggableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </SortableContext>
+                    </DndContext>
                 </Table>
             </div>
 
