@@ -30,13 +30,26 @@ export default defineConfig({
     //         ignored: ['**/vendor/**', '**/node_modules/**'],
     //     },
     // },
+    // server: {
+    //     host: '0.0.0.0',
+    //     port: 5173,
+    //     strictPort: true,
+    //     hmr: {
+    //         host: 'localhost',
+    //         port: 5173,
+    //     },
+    //     watch: {
+    //         ignored: ['**/vendor/**', '**/node_modules/**'],
+    //     },
+    // },
     server: {
-        host: '0.0.0.0',
+        host: true, // escucha en 0.0.0.0 dentro del contenedor
         port: 5173,
         strictPort: true,
         hmr: {
-            host: 'localhost',
+            host: 'localhost', // aquí debe ir la IP de tu host (tu máquina local)
             port: 5173,
+            protocol: 'ws', // web socket
         },
         watch: {
             ignored: ['**/vendor/**', '**/node_modules/**'],
