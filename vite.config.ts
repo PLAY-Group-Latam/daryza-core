@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
+const isDev = process.env.NODE_ENV !== 'production';
 
 export default defineConfig({
     plugins: [
@@ -30,6 +31,7 @@ export default defineConfig({
     //         ignored: ['**/vendor/**', '**/node_modules/**'],
     //     },
     // },
+
     // server: {
     //     host: '0.0.0.0',
     //     port: 5173,
@@ -42,19 +44,22 @@ export default defineConfig({
     //         ignored: ['**/vendor/**', '**/node_modules/**'],
     //     },
     // },
-    server: {
-        host: true, // escucha en 0.0.0.0 dentro del contenedor
-        port: 5173,
-        strictPort: true,
-        hmr: {
-            host: 'localhost', // aquí debe ir la IP de tu host (tu máquina local)
-            port: 5173,
-            protocol: 'ws', // web socket
-        },
-        watch: {
-            ignored: ['**/vendor/**', '**/node_modules/**'],
-        },
-    },
+
+    server: isDev
+        ? {
+              host: true,
+              port: 5173,
+              strictPort: true,
+              hmr: {
+                  host: 'localhost',
+                  port: 5173,
+                  protocol: 'ws',
+              },
+              watch: {
+                  ignored: ['**/vendor/**', '**/node_modules/**'],
+              },
+          }
+        : undefined,
 
     esbuild: {
         jsx: 'automatic',
