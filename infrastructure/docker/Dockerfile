@@ -18,14 +18,6 @@ COPY . /var/www
 # Instalar dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
 
-
-# Instalar dependencias JS y dar permisos
-RUN npm install \
-    && chmod -R +x node_modules/.bin node_modules/@esbuild node_modules/esbuild
-
-# 7️⃣ Build frontend
-RUN npm run build
-
 # Permisos
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
