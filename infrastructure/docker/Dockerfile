@@ -16,7 +16,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . /var/www
 
 # Instalar dependencias PHP
-RUN composer install --no-dev --optimize-autoloader
+# RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader \
+    && npm install \
+    && npm run build
 
 # Permisos
 RUN chown -R www-data:www-data /var/www \
