@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 const isDev = process.env.NODE_ENV !== 'production';
-console.log(isDev);
-console.log(process.env.NODE_ENV);
+// console.log(isDev);
+// console.log(process.env.NODE_ENV);
 export default defineConfig({
     plugins: [
         laravel({
