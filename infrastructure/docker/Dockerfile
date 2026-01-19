@@ -21,8 +21,7 @@ RUN composer install --no-dev --optimize-autoloader
 
 # 5️⃣ Instalar dependencias JS
 RUN npm install
-# 6️⃣ Dar permisos a binarios de npm
-RUN chmod -R +x node_modules/.bin
+
 # 7️⃣ Build frontend
 RUN npm run build
 
