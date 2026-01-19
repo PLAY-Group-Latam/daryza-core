@@ -17,13 +17,20 @@ COPY . /var/www
 
 # Instalar dependencias PHP
 # RUN composer install --no-dev --optimize-autoloader
-RUN composer install --no-dev --optimize-autoloader \
-    && npm install \
-    && npm run build
+
+# RUN composer install --no-dev --optimize-autoloader \
+#     && npm install \
+#     && npm run build
 
 # Permisos
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+# 6️⃣ Instalar dependencias PHP y Node
+USER www-data
+RUN composer install --no-dev --optimize-autoloader \
+    && npm install \
+    && chmod -R +x node_modules/.bin \
+    && npm run build
 
 # Script de arranque
 COPY infrastructure/scripts/default.sh /usr/local/bin/docker.sh
