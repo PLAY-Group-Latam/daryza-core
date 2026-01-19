@@ -18,7 +18,7 @@ services:
     volumes:
       - .:/var/www
       - './infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini'
-      - './infrastructure/php/www.conf:/usr/local/etc/php-fpm.d/www.conf'
+      # - './infrastructure/php/www.conf:/usr/local/etc/php-fpm.d/www.conf'
 
     depends_on:
       - postgresql
