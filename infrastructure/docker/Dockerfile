@@ -16,11 +16,15 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . /var/www
 
 # Instalar dependencias PHP
-# RUN composer install --no-dev --optimize-autoloader
-RUN composer install --no-dev --optimize-autoloader \
-    && npm install \
-    && chmod -R +x node_modules/.bin \
-    && npm run build
+RUN composer install --no-dev --optimize-autoloader
+
+
+# 5️⃣ Instalar dependencias JS
+RUN npm install
+# 6️⃣ Dar permisos a binarios de npm
+RUN chmod -R +x node_modules/.bin
+# 7️⃣ Build frontend
+RUN npm run build
 
 # Permisos
 RUN chown -R www-data:www-data /var/www \
