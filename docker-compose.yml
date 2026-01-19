@@ -5,8 +5,8 @@ services:
       dockerfile: infrastructure/docker/Dockerfile
     container_name: daryza_app
     restart: unless-stopped
-    ports:
-      - "5173:5173"
+    # ports:
+    #   - "5173:5173"
     environment:
       APP_KEY: ${APP_KEY}
       DB_CONNECTION: pgsql
