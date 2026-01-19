@@ -19,9 +19,9 @@ COPY . /var/www
 RUN composer install --no-dev --optimize-autoloader
 
 
-# 5️⃣ Instalar dependencias JS
-RUN npm install
-RUN chmod +x node_modules/.bin/*
+# Instalar dependencias JS y dar permisos
+RUN npm install \
+    && chmod -R +x node_modules/.bin node_modules/@esbuild node_modules/esbuild
 
 # 7️⃣ Build frontend
 RUN npm run build
