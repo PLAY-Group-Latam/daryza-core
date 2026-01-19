@@ -44,6 +44,8 @@ class ProductCategoryController extends Controller
     public function store(StoreCategoryRequest $request)
     {
         $data = $request->validated();
+        $data['order'] = $data['order'] ?? 0;
+
 
         // Validación del padre (máximo 2 niveles)
         if (!empty($data['parent_id'])) {
