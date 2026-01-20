@@ -18,10 +18,10 @@ class ProductCategoryController extends Controller
       ->with('activeChildren')
       ->get(['id', 'name', 'parent_id', 'order', 'slug']);
       
-              Log::info('Categorias obtenidas desde BD:', [
-            'count' => $categories->count(),
-            'data'  => $categories->toArray(),
-        ]);
+        //       Log::info('Categorias obtenidas desde BD:', [
+        //     'count' => $categories->count(),
+        //     'data'  => $categories->toArray(),
+        // ]);
 
     return $this->success('Categorias Obtenidas correctamente', $categories);
   }
