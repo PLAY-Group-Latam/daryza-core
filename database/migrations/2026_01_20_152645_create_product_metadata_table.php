@@ -12,14 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_metadata', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->ulid('id')->primary();
 
-            $table->foreignUlid('product_id')
-                ->constrained('products')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+              $table->morphs('metadatable'); // metadatable_id + metadatable_type
 
-            // SEO básico
             $table->string('meta_title')->nullable();
             $table->string('meta_description', 500)->nullable();
             $table->string('meta_keywords')->nullable();
