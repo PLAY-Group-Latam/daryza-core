@@ -21,7 +21,6 @@ RUN composer install --no-dev --optimize-autoloader
 # Permisos
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
-
     
 # Script de arranque
 COPY infrastructure/scripts/default.sh /usr/local/bin/docker.sh
