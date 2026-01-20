@@ -74,4 +74,8 @@ class ProductMedia extends Model
     {
         return $query->orderBy('order', 'asc');
     }
+      public function mediable()
+    {
+        return $this->morphTo();
+    }
 }
