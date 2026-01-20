@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
+    # Aumentar memoria de PHP
+RUN echo "memory_limit=1024M" > /usr/local/etc/php/conf.d/memory-limit.ini
+
 WORKDIR /var/www
 
 # Composer
