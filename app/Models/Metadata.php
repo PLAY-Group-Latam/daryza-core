@@ -1,17 +1,16 @@
 <?php
 
-namespace App\Models\Products;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
-class ProductMetadata extends Model
+class Metadata extends Model
 {
     use SoftDeletes, HasFactory, HasUlids;
 
-    protected $table = 'product_metadata';
     protected $keyType = 'string';
     public $incrementing = false;
 

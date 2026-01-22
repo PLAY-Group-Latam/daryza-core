@@ -4,6 +4,7 @@ namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
 use App\Models\Products\Product;
+use App\Models\Products\ProductCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -30,6 +31,22 @@ class ProductController extends Controller
 
     return Inertia::render('products/Index', [
       'products' => $products,
+    ]);
+  }
+
+  /**
+   * Mostrar formulario de creación
+   */
+  public function create()
+  {
+    // Necesitas categorías para el select
+    $categoriesForSelect = ProductCategory::roots()
+      ->active()
+      ->with('activeChildren')
+      ->get(['id', 'name', 'parent_id', 'order']);
+
+    return Inertia::render('products/Create', [
+      'categories' => $categoriesForSelect,
     ]);
   }
 

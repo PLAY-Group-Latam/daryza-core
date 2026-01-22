@@ -20,6 +20,7 @@ import {
     CreditCard,
     FileCode,
     LayoutGrid,
+    Newspaper,
     SearchCheck,
     Store,
     Truck,
@@ -55,6 +56,16 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Categorías',
                 href: '/productos/categorias',
+            },
+        ],
+    },
+    {
+        title: 'Blogs',
+        icon: Newspaper,
+        children: [
+            {
+                title: 'Lista de blogs',
+                href: '/blogs/items',
             },
         ],
     },

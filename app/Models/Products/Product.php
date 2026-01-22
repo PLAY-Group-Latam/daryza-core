@@ -2,6 +2,7 @@
 
 namespace App\Models\Products;
 
+use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -47,7 +48,7 @@ class Product extends Model
     // SEO (polimórfico)
     public function metadata()
     {
-        return $this->morphOne(ProductMetadata::class, 'metadatable');
+        return $this->morphOne(Metadata::class, 'metadatable');
     }
 
     // Media (imágenes, videos, fichas técnicas, etc)

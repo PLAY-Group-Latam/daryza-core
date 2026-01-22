@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/productCategories.ts
 
 export interface Category {
@@ -40,4 +41,29 @@ export interface Product {
     };
     created_at: string;
     updated_at: string;
+}
+
+// types.ts
+export interface ProductFormValues {
+    name: string;
+    slug: string;
+    code?: string;
+    category_id: string | null;
+    brief_description?: string;
+    description?: string;
+    is_active: boolean;
+
+    metadata: {
+        meta_title?: string;
+        meta_description?: string;
+        canonical_url?: string;
+        og_title?: string;
+        og_description?: string;
+        noindex: boolean;
+        nofollow: boolean;
+    };
+
+    variants: any[];
+    media: any[];
+    specifications: any[];
 }

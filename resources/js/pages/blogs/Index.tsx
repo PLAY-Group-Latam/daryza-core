@@ -1,22 +1,22 @@
-import TableList from '@/components/custom-ui/products/items-table/TableList';
+import TableList from '@/components/custom-ui/blogs/TableList';
 import AppLayout from '@/layouts/app-layout';
-import { Product } from '@/types/products';
+import { Blog } from '@/types/blogs';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { products } = usePage<{
-        products: Paginated<Product>;
+    const { paginatedBlogs } = usePage<{
+        paginatedBlogs: Paginated<Blog>;
     }>().props;
 
     return (
         <AppLayout>
-            <Head title="Lista de Productos" />
+            <Head title="Lista de Blogs" />
 
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold lg:text-2xl">
-                        Lista de Productos
+                        Lista de Blogs
                     </h1>
 
                     <Link
@@ -28,7 +28,7 @@ export default function Index() {
                     </Link>
                 </div>
 
-                <TableList data={products} />
+                <TableList data={paginatedBlogs} />
             </div>
         </AppLayout>
     );
