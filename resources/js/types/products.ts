@@ -27,3 +27,17 @@ export type CategorySelect = {
     order: number;
     active_children: CategorySelect[];
 };
+
+export interface Product {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    stock: number;
+    category?: {
+        id: string;
+        name: string;
+    };
+    created_at: string;
+    updated_at: string;
+}

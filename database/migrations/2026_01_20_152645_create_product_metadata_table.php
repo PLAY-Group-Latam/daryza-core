@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('product_metadata', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
-              $table->morphs('metadatable'); // metadatable_id + metadatable_type
+            $table->morphs('metadatable'); // metadatable_id + metadatable_type
 
             $table->string('meta_title')->nullable();
             $table->string('meta_description', 500)->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
-            $table->unique('product_id'); 
+            $table->unique(['metadatable_id', 'metadatable_type']);
         });
     }
 

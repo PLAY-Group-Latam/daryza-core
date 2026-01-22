@@ -54,6 +54,28 @@ class ProductCategory extends Model
             ->with('activeChildren');
     }
 
+    /**
+     * Relaciones de negocio
+     */
+
+    // Productos dentro de esta categoría
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id');
+    }
+
+    // SEO Metadata (polimórfico)
+    public function metadata()
+    {
+        return $this->morphOne(ProductMetadata::class, 'metadatable');
+    }
+
+    // Media (imagen de categoría, banners, etc)
+    public function media()
+    {
+        return $this->morphMany(ProductMedia::class, 'mediable');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

@@ -9,14 +9,21 @@ class Attribute extends Model
 {
     use HasFactory;
 
+    protected $table = 'attributes'; // opcional, Laravel lo infiere bien
+
     protected $fillable = [
         'name',
         'type',
         'is_filterable',
     ];
 
+    protected $casts = [
+        'is_filterable' => 'boolean',
+    ];
+
     /**
      * Valores asociados a este atributo
+     * Ej: Color -> Rojo, Azul, Verde
      */
     public function values()
     {

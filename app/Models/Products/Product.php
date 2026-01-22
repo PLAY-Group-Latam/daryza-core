@@ -24,53 +24,49 @@ class Product extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     /**
      * Relaciones
      */
 
-    // Categoría del producto
+    // Categoría
     public function category()
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
-    // Variantes del producto
+    // Variantes
     public function variants()
     {
         return $this->hasMany(ProductVariant::class, 'product_id');
     }
 
-    // Variante principal (opcional, para mostrar en listado)
-    public function defaultVariant()
-    {
-        return $this->hasOne(ProductVariant::class, 'id', 'default_variant_id');
-    }
-
-    // SEO
+    // SEO (polimórfico)
     public function metadata()
     {
-        return $this->hasOne(ProductMetadata::class, 'product_id');
+        return $this->morphOne(ProductMetadata::class, 'metadatable');
     }
 
-    // Productos recomendados
-    public function recommendations()
+    // Media (imágenes, videos, fichas técnicas, etc)
+    public function media()
     {
-        return $this->belongsToMany(
-            Product::class,
-            'product_recommendations',
-            'product_id',
-            'recommended_product_id'
-        )->withTimestamps();
+        return $this->morphMany(ProductMedia::class, 'mediable');
+    }
+
+    // Especificaciones técnicas
+    public function specifications()
+    {
+        return $this->morphMany(ProductSpecification::class, 'specifiable');
     }
 
     /**
-     * Scopes útiles
+     * Scopes
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-      public function specifications() {
-        return $this->morphMany(ProductSpecification::class, 'specifiable');
     }
 }
