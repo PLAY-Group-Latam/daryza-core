@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/productCategories.ts
+
+import { Metadata } from './metadata';
 
 export interface Category {
     id: string;
@@ -43,6 +44,39 @@ export interface Product {
     updated_at: string;
 }
 
+export interface VariantAttribute {
+    attribute_id: number;
+    attribute_value_id: number;
+    attribute_name?: string; // opcional para frontend
+    value_name?: string; // opcional para frontend
+}
+
+export interface VariantMedia {
+    id?: number;
+    type: 'image' | 'video' | 'technical_sheet';
+    file_path: string;
+    is_main?: boolean;
+    order?: number;
+}
+
+export interface ProductSpecification {
+    id?: number;
+    name: string;
+    value: string;
+}
+
+export interface ProductVariant {
+    id?: string;
+    sku: string;
+    price: number;
+    promo_price?: number;
+    is_on_promo?: boolean;
+    stock: number;
+
+    attributes: VariantAttribute[];
+    media: VariantMedia[];
+}
+
 // types.ts
 export interface ProductFormValues {
     name: string;
@@ -53,17 +87,8 @@ export interface ProductFormValues {
     description?: string;
     is_active: boolean;
 
-    metadata: {
-        meta_title?: string;
-        meta_description?: string;
-        canonical_url?: string;
-        og_title?: string;
-        og_description?: string;
-        noindex: boolean;
-        nofollow: boolean;
-    };
+    metadata: Metadata;
 
-    variants: any[];
-    media: any[];
-    specifications: any[];
+    variants: ProductVariant[];
+    specifications: ProductSpecification[];
 }

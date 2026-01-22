@@ -22,8 +22,8 @@ export default function Create() {
                         ← Volver a la lista
                     </Link>
                 </div>
-
                 <FormProduct categories={categories} />
+
                 {/* 
                   Aquí después vamos a ir agregando:
                   - Formulario de información básica
