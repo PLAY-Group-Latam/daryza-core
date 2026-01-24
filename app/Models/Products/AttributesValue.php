@@ -5,11 +5,10 @@ namespace App\Models\Products;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class AttributeValue extends Model
+class AttributesValue extends Model
 {
     use HasFactory;
 
-    protected $table = 'attribute_values'; // opcional, pero deja todo claro
 
     protected $fillable = [
         'attribute_id',

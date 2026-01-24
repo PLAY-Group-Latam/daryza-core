@@ -92,3 +92,32 @@ export interface ProductFormValues {
     variants: ProductVariant[];
     specifications: ProductSpecification[];
 }
+
+// AttributeValue.ts
+export interface AttributeValue {
+    id: number;
+    attribute_id: number;
+    value: string;
+    created_at: string;
+    updated_at: string;
+}
+// Attribute.ts
+
+export type AttributeType = 'select' | 'number' | 'boolean' | 'text';
+export interface AttributeTypeOption {
+    value: AttributeType;
+    label: string;
+}
+
+export interface Attribute {
+    id: number;
+    name: string;
+    type: AttributeType;
+    is_filterable: boolean;
+    is_variant: boolean;
+    values: AttributeValue[];
+    created_at: string;
+    updated_at: string;
+}
+
+export type PaginatedAttributes = Paginated<Attribute>;

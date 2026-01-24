@@ -3,6 +3,7 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
+use App\Models\Products\Attribute;
 use App\Models\Products\Product;
 use App\Models\Products\ProductCategory;
 use Illuminate\Http\Request;
@@ -45,8 +46,15 @@ class ProductController extends Controller
       ->with('activeChildren')
       ->get(['id', 'name', 'parent_id', 'order']);
 
+    // Atributos para el producto
+    $attributes = Attribute::with(['values']) // traemos los valores si son select
+      ->get();
+
+
     return Inertia::render('products/Create', [
       'categories' => $categoriesForSelect,
+      'attributes' => $attributes, // 👈 los pasamos al frontend
+
     ]);
   }
 

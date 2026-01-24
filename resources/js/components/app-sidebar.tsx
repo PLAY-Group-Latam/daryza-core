@@ -57,6 +57,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Categorías',
                 href: '/productos/categorias',
             },
+            {
+                title: 'Atributos',
+                href: '/productos/attributes',
+            },
         ],
     },
     {

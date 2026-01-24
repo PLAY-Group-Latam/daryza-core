@@ -1,13 +1,12 @@
 /* eslint-disable react-hooks/incompatible-library */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Attribute, CategorySelect } from '@/types/products';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ClipboardList } from 'lucide-react';
 import {
     Controller,
     FormProvider,
@@ -62,7 +61,13 @@ const ProductSchema = z.object({
 
 type ProductFormValues = z.infer<typeof ProductSchema>;
 
-export default function FormProduct({ categories }: { categories: any[] }) {
+export default function FormProduct({
+    categories,
+    attributes,
+}: {
+    categories: CategorySelect[];
+    attributes: Attribute[];
+}) {
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema),
         defaultValues: {
@@ -115,25 +120,33 @@ export default function FormProduct({ categories }: { categories: any[] }) {
 
     const nameValue = watch('name');
 
-    const productAttributes = [
-        {
-            id: 1,
-            name: 'Color',
-            options: [
-                { id: 10, value: 'Rojo' },
-                { id: 11, value: 'Azul' },
-                { id: 12, value: 'Verde' },
-            ],
-        },
-        {
-            id: 2,
-            name: 'Aroma',
-            options: [
-                { id: 20, value: 'Fresa' },
-                { id: 21, value: 'Vainilla' },
-            ],
-        },
-    ];
+    // const productAttributes = [
+    //     {
+    //         id: 1,
+    //         name: 'Color',
+    //         options: [
+    //             { id: 10, value: 'Rojo' },
+    //             { id: 11, value: 'Azul' },
+    //             { id: 12, value: 'Verde' },
+    //         ],
+    //     },
+    //     {
+    //         id: 2,
+    //         name: 'Aroma',
+    //         options: [
+    //             { id: 20, value: 'Fresa' },
+    //             { id: 21, value: 'Vainilla' },
+    //         ],
+    //     },
+    // ];
+    // 🔹 Filtrar atributos de variante y atributos de especificación
+    const variantAttributes = attributes.filter((attr) => attr.is_variant);
+
+    console.log('asdsadsad', variantAttributes);
+
+    const specificationAttributes = attributes.filter(
+        (attr) => !attr.is_variant,
+    );
 
     return (
         <FormProvider {...methods}>
@@ -555,8 +568,8 @@ export default function FormProduct({ categories }: { categories: any[] }) {
                                                     control={control}
                                                     variantIndex={index}
                                                     attributes={
-                                                        productAttributes
-                                                    }
+                                                        variantAttributes
+                                                    } // ✅ atributos reales de variantes
                                                 />
                                             </Card>
                                         ))}
@@ -584,86 +597,106 @@ export default function FormProduct({ categories }: { categories: any[] }) {
                             </div>
                         </div>
 
+                        {/* ATRIBUTOS DE ESPECIFICACIÓN DINÁMICOS */}
                         <div className="space-y-3">
                             <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
-                                ● Specifications
+                                ● Specifications Attributes
                             </p>
 
-                            <div className="space-y-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-6">
-                                {specificationFields.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center gap-4 text-center">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                                            <ClipboardList />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-600">
-                                                No hay especificaciones técnicas
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                Agrega datos como peso,
-                                                material, dimensiones, etc.
-                                            </p>
-                                        </div>
+                            {specificationFields.length === 0 ? (
+                                // ✅ ESTADO VACÍO
+                                <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 py-12 text-center">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                                        📋
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600">
+                                            No hay atributos de especificación
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            Agrega atributos como material,
+                                            tamaño, peso, etc.
+                                        </p>
+                                    </div>
+
+                                    {/* 🔹 Solo mostrar botón si hay atributos disponibles */}
+                                    {specificationAttributes.length > 0 && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                appendSpecification({
-                                                    name: '',
-                                                    value: '',
-                                                })
-                                            }
                                             className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+                                            onClick={() => {
+                                                appendSpecification({
+                                                    attribute_id:
+                                                        specificationAttributes[0]
+                                                            .id,
+                                                    value:
+                                                        specificationAttributes[0]
+                                                            .type === 'boolean'
+                                                            ? false
+                                                            : '',
+                                                });
+                                            }}
                                         >
                                             + Agregar primera especificación
                                         </button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {specificationFields.map(
-                                            (spec, index) => (
-                                                <div
-                                                    key={spec.id ?? index}
-                                                    className="grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_1fr_auto]"
-                                                >
-                                                    {/* Nombre */}
-                                                    <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs text-slate-500">
-                                                            Nombre
-                                                        </Label>
-                                                        <Controller
-                                                            name={`specifications.${index}.name`}
-                                                            control={control}
-                                                            render={({
-                                                                field,
-                                                            }) => (
-                                                                <Input
-                                                                    {...field}
-                                                                    placeholder="Ej: Material"
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
+                                    )}
+                                </div>
+                            ) : (
+                                // ✅ CARD CON CAMPOS DINÁMICOS
+                                <Card className="space-y-4 rounded-2xl border border-slate-200 p-5 shadow-sm">
+                                    {specificationFields.map(
+                                        (fieldSpec, index) => {
+                                            const attr =
+                                                specificationAttributes.find(
+                                                    (a) =>
+                                                        a.id ===
+                                                        fieldSpec.attribute_id,
+                                                );
+                                            if (!attr) return null;
 
-                                                    {/* Valor */}
-                                                    <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs text-slate-500">
-                                                            Valor
-                                                        </Label>
+                                            return (
+                                                <div
+                                                    key={fieldSpec.id ?? index}
+                                                    className="flex items-center gap-3"
+                                                >
+                                                    {attr.type === 'boolean' ? (
                                                         <Controller
                                                             name={`specifications.${index}.value`}
                                                             control={control}
+                                                            defaultValue={false}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <Switch
+                                                                    checked={
+                                                                        field.value
+                                                                    }
+                                                                    onCheckedChange={
+                                                                        field.onChange
+                                                                    }
+                                                                />
+                                                            )}
+                                                        />
+                                                    ) : (
+                                                        <Controller
+                                                            name={`specifications.${index}.value`}
+                                                            control={control}
+                                                            defaultValue=""
                                                             render={({
                                                                 field,
                                                             }) => (
                                                                 <Input
                                                                     {...field}
-                                                                    placeholder="Ej: Plástico ABS"
+                                                                    placeholder={`Ingresa ${attr.name}`}
                                                                 />
                                                             )}
                                                         />
-                                                    </div>
+                                                    )}
 
-                                                    {/* Eliminar */}
+                                                    <span className="text-sm">
+                                                        {attr.name}
+                                                    </span>
+
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -671,30 +704,88 @@ export default function FormProduct({ categories }: { categories: any[] }) {
                                                                 index,
                                                             )
                                                         }
-                                                        className="h-10 rounded-lg border border-red-200 px-3 text-xs text-red-500 hover:bg-red-50"
+                                                        className="h-8 rounded-lg border border-red-200 px-2 text-xs text-red-500 hover:bg-red-50"
                                                     >
                                                         Eliminar
                                                     </button>
-                                                </div>
-                                            ),
-                                        )}
 
-                                        {/* Botón agregar */}
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                appendSpecification({
-                                                    name: '',
-                                                    value: '',
-                                                })
-                                            }
-                                            className="mx-auto mt-4 w-fit rounded-xl border-2 border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-500 hover:bg-slate-50"
-                                        >
-                                            + Agregar especificación
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                                                    <Controller
+                                                        name={`specifications.${index}.attribute_id`}
+                                                        control={control}
+                                                        defaultValue={attr.id}
+                                                        render={({ field }) => (
+                                                            <input
+                                                                type="hidden"
+                                                                {...field}
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            );
+                                        },
+                                    )}
+
+                                    {/* 🔹 BOTÓN PARA AGREGAR NUEVA ESPECIFICACIÓN SOLO SI HAY ATRIBUTOS */}
+                                    {specificationAttributes.length > 0 && (
+                                        <div className="mt-3">
+                                            <select
+                                                className="h-10 w-full rounded-xl border px-3 text-sm"
+                                                onChange={(e) => {
+                                                    const attrId = Number(
+                                                        e.target.value,
+                                                    );
+                                                    const attr =
+                                                        specificationAttributes.find(
+                                                            (a) =>
+                                                                a.id === attrId,
+                                                        );
+                                                    if (!attr) return;
+
+                                                    // Agrega al field array solo si aún no está
+                                                    const exists =
+                                                        specificationFields.some(
+                                                            (f) =>
+                                                                f.attribute_id ===
+                                                                attr.id,
+                                                        );
+                                                    if (!exists) {
+                                                        appendSpecification({
+                                                            attribute_id:
+                                                                attr.id,
+                                                            value:
+                                                                attr.type ===
+                                                                'boolean'
+                                                                    ? false
+                                                                    : '',
+                                                        });
+                                                    }
+
+                                                    e.currentTarget.value = '';
+                                                }}
+                                            >
+                                                <option value="">
+                                                    + Agregar especificación
+                                                </option>
+                                                {specificationAttributes.map(
+                                                    (attr) => (
+                                                        <option
+                                                            key={attr.id}
+                                                            value={attr.id}
+                                                            disabled={specificationFields.some(
+                                                                (f) =>
+                                                                    f.attribute_id ===
+                                                                    attr.id,
+                                                            )}
+                                                        >
+                                                            {attr.name}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </select>
+                                        </div>
+                                    )}
+                                </Card>
+                            )}
                         </div>
                     </div>
 

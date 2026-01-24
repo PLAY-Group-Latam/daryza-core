@@ -2,6 +2,7 @@
 
 namespace App\Models\Products;
 
+use App\Enums\AttributeType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -15,10 +16,13 @@ class Attribute extends Model
         'name',
         'type',
         'is_filterable',
+        'is_variant'
     ];
 
     protected $casts = [
         'is_filterable' => 'boolean',
+        'type' => AttributeType::class,
+
     ];
 
     /**
@@ -27,6 +31,6 @@ class Attribute extends Model
      */
     public function values()
     {
-        return $this->hasMany(AttributeValue::class);
+        return $this->hasMany(AttributesValue::class);
     }
 }
