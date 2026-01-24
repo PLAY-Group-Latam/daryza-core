@@ -2,6 +2,7 @@
 
 namespace App\Models\Products;
 
+use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,7 +68,7 @@ class ProductCategory extends Model
     // SEO Metadata (polimórfico)
     public function metadata()
     {
-        return $this->morphOne(ProductMetadata::class, 'metadatable');
+        return $this->morphOne(Metadata::class, 'metadatable');
     }
 
     // Media (imagen de categoría, banners, etc)

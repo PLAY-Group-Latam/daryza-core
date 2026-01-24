@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('blogs', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->ulid('id')->primary();
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
@@ -24,16 +24,15 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-
         Schema::create('blog_categories', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->ulid('id')->primary();
             $table->string('name');
             $table->timestamps();
         });
 
         Schema::create('blog_category_blog', function (Blueprint $table) {
-            $table->foreignUuid('blog_id')->constrained('blogs')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignUuid('category_id')->constrained('blog_categories')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignUlid('blog_id')->constrained('blogs')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignUlid('category_id')->constrained('blog_categories')->cascadeOnDelete()->cascadeOnUpdate();
             $table->primary(['blog_id', 'category_id']);
             $table->timestamps();
         });

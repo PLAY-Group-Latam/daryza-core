@@ -21,7 +21,7 @@ class BlogController extends Controller
 
     // Traer blogs con categorías y metadata
     $blogs = Blog::with('categories', 'metadata')
-      ->orderBy('publication_date', 'desc')
+      ->latest()
       ->paginate($perPage)
       ->withQueryString(); // mantiene parámetros de query en paginación
 
@@ -37,8 +37,7 @@ class BlogController extends Controller
    */
   public function create()
   {
-    $categories = BlogCategory::all();
-    return view('admin.blogs.create', compact('categories'));
+    return Inertia::render('blogs/Create');
   }
 
   /**

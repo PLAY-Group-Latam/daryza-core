@@ -71,6 +71,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Lista de blogs',
                 href: '/blogs/items',
             },
+            {
+                title: 'Lista de Categoría',
+                href: '/blogs/categorias',
+            },
         ],
     },
     {
