@@ -15,7 +15,18 @@ import customers from '@/routes/customers';
 import users from '@/routes/users';
 import { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { CreditCard, FileCode, Apple, LayoutGrid, SearchCheck, Store, Truck, User, Users } from 'lucide-react';
+import {
+    Apple,
+    CreditCard,
+    FileCode,
+    LayoutGrid,
+    Newspaper,
+    SearchCheck,
+    Store,
+    Truck,
+    User,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -39,38 +50,59 @@ const mainNavItems: NavItem[] = [
         icon: Apple,
         children: [
             {
+                title: 'Lista de productos',
+                href: '/productos/items',
+            },
+            {
                 title: 'Categorías',
                 href: '/productos/categorias',
+            },
+            {
+                title: 'Atributos',
+                href: '/productos/attributes',
             },
         ],
     },
     {
-     title: 'Configuración',
-     icon: Store,
-     children: [
-        {
-            title: 'Delivery Zonas',
-            href: '/delivery-zones',
-            icon: Truck,
-        },
-        {
-            title: 'Cuentas Bancarias',
-            href: '/cuentas-bancarias',
-            icon: CreditCard,
-        },
-        {
-            title: 'Seo',
-            href: '/seo',
-            icon: SearchCheck,
-        },
-        {
-            title: 'Scripts',
-            href: '/scripts',
-            icon: FileCode,
-        },
-     ],
+        title: 'Blogs',
+        icon: Newspaper,
+        children: [
+            {
+                title: 'Lista de blogs',
+                href: '/blogs/items',
+            },
+            {
+                title: 'Lista de Categoría',
+                href: '/blogs/categorias',
+            },
+        ],
     },
-
+    {
+        title: 'Configuración',
+        icon: Store,
+        children: [
+            {
+                title: 'Delivery Zonas',
+                href: '/delivery-zones',
+                icon: Truck,
+            },
+            {
+                title: 'Cuentas Bancarias',
+                href: '/cuentas-bancarias',
+                icon: CreditCard,
+            },
+            {
+                title: 'Seo',
+                href: '/seo',
+                icon: SearchCheck,
+            },
+            {
+                title: 'Scripts',
+                href: '/scripts',
+                icon: FileCode,
+            },
+        ],
+    },
 ];
 
 const footerNavItems: NavItem[] = [

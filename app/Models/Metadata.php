@@ -1,22 +1,20 @@
 <?php
 
-namespace App\Models\Products;
+namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
-class ProductMetadata extends Model
+class Metadata extends Model
 {
     use SoftDeletes, HasFactory, HasUlids;
 
-    protected $table = 'product_metadata';
-    protected $keyType = 'string'; // UUID
+    protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
-        'product_id',
         'meta_title',
         'meta_description',
         'meta_keywords',
@@ -30,10 +28,11 @@ class ProductMetadata extends Model
     ];
 
     /**
-     * Relación con el producto
+     * Relación polimórfica:
+     * Puede pertenecer a Product, Category, Page, etc.
      */
-    public function product()
+    public function metadatable()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->morphTo();
     }
 }

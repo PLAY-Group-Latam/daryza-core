@@ -5,17 +5,23 @@ namespace App\Models\Products;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class AttributeValue extends Model
+class AttributesValue extends Model
 {
     use HasFactory;
+
 
     protected $fillable = [
         'attribute_id',
         'value',
     ];
 
+    protected $casts = [
+        'attribute_id' => 'integer',
+    ];
+
     /**
      * Relación con el atributo padre
+     * Ej: Color
      */
     public function attribute()
     {
@@ -24,6 +30,7 @@ class AttributeValue extends Model
 
     /**
      * Variantes de producto que tienen este valor
+     * Ej: Variante Roja, Variante Azul
      */
     public function productVariants()
     {

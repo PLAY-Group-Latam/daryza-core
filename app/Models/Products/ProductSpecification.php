@@ -10,20 +10,16 @@ class ProductSpecification extends Model
     use HasFactory;
 
     protected $fillable = [
-        'product_id',
         'name',
         'value',
     ];
 
     /**
-     * Producto al que pertenece
+     * Relación polimórfica
+     * Puede pertenecer a Product, ProductVariant, etc.
      */
-    public function product()
+    public function specifiable()
     {
-        return $this->belongsTo(Product::class);
-    }
-
-     public function specifiable() {
         return $this->morphTo();
     }
 }

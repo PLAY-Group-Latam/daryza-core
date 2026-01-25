@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // Color, Aroma, Talla...
             $table->string('type')->default('select'); // select, number, boolean...
-            $table->boolean('is_filterable')->default(true); // para filtros en frontend
+            $table->boolean('is_filterable')->default(true);
+            $table->boolean('is_variant')->default(false);
             $table->timestamps();
         });
     }

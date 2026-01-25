@@ -4,7 +4,6 @@ namespace App\Models\Products;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUlid;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -13,7 +12,7 @@ class ProductVariant extends Model
     use SoftDeletes, HasUlids, HasFactory;
 
     protected $table = 'product_variants';
-    protected $keyType = 'string'; // ULID
+    protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
@@ -23,30 +22,63 @@ class ProductVariant extends Model
         'promo_price',
         'is_on_promo',
         'stock',
-       
-        'attributes',
     ];
 
     protected $casts = [
         'is_on_promo' => 'boolean',
-        'attributes' => 'array', // convierte JSON automáticamente a array
         'price' => 'decimal:2',
         'promo_price' => 'decimal:2',
-      
+        'stock' => 'integer',
     ];
 
     /**
-     * Relación con el producto padre
+     * Producto padre
      */
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
 
- 
+    /**
+     * Valores de atributos asociados a esta variante
+     * Ej: Rojo, XL, 500ml
+     */
+    public function attributeValues()
+    {
+        return $this->belongsToMany(
+            AttributeValue::class,
+            'product_variant_attribute_values',
+            'product_variant_id',
+            'attribute_value_id'
+        )->withTimestamps();
+    }
 
     /**
-     * Scope para filtrar variantes en promoción
+     * Pivot explícito si quieres trabajar directo con él
+     */
+    public function variantAttributes()
+    {
+        return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');
+    }
+
+    /**
+     * Media específica de la variante
+     */
+    public function media()
+    {
+        return $this->morphMany(ProductMedia::class, 'mediable');
+    }
+
+    /**
+     * Especificaciones técnicas
+     */
+    public function specifications()
+    {
+        return $this->morphMany(ProductSpecification::class, 'specifiable');
+    }
+
+    /**
+     * Scope: variantes en promoción
      */
     public function scopeOnPromo($query)
     {
@@ -54,7 +86,7 @@ class ProductVariant extends Model
     }
 
     /**
-     * Scope para filtrar variantes con stock disponible
+     * Scope: variantes con stock
      */
     public function scopeInStock($query)
     {
@@ -62,13 +94,12 @@ class ProductVariant extends Model
     }
 
     /**
-     * Obtener precio activo: promo si existe, sino price normal
+     * Precio activo (promo o normal)
      */
     public function getActivePriceAttribute()
     {
-        return $this->is_on_promo && $this->promo_price ? $this->promo_price : $this->price;
-    }
-        public function specifications() {
-        return $this->morphMany(ProductSpecification::class, 'specifiable');
+        return $this->is_on_promo && $this->promo_price
+            ? $this->promo_price
+            : $this->price;
     }
 }

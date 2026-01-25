@@ -1,34 +1,34 @@
-import TableList from '@/components/custom-ui/products/items-table/TableList';
+import TableList from '@/components/custom-ui/blogs/categories/TableList';
 import AppLayout from '@/layouts/app-layout';
-import { Product } from '@/types/products';
+import { BlogCategory } from '@/types/blogs';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { products } = usePage<{
-        products: Paginated<Product>;
+    const { paginatedCategories } = usePage<{
+        paginatedCategories: Paginated<BlogCategory>;
     }>().props;
 
     return (
         <AppLayout>
-            <Head title="Lista de Productos" />
+            <Head title="Lista de Blogs" />
 
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold lg:text-2xl">
-                        Lista de Productos
+                        Lista de Categorías
                     </h1>
 
                     <Link
-                        href="/productos/items/create"
+                        href="/blogs/categorias/create"
                         className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
                     >
                         <Plus className="mr-1 h-4 w-4" />
-                        Crear Producto
+                        Crear Categoría
                     </Link>
                 </div>
 
-                <TableList data={products} />
+                <TableList data={paginatedCategories} />
             </div>
         </AppLayout>
     );

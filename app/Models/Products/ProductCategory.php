@@ -2,6 +2,7 @@
 
 namespace App\Models\Products;
 
+use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -52,6 +53,28 @@ class ProductCategory extends Model
             ->active()
             ->orderBy('order')
             ->with('activeChildren');
+    }
+
+    /**
+     * Relaciones de negocio
+     */
+
+    // Productos dentro de esta categoría
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id');
+    }
+
+    // SEO Metadata (polimórfico)
+    public function metadata()
+    {
+        return $this->morphOne(Metadata::class, 'metadatable');
+    }
+
+    // Media (imagen de categoría, banners, etc)
+    public function media()
+    {
+        return $this->morphMany(ProductMedia::class, 'mediable');
     }
 
     public function scopeActive($query)

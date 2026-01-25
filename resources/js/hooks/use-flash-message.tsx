@@ -10,7 +10,7 @@ export const useFlashMessage = () => {
         };
         errors?: Record<string, string>;
     };
-        const shownRef = useRef<Set<string>>(new Set());
+    const shownRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         if (flash?.success && !shownRef.current.has(flash.success)) {
@@ -29,6 +29,4 @@ export const useFlashMessage = () => {
             toast.error(firstError);
         }
     }, [flash?.success, flash?.error, errors]);
-
 };
-

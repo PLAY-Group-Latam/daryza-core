@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_metadata', function (Blueprint $table) {
+        Schema::create('metadata', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
-              $table->morphs('metadatable'); // metadatable_id + metadatable_type
+            $table->morphs('metadatable'); // metadatable_id + metadatable_type
 
             $table->string('meta_title')->nullable();
             $table->string('meta_description', 500)->nullable();
@@ -33,7 +33,15 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
-            $table->unique('product_id'); 
+
+            $table->index(
+                ['metadatable_type', 'metadatable_id'],
+                'metadata_metadatable_idx'
+            );
+            $table->unique(
+                ['metadatable_id', 'metadatable_type'],
+                'metadata_metadatable_unique'
+            );
         });
     }
 
@@ -42,6 +50,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_metadata');
+        Schema::dropIfExists('metadata');
     }
 };
