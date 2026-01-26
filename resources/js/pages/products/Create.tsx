@@ -8,7 +8,7 @@ export default function Create() {
         categories: CategorySelect[];
         attributes: Attribute[];
     }>().props;
-    console.log(attributes);
+    console.log('atributossss:', attributes);
     return (
         <AppLayout>
             <Head title="Crear Producto" />

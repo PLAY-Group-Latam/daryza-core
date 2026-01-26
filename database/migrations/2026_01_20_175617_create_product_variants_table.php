@@ -23,6 +23,8 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->decimal('promo_price', 10, 2)->nullable();
             $table->boolean('is_on_promo')->default(false);
+            $table->boolean('is_active')->default(true);
+
             // Stock
             $table->integer('stock')->default(0);
 
