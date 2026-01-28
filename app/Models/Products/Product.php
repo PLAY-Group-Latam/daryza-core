@@ -57,12 +57,10 @@ class Product extends Model
         return $this->morphMany(ProductMedia::class, 'mediable');
     }
 
-    // Especificaciones técnicas
-    public function specifications()
+     public function specifications()
     {
-        return $this->morphMany(ProductSpecification::class, 'specifiable');
+        return $this->hasMany(ProductSpecificationValue::class);
     }
-
     /**
      * Scopes
      */

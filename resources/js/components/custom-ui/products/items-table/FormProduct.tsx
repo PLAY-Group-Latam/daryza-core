@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/incompatible-library */
 'use client';
 
@@ -5,48 +6,47 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import products from '@/routes/products';
 import { Attribute, CategorySelect } from '@/types/products';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { router } from '@inertiajs/react';
+import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../slug-text';
 import { CategoryTreeSelect } from '../categories/CategoryTreeSelect';
 import { SpecificationsAttributes } from './create-form/SpecificationsFormAttributes';
 import { VariantForm } from './create-form/VariantForm';
 
-const VariantAttributeSchema = z
-    .object({
-        attribute_id: z.number(),
-        attribute_value_id: z.number().nullable().optional(), // para select
-        value: z.union([z.string(), z.boolean(), z.number()]).optional(), // para text, boolean, number
-    })
-    .refine(
-        (data) =>
-            (data.attribute_value_id != null && data.value === undefined) ||
-            (data.attribute_value_id == null && data.value !== undefined),
-        {
-            message:
-                'Debe existir attribute_value_id o value, pero no ambos al mismo tiempo',
-        },
-    );
+const VariantAttributeSchema = z.object({
+    attribute_id: z.number(),
+    attribute_value_id: z.number().nullable().optional(), // para select
+    value: z.union([z.string(), z.boolean(), z.number()]).optional(), // para text, boolean, number
+});
 
 const VariantSchema = z.object({
     sku: z.string().min(1),
-    price: z.number(),
-    promo_price: z.number().optional(),
+    price: z.coerce.number(),
+    promo_price: z.coerce.number().optional(),
     is_on_promo: z.boolean(),
     promo_start_at: z.string().nullable().optional(),
     promo_end_at: z.string().nullable().optional(),
-    stock: z.number(),
+    stock: z.coerce.number(),
     attributes: z.array(VariantAttributeSchema),
     media: z.array(z.any()),
     is_active: z.boolean().default(true).optional(),
+});
+const SpecificationAttributeSchema = z.object({
+    attribute_id: z.number(),
+    value: z
+        .union([z.string(), z.boolean(), z.number()])
+        .refine((val) => val !== undefined && val !== null && val !== '', {
+            message: 'El valor de la especificación es obligatorio',
+        }),
 });
 
 const ProductSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio'),
     slug: z.string().min(1, 'El slug es obligatorio'),
-    code: z.string().optional(),
     category_id: z.string().nullable(),
     brief_description: z.string().optional(),
     description: z.string().optional(),
@@ -64,7 +64,7 @@ const ProductSchema = z.object({
     variant_attribute_ids: z.array(z.number()),
     variants: z.array(VariantSchema),
     media: z.array(z.any()),
-    specifications: z.array(z.any()),
+    specifications: z.array(SpecificationAttributeSchema),
 });
 
 export type ProductFormValues = z.infer<typeof ProductSchema>;
@@ -77,11 +77,10 @@ export default function FormProduct({
     attributes: Attribute[];
 }) {
     const methods = useForm<ProductFormValues>({
-        resolver: zodResolver(ProductSchema),
+        resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
         defaultValues: {
             name: '',
             slug: '',
-            code: '',
             category_id: null,
             brief_description: '',
             description: '',
@@ -96,7 +95,6 @@ export default function FormProduct({
                 nofollow: false,
             },
             variant_attribute_ids: [],
-
             variants: [],
             media: [],
             specifications: [],
@@ -108,9 +106,16 @@ export default function FormProduct({
     const { errors, isSubmitting } = formState;
 
     const onSubmit = (data: ProductFormValues) => {
-        console.log(data);
-    };
+        const action = products.items.store().url;
+        router.post(action, data, {
+            preserveScroll: true,
+        });
 
+        console.log(JSON.stringify(data, null, 2));
+    };
+    const onError = (errors: any) => {
+        console.log('ERRORES:', errors);
+    };
     const nameValue = watch('name');
 
     const variantAttributes = attributes.filter((attr) => attr.is_variant);
@@ -123,7 +128,7 @@ export default function FormProduct({
 
     return (
         <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="pb-10">
+            <form onSubmit={handleSubmit(onSubmit, onError)} className="pb-10">
                 {/* GRID PRINCIPAL */}
                 <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_0.5fr]">
                     <div className="space-y-10">
@@ -133,44 +138,24 @@ export default function FormProduct({
                                 ● Información General
                             </p>
                             <div className="space-y-6 rounded-3xl">
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <Controller
-                                        name="code"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <div className="flex flex-col gap-2">
-                                                <Label>
-                                                    Código de Producto
-                                                </Label>
-                                                <Input
-                                                    {...field}
-                                                    placeholder="PROD-001"
-                                                />
-                                            </div>
-                                        )}
-                                    />
-
-                                    <Controller
-                                        name="name"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <div className="flex flex-col gap-2">
-                                                <Label>
-                                                    Nombre de Producto *
-                                                </Label>
-                                                <Input
-                                                    {...field}
-                                                    placeholder="Premium Wireless Headphones"
-                                                />
-                                                {errors.name && (
-                                                    <p className="text-sm text-red-500">
-                                                        {errors.name.message}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-                                    />
-                                </div>
+                                <Controller
+                                    name="name"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <div className="flex flex-col gap-2">
+                                            <Label>Nombre de Producto *</Label>
+                                            <Input
+                                                {...field}
+                                                placeholder="Premium Wireless Headphones"
+                                            />
+                                            {errors.name && (
+                                                <p className="text-sm text-red-500">
+                                                    {errors.name.message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                />
 
                                 <Controller
                                     name="slug"

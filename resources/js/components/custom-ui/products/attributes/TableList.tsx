@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import attributes from '@/routes/products/attributes';
 import { Attribute } from '@/types/products';
+import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Trash } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
 import { DataTable } from '../../tables/DataTable';
 
@@ -127,21 +128,17 @@ const columns: ColumnDef<Attribute>[] = [
 
             return (
                 <div className="flex items-center gap-2">
-                    {/* <ModalFormAttributes
-            attribute={attribute}
-            trigger={
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                title="Editar atributo"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Edit />
-              </Button>
-            }
-          /> */}
-
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Editar atributo"
+                        asChild
+                    >
+                        <Link href={attributes.edit(attribute.id)}>
+                            <Edit />
+                        </Link>
+                    </Button>
                     <ConfirmDeleteAlert
                         resourceId={attribute.id}
                         resourceName={attribute.name}

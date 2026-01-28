@@ -1,16 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
+
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { Attribute } from '@/types/products';
-import { Controller } from 'react-hook-form';
+import { Control, Controller } from 'react-hook-form';
+import { ProductFormValues } from '../FormProduct';
 
 interface VariantAttributesProps {
-    control: any;
+    control: Control<ProductFormValues>;
     variantIndex: number;
     attributes: Attribute[];
 }
-// Función helper para detectar si un string es un color hexadecimal válido
+
+function isHexColor(value: string) {
+    return /^#([0-9A-F]{3}){1,2}$/i.test(value);
+}
 
 export function VariantAttributes({
     control,
@@ -18,9 +23,7 @@ export function VariantAttributes({
     attributes,
 }: VariantAttributesProps) {
     if (!attributes || attributes.length === 0) return null;
-    function isHexColor(value: string) {
-        return /^#([0-9A-F]{3}){1,2}$/i.test(value);
-    }
+
     return (
         <div className="flex flex-wrap gap-4">
             {attributes.map((attr, i) => (
@@ -32,16 +35,24 @@ export function VariantAttributes({
                         {attr.name}
                     </span>
 
+                    {/* BOOLEAN */}
                     {attr.type === 'boolean' && (
                         <Controller
-                            name={`variants.${variantIndex}.attributes.${i}.option_value`}
+                            name={
+                                `variants.${variantIndex}.attributes.${i}` as const
+                            }
                             control={control}
-                            defaultValue={false}
                             render={({ field }) => (
                                 <div className="flex items-center gap-2">
                                     <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        checked={Boolean(field.value?.value)}
+                                        onCheckedChange={(checked) =>
+                                            field.onChange({
+                                                ...field.value,
+                                                value: checked,
+                                                attribute_value_id: null, // 👈 limpia
+                                            })
+                                        }
                                     />
                                     <span className="text-sm text-slate-600">
                                         Activado
@@ -51,89 +62,83 @@ export function VariantAttributes({
                         />
                     )}
 
-                    {attr.type === 'number' && (
+                    {/* NUMBER / TEXT */}
+                    {(attr.type === 'number' || attr.type === 'text') && (
                         <Controller
-                            name={`variants.${variantIndex}.attributes.${i}.option_value`}
+                            name={
+                                `variants.${variantIndex}.attributes.${i}` as const
+                            }
                             control={control}
-                            defaultValue=""
                             render={({ field }) => (
                                 <Input
-                                    {...field}
-                                    type="number"
+                                    type={attr.type}
                                     placeholder={`Ingresa ${attr.name}`}
                                     className="w-full"
+                                    value={
+                                        typeof field.value?.value === 'number'
+                                            ? field.value.value
+                                            : String(field.value?.value ?? '')
+                                    }
+                                    onChange={(e) =>
+                                        field.onChange({
+                                            ...field.value,
+                                            value:
+                                                attr.type === 'number'
+                                                    ? Number(e.target.value)
+                                                    : e.target.value,
+                                            attribute_value_id: null,
+                                        })
+                                    }
                                 />
                             )}
                         />
                     )}
 
-                    {attr.type === 'text' && (
-                        <Controller
-                            name={`variants.${variantIndex}.attributes.${i}.option_value`}
-                            control={control}
-                            defaultValue=""
-                            render={({ field }) => (
-                                <Input
-                                    {...field}
-                                    type="text"
-                                    placeholder={`Ingresa ${attr.name}`}
-                                    className="w-full"
-                                />
-                            )}
-                        />
-                    )}
+                    {/* SELECT */}
                     {attr.type === 'select' && (
                         <Controller
-                            name={`variants.${variantIndex}.attributes.${i}.option_id`}
+                            name={
+                                `variants.${variantIndex}.attributes.${i}` as const
+                            }
                             control={control}
-                            defaultValue=""
                             render={({ field }) => (
                                 <div className="flex flex-wrap gap-2">
                                     {attr.values.map((opt) => {
                                         const isSelected =
-                                            field.value === opt.id;
+                                            field.value?.attribute_value_id ===
+                                            opt.id;
                                         const isColor = isHexColor(opt.value);
 
-                                        if (isColor) {
-                                            // Botón como círculo de color
-                                            return (
-                                                <button
-                                                    key={opt.id}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        field.onChange(opt.id)
-                                                    }
-                                                    className={cn(
-                                                        'h-8 w-8 rounded-full border transition',
-                                                        isSelected
-                                                            ? 'border-primary ring-2 ring-primary'
-                                                            : 'border-slate-300',
-                                                    )}
-                                                    style={{
-                                                        backgroundColor:
-                                                            opt.value,
-                                                    }}
-                                                    aria-label={opt.value}
-                                                />
-                                            );
-                                        }
-
-                                        // Botón de texto normal
                                         return (
                                             <button
                                                 key={opt.id}
                                                 type="button"
                                                 onClick={() =>
-                                                    field.onChange(opt.id)
+                                                    field.onChange({
+                                                        ...field.value,
+                                                        attribute_value_id:
+                                                            opt.id,
+                                                        value: undefined, // ✅ correcto
+                                                    })
                                                 }
                                                 className={cn(
-                                                    'flex items-center justify-center rounded-full border px-3 py-1 text-sm transition',
-                                                    !isSelected
-                                                        ? 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                        : 'border-primary bg-primary text-white',
+                                                    isColor
+                                                        ? 'h-8 w-8 rounded-full border transition'
+                                                        : 'flex items-center justify-center rounded-full border px-3 py-1 text-sm transition',
+                                                    isSelected
+                                                        ? 'border-primary bg-primary text-white ring-2 ring-primary'
+                                                        : 'border-slate-300 bg-slate-100 text-slate-700',
                                                 )}
+                                                style={
+                                                    isColor
+                                                        ? {
+                                                              backgroundColor:
+                                                                  opt.value,
+                                                          }
+                                                        : undefined
+                                                }
                                             >
-                                                {opt.value}
+                                                {!isColor && opt.value}
                                             </button>
                                         );
                                     })}
@@ -144,7 +149,9 @@ export function VariantAttributes({
 
                     {/* Hidden attribute_id */}
                     <Controller
-                        name={`variants.${variantIndex}.attributes.${i}.attribute_id`}
+                        name={
+                            `variants.${variantIndex}.attributes.${i}.attribute_id` as const
+                        }
                         control={control}
                         defaultValue={attr.id}
                         render={({ field }) => (

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Toggle } from '@/components/ui/toggle';
@@ -6,6 +5,7 @@ import { Attribute } from '@/types/products';
 import { Link } from '@inertiajs/react';
 import { Boxes, PackagePlus, Settings } from 'lucide-react';
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
+import { ProductFormValues } from '../FormProduct';
 import { VariantRow } from './VariantRow';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function VariantForm({ variantAttributes }: Props) {
-    const { control, watch } = useFormContext();
+    const { control, watch } = useFormContext<ProductFormValues>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: 'variants',
@@ -24,23 +24,45 @@ export function VariantForm({ variantAttributes }: Props) {
         selectedVariantAttributeIds.includes(attr.id),
     );
 
-    const createEmptyVariant = () => ({
+    const createEmptyVariant = (): ProductFormValues['variants'][number] => ({
         sku: '',
         price: 0,
-        promo_price: 0, // opcional, pero recomendable
+        promo_price: undefined,
         is_on_promo: false,
-        promo_start_at: '', // string vacío para datetime-local
+        promo_start_at: '',
         promo_end_at: '',
         stock: 0,
         is_active: true,
-        attributes: [],
+        attributes: activeVariantAttributes.map((attr) => {
+            if (attr.type === 'select') {
+                return {
+                    attribute_id: attr.id,
+                    attribute_value_id: null,
+                    value: undefined, // 👈 en vez de null
+                };
+            }
+
+            return {
+                attribute_id: attr.id,
+                attribute_value_id: null,
+                value:
+                    attr.type === 'boolean'
+                        ? false
+                        : attr.type === 'number'
+                          ? 0
+                          : '',
+            };
+        }),
         media: [],
     });
 
-    const handleToggleAttribute = (field: any, attrId: number) => {
+    const handleToggleAttribute = (
+        field: { value: number[]; onChange: (ids: number[]) => void },
+        attrId: number,
+    ) => {
         const current = field.value ?? [];
         const updated = current.includes(attrId)
-            ? current.filter((id: number) => id !== attrId)
+            ? current.filter((id) => id !== attrId)
             : [...current, attrId];
         field.onChange(updated);
     };

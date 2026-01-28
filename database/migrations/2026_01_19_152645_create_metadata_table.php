@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('metadata', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
-            $table->morphs('metadatable'); // metadatable_id + metadatable_type
+            $table->string('metadatable_id');
+            $table->string('metadatable_type');
 
             $table->string('meta_title')->nullable();
             $table->string('meta_description', 500)->nullable();

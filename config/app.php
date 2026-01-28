@@ -53,6 +53,18 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    /*
+    
+|--------------------------------------------------------------------------
+| Frontend URL
+|--------------------------------------------------------------------------
+|
+| This is the public URL where the frontend (web del cliente) lives.
+| It is used for canonical URLs, OG tags, redirects, etc.
+|
+*/
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
     /*
     |--------------------------------------------------------------------------

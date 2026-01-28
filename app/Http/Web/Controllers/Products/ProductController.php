@@ -2,17 +2,28 @@
 
 namespace App\Http\Web\Controllers\Products;
 
+use App\Enums\OgType;
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Requests\Products\StoreProductRequest;
+use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\Product;
 use App\Models\Products\ProductCategory;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+
+  protected ProductService $productService;
+  /**
+   * Inyectamos el servicio en el constructor
+   */
+  public function __construct(ProductService $productService)
+  {
+    $this->productService = $productService;
+  }
+
   /**
    * Listar productos
    */
@@ -46,19 +57,28 @@ class ProductController extends Controller
       ->with('activeChildren')
       ->get(['id', 'name', 'parent_id', 'order']);
 
-    // Atributos para el producto
-    $attributes = Attribute::with(['values']) // traemos los valores si son select
+    $attributes = Attribute::with(['values']) 
       ->get();
 
 
     return Inertia::render('products/Create', [
       'categories' => $categoriesForSelect,
-      'attributes' => $attributes, // 👈 los pasamos al frontend
+      'attributes' => $attributes, 
 
     ]);
   }
 
 
+  public function store(StoreProductRequest $request)
+  {
+        Log::info('Creando producto con los datos:', $request->validated());
+
+    $this->productService->create($request->validated());
+
+    return redirect()
+      ->route('products.items.index')
+      ->with('success', 'Producto creado correctamente');
+  }
 
 
   /**

@@ -22,13 +22,20 @@ class ProductVariant extends Model
         'promo_price',
         'is_on_promo',
         'stock',
+        'promo_start_at', // nuevo
+        'promo_end_at',   // nuevo
+            'is_main', // ← agregar aquí
+
     ];
 
     protected $casts = [
         'is_on_promo' => 'boolean',
+            'is_main' => 'boolean', // ← agregar aquí
         'price' => 'decimal:2',
         'promo_price' => 'decimal:2',
         'stock' => 'integer',
+        'promo_start_at' => 'datetime', // nuevo
+        'promo_end_at' => 'datetime',   // nuevo
     ];
 
     /**
@@ -46,12 +53,13 @@ class ProductVariant extends Model
     public function attributeValues()
     {
         return $this->belongsToMany(
-            AttributeValue::class,
+            AttributesValue::class,
             'product_variant_attribute_values',
             'product_variant_id',
             'attribute_value_id'
         )->withTimestamps();
     }
+
 
     /**
      * Pivot explícito si quieres trabajar directo con él
@@ -72,10 +80,7 @@ class ProductVariant extends Model
     /**
      * Especificaciones técnicas
      */
-    public function specifications()
-    {
-        return $this->morphMany(ProductSpecification::class, 'specifiable');
-    }
+
 
     /**
      * Scope: variantes en promoción

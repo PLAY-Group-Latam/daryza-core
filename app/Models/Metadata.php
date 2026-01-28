@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OgType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,9 @@ class Metadata extends Model
         'canonical_url',
         'noindex',
         'nofollow',
+    ];
+    protected $casts = [
+        'og_type' => OgType::class,
     ];
 
     /**

@@ -101,6 +101,11 @@ export interface AttributeValue {
     created_at: string;
     updated_at: string;
 }
+
+export interface AttributeWithValues extends Attribute {
+    values: AttributeValue[]; // ya vienen cargados
+}
+
 // Attribute.ts
 
 export type AttributeType = 'select' | 'number' | 'boolean' | 'text';

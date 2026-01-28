@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_media', function (Blueprint $table) {
-            $table->id();
-            $table->morphs('mediable'); // genera mediable_id + mediable_type
+            $table->ulid('id')->primary();
+            $table->string('mediable_id'); // para ULID
+            $table->string('mediable_type'); // nombre del modelo 
             $table->string('type'); // 'image', 'technical_sheet', 'video', etc
             $table->string('file_path'); // URL o path en storage
             $table->boolean('is_main')->default(false); // solo aplica a imágenes

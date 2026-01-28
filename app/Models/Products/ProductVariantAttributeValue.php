@@ -2,12 +2,13 @@
 
 namespace App\Models\Products;
 
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ProductVariantAttributeValue extends Model
 {
-  use HasFactory;
+  use HasFactory, HasUlids;
 
   protected $table = 'product_variant_attribute_values';
 
@@ -29,7 +30,7 @@ class ProductVariantAttributeValue extends Model
    */
   public function attributeValue()
   {
-    return $this->belongsTo(AttributeValue::class, 'attribute_value_id');
+    return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
   }
 
   /**

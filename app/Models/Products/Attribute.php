@@ -3,12 +3,13 @@
 namespace App\Models\Products;
 
 use App\Enums\AttributeType;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Attribute extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     protected $table = 'attributes'; // opcional, Laravel lo infiere bien
 
