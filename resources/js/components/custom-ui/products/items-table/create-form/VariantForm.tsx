@@ -1,11 +1,11 @@
 'use client';
 
 import { Toggle } from '@/components/ui/toggle';
-import { Attribute } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { Link } from '@inertiajs/react';
 import { Boxes, PackagePlus, Settings } from 'lucide-react';
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
-import { ProductFormValues } from '../FormProduct';
+import { ProductFormValues } from './FormProduct';
 import { VariantRow } from './VariantRow';
 
 interface Props {
@@ -54,16 +54,18 @@ export function VariantForm({ variantAttributes }: Props) {
             };
         }),
         media: [],
+        is_main: false,
     });
 
     const handleToggleAttribute = (
-        field: { value: number[]; onChange: (ids: number[]) => void },
-        attrId: number,
+        field: { value: string[]; onChange: (ids: string[]) => void },
+        attrId: string,
     ) => {
         const current = field.value ?? [];
         const updated = current.includes(attrId)
             ? current.filter((id) => id !== attrId)
             : [...current, attrId];
+
         field.onChange(updated);
     };
 

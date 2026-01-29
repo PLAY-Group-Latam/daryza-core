@@ -3,7 +3,7 @@
 // import { Button } from '@/components/ui/button';
 import TableList from '@/components/custom-ui/products/attributes/TableList';
 import AppLayout from '@/layouts/app-layout';
-import { PaginatedAttributes } from '@/types/products';
+import { PaginatedAttributes } from '@/types/products/attributes';
 // import { CategorySelect, PaginatedProductCategories } from '@/types/products';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function Index() {
         paginatedAttributes: PaginatedAttributes;
     }>().props;
 
-    // console.log(categoriesForSelect);
+    console.log(paginatedAttributes);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />

@@ -3,9 +3,9 @@
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { Attribute } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { Control, Controller } from 'react-hook-form';
-import { ProductFormValues } from '../FormProduct';
+import { ProductFormValues } from './FormProduct';
 
 interface VariantAttributesProps {
     control: Control<ProductFormValues>;

@@ -11,15 +11,14 @@ class AttributesValue extends Model
     use HasFactory, HasUlids;
 
     protected $table = 'attributes_values'; // ✅ nombre real en DB
-
+    protected $keyType = 'string';
+    public $incrementing = false;
     protected $fillable = [
         'attribute_id',
         'value',
     ];
 
-    protected $casts = [
-        'attribute_id' => 'integer',
-    ];
+
 
     /**
      * Relación con el atributo padre
@@ -27,8 +26,9 @@ class AttributesValue extends Model
      */
     public function attribute()
     {
-        return $this->belongsTo(Attribute::class);
+        return $this->belongsTo(Attribute::class, 'attribute_id');
     }
+
 
     /**
      * Variantes de producto que tienen este valor

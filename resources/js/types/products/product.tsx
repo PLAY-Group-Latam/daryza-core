@@ -1,0 +1,54 @@
+import { Metadata } from '../metadata';
+
+export interface ProductSpecification {
+    attribute_id: string;
+    attribute_name: string;
+    value: string;
+}
+
+export interface ProductAttribute {
+    attribute_id: string;
+    attribute_name: string;
+    attribute_value_id: string;
+    attribute_value: string;
+}
+export interface Media {
+    id?: number;
+    type: 'image' | 'video' | 'technical_sheet';
+    file_path: string;
+    is_main?: boolean;
+    order?: number;
+}
+export interface ProductVariant {
+    id: string;
+    sku: string;
+    price: string;
+    promo_price: string | null;
+    is_on_promo: boolean;
+    stock: number;
+    attributes: ProductAttribute[];
+    media: Media[];
+    is_main: boolean;
+}
+
+export interface ProductCategory {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+export interface Product {
+    id: string;
+    name: string;
+    slug: string;
+    category: ProductCategory | null;
+    brief_description: string;
+    description: string;
+    is_active: boolean;
+    variants: ProductVariant[];
+    technicalSheets: Media[];
+    specifications: ProductSpecification[];
+    metadata: Metadata;
+    created_at: string;
+    updated_at: string;
+}

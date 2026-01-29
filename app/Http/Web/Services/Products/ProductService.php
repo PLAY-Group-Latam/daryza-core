@@ -50,12 +50,13 @@ class ProductService
       'nofollow' => $metadata['nofollow'] ?? false,
     ]);
   }
-protected function createVariants(Product $product, array $variants): void
-{
+  protected function createVariants(Product $product, array $variants): void
+  {
     foreach ($variants as &$variantData) {
-        unset($variantData['attributes']); // separo los atributos
-        $variantData['is_active'] = $variantData['is_active'] ?? true;
-        $variantData['is_on_promo'] = $variantData['is_on_promo'] ?? false;
+      unset($variantData['attributes']); // separo los atributos
+      $variantData['is_active'] = $variantData['is_active'] ?? true;
+      $variantData['is_on_promo'] = $variantData['is_on_promo'] ?? false;
+      $variantData['is_main'] = $variantData['is_main'];
     }
 
     // Crear todas las variantes de una vez
@@ -63,30 +64,29 @@ protected function createVariants(Product $product, array $variants): void
 
     // Luego asociar atributos
     foreach ($createdVariants as $index => $variant) {
-        $this->attachVariantAttributes($variant, $variants[$index]['attributes'] ?? []);
+      $this->attachVariantAttributes($variant, $variants[$index]['attributes'] ?? []);
     }
-}
+  }
 
 
- protected function attachVariantAttributes(ProductVariant $variant, array $attributes): void
-{
+  protected function attachVariantAttributes(ProductVariant $variant, array $attributes): void
+  {
     foreach ($attributes as $attr) {
-        $variant->variantAttributes()->create([
-            'attribute_value_id' => $attr['attribute_value_id'] ?? null,
-        ]);
+      $variant->variantAttributes()->create([
+        'attribute_value_id' => $attr['attribute_value_id'] ?? null,
+      ]);
     }
-}
+  }
 
 
- protected function createSpecifications(Product $product, array $specs): void
-{
+  protected function createSpecifications(Product $product, array $specs): void
+  {
     foreach ($specs as $spec) {
-        $product->specifications()->create([
-            'attribute_id' => $spec['attribute_id'],
-            'attribute_value_id' => $spec['attribute_value_id'] ?? null,
-            'value' => $spec['value'] ?? null,
-        ]);
+      $product->specifications()->create([
+        'attribute_id' => $spec['attribute_id'],
+        'attribute_value_id' => $spec['attribute_value_id'] ?? null,
+        'value' => $spec['value'] ?? null,
+      ]);
     }
-}
-
+  }
 }

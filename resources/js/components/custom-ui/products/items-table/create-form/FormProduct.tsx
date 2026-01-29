@@ -2,25 +2,26 @@
 /* eslint-disable react-hooks/incompatible-library */
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import products from '@/routes/products';
-import { Attribute, CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { SlugInput } from '../../slug-text';
-import { CategoryTreeSelect } from '../categories/CategoryTreeSelect';
-import { SpecificationsAttributes } from './create-form/SpecificationsFormAttributes';
-import { VariantForm } from './create-form/VariantForm';
+import { SlugInput } from '../../../slug-text';
+import { CategoryTreeSelect } from '../../categories/CategoryTreeSelect';
+import { SpecificationsAttributes } from './SpecificationsFormAttributes';
+import { TechnicalSheetsForm } from './TechnicalSheetsForm';
+import { VariantForm } from './VariantForm';
 
 const VariantAttributeSchema = z.object({
-    attribute_id: z.number(),
-    attribute_value_id: z.number().nullable().optional(), // para select
-    value: z.union([z.string(), z.boolean(), z.number()]).optional(), // para text, boolean, number
+    attribute_id: z.string(), // ULID
+    attribute_value_id: z.string().nullable().optional(),
+    value: z.union([z.string(), z.boolean(), z.number()]).optional(),
 });
 
 const VariantSchema = z.object({
@@ -34,16 +35,17 @@ const VariantSchema = z.object({
     attributes: z.array(VariantAttributeSchema),
     media: z.array(z.any()),
     is_active: z.boolean().default(true).optional(),
-});
-const SpecificationAttributeSchema = z.object({
-    attribute_id: z.number(),
-    value: z
-        .union([z.string(), z.boolean(), z.number()])
-        .refine((val) => val !== undefined && val !== null && val !== '', {
-            message: 'El valor de la especificación es obligatorio',
-        }),
+    is_main: z.boolean().default(false), // ✅ nuevo campo
 });
 
+const SpecificationAttributeSchema = z.object({
+    attribute_id: z.string(), // ULID
+    value: z.union([z.string(), z.boolean(), z.number()]),
+});
+const TechnicalSheetSchema = z.object({
+    file: z.instanceof(File).optional(), // archivo cargado
+    file_path: z.string().optional(), // archivo existente en backend
+});
 const ProductSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio'),
     slug: z.string().min(1, 'El slug es obligatorio'),
@@ -52,6 +54,11 @@ const ProductSchema = z.object({
     description: z.string().optional(),
     is_active: z.boolean(),
 
+    variant_attribute_ids: z.array(z.string()), // ULID
+    variants: z.array(VariantSchema),
+    technicalSheets: z.array(TechnicalSheetSchema), // ✅ fichas técnicas del producto
+    specifications: z.array(SpecificationAttributeSchema),
+    specification_selector: z.string().optional(),
     metadata: z.object({
         meta_title: z.string().optional(),
         meta_description: z.string().optional(),
@@ -61,10 +68,6 @@ const ProductSchema = z.object({
         noindex: z.boolean(),
         nofollow: z.boolean(),
     }),
-    variant_attribute_ids: z.array(z.number()),
-    variants: z.array(VariantSchema),
-    media: z.array(z.any()),
-    specifications: z.array(SpecificationAttributeSchema),
 });
 
 export type ProductFormValues = z.infer<typeof ProductSchema>;
@@ -96,8 +99,9 @@ export default function FormProduct({
             },
             variant_attribute_ids: [],
             variants: [],
-            media: [],
+            technicalSheets: [],
             specifications: [],
+            specification_selector: '',
         },
     });
 
@@ -209,14 +213,13 @@ export default function FormProduct({
                             availableAttributes={specificationAttributes}
                         />
                         {/* PLACEHOLDERS PARA MEDIA / VARIANTS / SPECS */}
-                        <div className="space-y-3">
-                            <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
-                                ● Media & Gallery
-                            </p>
-                            <Card className="rounded-3xl border-2 border-dashed p-16 text-center text-slate-400">
-                                ADD ASSETS
-                            </Card>
-                        </div>
+                        <Controller
+                            name="technicalSheets"
+                            control={control}
+                            render={({ field }) => (
+                                <TechnicalSheetsForm field={field} />
+                            )}
+                        />
                     </div>
 
                     {/* ================= RIGHT ================= */}

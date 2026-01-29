@@ -27,24 +27,92 @@ class ProductController extends Controller
   /**
    * Listar productos
    */
+  // public function index()
+  // {
+  //   $perPage = request()->input('per_page', 10);
+
+  //   $products = Product::with([
+  //     'category:id,name',
+  //     'variants',
+  //     'media' => function ($q) {
+  //       $q->images()->main();
+  //     }
+  //   ])
+  //     ->orderByDesc('created_at')
+  //     ->paginate($perPage);
+
+  //   return Inertia::render('products/Index', [
+  //     'products' => $products,
+  //   ]);
+  // }
+
   public function index()
   {
     $perPage = request()->input('per_page', 10);
 
     $products = Product::with([
-      'category:id,name',
-      'variants',
-      'media' => function ($q) {
-        $q->images()->main();
-      }
+      'category:id,name,slug',
+      'variants' => function ($q) {
+        $q->with([
+          'attributeValues.attribute',
+          'media',
+        ]);
+      },
+      'technicalSheets',
+      'specifications.attribute',
+      'metadata',
     ])
       ->orderByDesc('created_at')
       ->paginate($perPage);
+
+    // Transformación opcional para frontend
+    // $products->getCollection()->transform(function ($product) {
+    //   return [
+    //     'id' => $product->id,
+    //     'name' => $product->name,
+    //     'slug' => $product->slug,
+    //     'category' => $product->category,
+    //     'brief_description' => $product->brief_description,
+    //     'description' => $product->description,
+    //     'is_active' => $product->is_active,
+    //     'variants' => $product->variants->map(function ($variant) {
+    //       return [
+    //         'id' => $variant->id,
+    //         'sku' => $variant->sku,
+    //         'price' => $variant->price,
+    //         'promo_price' => $variant->promo_price,
+    //         'is_on_promo' => $variant->is_on_promo,
+    //         'stock' => $variant->stock,
+    //         'attributes' => $variant->attributeValues->map(function ($attr) {
+    //           return [
+    //             'attribute_id' => $attr->attribute->id,
+    //             'attribute_name' => $attr->attribute->name,
+    //             'attribute_value_id' => $attr->id,
+    //             'attribute_value' => $attr->value,
+    //           ];
+    //         }),
+    //         'media' => $variant->media,
+    //       ];
+    //     }),
+    //     'technicalSheets' => $product->technicalSheets,
+    //     'specifications' => $product->specifications->map(function ($spec) {
+    //       return [
+    //         'attribute_id' => $spec->attribute_id,
+    //         'attribute_name' => $spec->attribute?->name,
+    //         'value' => $spec->value,
+    //       ];
+    //     }),
+    //     'metadata' => $product->metadata,
+    //     'created_at' => $product->created_at, // fecha de creación
+    //     'updated_at' => $product->updated_at, // fecha de actualización
+    //   ];
+    // });
 
     return Inertia::render('products/Index', [
       'products' => $products,
     ]);
   }
+
 
   /**
    * Mostrar formulario de creación
@@ -57,13 +125,13 @@ class ProductController extends Controller
       ->with('activeChildren')
       ->get(['id', 'name', 'parent_id', 'order']);
 
-    $attributes = Attribute::with(['values']) 
+    $attributes = Attribute::with(['values'])
       ->get();
 
 
     return Inertia::render('products/Create', [
       'categories' => $categoriesForSelect,
-      'attributes' => $attributes, 
+      'attributes' => $attributes,
 
     ]);
   }
@@ -71,7 +139,7 @@ class ProductController extends Controller
 
   public function store(StoreProductRequest $request)
   {
-        Log::info('Creando producto con los datos:', $request->validated());
+    Log::info('Creando producto con los datos:', $request->validated());
 
     $this->productService->create($request->validated());
 

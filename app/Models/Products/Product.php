@@ -51,13 +51,16 @@ class Product extends Model
         return $this->morphOne(Metadata::class, 'metadatable');
     }
 
-    // Media (imágenes, videos, fichas técnicas, etc)
-    public function media()
+
+
+    public function technicalSheets()
     {
-        return $this->morphMany(ProductMedia::class, 'mediable');
+        return $this->morphMany(ProductMedia::class, 'mediable')
+            ->where('type', 'technical_sheet');
     }
 
-     public function specifications()
+
+    public function specifications()
     {
         return $this->hasMany(ProductSpecificationValue::class);
     }

@@ -6,10 +6,11 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Attribute } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { ProductFormValues } from '../FormProduct';
+import { ProductFormValues } from './FormProduct';
 import { VariantAttributes } from './VariantAttributes';
+import { VariantMainSwitch } from './VariantMainSwitch';
 
 interface Props {
     index: number;
@@ -151,6 +152,9 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                             </div>
                         )}
                     />
+
+                    {/* Otros inputs */}
+                    <VariantMainSwitch index={index} />
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 import TableList from '@/components/custom-ui/products/items-table/TableList';
 import AppLayout from '@/layouts/app-layout';
-import { Product } from '@/types/products';
+import { Product } from '@/types/products/product';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
@@ -9,6 +9,7 @@ export default function Index() {
         products: Paginated<Product>;
     }>().props;
 
+    console.log('productos:', products);
     return (
         <AppLayout>
             <Head title="Lista de Productos" />

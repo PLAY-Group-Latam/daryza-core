@@ -35,6 +35,7 @@ class StoreProductRequest extends FormRequest
             'variants.*.is_on_promo' => ['boolean'],
             'variants.*.promo_start_at' => ['nullable', 'string'],
             'variants.*.promo_end_at' => ['nullable', 'string'],
+            'variants.*.is_main' => ['boolean'],
 
             'variants.*.attributes' => ['array'],
             'variants.*.attributes.*.attribute_id' => ['required', 'exists:attributes,id'],
@@ -62,6 +63,8 @@ class StoreProductRequest extends FormRequest
             'variants.*.sku.unique' => 'El SKU ya existe, ingresa uno diferente.',
             'variants.*.price.required' => 'El precio es obligatorio para cada variante.',
             'variants.*.stock.required' => 'El stock es obligatorio para cada variante.',
+
+            'variants.*.is_main.boolean' => 'El valor de "Principal" debe ser verdadero o falso.',
 
             'variants.*.attributes.*.attribute_id.required' => 'Debes seleccionar un atributo para la variante.',
             'variants.*.attributes.*.attribute_value_id.exists' => 'El valor seleccionado del atributo no existe.',

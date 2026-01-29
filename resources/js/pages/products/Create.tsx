@@ -1,6 +1,7 @@
-import FormProduct from '@/components/custom-ui/products/items-table/FormProduct';
+import FormProduct from '@/components/custom-ui/products/items-table/create-form/FormProduct';
 import AppLayout from '@/layouts/app-layout';
-import { Attribute, CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Create() {

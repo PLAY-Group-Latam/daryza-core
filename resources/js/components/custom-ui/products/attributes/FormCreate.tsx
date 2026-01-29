@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import attributes from '@/routes/products/attributes';
-import { AttributeTypeOption, AttributeWithValues } from '@/types/products';
+import { Attribute, AttributeTypeOption } from '@/types/products/attributes';
 import { useForm } from '@inertiajs/react';
 import { Info, Trash } from 'lucide-react';
 import { useState } from 'react';
@@ -29,7 +29,7 @@ interface FormData {
 
 interface Props {
     types: AttributeTypeOption[];
-    attribute?: AttributeWithValues; // 👈 atributo existente
+    attribute?: Attribute;
 }
 
 export default function FormCreate({ types, attribute }: Props) {

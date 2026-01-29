@@ -12,7 +12,8 @@ class Attribute extends Model
     use HasFactory, HasUlids;
 
     protected $table = 'attributes'; // opcional, Laravel lo infiere bien
-
+    protected $keyType = 'string';
+    public $incrementing = false;
     protected $fillable = [
         'name',
         'type',
@@ -32,6 +33,6 @@ class Attribute extends Model
      */
     public function values()
     {
-        return $this->hasMany(AttributesValue::class);
+        return $this->hasMany(AttributesValue::class, 'attribute_id');
     }
 }

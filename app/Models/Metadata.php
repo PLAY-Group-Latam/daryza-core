@@ -30,7 +30,11 @@ class Metadata extends Model
     protected $casts = [
         'og_type' => OgType::class,
     ];
-
+    protected $hidden = [
+        'metadatable_id',
+        'metadatable_type',
+        'deleted_at',
+    ];
     /**
      * Relación polimórfica:
      * Puede pertenecer a Product, Category, Page, etc.

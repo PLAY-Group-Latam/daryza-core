@@ -1,12 +1,12 @@
 import FormCreate from '@/components/custom-ui/products/attributes/FormCreate';
 import AppLayout from '@/layouts/app-layout';
-import { AttributeTypeOption, AttributeWithValues } from '@/types/products';
+import { Attribute, AttributeTypeOption } from '@/types/products/attributes';
 import { Head, usePage } from '@inertiajs/react';
 
 export default function Edit() {
     const { types, attribute } = usePage<{
         types: AttributeTypeOption[];
-        attribute: AttributeWithValues; // el atributo que viene del backend con sus valores
+        attribute: Attribute; // el atributo que viene del backend con sus valores
     }>().props;
 
     return (
