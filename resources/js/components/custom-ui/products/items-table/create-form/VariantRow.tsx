@@ -60,20 +60,7 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                     render={({ field }) => (
                         <UploadMultiple
                             value={field.value}
-                            onFilesChange={(files) => {
-                                const mapped = files.map((f, i) =>
-                                    f instanceof File
-                                        ? {
-                                              type: 'image',
-                                              file_path: '',
-                                              is_main: i === 0,
-                                              order: i,
-                                              file: f,
-                                          }
-                                        : f,
-                                );
-                                field.onChange(mapped);
-                            }}
+                            onFilesChange={field.onChange} // directo, solo File
                             previewClassName="h-24 w-24"
                         />
                     )}

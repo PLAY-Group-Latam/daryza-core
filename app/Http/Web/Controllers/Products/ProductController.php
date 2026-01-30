@@ -24,27 +24,6 @@ class ProductController extends Controller
     $this->productService = $productService;
   }
 
-  /**
-   * Listar productos
-   */
-  // public function index()
-  // {
-  //   $perPage = request()->input('per_page', 10);
-
-  //   $products = Product::with([
-  //     'category:id,name',
-  //     'variants',
-  //     'media' => function ($q) {
-  //       $q->images()->main();
-  //     }
-  //   ])
-  //     ->orderByDesc('created_at')
-  //     ->paginate($perPage);
-
-  //   return Inertia::render('products/Index', [
-  //     'products' => $products,
-  //   ]);
-  // }
 
   public function index()
   {
@@ -62,7 +41,7 @@ class ProductController extends Controller
       'specifications.attribute',
       'metadata',
     ])
-      ->orderByDesc('created_at')
+      ->latest()
       ->paginate($perPage);
 
     // Transformación opcional para frontend
@@ -139,7 +118,7 @@ class ProductController extends Controller
 
   public function store(StoreProductRequest $request)
   {
-    Log::info('Creando producto con los datos:', $request->validated());
+    // Log::info('Creando producto con los datos:', $request->validated());
 
     $this->productService->create($request->validated());
 

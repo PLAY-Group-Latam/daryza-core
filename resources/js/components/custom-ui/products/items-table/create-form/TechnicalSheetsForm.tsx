@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { FileText, Upload } from 'lucide-react';
 import { ControllerRenderProps } from 'react-hook-form';
 import { ProductFormValues } from './FormProduct';
@@ -30,7 +29,7 @@ export function TechnicalSheetsForm({ field }: TechnicalSheetsFormProps) {
                 ● Technical Sheets
             </p>
 
-            <Card className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-slate-500">
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed bg-slate-50 p-6 text-slate-500">
                 <label className="flex cursor-pointer flex-col items-center gap-2">
                     <Upload className="h-8 w-8 text-gray-400" />
                     <span className="text-sm font-medium">
@@ -73,7 +72,7 @@ export function TechnicalSheetsForm({ field }: TechnicalSheetsFormProps) {
                         ))}
                     </ul>
                 )}
-            </Card>
+            </div>
         </div>
     );
 }

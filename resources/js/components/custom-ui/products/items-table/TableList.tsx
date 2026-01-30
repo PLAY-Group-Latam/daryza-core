@@ -1,6 +1,10 @@
 'use client';
 
 import { formatDate } from '@/lib/helpers/formatDate';
+import {
+    getMainVariant,
+    getVariantFirstImage,
+} from '@/lib/helpers/GetMainVariant';
 import { Product } from '@/types/products/product';
 import { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../tables/DataTable';
@@ -47,30 +51,43 @@ export const columns: ColumnDef<Product>[] = [
     },
 
     {
-        accessorKey: 'price',
-        header: 'Precio',
+        id: 'product_info',
+        header: 'Producto / Sku / Stock',
         cell: ({ row }) => {
             const product = row.original;
-            const prices = product.variants.map((v) => {
-                // Si hay promo_price activa, la usamos; si no, el precio normal
-                return v.is_on_promo && v.promo_price
-                    ? Number(v.promo_price)
-                    : Number(v.price);
-            });
+            const mainVariant = getMainVariant(product);
+            const image = getVariantFirstImage(mainVariant);
 
-            if (!prices.length)
-                return <span className="text-gray-400">Sin variantes</span>;
+            return (
+                <div className="flex items-center gap-3">
+                    <img
+                        src={image}
+                        alt={product.name}
+                        className="h-14 w-14 rounded-md border object-cover"
+                    />
 
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
+                    <div className="flex flex-col text-sm">
+                        <span className="font-semibold text-gray-800">
+                            {product.name}
+                        </span>
 
-            // Si hay solo un precio, mostrarlo simple
-            const displayPrice =
-                minPrice === maxPrice
-                    ? `S/ ${minPrice.toFixed(2)}`
-                    : `S/ ${minPrice.toFixed(2)} - S/ ${maxPrice.toFixed(2)}`;
-
-            return <span>{displayPrice}</span>;
+                        {mainVariant ? (
+                            <>
+                                <span className="text-xs text-gray-500">
+                                    SKU: {mainVariant.sku || '—'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    Stock: {mainVariant.stock}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-xs text-gray-400">
+                                Sin variantes
+                            </span>
+                        )}
+                    </div>
+                </div>
+            );
         },
     },
 

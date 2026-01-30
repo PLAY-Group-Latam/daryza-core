@@ -37,6 +37,9 @@ class StoreProductRequest extends FormRequest
             'variants.*.promo_end_at' => ['nullable', 'string'],
             'variants.*.is_main' => ['boolean'],
 
+            'variants.*.media' => ['array'],
+            'variants.*.media.*' => ['nullable', 'file', 'mimes:jpg,jpeg,svg,png,gif,webp,mp4', 'max:10240'], // 10MB
+
             'variants.*.attributes' => ['array'],
             'variants.*.attributes.*.attribute_id' => ['required', 'exists:attributes,id'],
             'variants.*.attributes.*.attribute_value_id' => ['nullable', 'exists:attributes_values,id'],
@@ -45,6 +48,9 @@ class StoreProductRequest extends FormRequest
             'specifications' => ['array'],
             'specifications.*.attribute_id' => ['required', 'exists:attributes,id'],
             'specifications.*.value' => ['required'],
+
+            'technicalSheets' => ['array'],
+            'technicalSheets.*.file' => ['nullable', 'file', 'mimes:pdf,doc,docx,xlsx', 'max:20480'], // 20MB
         ];
     }
 
@@ -64,6 +70,11 @@ class StoreProductRequest extends FormRequest
             'variants.*.price.required' => 'El precio es obligatorio para cada variante.',
             'variants.*.stock.required' => 'El stock es obligatorio para cada variante.',
 
+            'variants.*.media.*.file.file' => 'Cada archivo debe ser un archivo válido.',
+            'variants.*.media.*.file.mimes' => 'Los archivos permitidos son: jpg, jpeg, svg, png, gif, webp, mp4.',
+            'variants.*.media.*.file.max' => 'El tamaño máximo permitido para el archivo es 10MB.',
+
+
             'variants.*.is_main.boolean' => 'El valor de "Principal" debe ser verdadero o falso.',
 
             'variants.*.attributes.*.attribute_id.required' => 'Debes seleccionar un atributo para la variante.',
@@ -71,6 +82,11 @@ class StoreProductRequest extends FormRequest
 
             'specifications.*.attribute_id.required' => 'Debes seleccionar un atributo para la especificación.',
             'specifications.*.value.required' => 'El valor de la especificación es obligatorio.',
+
+            'technicalSheets.*.file.file' => 'Cada ficha técnica debe ser un archivo válido.',
+            'technicalSheets.*.file.mimes' => 'Los tipos permitidos son: pdf, doc, docx, xlsx.',
+            'technicalSheets.*.file.max' => 'El tamaño máximo permitido es 20MB.',
+
         ];
     }
 }

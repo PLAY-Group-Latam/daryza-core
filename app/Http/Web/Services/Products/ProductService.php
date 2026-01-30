@@ -4,11 +4,20 @@ namespace App\Http\Web\Services\Products;
 
 use Illuminate\Support\Facades\DB;
 use App\Enums\OgType;
+use App\Enums\StorageFolder;
+use App\Http\Web\Services\GcsService;
 use App\Models\Products\Product;
 use App\Models\Products\ProductVariant;
 
 class ProductService
 {
+
+  protected GcsService $gcsService;
+
+  public function __construct(GcsService $gcsService)
+  {
+    $this->gcsService = $gcsService;
+  }
   public function create(array $data): Product
   {
     return DB::transaction(function () use ($data) {
@@ -25,6 +34,8 @@ class ProductService
 
       // 2. Crear metadata
       $this->createMetadata($product, $data['metadata'] ?? []);
+
+      $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
 
       // 3. Crear variantes
       $this->createVariants($product, $data['variants']);
@@ -50,6 +61,34 @@ class ProductService
       'nofollow' => $metadata['nofollow'] ?? false,
     ]);
   }
+
+ protected function createTechnicalSheets(Product $product, array $sheets): void
+{
+    foreach ($sheets as $sheet) {
+        $filePath = $sheet['file_path'] ?? null;
+
+        // Carpeta base para este producto
+        $productFolder = 'products/' . $product->id;
+
+        // Subir si hay un archivo nuevo
+        if (!empty($sheet['file'])) {
+            $folder = $productFolder . '/' . StorageFolder::TECHNICAL_SHEETS->value;
+            $filePath = $this->gcsService->uploadFile($sheet['file'], $folder);
+        }
+
+        if ($filePath) {
+            $product->technicalSheets()->create([
+                'file_path' => $filePath,
+                'type' => 'technical_sheet',
+                'folder' => $productFolder . '/' . StorageFolder::TECHNICAL_SHEETS->value, // opcional
+            ]);
+        }
+    }
+}
+
+
+
+
   protected function createVariants(Product $product, array $variants): void
   {
     foreach ($variants as &$variantData) {
@@ -65,8 +104,32 @@ class ProductService
     // Luego asociar atributos
     foreach ($createdVariants as $index => $variant) {
       $this->attachVariantAttributes($variant, $variants[$index]['attributes'] ?? []);
+              $this->createVariantMedia($variant, $variants[$index]['media'] ?? []);
+
     }
   }
+protected function createVariantMedia(ProductVariant $variant, array $mediaFiles): void
+{
+    foreach ($mediaFiles as $media) {
+        // $media es UploadedFile
+        $type = strtolower($media->getClientOriginalExtension()) === 'mp4' ? 'video' : 'image';
+
+        $productFolder = 'products/' . $variant->product_id;
+        $folder = $type === 'video'
+            ? $productFolder . '/' . StorageFolder::PRODUCT_VIDEOS->value
+            : $productFolder . '/' . StorageFolder::PRODUCT_IMAGES->value;
+
+        $filePath = $this->gcsService->uploadFile($media, $folder);
+
+        $variant->media()->create([
+            'file_path' => $filePath,
+            'type' => $type,
+            'folder' => $folder,
+        ]);
+    }
+}
+
+
 
 
   protected function attachVariantAttributes(ProductVariant $variant, array $attributes): void

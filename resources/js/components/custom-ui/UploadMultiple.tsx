@@ -5,10 +5,8 @@ import { Trash2Icon, UploadIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface UploadMultipleProps {
-    value?: Array<File | { file: File; file_path?: string }>;
-    onFilesChange?: (
-        files: Array<File | { file: File; file_path?: string }>,
-    ) => void;
+    value?: File[]; // ✅ solo archivos
+    onFilesChange?: (files: File[]) => void; // ✅ callback con archivos
     previewClassName?: string;
 }
 
@@ -21,27 +19,25 @@ export function UploadMultiple({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const dragIndex = useRef<number | null>(null);
 
+    // Generar previews de archivos
     useEffect(() => {
-        const urls = value
-            .filter(
-                (v): v is File | { file: File } =>
-                    v instanceof File ||
-                    ('file' in v && v.file instanceof File),
-            )
-            .map((v) =>
-                v instanceof File
-                    ? URL.createObjectURL(v)
-                    : URL.createObjectURL(v.file),
-            );
+        const urls = value.map((file) => URL.createObjectURL(file));
         setPreviews(urls);
+
+        // Cleanup URLs cuando cambia el array
+        return () => {
+            urls.forEach((url) => URL.revokeObjectURL(url));
+        };
     }, [value]);
 
+    // Cuando se seleccionan nuevos archivos
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
         if (files.length === 0) return;
-        onFilesChange?.([...value, ...files]);
+        onFilesChange?.([...value, ...files]); // ✅ solo File
     };
 
+    // Eliminar archivo
     const handleRemove = (index: number) => {
         const newFiles = [...value];
         newFiles.splice(index, 1);

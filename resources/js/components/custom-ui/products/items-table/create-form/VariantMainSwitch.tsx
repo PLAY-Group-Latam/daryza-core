@@ -7,35 +7,38 @@ interface Props {
 }
 
 export function VariantMainSwitch({ index }: Props) {
-    const { control, setValue } = useFormContext<ProductFormValues>();
+    const { control, setValue, getValues } =
+        useFormContext<ProductFormValues>();
 
-    const variants = useWatch({
+    const isMain = useWatch({
         control,
-        name: 'variants',
-        defaultValue: [],
+        name: `variants.${index}.is_main`,
     });
 
-    const isMain = variants[index]?.is_main || false;
-
     const handleMainChange = (checked: boolean) => {
+        if (!checked) return;
+        const variants = getValues('variants'); // 👈 estado real, no "fields"
+
         if (checked) {
-            // Solo esta variante será principal
-            const updated = variants.map((v, i) => ({
-                ...v,
-                is_main: i === index,
-            }));
-            setValue('variants', updated);
+            variants.forEach((_, i) => {
+                setValue(`variants.${i}.is_main`, i === index, {
+                    shouldDirty: true,
+                    shouldTouch: false,
+                    shouldValidate: false,
+                });
+            });
         } else {
-            // Si se desmarca, ninguna será principal
-            const updated = [...variants];
-            updated[index].is_main = false;
-            setValue('variants', updated);
+            setValue(`variants.${index}.is_main`, false, {
+                shouldDirty: true,
+                shouldTouch: false,
+                shouldValidate: false,
+            });
         }
     };
 
     return (
         <div className="mt-2 flex items-center gap-2 md:mt-0">
-            <Switch checked={isMain} onCheckedChange={handleMainChange} />
+            <Switch checked={!!isMain} onCheckedChange={handleMainChange} />
             <span className="text-xs">Principal</span>
         </div>
     );

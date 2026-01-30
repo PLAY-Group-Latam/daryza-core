@@ -49,7 +49,7 @@ const TechnicalSheetSchema = z.object({
 const ProductSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio'),
     slug: z.string().min(1, 'El slug es obligatorio'),
-    category_id: z.string().nullable(),
+    category_id: z.string().min(1, 'Debes seleccionar una categoría'),
     brief_description: z.string().optional(),
     description: z.string().optional(),
     is_active: z.boolean(),
@@ -84,7 +84,7 @@ export default function FormProduct({
         defaultValues: {
             name: '',
             slug: '',
-            category_id: null,
+            category_id: '',
             brief_description: '',
             description: '',
             is_active: true,
@@ -109,14 +109,80 @@ export default function FormProduct({
 
     const { errors, isSubmitting } = formState;
 
+    // const onSubmit = (data: ProductFormValues) => {
+    //     const action = products.items.store().url;
+    //     router.post(action, data, {
+    //         preserveScroll: true,
+    //     });
+
+    //     console.log(JSON.stringify(data, null, 2));
+    // };
+
     const onSubmit = (data: ProductFormValues) => {
         const action = products.items.store().url;
-        router.post(action, data, {
+        const formData = new FormData();
+
+        type FormValue =
+            | string
+            | number
+            | boolean
+            | File
+            | null
+            | FormValue[]
+            | { [key: string]: FormValue };
+
+        const appendFormData = (
+            fd: FormData,
+            value: FormValue,
+            key?: string,
+        ) => {
+            if (value === null || value === undefined) {
+                // Enviar vacío para que Laravel lo reciba
+                if (key) fd.append(key, '');
+                return;
+            }
+
+            // Archivos
+            if (value instanceof File) {
+                if (!key) throw new Error('File must have a key');
+                fd.append(key, value);
+            }
+            // Arrays
+            else if (Array.isArray(value)) {
+                value.forEach((item, index) => {
+                    const arrayKey = key ? `${key}[${index}]` : `${index}`;
+                    appendFormData(fd, item, arrayKey);
+                });
+            }
+            // Objetos
+            else if (typeof value === 'object') {
+                Object.entries(value).forEach(([k, v]) => {
+                    const objectKey = key ? `${key}[${k}]` : k;
+                    appendFormData(fd, v, objectKey);
+                });
+            }
+            // Booleanos → '1'/'0'
+            else if (typeof value === 'boolean') {
+                if (!key) throw new Error('Boolean must have a key');
+                fd.append(key, value ? '1' : '0');
+            }
+            // Strings o números
+            else {
+                if (!key) throw new Error('Primitive must have a key');
+                fd.append(key, String(value));
+            }
+        };
+
+        appendFormData(formData, data);
+
+        router.post(action, formData, {
             preserveScroll: true,
+            // Inertia detecta automáticamente FormData
         });
 
-        console.log(JSON.stringify(data, null, 2));
+        console.log('FormData enviado:', formData);
     };
+
     const onError = (errors: any) => {
         console.log('ERRORES:', errors);
     };
@@ -264,9 +330,15 @@ export default function FormProduct({
 
                                     <CategoryTreeSelect
                                         categories={categories || []}
-                                        value={field.value ?? undefined}
+                                        value={field.value}
                                         onChange={field.onChange}
+                                        showPrincipal={false}
                                     />
+                                    {errors.category_id && (
+                                        <p className="text-sm text-red-500">
+                                            {errors.category_id.message}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         />

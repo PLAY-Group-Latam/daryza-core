@@ -24,7 +24,9 @@ export function VariantForm({ variantAttributes }: Props) {
         selectedVariantAttributeIds.includes(attr.id),
     );
 
-    const createEmptyVariant = (): ProductFormValues['variants'][number] => ({
+    const createEmptyVariant = (
+        isFirst = false,
+    ): ProductFormValues['variants'][number] => ({
         sku: '',
         price: 0,
         promo_price: undefined,
@@ -38,7 +40,7 @@ export function VariantForm({ variantAttributes }: Props) {
                 return {
                     attribute_id: attr.id,
                     attribute_value_id: null,
-                    value: undefined, // 👈 en vez de null
+                    value: undefined,
                 };
             }
 
@@ -54,7 +56,7 @@ export function VariantForm({ variantAttributes }: Props) {
             };
         }),
         media: [],
-        is_main: false,
+        is_main: isFirst, // 👈 aquí está la clave
     });
 
     const handleToggleAttribute = (
@@ -92,7 +94,7 @@ export function VariantForm({ variantAttributes }: Props) {
             ) : (
                 <button
                     type="button"
-                    onClick={() => append(createEmptyVariant())}
+                    onClick={() => append(createEmptyVariant(true))}
                     className="mt-2 flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 hover:shadow-sm"
                 >
                     <PackagePlus className="h-4 w-4" /> Crear primera variante
@@ -164,7 +166,7 @@ export function VariantForm({ variantAttributes }: Props) {
                     <div className="flex justify-center">
                         <button
                             type="button"
-                            onClick={() => append(createEmptyVariant())}
+                            onClick={() => append(createEmptyVariant(false))}
                             className="flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-5 py-2 text-sm text-slate-600 hover:border-indigo-400 hover:text-indigo-600"
                         >
                             <span>+</span> Agregar Variante

@@ -8,7 +8,8 @@ import {
 } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import { Attribute } from '@/types/products/attributes';
-import { ClipboardList } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { ClipboardList, Settings } from 'lucide-react';
 import {
     Controller,
     useFieldArray,
@@ -22,6 +23,8 @@ interface SpecificationsAttributesProps {
 }
 
 type SpecificationValue = string | number | boolean;
+
+// ...imports iguales
 
 export function SpecificationsAttributes({
     availableAttributes,
@@ -50,13 +53,17 @@ export function SpecificationsAttributes({
             case 'number':
                 value = 0;
                 break;
+            case 'select':
+                // Si tiene valores, toma el primero como default
+                value = attr.values?.[0]?.value ?? '';
+                break;
             default:
                 value = '';
                 break;
         }
 
         return {
-            attribute_id: attr.id, // string (ULID)
+            attribute_id: attr.id,
             value,
         };
     };
@@ -67,7 +74,6 @@ export function SpecificationsAttributes({
                 ● Especificaciones
             </p>
 
-            {/* TABLA O EMPTY STATE */}
             {fields.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
                     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
@@ -76,6 +82,15 @@ export function SpecificationsAttributes({
                     <p className="text-sm font-semibold text-slate-700">
                         No hay atributos de especificación
                     </p>
+                    {availableAttributes.length === 0 && (
+                        <Link
+                            href="/productos/attributes"
+                            className="mt-2 flex items-center gap-1.5 text-xs font-medium text-indigo-600 underline underline-offset-4 hover:text-indigo-500"
+                        >
+                            <Settings className="h-3.5 w-3.5" />
+                            Ir a crear atributos
+                        </Link>
+                    )}
                 </div>
             ) : (
                 <div className="overflow-x-auto">
@@ -106,12 +121,10 @@ export function SpecificationsAttributes({
                                         key={fieldSpec.id}
                                         className="hover:bg-gray-50"
                                     >
-                                        {/* Nombre */}
                                         <td className="border px-4 py-2 text-sm text-gray-700">
                                             {attr.name}
                                         </td>
 
-                                        {/* Valor */}
                                         <td className="border px-4 py-2">
                                             <Controller
                                                 name={`specifications.${index}.value`}
@@ -129,6 +142,43 @@ export function SpecificationsAttributes({
                                                                     field.onChange
                                                                 }
                                                             />
+                                                        );
+                                                    }
+
+                                                    if (
+                                                        attr.type === 'select'
+                                                    ) {
+                                                        return (
+                                                            <NativeSelect
+                                                                {...field}
+                                                                value={
+                                                                    field.value as string
+                                                                } // TypeScript ya no se queja
+                                                                onChange={(e) =>
+                                                                    field.onChange(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                className="w-full rounded-xl border px-3 py-2 text-sm focus-visible:ring-0"
+                                                            >
+                                                                {attr.values?.map(
+                                                                    (v) => (
+                                                                        <NativeSelectOption
+                                                                            key={
+                                                                                v.id
+                                                                            }
+                                                                            value={
+                                                                                v.value
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                v.value
+                                                                            }
+                                                                        </NativeSelectOption>
+                                                                    ),
+                                                                )}
+                                                            </NativeSelect>
                                                         );
                                                     }
 
@@ -166,7 +216,6 @@ export function SpecificationsAttributes({
                                             />
                                         </td>
 
-                                        {/* Acciones */}
                                         <td className="border px-4 py-2 text-right">
                                             <Button
                                                 type="button"
@@ -178,7 +227,6 @@ export function SpecificationsAttributes({
                                                 Eliminar
                                             </Button>
 
-                                            {/* attribute_id oculto */}
                                             <Controller
                                                 name={`specifications.${index}.attribute_id`}
                                                 control={control}
@@ -198,52 +246,50 @@ export function SpecificationsAttributes({
                 </div>
             )}
 
-            {/* SELECT SIEMPRE VISIBLE */}
-            <div className="flex items-center justify-center">
-                <Controller
-                    name="specification_selector"
-                    control={control}
-                    render={({ field }) => (
-                        <NativeSelect
-                            {...field}
-                            value={field.value ?? ''}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                field.onChange(value);
+            {availableAttributes.length > 0 && (
+                <div className="flex items-center justify-center">
+                    <Controller
+                        name="specification_selector"
+                        control={control}
+                        render={({ field }) => (
+                            <NativeSelect
+                                {...field}
+                                value={field.value ?? ''}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    field.onChange(value);
 
-                                const attr = availableAttributes.find(
-                                    (a) => a.id === value, // string vs string
-                                );
+                                    const attr = availableAttributes.find(
+                                        (a) => a.id === value,
+                                    );
 
-                                if (attr) {
-                                    // Agrega la especificación
-                                    append(createSpec(attr));
-
-                                    // Limpia el selector
-                                    setValue('specification_selector', '');
-                                }
-                            }}
-                            className="mt-2 rounded-xl border px-3 py-2 text-sm focus-visible:ring-0"
-                        >
-                            <NativeSelectOption value="">
-                                + Agregar especificación
-                            </NativeSelectOption>
-
-                            {availableAttributes.map((attr) => (
-                                <NativeSelectOption
-                                    key={attr.id}
-                                    value={attr.id}
-                                    disabled={specifications?.some(
-                                        (s) => s.attribute_id === attr.id,
-                                    )}
-                                >
-                                    {attr.name}
+                                    if (attr) {
+                                        append(createSpec(attr));
+                                        setValue('specification_selector', '');
+                                    }
+                                }}
+                                className="mt-2 rounded-xl border px-3 py-2 text-sm focus-visible:ring-0"
+                            >
+                                <NativeSelectOption value="">
+                                    + Agregar especificación
                                 </NativeSelectOption>
-                            ))}
-                        </NativeSelect>
-                    )}
-                />
-            </div>
+
+                                {availableAttributes.map((attr) => (
+                                    <NativeSelectOption
+                                        key={attr.id}
+                                        value={attr.id}
+                                        disabled={specifications?.some(
+                                            (s) => s.attribute_id === attr.id,
+                                        )}
+                                    >
+                                        {attr.name}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
+                        )}
+                    />
+                </div>
+            )}
         </div>
     );
 }
