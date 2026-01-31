@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import products from '@/routes/products';
 import { CategorySelect } from '@/types/products';
 import { Attribute } from '@/types/products/attributes';
+import { Product } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
@@ -75,9 +76,11 @@ export type ProductFormValues = z.infer<typeof ProductSchema>;
 export default function FormProduct({
     categories,
     attributes,
+    product,
 }: {
     categories: CategorySelect[];
     attributes: Attribute[];
+    product?: Product; // 👈 opcional
 }) {
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
@@ -111,78 +114,77 @@ export default function FormProduct({
 
     // const onSubmit = (data: ProductFormValues) => {
     //     const action = products.items.store().url;
-    //     router.post(action, data, {
+    //     const formData = new FormData();
+
+    //     type FormValue =
+    //         | string
+    //         | number
+    //         | boolean
+    //         | File
+    //         | null
+    //         | FormValue[]
+    //         | { [key: string]: FormValue };
+
+    //     const appendFormData = (
+    //         fd: FormData,
+    //         value: FormValue,
+    //         key?: string,
+    //     ) => {
+    //         if (value === null || value === undefined) {
+    //             if (key) fd.append(key, '');
+    //             return;
+    //         }
+
+    //         if (value instanceof File) {
+    //             if (!key) throw new Error('File must have a key');
+    //             fd.append(key, value);
+    //         } else if (Array.isArray(value)) {
+    //             value.forEach((item, index) => {
+    //                 const arrayKey = key ? `${key}[${index}]` : `${index}`;
+    //                 appendFormData(fd, item, arrayKey);
+    //             });
+    //         } else if (typeof value === 'object') {
+    //             Object.entries(value).forEach(([k, v]) => {
+    //                 const objectKey = key ? `${key}[${k}]` : k;
+    //                 appendFormData(fd, v, objectKey);
+    //             });
+    //         } else if (typeof value === 'boolean') {
+    //             if (!key) throw new Error('Boolean must have a key');
+    //             fd.append(key, value ? '1' : '0');
+    //         } else {
+    //             if (!key) throw new Error('Primitive must have a key');
+    //             fd.append(key, String(value));
+    //         }
+    //     };
+
+    //     appendFormData(formData, data);
+
+    //     router.post(action, formData, {
     //         preserveScroll: true,
+    //         // Inertia detecta automáticamente FormData
     //     });
 
-    //     console.log(JSON.stringify(data, null, 2));
+    //     console.log('FormData enviado:', formData);
     // };
+    const isEdit = Boolean(product);
 
     const onSubmit = (data: ProductFormValues) => {
-        const action = products.items.store().url;
-        const formData = new FormData();
+        const action = isEdit
+            ? products.items.update(product!.id).url
+            : products.items.store().url;
 
-        type FormValue =
-            | string
-            | number
-            | boolean
-            | File
-            | null
-            | FormValue[]
-            | { [key: string]: FormValue };
-
-        const appendFormData = (
-            fd: FormData,
-            value: FormValue,
-            key?: string,
-        ) => {
-            if (value === null || value === undefined) {
-                // Enviar vacío para que Laravel lo reciba
-                if (key) fd.append(key, '');
-                return;
-            }
-
-            // Archivos
-            if (value instanceof File) {
-                if (!key) throw new Error('File must have a key');
-                fd.append(key, value);
-            }
-            // Arrays
-            else if (Array.isArray(value)) {
-                value.forEach((item, index) => {
-                    const arrayKey = key ? `${key}[${index}]` : `${index}`;
-                    appendFormData(fd, item, arrayKey);
-                });
-            }
-            // Objetos
-            else if (typeof value === 'object') {
-                Object.entries(value).forEach(([k, v]) => {
-                    const objectKey = key ? `${key}[${k}]` : k;
-                    appendFormData(fd, v, objectKey);
-                });
-            }
-            // Booleanos → '1'/'0'
-            else if (typeof value === 'boolean') {
-                if (!key) throw new Error('Boolean must have a key');
-                fd.append(key, value ? '1' : '0');
-            }
-            // Strings o números
-            else {
-                if (!key) throw new Error('Primitive must have a key');
-                fd.append(key, String(value));
-            }
-        };
-
-        appendFormData(formData, data);
-
-        router.post(action, formData, {
-            preserveScroll: true,
-            // Inertia detecta automáticamente FormData
-        });
-
-        console.log('FormData enviado:', formData);
+        router.post(
+            action,
+            {
+                ...data,
+                ...(isEdit && { _method: 'put' }),
+            },
+            {
+                preserveScroll: true,
+                forceFormData: true,
+            },
+        );
     };
-
     const onError = (errors: any) => {
         console.log('ERRORES:', errors);
     };

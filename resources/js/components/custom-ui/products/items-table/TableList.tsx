@@ -6,6 +6,7 @@ import {
     getVariantFirstImage,
 } from '@/lib/helpers/GetMainVariant';
 import { Product } from '@/types/products/product';
+import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../tables/DataTable';
 
@@ -20,7 +21,7 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const product = row.original;
             const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
-            console.log(frontendUrl);
+            // console.log(frontendUrl);
             return (
                 <div className="flex flex-col text-sm">
                     <a
@@ -90,26 +91,6 @@ export const columns: ColumnDef<Product>[] = [
             );
         },
     },
-
-    // {
-    //   accessororKey: 'stock',
-    //   header: 'Stock',
-    //   cell: ({ row }) => {
-    //     const stock = row.original.stock;
-
-    //     return (
-    //       <span
-    //         className={
-    //           stock > 0
-    //             ? 'text-green-600 font-medium'
-    //             : 'text-red-600 font-medium'
-    //         }
-    //       >
-    //         {stock}
-    //       </span>
-    //     );
-    //   },
-    // },
     {
         accessorKey: 'created_at',
         header: 'Creado el',
@@ -127,9 +108,15 @@ export const columns: ColumnDef<Product>[] = [
     {
         id: 'actions',
         header: 'Acciones',
-        cell: () => {
-            // Por ahora vacío como pediste
-            return <div className="flex items-center gap-2"></div>;
+        cell: ({ row }) => {
+            const product = row.original;
+            return (
+                <div className="flex items-center gap-2">
+                    <Link href={`/productos/items/${product.id}/edit`}>
+                        Editar
+                    </Link>
+                </div>
+            );
         },
     },
 ];

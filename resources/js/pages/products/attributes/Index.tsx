@@ -14,7 +14,7 @@ export default function Index() {
         paginatedAttributes: PaginatedAttributes;
     }>().props;
 
-    console.log(paginatedAttributes);
+    // console.log(paginatedAttributes);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />

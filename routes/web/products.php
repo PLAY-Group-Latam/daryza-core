@@ -12,6 +12,8 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
       'categorias' => 'categories',
     ]);
 
-  Route::resource('items', ProductController::class);
+  Route::resource('items', ProductController::class)->parameters([
+    'items' => 'product',
+  ]);;
   Route::resource('attributes', AttributeController::class);
 });

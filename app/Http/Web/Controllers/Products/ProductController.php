@@ -92,6 +92,31 @@ class ProductController extends Controller
     ]);
   }
 
+  public function edit(Product $product)
+  {
+    $product->load([
+      'category:id,name,slug,parent_id',
+      'variants.attributeValues.attribute',
+      'variants.media',
+      'technicalSheets',
+      'specifications.attribute',
+      'metadata',
+    ]);
+
+    $categoriesForSelect = ProductCategory::roots()
+      ->active()
+      ->with('activeChildren')
+      ->get(['id', 'name', 'parent_id', 'order']);
+
+    $attributes = Attribute::with(['values'])->get();
+
+    return Inertia::render('products/Edit', [
+      'product' => $product,
+      'categories' => $categoriesForSelect,
+      'attributes' => $attributes,
+    ]);
+  }
+
 
   /**
    * Mostrar formulario de creación
@@ -114,6 +139,7 @@ class ProductController extends Controller
 
     ]);
   }
+
 
 
   public function store(StoreProductRequest $request)
