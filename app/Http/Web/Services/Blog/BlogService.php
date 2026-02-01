@@ -71,14 +71,30 @@ class BlogService
       $blog->categories()->sync($data['categories']);
     }
 
+    $baseUrl = config('app.frontend_url');
+
     // ====== METADATA ======
-    if (isset($data['metadata'])) {
-      if ($blog->metadata) {
-        $blog->metadata->update($data['metadata']);
-      } else {
-        $blog->metadata()->create($data['metadata']);
-      }
+    $metadata = $data['metadata'] ?? [];
+
+    // Si estamos creando o no viene meta_title/meta_description, usamos title y description
+    if (!isset($metadata['meta_title'])) {
+      $metadata['meta_title'] = $data['title'] ?? $blog->title;
     }
+    if (!isset($metadata['meta_description'])) {
+      $metadata['meta_description'] = $data['description'] ?? $blog->description;
+    }
+
+    // Canonical automático si no viene
+    if (!isset($metadata['canonical_url'])) {
+      $metadata['canonical_url'] = $baseUrl . '/blogs/' . ($data['slug'] ?? $blog->slug);
+    }
+
+    if ($blog->metadata) {
+      $blog->metadata->update($metadata);
+    } else {
+      $blog->metadata()->create($metadata);
+    }
+
 
     return $blog;
   }

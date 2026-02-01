@@ -19,15 +19,28 @@ export const columns: ColumnDef<Blog>[] = [
     {
         accessorKey: 'title',
         header: 'Artículo',
-        cell: ({ row }) => (
-            <div className="flex flex-col">
-                <span className="font-medium">{row.original.title}</span>
-                <span className="text-sm text-muted-foreground">
-                    por {row.original.author}
-                </span>
-            </div>
-        ),
+        cell: ({ row }) => {
+            const blog = row.original;
+            const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+
+            return (
+                <div className="flex flex-col">
+                    <a
+                        href={`${frontendUrl}/blogs/${blog.slug}`}
+                        className="w-fit font-medium text-blue-600 hover:underline"
+                        target="_blank" // si quieres abrir en otra pestaña
+                        rel="noopener noreferrer"
+                    >
+                        {blog.title}
+                    </a>
+                    <span className="text-sm text-muted-foreground">
+                        por {blog.author}
+                    </span>
+                </div>
+            );
+        },
     },
+
     {
         id: 'categories',
         header: 'Categorías',

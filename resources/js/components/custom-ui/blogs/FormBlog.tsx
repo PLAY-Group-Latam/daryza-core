@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import blogs from '@/routes/blogs';
 import { Blog, BlogCategory } from '@/types/blogs';
 import { router } from '@inertiajs/react';
+import { Loader2 } from 'lucide-react';
 import { DatePicker } from '../DatePicker';
 import { MultiSelect } from '../MultiSelect';
 import { RichTextEditor } from '../rich-text-tiptap/RichTextEditor';
@@ -90,29 +91,32 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
         control,
         handleSubmit,
         watch,
-        formState: { errors, isSubmitting },
+        formState: { errors, isSubmitting, isDirty },
     } = methods;
 
     const titleValue = watch('title');
 
-    const onSubmit = (data: BlogFormValues) => {
+    const onSubmit = async (data: BlogFormValues) => {
         const isEdit = !!blog;
         const action = isEdit
             ? blogs.items.update(blog.id).url
             : blogs.items.store().url;
 
-        if (isEdit) {
-            console.log('URL del update:', action);
-            router.put(action, data, {
-                preserveScroll: true,
-                forceFormData: true, // para enviar archivos
-            });
-        } else {
-            router.post(action, data, {
-                preserveScroll: true,
-                forceFormData: true,
-            });
-        }
+        await new Promise<void>((resolve) => {
+            if (isEdit) {
+                router.put(action, data, {
+                    preserveScroll: true,
+                    forceFormData: true,
+                    onFinish: () => resolve(),
+                });
+            } else {
+                router.post(action, data, {
+                    preserveScroll: true,
+                    forceFormData: true,
+                    onFinish: () => resolve(),
+                });
+            }
+        });
     };
 
     return (
@@ -415,10 +419,13 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                         </div>
                         <Button
                             type="submit"
-                            disabled={isSubmitting}
-                            className="w-full"
+                            disabled={!isDirty || isSubmitting} // deshabilitado si no hay cambios o se está enviando
+                            className="flex w-full items-center justify-center gap-2"
                         >
-                            Crear Blog
+                            {isSubmitting && (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                            {isSubmitting ? 'Guardando...' : 'Guardar Blog'}
                         </Button>
                     </aside>
                 </div>
