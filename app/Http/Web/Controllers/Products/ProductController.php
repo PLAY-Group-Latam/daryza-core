@@ -5,6 +5,7 @@ namespace App\Http\Web\Controllers\Products;
 use App\Enums\OgType;
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Requests\Products\StoreProductRequest;
+use App\Http\Web\Requests\Products\UpdateProductRequest;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\Product;
@@ -96,7 +97,7 @@ class ProductController extends Controller
   {
     $product->load([
       'category:id,name,slug,parent_id',
-      'variants.attributeValues.attribute',
+      'variants.variantAttributes.attributeValue.attribute',
       'variants.media',
       'technicalSheets',
       'specifications.attribute',
@@ -152,7 +153,17 @@ class ProductController extends Controller
       ->route('products.items.index')
       ->with('success', 'Producto creado correctamente');
   }
+  public function update(UpdateProductRequest $request, Product $product)
+  {
+    $this->productService->update(
+      $product,
+      $request->validated()
+    );
 
+    return redirect()
+      ->route('products.items.index')
+      ->with('success', 'Producto actualizado correctamente');
+  }
 
   /**
    * Eliminar una categoría

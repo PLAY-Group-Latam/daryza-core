@@ -20,7 +20,7 @@ class GcsService
         $this->bucket = $this->storage->bucket(config('services.gcs.bucket'));
     }
 
- 
+
 
     /**
      * Subir un archivo desde un formulario (Request->file)
@@ -84,5 +84,16 @@ class GcsService
             config('services.gcs.bucket'),
             $path
         );
+    }
+
+    public function deleteFromPublicUrl(string $url): bool
+    {
+        $path = str_replace(
+            $this->getPublicUrl(''),
+            '',
+            $url
+        );
+
+        return $this->delete($path);
     }
 }

@@ -24,13 +24,13 @@ class ProductVariant extends Model
         'stock',
         'promo_start_at', // nuevo
         'promo_end_at',   // nuevo
-            'is_main', // ← agregar aquí
+        'is_main', // ← agregar aquí
 
     ];
 
     protected $casts = [
         'is_on_promo' => 'boolean',
-            'is_main' => 'boolean', // ← agregar aquí
+        'is_main' => 'boolean', // ← agregar aquí
         'price' => 'decimal:2',
         'promo_price' => 'decimal:2',
         'stock' => 'integer',
@@ -60,14 +60,6 @@ class ProductVariant extends Model
         )->withTimestamps();
     }
 
-
-    /**
-     * Pivot explícito si quieres trabajar directo con él
-     */
-    public function variantAttributes()
-    {
-        return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');
-    }
 
     /**
      * Media específica de la variante

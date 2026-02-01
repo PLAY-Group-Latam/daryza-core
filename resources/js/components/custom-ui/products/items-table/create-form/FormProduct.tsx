@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/incompatible-library */
+
 'use client';
 
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Attribute } from '@/types/products/attributes';
 import { Product } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../../slug-text';
@@ -107,6 +109,61 @@ export default function FormProduct({
             specification_selector: '',
         },
     });
+
+    useEffect(() => {
+        if (!product) return;
+
+        methods.reset({
+            name: product.name,
+            slug: product.slug,
+            category_id: product.category_id ?? '',
+            brief_description: product.brief_description ?? '',
+            description: product.description ?? '',
+            is_active: product.is_active,
+
+            metadata: {
+                meta_title: product.metadata?.meta_title ?? '',
+                meta_description: product.metadata?.meta_description ?? '',
+                canonical_url: product.metadata?.canonical_url ?? '',
+                og_title: product.metadata?.og_title ?? '',
+                og_description: product.metadata?.og_description ?? '',
+                noindex: Boolean(product.metadata?.noindex),
+                nofollow: Boolean(product.metadata?.nofollow),
+            },
+
+            variants: product.variants.map((variant) => ({
+                id: variant.id, // 🔑 CLAVE para update
+                sku: variant.sku,
+                price: Number(variant.price),
+                promo_price: Number(variant.promo_price ?? 0),
+                stock: Number(variant.stock),
+                is_active: variant.is_active,
+                is_on_promo: variant.is_on_promo,
+                promo_start_at: variant.promo_start_at,
+                promo_end_at: variant.promo_end_at,
+                is_main: variant.is_main,
+
+                attributes: variant.attributes.map((attr) => ({
+                    attribute_id: attr.attribute_id,
+                    attribute_value_id: attr.attribute_value_id,
+                    value: attr.value,
+                })),
+
+                media: variant.media.map((m) => ({
+                    file_path: m.file_path, // 👈 archivos EXISTENTES
+                })),
+            })),
+
+            technicalSheets: product.technicalSheets.map((sheet) => ({
+                file_path: sheet.file_path,
+            })),
+
+            specifications: product.specifications.map((spec) => ({
+                attribute_id: spec.attribute_id,
+                value: spec.value,
+            })),
+        });
+    }, [product]);
 
     const { handleSubmit, watch, control, formState } = methods;
 

@@ -1,9 +1,14 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
+import blogs from '@/routes/blogs';
 import { Blog } from '@/types/blogs';
+import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
+import { Edit, Trash } from 'lucide-react';
+import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
 import { DataTable } from '../tables/DataTable';
 
 interface TableListProps {
@@ -13,8 +18,15 @@ interface TableListProps {
 export const columns: ColumnDef<Blog>[] = [
     {
         accessorKey: 'title',
-        header: 'Título',
-        cell: ({ row }) => row.original.title,
+        header: 'Artículo',
+        cell: ({ row }) => (
+            <div className="flex flex-col">
+                <span className="font-medium">{row.original.title}</span>
+                <span className="text-sm text-muted-foreground">
+                    por {row.original.author}
+                </span>
+            </div>
+        ),
     },
     {
         id: 'categories',
@@ -27,10 +39,7 @@ export const columns: ColumnDef<Blog>[] = [
             </div>
         ),
     },
-    {
-        accessorKey: 'author',
-        header: 'Autor',
-    },
+
     {
         accessorKey: 'visibility',
         header: 'Visibilidad',
@@ -41,25 +50,50 @@ export const columns: ColumnDef<Blog>[] = [
                 <Badge variant="outline">Borrador</Badge>
             ),
     },
-    {
-        accessorKey: 'featured',
-        header: 'Destacado',
-        cell: ({ row }) =>
-            row.original.featured ? (
-                <Badge>Sí</Badge>
-            ) : (
-                <Badge variant="outline">No</Badge>
-            ),
-    },
+
     {
         accessorKey: 'publication_date',
         header: 'Fecha publicación',
-        cell: ({ row }) => formatDate(row.original.publication_date),
+        cell: ({ row }) => formatDate(row.original.publication_date, true),
     },
     {
         id: 'actions',
         header: 'Acciones',
-        cell: () => <div>asdsadsasd</div>,
+        cell: ({ row }) => {
+            const blog = row.original;
+
+            return (
+                <div className="flex items-center gap-2">
+                    {/* Editar */}
+                    <Button type="button" variant="outline" size="icon" asChild>
+                        <Link
+                            href={blogs.items.edit(blog.id)}
+                            title="Editar blog"
+                        >
+                            <Edit />
+                        </Link>
+                    </Button>
+
+                    {/* Eliminar */}
+                    <ConfirmDeleteAlert
+                        resourceId={blog.id}
+                        resourceName={blog.title}
+                        routes={blogs.items}
+                        trigger={
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                title="Eliminar blog"
+                                className="bg-red-700!"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Trash />
+                            </Button>
+                        }
+                    />
+                </div>
+            );
+        },
     },
 ];
 

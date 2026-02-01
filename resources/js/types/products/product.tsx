@@ -11,6 +11,7 @@ export interface ProductAttribute {
     attribute_name: string;
     attribute_value_id: string;
     attribute_value: string;
+    value?: string;
 }
 export interface Media {
     id?: number;
@@ -24,6 +25,10 @@ export interface ProductVariant {
     sku: string;
     price: string;
     promo_price: string | null;
+    promo_start_at?: string | null;
+    promo_end_at?: string | null;
+    is_active?: boolean;
+
     is_on_promo: boolean;
     stock: number;
     attributes: ProductAttribute[];
@@ -51,4 +56,5 @@ export interface Product {
     metadata: Metadata;
     created_at: string;
     updated_at: string;
+    category_id?: string;
 }

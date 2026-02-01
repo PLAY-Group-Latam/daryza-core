@@ -2,11 +2,13 @@
 
 namespace App\Http\Web\Controllers\Blogs;
 
-use App\Http\Requests\BlogRequest;
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Requests\Blogs\BlogRequest;
+use App\Http\Web\Requests\Blogs\UpdateBlogRequest;
+use App\Http\Web\Services\Blog\BlogService;
 use App\Models\Blogs\Blog;
 use App\Models\Blogs\BlogCategory;
-use Illuminate\Http\Request;
+
 use Inertia\Inertia;
 
 class BlogController extends Controller
@@ -16,16 +18,14 @@ class BlogController extends Controller
    */
   public function index()
   {
-    // Paginación dinámica: ?per_page=15 en la URL
-    $perPage = request()->input('per_page', 15);
+    $perPage = request()->input('per_page', 10);
 
     // Traer blogs con categorías y metadata
     $blogs = Blog::with('categories', 'metadata')
       ->latest()
       ->paginate($perPage)
-      ->withQueryString(); // mantiene parámetros de query en paginación
+      ->withQueryString();
 
-    // Preparar los datos para Inertia
     return Inertia::render('blogs/Index', [
       'paginatedBlogs' => $blogs,
     ]);
@@ -37,29 +37,24 @@ class BlogController extends Controller
    */
   public function create()
   {
-    return Inertia::render('blogs/Create');
+    $categories = BlogCategory::select('id', 'name')->get();
+
+    return Inertia::render('blogs/Create', [
+      'categories' => $categories,
+    ]);
   }
+
 
   /**
    * Guardar un nuevo blog
    */
-  public function store(BlogRequest $request)
+  public function store(BlogRequest $request, BlogService $blogService)
   {
     $data = $request->validated();
 
-    $blog = Blog::create($data);
+    $blogService->save($data);
 
-    // Asociar categorías
-    if (isset($data['categories'])) {
-      $blog->categories()->sync($data['categories']);
-    }
-
-    // Metadata polimórfica
-    if (isset($data['metadata'])) {
-      $blog->metadata()->create($data['metadata']);
-    }
-
-    return redirect()->route('admin.blogs.index')
+    return redirect()->route('blogs.items.index')
       ->with('success', 'Blog creado correctamente.');
   }
 
@@ -71,33 +66,19 @@ class BlogController extends Controller
     $categories = BlogCategory::all();
     $blog->load('categories', 'metadata');
 
-    return view('admin.blogs.edit', compact('blog', 'categories'));
+    return Inertia::render('blogs/Edit', [
+      'categories' => $categories,
+      'blog' => $blog
+    ]);
   }
-
-  /**
-   * Actualizar blog existente
-   */
-  public function update(BlogRequest $request, Blog $blog)
+  public function update(UpdateBlogRequest $request, Blog $blog, BlogService $blogService)
   {
+
     $data = $request->validated();
 
-    $blog->update($data);
+    $blogService->save($data, $blog);
 
-    // Actualizar categorías
-    if (isset($data['categories'])) {
-      $blog->categories()->sync($data['categories']);
-    }
-
-    // Actualizar o crear metadata
-    if (isset($data['metadata'])) {
-      if ($blog->metadata) {
-        $blog->metadata->update($data['metadata']);
-      } else {
-        $blog->metadata()->create($data['metadata']);
-      }
-    }
-
-    return redirect()->route('admin.blogs.index')
+    return redirect()->route('blogs.items.index')
       ->with('success', 'Blog actualizado correctamente.');
   }
 
@@ -106,8 +87,11 @@ class BlogController extends Controller
    */
   public function destroy(Blog $blog)
   {
+    // Soft delete
     $blog->delete();
-    return redirect()->route('admin.blogs.index')
+
+    // Retornar respuesta para Inertia (si se usa botón de eliminar en la tabla)
+    return redirect()->route('blogs.items.index')
       ->with('success', 'Blog eliminado correctamente.');
   }
 }

@@ -3,26 +3,30 @@
 namespace App\Http\Web\Requests\Blogs;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Rule;
 
-class BlogRequest extends FormRequest
+class UpdateBlogRequest extends FormRequest
 {
   public function authorize(): bool
   {
-    return true; // ajusta según permisos
+    return true;
   }
 
   public function rules(): array
   {
-    $blogId = $this->route('blog')?->id;
+    $blogId = $this->route('blog'); // ya es la ULID
 
     return [
       'title' => 'required|string|max:255',
-      'slug' => 'required|string|max:255|unique:blogs,slug,' . $blogId,
+      'slug' => [
+        'required',
+        'string',
+        'max:255',
+        Rule::unique('blogs', 'slug')->ignore($blogId, 'id'),
+      ],
       'description' => 'required|string',
       'content' => 'required|string',
-      // IMAGE y MINIATURE pueden ser archivos o URLs
-      // Solo archivos de imagen
+
       'image' => [
         'nullable',
         function ($attribute, $value, $fail) {
@@ -55,11 +59,13 @@ class BlogRequest extends FormRequest
           }
         }
       ],
+
       'author' => 'required|string|max:255',
       'visibility' => 'boolean',
       'publication_date' => 'required|date',
       'categories' => 'nullable|array',
       'categories.*' => 'exists:blog_categories,id',
+
       'metadata' => 'nullable|array',
       'metadata.meta_title' => 'nullable|string|max:255',
       'metadata.meta_description' => 'nullable|string|max:500',
@@ -78,43 +84,22 @@ class BlogRequest extends FormRequest
   {
     return [
       'title.required' => 'El título es obligatorio.',
-      'title.string' => 'El título debe ser un texto válido.',
-      'title.max' => 'El título no puede superar los 255 caracteres.',
-
       'slug.required' => 'El slug es obligatorio.',
-      'slug.string' => 'El slug debe ser un texto válido.',
-      'slug.max' => 'El slug no puede superar los 255 caracteres.',
-      'slug.unique' => 'El slug ya está en uso, elige otro.',
-
+      'slug.unique' => 'El slug ya está en uso.',
       'description.required' => 'La descripción es obligatoria.',
-      'description.string' => 'La descripción debe ser un texto válido.',
-
       'content.required' => 'El contenido es obligatorio.',
-      'content.string' => 'El contenido debe ser un texto válido.',
-
       'author.required' => 'El autor es obligatorio.',
-      'author.string' => 'El autor debe ser un texto válido.',
-      'author.max' => 'El autor no puede superar los 255 caracteres.',
-
-      'visibility.boolean' => 'La visibilidad debe ser verdadero o falso.',
-
       'publication_date.required' => 'La fecha de publicación es obligatoria.',
-      'publication_date.date' => 'La fecha de publicación debe ser una fecha válida.',
-
-      'categories.array' => 'Las categorías deben ser un arreglo.',
       'categories.*.exists' => 'Una de las categorías seleccionadas no existe.',
-
-      'metadata.array' => 'Los metadatos deben ser un arreglo.',
-      'metadata.meta_title.max' => 'El meta título no puede superar los 255 caracteres.',
-      'metadata.meta_description.max' => 'La meta descripción no puede superar los 500 caracteres.',
-      'metadata.meta_keywords.max' => 'Las meta keywords no pueden superar los 255 caracteres.',
-      'metadata.og_title.max' => 'El OG title no puede superar los 255 caracteres.',
-      'metadata.og_description.max' => 'El OG description no puede superar los 500 caracteres.',
-      'metadata.og_image.max' => 'El OG image no puede superar los 255 caracteres.',
-      'metadata.og_type.max' => 'El OG type no puede superar los 50 caracteres.',
-      'metadata.canonical_url.max' => 'La URL canónica no puede superar los 255 caracteres.',
+      'visibility.boolean' => 'La visibilidad debe ser verdadero o falso.',
       'metadata.noindex.boolean' => 'El campo noindex debe ser verdadero o falso.',
       'metadata.nofollow.boolean' => 'El campo nofollow debe ser verdadero o falso.',
+      'image.file' => 'La imagen debe ser un archivo válido.',
+      'image.mimes' => 'La imagen debe ser jpg, jpeg, png, gif o webp.',
+      'image.max' => 'La imagen no puede superar los 5MB.',
+      'miniature.file' => 'La miniatura debe ser un archivo válido.',
+      'miniature.mimes' => 'La miniatura debe ser jpg, jpeg, png, gif o webp.',
+      'miniature.max' => 'La miniatura no puede superar los 5MB.',
     ];
   }
 }
