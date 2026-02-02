@@ -26,6 +26,7 @@ import {
     Truck,
     User,
     Users,
+    Headset,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -77,6 +78,16 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
+ {
+    title: 'Leads',
+    icon: Headset,
+    children: [
+        {
+            title: 'Lista de Reclamaciones',
+            href: '/reclamaciones/items'  
+        }
+    ]
+},
     {
         title: 'Configuración',
         icon: Store,
