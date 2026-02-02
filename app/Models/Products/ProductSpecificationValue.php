@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models\Products;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -8,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductSpecificationValue extends Model
 {
-      use HasFactory, HasUlids;
+    use HasFactory, HasUlids;
 
     protected $table = 'product_specification_values';
     protected $primaryKey = 'id';
@@ -37,5 +38,13 @@ class ProductSpecificationValue extends Model
     public function attributeValue(): BelongsTo
     {
         return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
+    }
+
+//accesor 
+    public function getSpecificationAttribute(): ?string
+    {
+        return $this->attribute_value_id
+            ? $this->attributeValue?->value
+            : $this->value;
     }
 }

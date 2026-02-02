@@ -20,13 +20,25 @@ export default function Index() {
                         Lista de Productos
                     </h1>
 
-                    <Link
-                        href="/productos/items/create"
-                        className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
-                    >
-                        <Plus className="mr-1 h-4 w-4" />
-                        Crear Producto
-                    </Link>
+                    <div className="flex gap-2">
+                        {/* Botón para crear producto */}
+                        <Link
+                            href="/productos/items/create"
+                            className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
+                        >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Crear Producto
+                        </Link>
+
+                        {/* Botón para importar Excel */}
+                        <Link
+                            href="/productos/items/import"
+                            className="flex items-center gap-2 rounded-sm bg-green-600 px-2.5 py-1.5 text-sm text-white hover:bg-green-700"
+                        >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Importar Productos
+                        </Link>
+                    </div>
                 </div>
 
                 <TableList data={products} />
