@@ -45,6 +45,11 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+  // Valores seleccionados de atributos
+    public function variantAttributeValues()
+    {
+        return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');
+    }
 
     /**
      * Valores de atributos asociados a esta variante

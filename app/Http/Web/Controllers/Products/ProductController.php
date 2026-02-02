@@ -4,6 +4,7 @@ namespace App\Http\Web\Controllers\Products;
 
 use App\Enums\OgType;
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Requests\Products\StoreProductImportRequest;
 use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
 use App\Http\Web\Services\Products\ProductService;
@@ -24,6 +25,8 @@ class ProductController extends Controller
   {
     $this->productService = $productService;
   }
+
+
 
 
   public function index()
@@ -97,9 +100,9 @@ class ProductController extends Controller
   {
     $product->load([
       'category:id,name,slug,parent_id',
-      'variants.variantAttributes.attributeValue.attribute',
       'variants.media',
-      'technicalSheets',
+      'variants.attributeValues.attribute',  // trae valores de atributo directamente con su atributo
+      'variants.variantAttributeValues.attributeValue.attribute', // pa      'technicalSheets',
       'specifications.attribute',
       'metadata',
     ]);

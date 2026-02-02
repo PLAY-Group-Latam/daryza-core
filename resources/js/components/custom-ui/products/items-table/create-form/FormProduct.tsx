@@ -241,6 +241,7 @@ export default function FormProduct({
                 forceFormData: true,
             },
         );
+        // console.log('data enviada', data);
     };
     const onError = (errors: any) => {
         console.log('ERRORES:', errors);

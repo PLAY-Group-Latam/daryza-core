@@ -33,12 +33,4 @@ class ProductVariantAttributeValue extends Model
     return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
   }
 
-  /**
-   * Media específica de esta combinación
-   * Ej: imagen del color rojo real
-   */
-  public function media()
-  {
-    return $this->morphMany(ProductMedia::class, 'mediable');
-  }
 }
