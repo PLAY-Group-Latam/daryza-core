@@ -11,6 +11,10 @@ class Claim extends Model
 {
     use SoftDeletes, HasUlids;
 
+    protected $table = 'leads'; 
+
+    
+
     const TYPE_ABOUT_US = 'about_us';
     const TYPE_HELP_CENTER = 'help_center';
     const TYPE_DISTRIBUTOR = 'distributor';

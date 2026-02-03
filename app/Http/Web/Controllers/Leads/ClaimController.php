@@ -2,71 +2,86 @@
 
 namespace App\Http\Web\Controllers\Leads;
 
-
-use Inertia\Inertia;
+use App\Http\Web\Controllers\Controller;
 use App\Models\Leads\Claim;
-use Illuminate\Http\Request;
+use App\Http\Web\Services\Leads\ClaimService;
+use App\Http\Web\Requests\Leads\ClaimRequest;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
-class ClaimController
+class ClaimController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * LISTAR: Mostrar lista paginada de reclamaciones.
      */
-   public function index()
+    public function index()
     {
-        // Tu lógica aquí
-        $claims = Claim::latest()->paginate(10);
+        $service = new ClaimService();
         
-        return Inertia::render('claims/Index', [  
-            'paginatedClaims' => $claims,
+        return Inertia::render('leads/claims/Index', [
+            'paginatedClaims' => $service->getPaginatedClaims(10)
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('leads/claims/Create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * GUARDAR: Almacenar una nueva reclamación.
      */
-    public function store(Request $request)
+    public function store(ClaimRequest $request)
     {
-        //
+        $service = new ClaimService();
+        
+        $service->save($request->validated());
+
+        return redirect()->route('claims.items.index')
+            ->with('success', 'Reclamación enviada y registrada correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Claim $claim)
     {
-        //
+        $service = new ClaimService();
+
+        return Inertia::render('leads/claims/Show', [
+            'claim' => $service->getDetails($claim)
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Claim $claim)
     {
-        //
+        return Inertia::render('leads/claims/Edit', [
+            'claim' => $claim
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+  
+    public function update(ClaimRequest $request, Claim $claim)
     {
-        //
+        
+        $claim->update([
+            'full_name' => $request->name,
+            'email'     => $request->email,
+            'phone'     => $request->phone_number,
+            'status'    => $request->status ?? $claim->status,
+        ]);
+
+        return redirect()->route('claims.items.index')
+            ->with('success', 'Reclamación actualizada exitosamente');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Claim $claim)
     {
-        //
+       
+        if ($claim->file_path) {
+            Storage::disk('public')->delete($claim->file_path);
+        }
+
+        $claim->delete();
+
+        return redirect()->route('claims.items.index')
+            ->with('success', 'Reclamación eliminada exitosamente');
     }
 }

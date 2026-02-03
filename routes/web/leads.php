@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Web\Controllers\Leads\ClaimControler;
+use App\Http\Web\Controllers\Leads\ClaimController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('reclamaciones')->name('reclamaciones.')->middleware('auth')->group(function () {
-  Route::resource('items', ClaimControler::class)
+Route::prefix('claims')->name('claims.')->middleware('auth')->group(function () {
+  Route::resource('items', ClaimController::class)
     ->names('items')
     ->parameters([
       'items' => 'claim',

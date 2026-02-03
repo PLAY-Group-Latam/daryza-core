@@ -84,7 +84,7 @@ const mainNavItems: NavItem[] = [
     children: [
         {
             title: 'Lista de Reclamaciones',
-            href: '/reclamaciones/items'  
+            href: '/claims/items'  
         }
     ]
 },
