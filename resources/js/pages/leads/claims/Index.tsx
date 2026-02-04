@@ -1,12 +1,12 @@
 import TableList from '@/components/custom-ui/leads/TableList';
 import AppLayout from '@/layouts/app-layout';
 import { Claim } from '@/types/claim';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
 
 export default function Index() {
-    const { paginatedClaims } = usePage<{
+    const { paginatedClaims, filters } = usePage<{
         paginatedClaims: Paginated<Claim>;
+        filters: { search?: string }; 
     }>().props;
 
     return (
@@ -18,10 +18,12 @@ export default function Index() {
                     <h1 className="text-lg font-bold lg:text-2xl">
                         Lista de Reclamaciones
                     </h1>
-
                 </div>
 
-                <TableList data={paginatedClaims} />
+                <TableList 
+                    data={paginatedClaims} 
+                    filters={filters} 
+                />
             </div>
         </AppLayout>
     );

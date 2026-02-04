@@ -7,6 +7,7 @@ use App\Models\Leads\Claim;
 use App\Http\Web\Services\Leads\ClaimService;
 use App\Http\Web\Requests\Leads\ClaimRequest;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ClaimController extends Controller
@@ -14,14 +15,17 @@ class ClaimController extends Controller
     /**
      * LISTAR: Mostrar lista paginada de reclamaciones.
      */
-    public function index()
-    {
-        $service = new ClaimService();
-        
-        return Inertia::render('leads/claims/Index', [
-            'paginatedClaims' => $service->getPaginatedClaims(10)
-        ]);
-    }
+   public function index(Request $request) 
+{
+    $service = new ClaimService();
+    
+    $search = $request->input('search');
+
+    return Inertia::render('leads/claims/Index', [
+        'paginatedClaims' => $service->getPaginatedClaims(10, $search),
+        'filters' => $request->only(['search']) 
+    ]);
+}
 
     public function create()
     {

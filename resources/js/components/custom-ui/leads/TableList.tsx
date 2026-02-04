@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { router } from '@inertiajs/react'; 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
@@ -12,11 +13,25 @@ import { ModalClaimList } from './ModalList';
 
 interface TableListProps {
     data: Paginated<Claim>;
+    filters?: {
+        search?: string;
+    };
 }
 
-export default function TableList({ data }: TableListProps) {
+export default function TableList({ data, filters }: TableListProps) {
     const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true, 
+                replace: true,       
+            }
+        );
+    };
 
     if (!data || !data.data) return null;
 
@@ -98,7 +113,12 @@ export default function TableList({ data }: TableListProps) {
 
     return (
         <div className="w-full">
-            <DataTable columns={columns} data={data} />
+            <DataTable 
+                columns={columns} 
+                data={data} 
+                onSearch={handleSearch}           
+                initialSearch={filters?.search}    
+            />
             
             <ModalClaimList 
                 claim={selectedClaim} 

@@ -9,14 +9,35 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class ClaimService
 {
     /**
-     * LISTAR: Obtener lista paginada de reclamaciones.
+     * LISTAR: Obtener lista paginada de reclamaciones con soporte para búsqueda.
      */
-    public function getPaginatedClaims(int $perPage = 10): LengthAwarePaginator
-    {
-        return Claim::claims() 
-            ->latest()
-            ->paginate($perPage);
+public function getPaginatedClaims(int $perPage = 10, ?string $search = null): LengthAwarePaginator
+{
+    // Usamos el nombre de la tabla para evitar ambigüedades en Postgres
+    $query = Claim::query()->where('leads.type', '=', Claim::TYPE_CLAIM);
+
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $searchTerm = "%" . trim($search) . "%";
+
+            // 1. Columnas de texto (con cast explícito a texto para Postgres)
+            $q->where('leads.full_name', 'ilike', $searchTerm)
+              ->orWhere('leads.email', 'ilike', $searchTerm);
+
+            // 2. Columnas JSONB (Sintaxis nativa de Postgres)
+            // Agregamos un cast ::text para asegurar la comparación con el ILIKE
+            $q->orWhereRaw("(leads.data->>'document_number')::text ilike ?", [$searchTerm])
+              ->orWhereRaw("(leads.data->>'type_of_claim_id')::text ilike ?", [$searchTerm])
+              ->orWhereRaw("(leads.data->>'well_hired_id')::text ilike ?", [$searchTerm]);
+        });
     }
+
+    // Importante: latest() en Postgres a veces falla si no hay created_at, 
+    // usamos el ID o created_at explícito
+    return $query->orderBy('leads.created_at', 'desc')
+        ->paginate($perPage)
+        ->withQueryString();
+}
 
     /**
      * CREAR: Crear una nueva reclamación.
