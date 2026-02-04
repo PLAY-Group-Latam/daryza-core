@@ -17,6 +17,7 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
             $table->string('sku')->unique();
+            $table->string('sku_supplier')->unique()->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('promo_price', 10, 2)->nullable();
             $table->boolean('is_on_promo')->default(false);

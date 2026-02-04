@@ -18,6 +18,7 @@ class ProductVariant extends Model
     protected $fillable = [
         'product_id',
         'sku',
+        'sku_supplier',
         'price',
         'promo_price',
         'is_on_promo',
@@ -45,7 +46,7 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
-  // Valores seleccionados de atributos
+    // Valores seleccionados de atributos
     public function variantAttributeValues()
     {
         return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');

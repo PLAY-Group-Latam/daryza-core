@@ -3,43 +3,38 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Api\v1\Controllers\Controller;
-use App\Http\Web\Jobs\ImportProductsJob;
-use Illuminate\Http\Request;
+use App\Http\Web\Imports\ProductsImport;
+
 use App\Http\Web\Requests\Products\StoreProductImportRequest;
-use App\Models\Import;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductImportController extends Controller
 {
     public function showForm()
     {
-        return Inertia::render('products/Import'); // Página React con el formulario
+
+        return Inertia::render('products/Import');
     }
 
     public function import(StoreProductImportRequest $request)
     {
         $file = $request->file('file');
-        $path = $file->store('imports');
+        try {
+            Excel::import(new ProductsImport(), $file);
 
-        // Crear registro en la base de datos
-        $import = Import::create([
-            'file_name' => $file->getClientOriginalName(),
-            'path' => $path,
-            'status' => 'pending',
-        ]);
 
-        // Pasar el ULID al job
-        ImportProductsJob::dispatch($import->id);
-
-        return redirect()->back()->with('success', 'Importación en proceso. Puede tardar varios minutos.');
+            return redirect()->route('products.items.index')->with('success', 'Productos importados correctamente.');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            foreach ($failures as $failure) {
+                Log::error("Fila {$failure->row()}: " . implode(', ', $failure->errors()));
+            }
+            return back()->withErrors(['file' => 'Algunas filas no pasaron la validación.']);
+        } catch (\Exception $e) {
+            Log::error('Error al importar productos: ' . $e->getMessage());
+            return back()->withErrors(['file' => 'Error al procesar el archivo.']);
+        }
     }
-
-  public function status(string $id)
-{
-    $import = Import::findOrFail($id);
-
-    return Inertia::render('products/Import', [
-        'import' => $import,
-    ]);
-}
 }
