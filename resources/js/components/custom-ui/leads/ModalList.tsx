@@ -154,7 +154,7 @@ export const ModalClaimList = ({ claim, isOpen, onClose }: ModalListProps) => {
                     className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-semibold text-xs px-5 h-9 shadow-sm w-full sm:w-auto"
                   >
                     <a 
-                      href={`/storage/${claim.file_path}`} 
+                      href={`${claim.file_path}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2"
