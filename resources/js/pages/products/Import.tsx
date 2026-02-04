@@ -1,12 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import FormImport from '@/components/custom-ui/products/items-table/FormImport';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+
+type ImportStatus = 'pending' | 'processing' | 'done' | 'failed';
+
+interface Import {
+    id: string;
+    status: ImportStatus;
+    error_message?: string | null;
+}
 
 export default function Import() {
-    const { import: importData } = usePage<{ import?: any }>().props;
-
-    console.log(importData);
     return (
         <AppLayout>
             <Head title="Importar Productos" />
@@ -21,7 +25,7 @@ export default function Import() {
                     </Link>
                 </div>
 
-                {/* Formulario Import */}
+                {/* Formulario */}
                 <FormImport />
             </div>
         </AppLayout>

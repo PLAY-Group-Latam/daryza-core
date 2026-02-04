@@ -9,9 +9,10 @@ Route::prefix('v1')
     require __DIR__ . '/ubigeos.php';
     require __DIR__ . '/customer.php';
     require __DIR__ . '/products.php';
+    require __DIR__ . '/blogs.php';
   });
 
 Route::prefix('v1')
-  ->group(function() {
+  ->group(function () {
     require __DIR__ . '/script.php';
   });

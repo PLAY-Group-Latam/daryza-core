@@ -20,8 +20,7 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
   Route::post('items/import', [ProductImportController::class, 'import'])
     ->name('items.import');
 
-  Route::get('items/import/{id}/status', [ProductImportController::class, 'status'])
-    ->name('items.import.status');
+
 
   Route::resource('items', ProductController::class)->parameters([
     'items' => 'product',

@@ -7,7 +7,9 @@ use App\Enums\OgType;
 use App\Enums\StorageFolder;
 use App\Http\Web\Services\GcsService;
 use App\Models\Products\Product;
+use App\Models\Products\ProductCategory;
 use App\Models\Products\ProductVariant;
+use Illuminate\Support\Str;
 
 class ProductService
 {
