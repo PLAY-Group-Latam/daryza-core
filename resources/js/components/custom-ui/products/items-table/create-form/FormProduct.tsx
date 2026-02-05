@@ -1,4 +1,5 @@
-/* eslint-disable react-hooks/incompatible-library */
+/* eslint-disable react-hooks/exhaustive-deps */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
@@ -9,9 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import products from '@/routes/products';
 import { CategorySelect } from '@/types/products';
 import { Attribute } from '@/types/products/attributes';
-import { Product } from '@/types/products/product';
+import { ProductEdit } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../../slug-text';
@@ -81,36 +83,82 @@ export default function FormProduct({
 }: {
     categories: CategorySelect[];
     attributes: Attribute[];
-    product?: Product; // 👈 opcional
+    product?: ProductEdit; // 👈 opcional
 }) {
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
         defaultValues: {
-            name: product?.name ?? '',
-            slug: product?.slug ?? '',
-            category_id: product?.category_id
-                ? String(product.category_id)
-                : '',
-            brief_description: product?.brief_description ?? '',
-            description: product?.description ?? '',
-            is_active: product?.is_active ?? true,
+            name: '',
+            slug: '',
+            category_id: '',
+            brief_description: '',
+            description: '',
+            is_active: true,
             metadata: {
-                meta_title: product?.metadata.meta_title ?? '',
-                meta_description: product?.metadata.meta_description ?? '',
-                canonical_url: product?.metadata.canonical_url ?? '',
-                og_title: product?.metadata.meta_title ?? '',
-                og_description: product?.metadata.meta_description ?? '',
-                noindex: product?.metadata.noindex ?? false,
-                nofollow: product?.metadata.nofollow ?? false,
+                meta_title: '',
+                meta_description: '',
+                canonical_url: '',
+                og_title: '',
+                og_description: '',
+                noindex: false,
+                nofollow: false,
             },
             variant_attribute_ids: [],
             variants: [],
             technicalSheets: [],
             specifications: [],
-            specification_selector: '',
         },
     });
 
+    const mapMediaToEdit = (media: any[] = []) => {
+        return media.map((m) => m.file_path); // 🔥 SOLO URL
+    };
+
+    useEffect(() => {
+        if (product) {
+            methods.reset({
+                name: product.name,
+                slug: product.slug,
+                category_id: product.category_id,
+                brief_description: product.brief_description,
+                description: product.description,
+                is_active: product.is_active,
+
+                metadata: {
+                    meta_title: product.metadata?.meta_title ?? '',
+                    meta_description: product.metadata?.meta_description ?? '',
+                    canonical_url: product.metadata?.canonical_url ?? '',
+                    og_title: product.metadata?.og_title ?? '',
+                    og_description: product.metadata?.og_description ?? '',
+                    noindex: product.metadata?.noindex ?? false,
+                    nofollow: product.metadata?.nofollow ?? false,
+                },
+
+                variant_attribute_ids: product.variant_attribute_ids,
+
+                variants: product.variants.map((v) => ({
+                    sku: v.sku,
+                    price: v.price,
+                    promo_price: v.promo_price ?? undefined, // 🔥 FIX
+                    is_on_promo: v.is_on_promo,
+                    promo_start_at: v.promo_start_at ?? undefined,
+                    promo_end_at: v.promo_end_at ?? undefined,
+                    stock: v.stock,
+                    is_active: v.is_active,
+                    is_main: v.is_main,
+                    media: mapMediaToEdit(v.media),
+                    attributes: v.attributes ?? [],
+                })),
+
+                technicalSheets:
+                    product.technicalSheets?.map((ts) => ({
+                        file_path: ts.file_path,
+                    })) ?? [],
+
+                specifications: product.specifications ?? [],
+            });
+        }
+    }, [product]);
     const { handleSubmit, watch, control, formState } = methods;
 
     const { errors, isSubmitting } = formState;

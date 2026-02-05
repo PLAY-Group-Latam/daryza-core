@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { FileText, Upload } from 'lucide-react';
+import { ExternalLink, FileText, Upload } from 'lucide-react';
 import { ControllerRenderProps } from 'react-hook-form';
 import { ProductFormValues } from './FormProduct';
 
@@ -19,8 +19,12 @@ export function TechnicalSheetsForm({ field }: TechnicalSheetsFormProps) {
     };
 
     const handleRemove = (index: number) => {
-        const updated = technicalSheets.filter((_, i) => i !== index);
-        field.onChange(updated);
+        field.onChange(technicalSheets.filter((_, i) => i !== index));
+    };
+
+    const getFileNameFromPath = (path?: string) => {
+        if (!path) return 'Unnamed PDF';
+        return path.split('/').pop();
     };
 
     return (
@@ -46,30 +50,49 @@ export function TechnicalSheetsForm({ field }: TechnicalSheetsFormProps) {
 
                 {technicalSheets.length > 0 && (
                     <ul className="mt-4 w-full space-y-2">
-                        {technicalSheets.map((sheet, index) => (
-                            <li
-                                key={index}
-                                className="flex items-center justify-between rounded-md border bg-gray-50 p-3 text-sm"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5 text-blue-500" />
-                                    <span className="max-w-xs truncate">
-                                        {sheet.file?.name ||
-                                            sheet.file_path ||
-                                            'Unnamed PDF'}
-                                    </span>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="link"
-                                    size="sm"
-                                    className="text-xs text-red-500"
-                                    onClick={() => handleRemove(index)}
+                        {technicalSheets.map((sheet, index) => {
+                            const isRemote = !!sheet.file_path;
+
+                            return (
+                                <li
+                                    key={index}
+                                    className="flex items-center justify-between rounded-md border bg-gray-50 p-3 text-sm"
                                 >
-                                    Eliminar
-                                </Button>
-                            </li>
-                        ))}
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-blue-500" />
+
+                                        {isRemote ? (
+                                            <a
+                                                href={sheet.file_path}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 truncate text-blue-600 hover:underline"
+                                            >
+                                                {getFileNameFromPath(
+                                                    sheet.file_path,
+                                                )}
+                                                <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                        ) : (
+                                            <span className="truncate">
+                                                {sheet.file?.name ||
+                                                    'Unnamed PDF'}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="link"
+                                        size="sm"
+                                        className="text-xs text-red-500"
+                                        onClick={() => handleRemove(index)}
+                                    >
+                                        Eliminar
+                                    </Button>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>

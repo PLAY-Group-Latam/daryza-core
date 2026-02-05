@@ -98,15 +98,86 @@ class ProductController extends Controller
 
   public function edit(Product $product)
   {
+  
     $product->load([
-      'category:id,name,slug,parent_id',
-      'variants.media',
-      'variants.attributeValues.attribute',  // trae valores de atributo directamente con su atributo
-      // 'variants.variantAttributeValues.attributeValue.attribute', // pa      'technicalSheets',
-      'specifications.attribute',
+      'category',
       'metadata',
+      'technicalSheets',
+      'variants.variantAttributeValues.attributeValue.attribute',
+      'variants.media',
+      'specifications.attribute',
+      'specifications.attributeValue',
+    ]);
+    Log::info('[Product EDIT] Loaded product', [
+      'product' => $product->toArray(),
     ]);
 
+    $productForForm = [
+      'id' => $product->id,
+      'name' => $product->name,
+      'slug' => $product->slug,
+      'category_id' => $product->category_id,
+      'brief_description' => $product->brief_description,
+      'description' => $product->description,
+      'is_active' => $product->is_active,
+
+      'metadata' => $product->metadata ? [
+        'meta_title' => $product->metadata->meta_title,
+        'meta_description' => $product->metadata->meta_description,
+        'canonical_url' => $product->metadata->canonical_url,
+        'og_title' => $product->metadata->og_title,
+        'og_description' => $product->metadata->og_description,
+        'noindex' => (bool) $product->metadata->noindex,
+        'nofollow' => (bool) $product->metadata->nofollow,
+      ] : null,
+
+      'variants' => $product->variants->map(function ($variant) {
+        return [
+          'sku' => $variant->sku,
+          'price' => (float) $variant->price,
+          'promo_price' => $variant->promo_price
+            ? (float) $variant->promo_price
+            : null,
+          'is_on_promo' => (bool) $variant->is_on_promo,
+          'promo_start_at' => optional($variant->promo_start_at)?->toISOString(),
+          'promo_end_at' => optional($variant->promo_end_at)?->toISOString(),
+          'stock' => (int) $variant->stock,
+          'is_active' => true,
+          'is_main' => (bool) $variant->is_main,
+          'media' => $variant->media,
+
+          // 👇 ZOD-COMPATIBLE
+          'attributes' => $variant->attributeValues->map(function ($attrValue) {
+            return [
+              'attribute_id' => $attrValue->attribute->id,
+              'attribute_value_id' => $attrValue->id,
+              'value' => $attrValue->value,
+            ];
+          })->values(),
+        ];
+      })->values(),
+
+      'variant_attribute_ids' => $product->variants
+        ->flatMap(
+          fn($variant) =>
+          $variant->attributeValues
+            ->map(fn($attrValue) => $attrValue->attribute->id)
+        )
+        ->unique()
+        ->values(),
+
+
+
+      'technicalSheets' => $product->technicalSheets->map(function ($sheet) {
+        return [
+          'file_path' => $sheet->file_path,
+        ];
+      })->values(),
+      'specifications' => $product->specifications->map(fn($spec) => [
+        'attribute_id' => $spec->attribute_id,
+        'value' => $spec->value,
+      ])->values(),
+    ];
     $categoriesForSelect = ProductCategory::roots()
       ->active()
       ->with('activeChildren')
@@ -115,7 +186,7 @@ class ProductController extends Controller
     $attributes = Attribute::with(['values'])->get();
 
     return Inertia::render('products/Edit', [
-      'product' => $product,
+      'product' => $productForForm,
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
     ]);
@@ -156,6 +227,7 @@ class ProductController extends Controller
       ->route('products.items.index')
       ->with('success', 'Producto creado correctamente');
   }
+
   public function update(UpdateProductRequest $request, Product $product)
   {
     $this->productService->update(

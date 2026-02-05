@@ -66,3 +66,69 @@ export interface Product {
     updated_at: string;
     category_id?: string;
 }
+
+export interface VariantAttributeEdit {
+    attribute_id: string; // ULID
+    attribute_value_id?: string; // ULID
+    value?: string | boolean | number;
+}
+export interface MediaExisting {
+    id: string;
+    type: 'image' | 'video' | 'technical_sheet';
+    file_path: string;
+    is_main?: boolean;
+    order?: number;
+}
+
+export interface ProductVariantEdit {
+    sku: string;
+
+    price: number;
+    promo_price?: number | null;
+
+    is_on_promo: boolean;
+    promo_start_at?: string | null;
+    promo_end_at?: string | null;
+
+    stock: number;
+
+    is_active?: boolean;
+    is_main: boolean;
+
+    media: MediaExisting[]; // puedes tiparlo luego si quieres
+
+    attributes: VariantAttributeEdit[];
+}
+
+export interface TechnicalSheetEdit {
+    file?: File; // solo cuando se sube uno nuevo
+    file_path?: string; // existente en backend
+}
+
+export interface ProductSpecificationEdit {
+    attribute_id: string;
+    value: string | boolean | number;
+}
+
+export interface ProductEdit {
+    id: string;
+
+    name: string;
+    slug: string;
+    category_id: string;
+
+    brief_description?: string;
+    description?: string;
+
+    is_active: boolean;
+
+    metadata: Metadata;
+
+    variant_attribute_ids: string[];
+
+    variants: ProductVariantEdit[];
+
+    technicalSheets: TechnicalSheetEdit[];
+
+    specifications: ProductSpecificationEdit[];
+}

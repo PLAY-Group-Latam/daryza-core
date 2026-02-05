@@ -153,7 +153,7 @@ export default function FormImport() {
                     <div className="flex items-center justify-between text-center">
                         <p>Plantilla de importación:</p>
                         <a
-                            href="#"
+                            href="/template_productos.xlsx"
                             download
                             className="text-green-600 hover:underline"
                         >

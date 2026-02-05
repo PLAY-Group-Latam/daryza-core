@@ -63,7 +63,9 @@ class ProductVariant extends Model
             'product_variant_attribute_values',
             'product_variant_id',
             'attribute_value_id'
-        )->withTimestamps();
+        )
+        
+        ->withTimestamps();
     }
 
 
