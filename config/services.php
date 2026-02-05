@@ -38,5 +38,10 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],
 
+    'gcs' => [
+        'project_id' => env('GCS_PROJECT_ID'),
+        'bucket' => env('GCS_BUCKET'),
+        'key_file' => env('GCS_KEY_FILE'),
+    ],
 
 ];

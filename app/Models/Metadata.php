@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OgType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +27,14 @@ class Metadata extends Model
         'noindex',
         'nofollow',
     ];
-
+    protected $casts = [
+        'og_type' => OgType::class,
+    ];
+    protected $hidden = [
+        'metadatable_id',
+        'metadatable_type',
+        'deleted_at',
+    ];
     /**
      * Relación polimórfica:
      * Puede pertenecer a Product, Category, Page, etc.

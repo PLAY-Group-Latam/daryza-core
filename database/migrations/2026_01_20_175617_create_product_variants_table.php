@@ -16,16 +16,16 @@ return new class extends Migration
             $table->foreignUlid('product_id')
                 ->constrained()
                 ->cascadeOnDelete();
-
             $table->string('sku')->unique();
-
-            // Precio
+            $table->string('sku_supplier')->unique()->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('promo_price', 10, 2)->nullable();
             $table->boolean('is_on_promo')->default(false);
-            // Stock
+            $table->timestamp('promo_start_at')->nullable();
+            $table->timestamp('promo_end_at')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_main')->default(false);
             $table->integer('stock')->default(0);
-
             $table->timestamps();
             $table->softDeletes();
         });

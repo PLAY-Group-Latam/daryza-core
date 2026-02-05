@@ -23,3 +23,4 @@ require __DIR__ . '/delivery.php';
 require __DIR__ . '/scripts.php';
 require __DIR__ . '/products.php';
 require __DIR__ . '/blogs.php';
+require __DIR__ . '/leads.php';

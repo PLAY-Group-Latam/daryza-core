@@ -3,6 +3,7 @@
 use App\Http\Web\Controllers\Products\AttributeController;
 use App\Http\Web\Controllers\Products\ProductCategoryController;
 use App\Http\Web\Controllers\Products\ProductController;
+use App\Http\Web\Controllers\Products\ProductImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('productos')->name('products.')->middleware('auth')->group(function () {
@@ -12,6 +13,17 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
       'categorias' => 'categories',
     ]);
 
-  Route::resource('items', ProductController::class);
+
+  Route::get('items/import', [ProductImportController::class, 'showForm'])
+    ->name('items.import.form');
+
+  Route::post('items/import', [ProductImportController::class, 'import'])
+    ->name('items.import');
+
+
+
+  Route::resource('items', ProductController::class)->parameters([
+    'items' => 'product',
+  ]);;
   Route::resource('attributes', AttributeController::class);
 });

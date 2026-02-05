@@ -9,6 +9,7 @@ export default function Index() {
         paginatedBlogs: Paginated<Blog>;
     }>().props;
 
+    console.log(paginatedBlogs);
     return (
         <AppLayout>
             <Head title="Lista de Blogs" />

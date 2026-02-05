@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import attributes from '@/routes/products/attributes';
-import { AttributeTypeOption } from '@/types/products';
+import { Attribute, AttributeTypeOption } from '@/types/products/attributes';
 import { useForm } from '@inertiajs/react';
 import { Info, Trash } from 'lucide-react';
 import { useState } from 'react';
@@ -29,24 +29,32 @@ interface FormData {
 
 interface Props {
     types: AttributeTypeOption[];
+    attribute?: Attribute;
 }
 
-export default function FormCreate({ types }: Props) {
-    const { data, setData, post, processing, errors } = useForm<FormData>({
-        name: '',
-        type: '',
-        is_filterable: true,
-        is_variant: false, // 👈 por defecto no es variante
+export default function FormCreate({ types, attribute }: Props) {
+    const isEdit = Boolean(attribute?.id);
 
-        values: [''],
+    const { data, setData, post, put, processing, errors } = useForm<FormData>({
+        name: attribute?.name || '',
+        type: attribute?.type || '',
+        is_filterable: attribute?.is_filterable ?? true,
+        is_variant: attribute?.is_variant ?? false,
+        values: attribute?.values?.map((v) => v.value) || [''], // 👈 aquí mapeamos los valores
     });
     const [useColor, setUseColor] = useState(false);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        const action = attributes.store().url;
-
-        post(action);
+        if (isEdit && attribute) {
+            // Actualización
+            const action = attributes.update(attribute.id).url;
+            put(action); // PUT para editar
+        } else {
+            // Creación
+            const action = attributes.store().url;
+            post(action); // POST para crear
+        }
         console.log(data);
     };
 

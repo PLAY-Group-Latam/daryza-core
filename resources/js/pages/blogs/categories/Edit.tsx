@@ -10,7 +10,7 @@ import { Head, usePage } from '@inertiajs/react';
 
 export default function Edit() {
     const { category } = usePage<{ category: BlogCategory }>().props;
-    console.log('category', category);
+    // console.log('category', category);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />

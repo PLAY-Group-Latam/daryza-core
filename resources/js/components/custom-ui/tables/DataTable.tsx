@@ -1,4 +1,5 @@
-/* eslint-disable react-hooks/incompatible-library */
+'use client';
+
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -12,7 +13,6 @@ import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
     useReactTable,
 } from '@tanstack/react-table';
 import * as React from 'react';
@@ -21,10 +21,28 @@ import { DataTablePagination } from './data-table-pagination';
 interface DataTableProps<T> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
+    onSearch?: (value: string) => void; 
+    initialSearch?: string;
 }
 
-export function DataTable<T>({ columns, data }: DataTableProps<T>) {
-    const [globalFilter, setGlobalFilter] = React.useState('');
+export function DataTable<T>({ 
+    columns, 
+    data, 
+    onSearch, 
+    initialSearch = '' 
+}: DataTableProps<T>) {
+    const [globalFilter, setGlobalFilter] = React.useState(initialSearch);
+
+    // Manejo de la búsqueda con debounce (500ms)
+    React.useEffect(() => {
+        if (!onSearch) return;
+
+        const timer = setTimeout(() => {
+            onSearch(globalFilter);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [globalFilter, onSearch]);
 
     const table = useReactTable({
         data: data.data,
@@ -33,15 +51,17 @@ export function DataTable<T>({ columns, data }: DataTableProps<T>) {
             globalFilter,
         },
         manualPagination: true,
+        manualFiltering: true, // El servidor se encarga del filtrado
         pageCount: data.last_page,
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onGlobalFilterChange: setGlobalFilter,
     });
 
+    const rows = table.getRowModel().rows;
+
     return (
         <div className="w-full space-y-6">
-            <div>
+            <div className="flex items-center justify-between">
                 <Input
                     placeholder="Buscar..."
                     value={globalFilter}
@@ -57,10 +77,12 @@ export function DataTable<T>({ columns, data }: DataTableProps<T>) {
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
                                     <TableHead key={header.id}>
-                                        {flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext(),
-                                        )}
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
                                     </TableHead>
                                 ))}
                             </TableRow>
@@ -68,23 +90,23 @@ export function DataTable<T>({ columns, data }: DataTableProps<T>) {
                     </TableHeader>
 
                     <TableBody>
-                        {table.getRowModel().rows.length === 0 ? (
+                        {rows.length === 0 ? (
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length}
-                                    className="text-center"
+                                    className="h-24 text-center"
                                 >
-                                    No hay registros
+                                    No hay registros.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            table.getRowModel().rows.map((row) => (
+                            rows.map((row) => (
                                 <TableRow key={row.id}>
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
                                             {flexRender(
                                                 cell.column.columnDef.cell,
-                                                cell.getContext(),
+                                                cell.getContext()
                                             )}
                                         </TableCell>
                                     ))}

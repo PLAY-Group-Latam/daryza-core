@@ -25,6 +25,7 @@ interface Props {
     value?: string;
     onChange: (id: string) => void;
     placeholder?: string;
+    showPrincipal?: boolean; // 👈 nueva prop
 }
 
 export function CategoryTreeSelect({
@@ -32,6 +33,7 @@ export function CategoryTreeSelect({
     value,
     onChange,
     placeholder = 'Seleccionar...',
+    showPrincipal = true, // 👈 por defecto sí aparece
 }: Props) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +53,9 @@ export function CategoryTreeSelect({
     };
 
     const label =
-        value === '' ? 'Principal' : (selectedCategory?.name ?? placeholder);
+        showPrincipal && value === ''
+            ? 'Principal'
+            : (selectedCategory?.name ?? placeholder);
 
     return (
         <Popover modal open={open} onOpenChange={setOpen}>
@@ -81,15 +85,18 @@ export function CategoryTreeSelect({
                         </CommandEmpty>
 
                         <CommandGroup className="p-0">
-                            {(!searchTerm ||
-                                'Principal'
-                                    .toLowerCase()
-                                    .includes(searchTerm.toLowerCase())) && (
-                                <RootItem
-                                    selectedValue={value}
-                                    onSelect={handleSelect}
-                                />
-                            )}
+                            {showPrincipal &&
+                                (!searchTerm ||
+                                    'principal'
+                                        .toLowerCase()
+                                        .includes(
+                                            searchTerm.toLowerCase(),
+                                        )) && (
+                                    <RootItem
+                                        selectedValue={value}
+                                        onSelect={handleSelect}
+                                    />
+                                )}
 
                             {filteredTree.map((node) => (
                                 <TreeItem

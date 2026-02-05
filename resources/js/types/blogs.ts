@@ -1,3 +1,5 @@
+import { Metadata } from './metadata';
+
 export interface BlogCategory {
     id: string;
     name: string;
@@ -12,9 +14,15 @@ export interface Blog {
     slug: string;
     author: string;
     categories: BlogCategory[];
+    description: string;
+    content: string;
+    image: File | string | undefined;
+    miniature: File | string | undefined;
+
     visibility: boolean;
     featured: boolean;
     publication_date: string;
+    metadata: Metadata;
     created_at: string;
     updated_at: string;
 }

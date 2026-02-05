@@ -1,6 +1,7 @@
-import FormProduct from '@/components/custom-ui/products/items-table/FormProduct';
+import FormProduct from '@/components/custom-ui/products/items-table/create-form/FormProduct';
 import AppLayout from '@/layouts/app-layout';
-import { Attribute, CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products';
+import { Attribute } from '@/types/products/attributes';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Create() {
@@ -8,7 +9,7 @@ export default function Create() {
         categories: CategorySelect[];
         attributes: Attribute[];
     }>().props;
-    console.log(attributes);
+    // console.log('atributossss:', attributes);
     return (
         <AppLayout>
             <Head title="Crear Producto" />
@@ -19,20 +20,14 @@ export default function Create() {
                         Crear Producto
                     </h1>
 
-                    <Link className="text-sm text-muted-foreground hover:underline">
+                    <Link
+                        href="/productos/items"
+                        className="text-sm text-muted-foreground hover:underline"
+                    >
                         ← Volver a la lista
                     </Link>
                 </div>
                 <FormProduct categories={categories} attributes={attributes} />
-
-                {/* 
-                  Aquí después vamos a ir agregando:
-                  - Formulario de información básica
-                  - Variantes
-                  - Imágenes
-                  - SEO
-                  - Especificaciones
-                */}
             </div>
         </AppLayout>
     );

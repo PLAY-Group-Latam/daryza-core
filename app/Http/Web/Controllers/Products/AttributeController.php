@@ -5,9 +5,11 @@ namespace App\Http\Web\Controllers\Products;
 use App\Enums\AttributeType;
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Requests\Products\Attributes\StoreAttributeRequest;
+use App\Http\Web\Requests\Products\Attributes\UpdateAttributeRequest;
 use App\Models\Products\Attribute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 
@@ -20,6 +22,9 @@ class AttributeController extends Controller
     $attributes = Attribute::with('values')
       ->latest()
       ->paginate($perPage);
+
+Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
+
 
     return Inertia::render('products/attributes/Index', [
       'paginatedAttributes' => $attributes,
@@ -62,6 +67,45 @@ class AttributeController extends Controller
       ->with('success', 'Atributo creado correctamente.');
   }
 
+/**
+ * Página para editar atributo
+ */
+public function edit(Attribute $attribute)
+{
+    return Inertia::render('products/attributes/Edit', [
+        'attribute' => $attribute->load('values'), // cargamos los valores existentes
+        'types' => AttributeType::options(),
+    ]);
+}
+
+public function update(UpdateAttributeRequest $request, Attribute $attribute)
+{
+    $data = $request->validated();
+
+    DB::transaction(function () use ($attribute, $data) {
+        // Actualizamos el atributo
+        $attribute->update($data);
+
+        // Si es tipo SELECT, actualizamos los valores
+        if ($attribute->type === AttributeType::SELECT) {
+            // Eliminamos valores antiguos
+            $attribute->values()->delete();
+
+            // Creamos nuevos valores
+            if (!empty($data['values'])) {
+                foreach ($data['values'] as $value) {
+                    $attribute->values()->create([
+                        'value' => $value,
+                    ]);
+                }
+            }
+        }
+    });
+
+    return redirect()
+        ->route('products.attributes.index')
+        ->with('success', 'Atributo actualizado correctamente.');
+}
   /**
    * Eliminar un atributo
    */

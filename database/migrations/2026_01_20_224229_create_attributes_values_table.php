@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('attributes_values', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('attribute_id')->constrained('attributes')->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('attribute_id')->constrained('attributes')->cascadeOnDelete();
             $table->string('value'); // Rojo, Azul, 1L, S, M...
             $table->timestamps();
         });

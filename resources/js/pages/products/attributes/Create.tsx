@@ -3,7 +3,7 @@
 // import { Button } from '@/components/ui/button';
 import FormCreate from '@/components/custom-ui/products/attributes/FormCreate';
 import AppLayout from '@/layouts/app-layout';
-import { AttributeTypeOption } from '@/types/products';
+import { AttributeTypeOption } from '@/types/products/attributes';
 // import { CategorySelect, PaginatedProductCategories } from '@/types/products';
 import { Head, usePage } from '@inertiajs/react';
 // import { Plus } from 'lucide-react';

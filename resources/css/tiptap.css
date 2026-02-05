@@ -1,0 +1,58 @@
+/* estilos para el editor */
+.rich-editor {
+    min-height: 300px;
+    font-family: inherit;
+    padding: 0.5rem;
+}
+
+/* enlaces */
+.rich-editor a {
+    color: #2563eb; /* azul */
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* cursiva */
+.rich-editor em {
+    font-style: italic;
+}
+
+/* encabezados */
+.rich-editor h1 {
+    font-size: 2rem; /* 32px */
+    margin: 0.5em 0;
+}
+
+.rich-editor h2 {
+    font-size: 1.5rem; /* 24px */
+    margin: 0.5em 0;
+}
+
+/* listas */
+.rich-editor ul {
+    list-style-type: disc;
+    margin-left: 1.5em;
+}
+
+.rich-editor ol {
+    list-style-type: decimal;
+    margin-left: 1.5em;
+}
+
+/* párrafos */
+.rich-editor p {
+    margin: 0.5em 0;
+}
+
+/* negrita */
+.rich-editor strong {
+    font-weight: bold;
+}
+
+.ProseMirror p.is-empty::before {
+    content: attr(data-placeholder);
+    color: #999;
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
