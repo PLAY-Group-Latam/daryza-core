@@ -102,7 +102,7 @@ class ProductController extends Controller
       'category:id,name,slug,parent_id',
       'variants.media',
       'variants.attributeValues.attribute',  // trae valores de atributo directamente con su atributo
-      'variants.variantAttributeValues.attributeValue.attribute', // pa      'technicalSheets',
+      // 'variants.variantAttributeValues.attributeValue.attribute', // pa      'technicalSheets',
       'specifications.attribute',
       'metadata',
     ]);

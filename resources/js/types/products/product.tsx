@@ -32,6 +32,14 @@ export interface ProductVariant {
     is_on_promo: boolean;
     stock: number;
     attributes: ProductAttribute[];
+    attribute_values: {
+        id: string;
+        attribute_id: string;
+        value: string;
+        attribute: {
+            name: string;
+        };
+    }[];
     media: Media[];
     is_main: boolean;
 }
