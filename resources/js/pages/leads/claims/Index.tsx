@@ -1,6 +1,6 @@
-import TableList from '@/components/custom-ui/leads/TableList';
+import TableList from '@/components/custom-ui/leads/claims/TableList';
 import AppLayout from '@/layouts/app-layout';
-import { Claim } from '@/types/claim';
+import { Claim } from '@/types/leads/claim';
 import { Head, usePage } from '@inertiajs/react';
 
 export default function Index() {

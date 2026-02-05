@@ -31,13 +31,24 @@ export function DataTable<T>({
     onSearch, 
     initialSearch = '' 
 }: DataTableProps<T>) {
-    const [globalFilter, setGlobalFilter] = React.useState(initialSearch);
+   
+    const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? "");
 
-    // Manejo de la búsqueda con debounce (500ms)
+    const isFirstRender = React.useRef(true);
+    const lastSearchRef = React.useRef(initialSearch ?? "");
+
     React.useEffect(() => {
         if (!onSearch) return;
 
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (globalFilter === lastSearchRef.current) return;
+
         const timer = setTimeout(() => {
+            lastSearchRef.current = globalFilter;
             onSearch(globalFilter);
         }, 500);
 
@@ -51,7 +62,7 @@ export function DataTable<T>({
             globalFilter,
         },
         manualPagination: true,
-        manualFiltering: true, // El servidor se encarga del filtrado
+        manualFiltering: true,
         pageCount: data.last_page,
         getCoreRowModel: getCoreRowModel(),
         onGlobalFilterChange: setGlobalFilter,
@@ -64,7 +75,7 @@ export function DataTable<T>({
             <div className="flex items-center justify-between">
                 <Input
                     placeholder="Buscar..."
-                    value={globalFilter}
+                    value={globalFilter ?? ""} 
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"
                 />

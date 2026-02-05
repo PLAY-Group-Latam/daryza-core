@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Web\Controllers\Leads\ClaimController;
+use App\Http\Web\Controllers\Leads\ContactController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('claims')->name('claims.')->middleware('auth')->group(function () {
@@ -9,4 +10,12 @@ Route::prefix('claims')->name('claims.')->middleware('auth')->group(function () 
     ->parameters([
       'items' => 'claim',
     ]);
+});
+
+Route::prefix('contacts')->name('contacts.')->group(function () {
+    Route::resource('items', ContactController::class)
+        ->names('items')
+        ->parameters([
+            'items' => 'contact',
+        ]);
 });

@@ -12,9 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ClaimController extends Controller
 {
-    /**
-     * LISTAR: Mostrar lista paginada de reclamaciones.
-     */
+    
    public function index(Request $request) 
 {
     $service = new ClaimService();
