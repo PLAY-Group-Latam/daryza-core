@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/incompatible-library */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
@@ -12,7 +12,6 @@ import { Attribute } from '@/types/products/attributes';
 import { Product } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { useEffect } from 'react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../../slug-text';
@@ -87,20 +86,22 @@ export default function FormProduct({
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
         defaultValues: {
-            name: '',
-            slug: '',
-            category_id: '',
-            brief_description: '',
-            description: '',
-            is_active: true,
+            name: product?.name ?? '',
+            slug: product?.slug ?? '',
+            category_id: product?.category_id
+                ? String(product.category_id)
+                : '',
+            brief_description: product?.brief_description ?? '',
+            description: product?.description ?? '',
+            is_active: product?.is_active ?? true,
             metadata: {
-                meta_title: '',
-                meta_description: '',
-                canonical_url: '',
-                og_title: '',
-                og_description: '',
-                noindex: false,
-                nofollow: false,
+                meta_title: product?.metadata.meta_title ?? '',
+                meta_description: product?.metadata.meta_description ?? '',
+                canonical_url: product?.metadata.canonical_url ?? '',
+                og_title: product?.metadata.meta_title ?? '',
+                og_description: product?.metadata.meta_description ?? '',
+                noindex: product?.metadata.noindex ?? false,
+                nofollow: product?.metadata.nofollow ?? false,
             },
             variant_attribute_ids: [],
             variants: [],
@@ -110,119 +111,10 @@ export default function FormProduct({
         },
     });
 
-    useEffect(() => {
-        if (!product) return;
-
-        methods.reset({
-            name: product.name,
-            slug: product.slug,
-            category_id: product.category_id ?? '',
-            brief_description: product.brief_description ?? '',
-            description: product.description ?? '',
-            is_active: product.is_active,
-
-            metadata: {
-                meta_title: product.metadata?.meta_title ?? '',
-                meta_description: product.metadata?.meta_description ?? '',
-                canonical_url: product.metadata?.canonical_url ?? '',
-                og_title: product.metadata?.og_title ?? '',
-                og_description: product.metadata?.og_description ?? '',
-                noindex: Boolean(product.metadata?.noindex),
-                nofollow: Boolean(product.metadata?.nofollow),
-            },
-
-            variants: product.variants.map((variant) => ({
-                id: variant.id, // 🔑 CLAVE para update
-                sku: variant.sku,
-                price: Number(variant.price),
-                promo_price: Number(variant.promo_price ?? 0),
-                stock: Number(variant.stock),
-                is_active: variant.is_active,
-                is_on_promo: variant.is_on_promo,
-                promo_start_at: variant.promo_start_at,
-                promo_end_at: variant.promo_end_at,
-                is_main: variant.is_main,
-
-                attributes: variant.attributes.map((attr) => ({
-                    attribute_id: attr.attribute_id,
-                    attribute_value_id: attr.attribute_value_id,
-                    value: attr.value,
-                })),
-
-                media: variant.media.map((m) => ({
-                    file_path: m.file_path, // 👈 archivos EXISTENTES
-                })),
-            })),
-
-            technicalSheets: product.technicalSheets.map((sheet) => ({
-                file_path: sheet.file_path,
-            })),
-
-            specifications: product.specifications.map((spec) => ({
-                attribute_id: spec.attribute_id,
-                value: spec.value,
-            })),
-        });
-    }, [product]);
-
     const { handleSubmit, watch, control, formState } = methods;
 
     const { errors, isSubmitting } = formState;
 
-    // const onSubmit = (data: ProductFormValues) => {
-    //     const action = products.items.store().url;
-    //     const formData = new FormData();
-
-    //     type FormValue =
-    //         | string
-    //         | number
-    //         | boolean
-    //         | File
-    //         | null
-    //         | FormValue[]
-    //         | { [key: string]: FormValue };
-
-    //     const appendFormData = (
-    //         fd: FormData,
-    //         value: FormValue,
-    //         key?: string,
-    //     ) => {
-    //         if (value === null || value === undefined) {
-    //             if (key) fd.append(key, '');
-    //             return;
-    //         }
-
-    //         if (value instanceof File) {
-    //             if (!key) throw new Error('File must have a key');
-    //             fd.append(key, value);
-    //         } else if (Array.isArray(value)) {
-    //             value.forEach((item, index) => {
-    //                 const arrayKey = key ? `${key}[${index}]` : `${index}`;
-    //                 appendFormData(fd, item, arrayKey);
-    //             });
-    //         } else if (typeof value === 'object') {
-    //             Object.entries(value).forEach(([k, v]) => {
-    //                 const objectKey = key ? `${key}[${k}]` : k;
-    //                 appendFormData(fd, v, objectKey);
-    //             });
-    //         } else if (typeof value === 'boolean') {
-    //             if (!key) throw new Error('Boolean must have a key');
-    //             fd.append(key, value ? '1' : '0');
-    //         } else {
-    //             if (!key) throw new Error('Primitive must have a key');
-    //             fd.append(key, String(value));
-    //         }
-    //     };
-
-    //     appendFormData(formData, data);
-
-    //     router.post(action, formData, {
-    //         preserveScroll: true,
-    //         // Inertia detecta automáticamente FormData
-    //     });
-
-    //     console.log('FormData enviado:', formData);
-    // };
     const isEdit = Boolean(product);
 
     const onSubmit = (data: ProductFormValues) => {
