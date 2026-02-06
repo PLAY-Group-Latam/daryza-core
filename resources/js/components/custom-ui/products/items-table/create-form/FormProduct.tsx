@@ -159,8 +159,8 @@ export default function FormProduct({
             });
         }
     }, [product]);
-    const { handleSubmit, watch, control, formState } = methods;
 
+    const { handleSubmit, watch, control, formState } = methods;
     const { errors, isSubmitting } = formState;
 
     const isEdit = Boolean(product);
@@ -183,9 +183,11 @@ export default function FormProduct({
         );
         // console.log('data enviada', data);
     };
+
     const onError = (errors: any) => {
         console.log('ERRORES:', errors);
     };
+
     const nameValue = watch('name');
 
     const variantAttributes = attributes.filter((attr) => attr.is_variant);
