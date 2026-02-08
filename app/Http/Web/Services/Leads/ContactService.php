@@ -2,22 +2,20 @@
 
 namespace App\Http\Web\Services\Leads;
 
-use App\Models\Leads\Claim;
+use App\Models\Leads\Lead;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ContactService
 {
-    /**
-     * LISTAR: Obtener contactos filtrados por tipo (pestaña) y búsqueda (input).
-     */
+    
    public function getPaginatedContacts(array $filters, int $perPage = 10): LengthAwarePaginator
 {
     $type = $filters['type'] ?? 'help_center';
     $search = $filters['search'] ?? null;
 
-    $query = Claim::query()->where('leads.type', '=', $type);
+    $query = Lead::query()->where('leads.type', '=', $type);
 
     if ($search) {
         $query->where(function ($q) use ($search) {
@@ -26,7 +24,6 @@ class ContactService
               ->orWhere('leads.email', 'ilike', $searchTerm)
               ->orWhere('leads.phone', 'ilike', $searchTerm);
 
-            // Búsqueda en el JSON
             $q->orWhereRaw("(leads.data->>'ruc_or_dni')::text ilike ?", [$searchTerm])
               ->orWhereRaw("(leads.data->>'rucOrDni')::text ilike ?", [$searchTerm])
               ->orWhereRaw("(leads.data->>'companyOrFullName')::text ilike ?", [$searchTerm]);
@@ -35,13 +32,12 @@ class ContactService
 
     $paginator = $query->orderBy('leads.created_at', 'desc')->paginate($perPage);
 
-    // --- ESTO ES LO NUEVO: APLANAR LA DATA ---
     $paginator->getCollection()->transform(function ($claim) {
         $jsonData = is_string($claim->data) ? json_decode($claim->data, true) : $claim->data;
         
-        // Convertimos el modelo a array y le pegamos el contenido de 'data' en la raíz
+       
         $flattened = array_merge($claim->toArray(), $jsonData ?? []);
-        unset($flattened['data']); // Quitamos el nodo 'data' para que no estorbe
+        unset($flattened['data']);
         
         return (object) $flattened;
     });
@@ -52,7 +48,7 @@ class ContactService
     /**
      * CREAR: Guarda cualquier tipo de lead mapeando su JSON específico.
      */
-    public function save(array $data): Claim
+    public function save(array $data): Lead
     {
         return DB::transaction(function () use ($data) {
             $type = $data['type'];
@@ -62,7 +58,7 @@ class ContactService
                 'full_name' => $data['full_name'],
                 'email'     => $data['email'],
                 'phone'     => $data['phone'] ?? ($data['phone_number'] ?? null),
-                'status'    => Claim::STATUS_NEW,
+                'status'    => Lead::STATUS_NEW,
                 'data'      => $this->mapJsonFields($type, $data),
             ];
 
@@ -71,16 +67,16 @@ class ContactService
                 $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
             }
 
-            return Claim::create($payload);
+            return Lead::create($payload);
         });
     }
 
     /**
      * DETALLES: Para el modal del administrador.
      */
-    public function getDetails(string $id): Claim
+    public function getDetails(string $id): Lead
     {
-        return Claim::findOrFail($id);
+        return Lead::findOrFail($id);
     }
 
     /**

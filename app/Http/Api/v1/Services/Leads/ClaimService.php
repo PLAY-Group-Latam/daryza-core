@@ -2,7 +2,7 @@
 
 namespace App\Http\Api\v1\Services\Leads;
 
-use App\Models\Leads\Claim;
+use App\Models\Leads\Lead;
 use Illuminate\Http\UploadedFile;
 use App\Http\Api\v1\Services\GcsService;
 
@@ -20,14 +20,14 @@ class ClaimService
 
 
 
-  public function save(array $data): Claim
+  public function save(array $data): Lead
     {
         $payload = [
-            'type'      => Claim::TYPE_CLAIM,
+            'type'      => Lead::TYPE_CLAIM,
             'full_name' => $data['name'],
             'email'     => $data['email'],
             'phone'     => $data['phone_number'],
-            'status'    => Claim::STATUS_NEW, 
+            'status'    => Lead::STATUS_NEW, 
             'data'      => $this->mapJsonFields($data),
         ];
 
@@ -40,7 +40,7 @@ class ClaimService
             $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
         }
 
-        return Claim::create($payload);
+        return Lead::create($payload);
     }
 
     protected function mapJsonFields(array $data): array
