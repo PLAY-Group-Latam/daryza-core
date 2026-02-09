@@ -23,7 +23,7 @@ class ContactService
             'type'       => $type,
             'full_name'  => $data['full_name'],
             'email'      => $data['email'],
-            'phone'      => $data['phone_number'] ?? null,
+            'phone'      => $data['phone'] ?? null,
             'status'     => Lead::STATUS_NEW,
             'data'       => $this->mapJsonFieldsByType($data),
         ];
@@ -67,6 +67,7 @@ class ContactService
             'ruc_or_dni'        => $data['ruc_or_dni'] ?? null,
             'number_of_sellers' => $data['number_of_sellers'] ?? null,
             'address'           => $data['address'] ?? null,
+            'department'        => $data['department'] ?? null,
             'district'          => $data['district'] ?? null,
             'province'          => $data['province'] ?? null,
             'other_products'    => $data['other_products'] ?? null,

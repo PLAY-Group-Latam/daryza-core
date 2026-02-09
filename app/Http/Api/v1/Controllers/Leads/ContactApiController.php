@@ -22,15 +22,14 @@ class ContactApiController extends Controller
     /**
      * Store a new contact lead based on type.
      */
-    public function store(ContactRequest $request): JsonResponse
+     public function store(ContactRequest $request): JsonResponse
     {
         try {
             $lead = $this->contactService->save($request->validated());
 
-            return $this->success(
+            return $this->created(
                 '¡Gracias! Tu solicitud ha sido recibida correctamente.',
-                $lead,
-                201
+                $lead
             );
         } catch (\Exception $e) {
             return $this->error(

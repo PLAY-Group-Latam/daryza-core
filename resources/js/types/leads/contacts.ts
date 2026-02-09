@@ -46,6 +46,7 @@ export interface Contact {
     file_path?: string | null;
     file_original_name?: string | null;
     created_at: string;
+    updated_at: string;
 }
 
 // Configuracion de Campos para el Modal 

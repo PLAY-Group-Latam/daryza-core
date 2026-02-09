@@ -5,7 +5,7 @@ namespace App\Http\Web\Requests\Leads;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ContactRequest extends FormRequest
+class WebContactRequest extends FormRequest
 {
     public function authorize(): bool
     {

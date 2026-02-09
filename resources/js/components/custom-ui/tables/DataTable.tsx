@@ -81,7 +81,7 @@ export function DataTable<T>({
                 />
             </div>
 
-            <div className="mb-4 overflow-x-auto rounded-md border">
+            <div className="mb-4 overflow-x-auto">
                 <Table>
                     <TableHeader className="sticky top-0 z-10 bg-muted">
                         {table.getHeaderGroups().map((headerGroup) => (

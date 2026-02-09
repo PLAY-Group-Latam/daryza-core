@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->trustProxies(at: '*');
 
+        $middleware->validateCsrfTokens(except: [
+    'aboutus/items', // <--- Debe coincidir con la URL de la ruta POST
+    'aboutus/items/*', 
+]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,

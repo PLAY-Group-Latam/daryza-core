@@ -4,7 +4,7 @@ namespace App\Http\Web\Controllers\Leads;
 
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Services\Leads\ContactService;
-use App\Http\Web\Requests\Leads\ContactRequest; 
+use App\Http\Web\Requests\Leads\WebContactRequest; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +37,7 @@ class ContactController extends Controller
     }
 
    
-    public function store(ContactRequest $request) 
+    public function store(WebContactRequest $request) 
     {
        
         $this->contactService->save($request->validated());

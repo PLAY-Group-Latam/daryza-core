@@ -45,7 +45,7 @@ export const CONTACT_CONFIG: ContactConfigMap = {
         { label: "Empresa", keys: ['company_name'], icon: <Building2 size={18} /> },
         { label: "DNI / RUC", keys: ['ruc_or_dni'], icon: <CreditCard size={18} /> },
         { label: "N° Vendedores", keys: ['number_of_sellers'], icon: <Briefcase size={18} /> },
-        { label: "Ubicación", keys: ['province', 'district'], icon: <MapPin size={18} />, isLocation: true },
+       { label: "Ubicación", keys: ['department', 'province', 'district'], icon: <MapPin size={18} />, isLocation: true },
         { label: "Dirección", keys: ['address'], icon: <Store size={18} /> },
         { label: "Otros Productos", keys: ['other_products'], isFullWidth: true },
     ],
@@ -64,18 +64,15 @@ export const CONTACT_CONFIG: ContactConfigMap = {
 
 const getSafeValue = (claim: any, keys: string[]): string => {
     if (!claim) return '---';
+    
     for (const key of keys) {
-        if (claim[key] !== undefined && claim[key] !== null && claim[key] !== '') {
-            if (typeof claim[key] !== 'object') return String(claim[key]);
-        }
-        if (claim.data && typeof claim.data === 'object') {
-            const dataVal = claim.data[key];
-            if (dataVal !== undefined && dataVal !== null && dataVal !== '') return String(dataVal);
+        const val = claim[key] ?? claim.data?.[key];
+        if (val !== undefined && val !== null && val !== '' && typeof val !== 'object') {
+            return String(val);
         }
     }
     return '---';
 };
-
 const formatLocation = (parts: string[]): string => {
     const validParts = parts.filter(p => p && p !== '---');
     return validParts.length > 0 ? validParts.join(', ') : '---';
@@ -142,24 +139,30 @@ export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => 
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {currentConfig.map((field, idx) => {
-                                const rawValue = field.isLocation 
-                                    ? formatLocation([getSafeValue(claim, [field.keys[0]]), getSafeValue(claim, [field.keys[1]])])
-                                    : getSafeValue(claim, field.keys);
+                          {currentConfig.map((field, idx) => {
+    let rawValue = '---';
 
-                                if (field.isFullWidth) {
-                                    return <CommentBox key={idx} label={field.label} value={rawValue} />;
-                                }
+    if (field.isLocation) {
+        // ✅ Forzamos a que busque cada llave por separado y luego las una
+        const locationParts = field.keys.map(key => getSafeValue(claim, [key]));
+        rawValue = formatLocation(locationParts);
+    } else {
+        rawValue = getSafeValue(claim, field.keys);
+    }
 
-                                return (
-                                    <InfoCard 
-                                        key={idx}
-                                        label={field.label} 
-                                        value={rawValue} 
-                                        icon={field.icon} 
-                                    />
-                                );
-                            })}
+    if (field.isFullWidth) {
+        return <CommentBox key={idx} label={field.label} value={rawValue} />;
+    }
+
+    return (
+        <InfoCard 
+            key={idx}
+            label={field.label} 
+            value={rawValue} 
+            icon={field.icon} 
+        />
+    );
+})}
                         </div>
 
                         {/* RENDERIZADO CONDICIONAL DE ADJUNTOS: 
