@@ -23,7 +23,7 @@ class AttributeController extends Controller
       ->latest()
       ->paginate($perPage);
 
-Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
+// Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
 
 
     return Inertia::render('products/attributes/Index', [

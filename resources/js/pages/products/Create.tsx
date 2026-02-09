@@ -10,6 +10,7 @@ export default function Create() {
         attributes: Attribute[];
     }>().props;
     // console.log('atributossss:', attributes);
+    console.log('categories', categories);
     return (
         <AppLayout>
             <Head title="Crear Producto" />

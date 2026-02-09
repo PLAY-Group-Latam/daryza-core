@@ -115,7 +115,7 @@ export interface ProductEdit {
 
     name: string;
     slug: string;
-    category_id: string;
+    categories: string[];
 
     brief_description?: string;
     description?: string;

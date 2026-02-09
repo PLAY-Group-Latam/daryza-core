@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../../slug-text';
-import { CategoryTreeSelect } from '../../categories/CategoryTreeSelect';
+import { CategoryTreeSelect } from './CategoryArrayTreeSelect';
 import { SpecificationsAttributes } from './SpecificationsFormAttributes';
 import { TechnicalSheetsForm } from './TechnicalSheetsForm';
 import { VariantForm } from './VariantForm';
@@ -53,7 +53,9 @@ const TechnicalSheetSchema = z.object({
 const ProductSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio'),
     slug: z.string().min(1, 'El slug es obligatorio'),
-    category_id: z.string().min(1, 'Debes seleccionar una categoría'),
+    categories: z
+        .array(z.string())
+        .min(1, 'Debes seleccionar al menos una categoría'),
     brief_description: z.string().optional(),
     description: z.string().optional(),
     is_active: z.boolean(),
@@ -90,8 +92,7 @@ export default function FormProduct({
         defaultValues: {
             name: '',
             slug: '',
-            category_id: '',
-            brief_description: '',
+            categories: [],
             description: '',
             is_active: true,
             metadata: {
@@ -119,7 +120,7 @@ export default function FormProduct({
             methods.reset({
                 name: product.name,
                 slug: product.slug,
-                category_id: product.category_id,
+                categories: product.categories || [],
                 brief_description: product.brief_description,
                 description: product.description,
                 is_active: product.is_active,
@@ -322,8 +323,7 @@ export default function FormProduct({
 
                         {/* CATEGORY */}
                         <Controller
-                            name="category_id"
-                            control={control}
+                            name="categories" // Cambio de category_id a categories                            control={control}
                             render={({ field }) => (
                                 <div className="w-full space-y-2">
                                     <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
@@ -334,11 +334,10 @@ export default function FormProduct({
                                         categories={categories || []}
                                         value={field.value}
                                         onChange={field.onChange}
-                                        showPrincipal={false}
                                     />
-                                    {errors.category_id && (
+                                    {errors.categories && (
                                         <p className="text-sm text-red-500">
-                                            {errors.category_id.message}
+                                            {errors.categories.message}
                                         </p>
                                     )}
                                 </div>

@@ -34,10 +34,18 @@ class Product extends Model
      */
 
     // Categoría
-    public function category()
+
+    public function categories()
     {
-        return $this->belongsTo(ProductCategory::class, 'category_id');
+        return $this->belongsToMany(ProductCategory::class, 'product_category', 'product_id', 'category_id')
+            ->using(ProductCategoryPivot::class) 
+            ->withTimestamps();
     }
+
+    // public function category()
+    // {
+    //     return $this->belongsTo(ProductCategory::class, 'category_id');
+    // }
 
     // Variantes
     public function variants()

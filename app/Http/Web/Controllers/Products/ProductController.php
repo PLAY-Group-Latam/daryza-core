@@ -34,7 +34,7 @@ class ProductController extends Controller
     $perPage = request()->input('per_page', 10);
 
     $products = Product::with([
-      'category:id,name,slug',
+      'categories',
       'variants' => function ($q) {
         $q->with([
           'attributeValues.attribute',
@@ -48,48 +48,6 @@ class ProductController extends Controller
       ->latest()
       ->paginate($perPage);
 
-    // Transformación opcional para frontend
-    // $products->getCollection()->transform(function ($product) {
-    //   return [
-    //     'id' => $product->id,
-    //     'name' => $product->name,
-    //     'slug' => $product->slug,
-    //     'category' => $product->category,
-    //     'brief_description' => $product->brief_description,
-    //     'description' => $product->description,
-    //     'is_active' => $product->is_active,
-    //     'variants' => $product->variants->map(function ($variant) {
-    //       return [
-    //         'id' => $variant->id,
-    //         'sku' => $variant->sku,
-    //         'price' => $variant->price,
-    //         'promo_price' => $variant->promo_price,
-    //         'is_on_promo' => $variant->is_on_promo,
-    //         'stock' => $variant->stock,
-    //         'attributes' => $variant->attributeValues->map(function ($attr) {
-    //           return [
-    //             'attribute_id' => $attr->attribute->id,
-    //             'attribute_name' => $attr->attribute->name,
-    //             'attribute_value_id' => $attr->id,
-    //             'attribute_value' => $attr->value,
-    //           ];
-    //         }),
-    //         'media' => $variant->media,
-    //       ];
-    //     }),
-    //     'technicalSheets' => $product->technicalSheets,
-    //     'specifications' => $product->specifications->map(function ($spec) {
-    //       return [
-    //         'attribute_id' => $spec->attribute_id,
-    //         'attribute_name' => $spec->attribute?->name,
-    //         'value' => $spec->value,
-    //       ];
-    //     }),
-    //     'metadata' => $product->metadata,
-    //     'created_at' => $product->created_at, // fecha de creación
-    //     'updated_at' => $product->updated_at, // fecha de actualización
-    //   ];
-    // });
 
     return Inertia::render('products/Index', [
       'products' => $products,
@@ -100,8 +58,7 @@ class ProductController extends Controller
   {
   
     $product->load([
-      'category',
-      'metadata',
+'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'technicalSheets',
       'variants.variantAttributeValues.attributeValue.attribute',
       'variants.media',
@@ -116,7 +73,7 @@ class ProductController extends Controller
       'id' => $product->id,
       'name' => $product->name,
       'slug' => $product->slug,
-      'category_id' => $product->category_id,
+      'categories' => $product->categories->pluck('id')->toArray(),
       'brief_description' => $product->brief_description,
       'description' => $product->description,
       'is_active' => $product->is_active,

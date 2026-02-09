@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Web\Controllers\Products\AttributeController;
+use App\Http\Web\Controllers\Products\BusinessLineController;
 use App\Http\Web\Controllers\Products\ProductCategoryController;
 use App\Http\Web\Controllers\Products\ProductController;
 use App\Http\Web\Controllers\Products\ProductExcelController;
@@ -19,11 +20,17 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
   Route::post('items/import', [ProductExcelController::class, 'import'])
     ->name('items.import');
 
-  Route::get('/export', [ProductExcelController::class, 'export'])
-    ->name('products.export');
+  Route::get('items/export', [ProductExcelController::class, 'export'])
+    ->name('items.export');
 
   Route::resource('items', ProductController::class)->parameters([
     'items' => 'product',
   ]);;
+
+  Route::resource('lineas-de-negocio', BusinessLineController::class)
+        ->names('business-lines')
+        ->parameters([
+            'lineas-de-negocio' => 'businessLine',
+        ]);
   Route::resource('attributes', AttributeController::class);
 });

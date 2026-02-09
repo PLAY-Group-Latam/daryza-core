@@ -22,7 +22,7 @@ class ProductService
       $product = Product::create([
         'name'              => $data['name'],
         'slug'              => $data['slug'],
-        'category_id'       => $data['category_id'],
+        // 'category_id'       => $data['category_id'],
         'brief_description' => $data['brief_description'],
         'description'       => $data['description'],
         'is_active'         => $data['is_active'] ?? true,
@@ -39,9 +39,13 @@ public function update(Product $product, array $data): Product
         return DB::transaction(function () use ($product, $data) {
             // Actualización base
             $product->update(collect($data)->only([
-                'name', 'slug', 'category_id', 'brief_description', 'description', 'is_active'
+                'name', 'slug',  'brief_description', 'description', 'is_active'
             ])->toArray());
 
+            // 3. Sincronizar categorías en el Update
+        if (isset($data['categories'])) {
+            $product->categories()->sync($data['categories']);
+        }
             // 1. Metadata
             if (isset($data['metadata'])) {
                 $product->metadata()->updateOrCreate(
@@ -102,13 +106,18 @@ public function update(Product $product, array $data): Product
             }
         }
     }
-// --- MÉTODOS DE APOYO REUTILIZABLES ---
 
   /**
    * Orquestador de relaciones para mantener el método create limpio.
    */
   protected function processProductRelations(Product $product, array $data): void
   {
+
+    // 4. Sincronizar categorías al crear
+    if (!empty($data['categories'])) {
+        // Laravel usará el ProductCategoryPivot automáticamente
+        $product->categories()->sync($data['categories']);
+    }
     $this->createMetadata($product, $data['metadata'] ?? []);
     $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
     $this->createVariants($product, $data['variants'] ?? []);

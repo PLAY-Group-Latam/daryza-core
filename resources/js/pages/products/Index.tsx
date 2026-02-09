@@ -42,7 +42,7 @@ export default function Index() {
                         <button
                             onClick={() => {
                                 window.location.href =
-                                    productRoutes.products.export().url;
+                                    productRoutes.items.export().url;
                             }}
                             className="flex cursor-pointer items-center gap-2 rounded-sm bg-blue-600 px-2.5 py-1.5 text-sm text-white hover:bg-blue-700"
                         >
