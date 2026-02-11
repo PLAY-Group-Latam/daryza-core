@@ -93,6 +93,10 @@ const mainNavItems: NavItem[] = [
         {
             title:'Lista de Nosotros',
             href: '/aboutus/items'
+        },
+        {
+            title :'Lista de Trabajos',
+            href: '/jobs/items'
         }
     ]
 },

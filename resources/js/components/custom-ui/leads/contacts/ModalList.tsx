@@ -211,8 +211,15 @@ const CommentBox = ({ label, value }: { label: string; value: string }) => (
             <MessageSquare size={14} />
             <span className="text-[10px] font-bold uppercase tracking-tight">{label}</span>
         </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-            <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400 whitespace-pre-wrap">
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60 max-w-full overflow-hidden">
+            <p 
+                className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400 break-words overflow-wrap-anywhere"
+                style={{ 
+                    wordWrap: 'break-word', 
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'pre-wrap'
+                }}
+            >
                 {value !== '---' ? value : 'Sin observaciones adicionales.'}
             </p>
         </div>
@@ -224,9 +231,9 @@ const DetailItem = ({ label, value, icon }: { label: string; value: string; icon
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-zinc-800 dark:ring-zinc-700">
             {icon}
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-            <p className="text-sm font-semibold text-slate-900 dark:text-zinc-200">{value}</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-zinc-200 break-words">{value}</p>
         </div>
     </div>
 );

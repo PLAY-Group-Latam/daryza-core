@@ -4,7 +4,7 @@ export interface AboutUsData {
 
     last_name: string;    
     company_name: string;     
-    ruc_dni: string;         
+    ruc_or_dni: string;         
     comments: string;        
 
     created_at_form: string;  

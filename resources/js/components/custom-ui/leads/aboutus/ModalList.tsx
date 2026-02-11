@@ -58,7 +58,7 @@ export const ModalAboutUs = ({ item, isOpen, onClose }: ModalAboutUsProps) => {
                     </aside>
 
                     {/* --- MAIN DERECHO: Detalle de la Consulta --- */}
-                    <main className="flex w-full flex-col p-8 lg:w-[65%] lg:p-12 bg-white dark:bg-zinc-950">
+                    <main className="flex w-full flex-col p-8 lg:w-[65%] lg:p-12 bg-white dark:bg-zinc-950 overflow-y-auto">
                         <div className="mb-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                             <Hash size={14} className="text-blue-500" />
                             <span>Información Adicional</span>
@@ -73,7 +73,7 @@ export const ModalAboutUs = ({ item, isOpen, onClose }: ModalAboutUsProps) => {
                             />
                             <InfoCard 
                                 label="DNI / RUC" 
-                                value={extraData.ruc_dni || '---'} 
+                                value={extraData.ruc_or_dni || '---'} 
                                 icon={<CreditCard size={18} />} 
                             />
                         </div>
@@ -84,23 +84,22 @@ export const ModalAboutUs = ({ item, isOpen, onClose }: ModalAboutUsProps) => {
                                 <MessageSquare size={14} />
                                 <span>Mensaje o Consulta</span>
                             </div>
-                            <div className="relative rounded-[2rem] border border-slate-100 bg-slate-50/50 p-8 dark:border-zinc-800 dark:bg-zinc-900/60 overflow-hidden group">
-                                <span className="absolute -top-4 -left-2 text-2xl text-slate-200/40 font-serif select-none dark:text-zinc-800/20 group-hover:text-blue-200/40 transition-colors">“</span>
-                                <p className="relative text-lg font-medium leading-relaxed italic text-slate-600 dark:text-zinc-400">
-                                    {extraData.comments || 'El remitente no incluyó un mensaje detallado.'}
-                                </p>
+                            <div className="relative rounded-2xl border border-slate-100 bg-slate-50/50 p-6 dark:border-zinc-800 dark:bg-zinc-900/60 overflow-hidden group max-w-full">
+                                <span className="absolute -top-4 -left-2 text-2xl text-slate-200/40 font-serif select-none dark:text-zinc-800/20 group-hover:text-blue-200/40 transition-colors">"</span>
+                                <div className="relative max-w-full overflow-hidden">
+                                    <p 
+                                        className="text-base font-medium leading-relaxed italic text-slate-600 dark:text-zinc-400 break-words overflow-wrap-anywhere"
+                                        style={{ 
+                                            wordWrap: 'break-word', 
+                                            overflowWrap: 'anywhere',
+                                            hyphens: 'auto'
+                                        }}
+                                    >
+                                        {extraData.comments || 'El remitente no incluyó un mensaje detallado.'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Footer con Acción Principal */}
-                        <footer className="mt-10 flex items-center justify-between">
-                            <div className="hidden sm:flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 dark:bg-zinc-900">
-                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Estado: Pendiente</span>
-                            </div>
-                            
-                         
-                        </footer>
                     </main>
                 </div>
             </DialogContent>
@@ -116,7 +115,7 @@ const InfoCard = ({ label, value, icon }: { label: string; value: string; icon: 
             {icon}
             <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
         </div>
-        <p className="text-sm font-bold text-slate-900 dark:text-white">{value}</p>
+        <p className="text-sm font-bold text-slate-900 dark:text-white break-words">{value}</p>
     </div>
 );
 
@@ -125,9 +124,9 @@ const DetailItem = ({ label, value, icon }: { label: string; value: string; icon
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all group-hover:text-blue-600 group-hover:ring-blue-200 dark:bg-zinc-800 dark:ring-zinc-700">
             {icon}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5">{label}</p>
-            <p className="truncate text-sm font-bold text-slate-800 dark:text-zinc-200">{value}</p>
+            <p className="break-words text-sm font-bold text-slate-800 dark:text-zinc-200">{value}</p>
         </div>
     </div>
 );
