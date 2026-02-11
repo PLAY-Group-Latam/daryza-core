@@ -1,5 +1,6 @@
 import TableList from '@/components/custom-ui/products/items-table/TableList';
 import AppLayout from '@/layouts/app-layout';
+import productRoutes from '@/routes/products';
 import { Product } from '@/types/products/product';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -38,6 +39,16 @@ export default function Index() {
                             <Plus className="mr-1 h-4 w-4" />
                             Importar Productos
                         </Link>
+                        <button
+                            onClick={() => {
+                                window.location.href =
+                                    productRoutes.items.export().url;
+                            }}
+                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-blue-600 px-2.5 py-1.5 text-sm text-white hover:bg-blue-700"
+                        >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Exportar Productos
+                        </button>
                     </div>
                 </div>
 

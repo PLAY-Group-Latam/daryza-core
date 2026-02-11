@@ -3,6 +3,7 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Api\v1\Controllers\Controller;
+use App\Http\Web\Exports\ProductsExport;
 use App\Http\Web\Imports\ProductsImport;
 
 use App\Http\Web\Requests\Products\StoreProductImportRequest;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ProductImportController extends Controller
+class ProductExcelController extends Controller
 {
     public function showForm()
     {
@@ -36,5 +37,13 @@ class ProductImportController extends Controller
             Log::error('Error al importar productos: ' . $e->getMessage());
             return back()->withErrors(['file' => 'Error al procesar el archivo.']);
         }
+    }
+
+    public function export()
+    {
+        return Excel::download(
+            new ProductsExport(),
+            'productos.xlsx'
+        );
     }
 }

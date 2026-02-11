@@ -2,14 +2,17 @@ import FormProduct from '@/components/custom-ui/products/items-table/create-form
 import AppLayout from '@/layouts/app-layout';
 import { CategorySelect } from '@/types/products';
 import { Attribute } from '@/types/products/attributes';
+import { BusinessLine } from '@/types/products/businessLines';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Create() {
-    const { categories, attributes } = usePage<{
+    const { categories, attributes, businessLines } = usePage<{
         categories: CategorySelect[];
         attributes: Attribute[];
+        businessLines: BusinessLine[]; // <--- Agregado
     }>().props;
     // console.log('atributossss:', attributes);
+    console.log('categories', categories);
     return (
         <AppLayout>
             <Head title="Crear Producto" />
@@ -27,7 +30,7 @@ export default function Create() {
                         ← Volver a la lista
                     </Link>
                 </div>
-                <FormProduct categories={categories} attributes={attributes} />
+                <FormProduct categories={categories} attributes={attributes} businessLines={businessLines}/>
             </div>
         </AppLayout>
     );

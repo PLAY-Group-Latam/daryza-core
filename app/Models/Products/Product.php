@@ -6,6 +6,7 @@ use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -34,9 +35,25 @@ class Product extends Model
      */
 
     // Categoría
-    public function category()
+
+    public function categories()
     {
-        return $this->belongsTo(ProductCategory::class, 'category_id');
+        return $this->belongsToMany(ProductCategory::class, 'product_category', 'product_id', 'category_id')
+            ->using(ProductCategoryPivot::class)
+            ->withTimestamps();
+    }
+
+    /**
+     * Relación con las líneas de negocio (Muchos a Muchos).
+     */
+    public function businessLines(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            BusinessLine::class,
+            'product_business_line',
+            'product_id',
+            'business_line_id'
+        )->using(ProductBusinessLinePivot::class)->withTimestamps();
     }
 
     // Variantes

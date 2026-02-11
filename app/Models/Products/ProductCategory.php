@@ -60,9 +60,19 @@ class ProductCategory extends Model
      */
 
     // Productos dentro de esta categoría
+    // public function products()
+    // {
+    //     return $this->hasMany(Product::class, 'category_id');
+    // }
+    /**
+     * Productos vinculados a esta categoría.
+     * Cambiamos de hasMany a belongsToMany para usar la tabla pivote.
+     */
     public function products()
     {
-        return $this->hasMany(Product::class, 'category_id');
+        return $this->belongsToMany(Product::class, 'product_category', 'category_id', 'product_id')
+            ->using(ProductCategoryPivot::class) // <--- ESTO ES LO QUE CONECTA AL PIVOT
+            ->withTimestamps();
     }
 
   

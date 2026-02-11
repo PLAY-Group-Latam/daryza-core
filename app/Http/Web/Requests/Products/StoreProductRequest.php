@@ -11,7 +11,12 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => ['required', 'string'],
             'slug' => ['required', 'string', 'unique:products,slug'],
-            'category_id' => ['nullable', 'exists:product_categories,id'],
+            // Busca y reemplaza category_id por esto:
+
+            'categories' => ['required', 'array', 'min:1'], // 'required' o 'nullable' según tu negocio
+            'categories.*' => ['exists:product_categories,id'],
+            'business_lines' => ['nullable', 'array'],
+            'business_lines.*' => ['exists:business_lines,id'],
             'brief_description' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
@@ -60,7 +65,11 @@ class StoreProductRequest extends FormRequest
             'name.required' => 'El nombre del producto es obligatorio.',
             'slug.required' => 'El slug del producto es obligatorio.',
             'slug.unique' => 'El slug ya está en uso, elige otro.',
-            'category_id.exists' => 'La categoría seleccionada no existe.',
+            'categories.required' => 'Debes seleccionar al menos una categoría.',
+            'categories.array' => 'El formato de categorías es inválido.',
+            'categories.*.exists' => 'Una de las categorías seleccionadas no es válida.',
+            'business_lines.array' => 'El formato de las líneas de negocio es inválido.',
+            'business_lines.*.exists' => 'Una de las líneas de negocio seleccionadas no es válida.',
             'is_active.required' => 'Debes indicar si el producto está activo.',
             'metadata.noindex.required' => 'Debes indicar si usar noindex.',
             'metadata.nofollow.required' => 'Debes indicar si usar nofollow.',
