@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 'use client';
 
 import { Input } from '@/components/ui/input';
@@ -21,15 +22,15 @@ import { DataTablePagination } from './data-table-pagination';
 interface DataTableProps<T> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
-    onSearch?: (value: string) => void; 
+    onSearch?: (value: string) => void;
     initialSearch?: string;
 }
 
-export function DataTable<T>({ 
-    columns, 
-    data, 
-    onSearch, 
-    initialSearch = '' 
+export function DataTable<T>({
+    columns,
+    data,
+    onSearch,
+    initialSearch = '',
 }: DataTableProps<T>) {
     const [globalFilter, setGlobalFilter] = React.useState(initialSearch);
 
@@ -80,9 +81,10 @@ export function DataTable<T>({
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
                                     </TableHead>
                                 ))}
                             </TableRow>
@@ -106,7 +108,7 @@ export function DataTable<T>({
                                         <TableCell key={cell.id}>
                                             {flexRender(
                                                 cell.column.columnDef.cell,
-                                                cell.getContext()
+                                                cell.getContext(),
                                             )}
                                         </TableCell>
                                     ))}

@@ -34,36 +34,35 @@ class DynamicCategoryController extends Controller
 
   public function create(Request $request)
   {
-    $search = $request->input('q');
-    $results = [];
+    $search = trim($request->input('q', ''));
+    $results = collect();
 
-    if ($search) {
-      $products = \App\Models\Products\Product::query()
-        ->where('name', 'ilike', "%{$search}%")
-        ->orWhere('code', 'ilike', "%{$search}%")
-        ->with(['variants.attributeValues'])
-        ->limit(10)
-        ->get();
+    if (strlen($search) >= 3) {
+      $searchTerm = "%{$search}%";
 
-      // Formateamos igual que antes, pero esto se enviará como Prop de Inertia
-      $results = $products->map(function ($product) {
-        return [
-          'id' => $product->id,
-          'name' => $product->name,
-          'variants' => $product->variants->map(function ($variant) {
-            return [
-              'id' => $variant->id,
-              'sku' => $variant->sku,
-              'name' => $variant->attributeValues->pluck('name')->implode(' - ') ?: "Variante {$variant->sku}",
-            ];
-          })
-        ];
-      });
+      // Buscamos directamente en la tabla de variantes
+      $results = \App\Models\Products\ProductVariant::query()
+        ->select('id', 'product_id', 'sku', 'price')
+        ->where('sku', 'ilike', $searchTerm)
+        ->with([
+          'product:id,name',
+          'attributeValues:id,value'
+        ])
+        ->limit(15)
+        ->get()
+        ->map(fn($variant) => [
+          'id'           => $variant->id,
+          'sku'          => $variant->sku,
+          'price'        => $variant->price,
+          // El nombre ahora incluye el producto para que el usuario no se pierda
+          'product_name' => $variant->product?->name ?? 'Sin nombre',
+          'name'         => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+        ]);
     }
 
     return Inertia::render('products/dynamicCategories/Create', [
-      'searchResults' => $results, // Aquí llegan los datos filtrados
-      'filters' => $request->only(['q'])
+      'searchResults' => $results,
+      'filters'       => ['q' => $search]
     ]);
   }
 
@@ -88,40 +87,7 @@ class DynamicCategoryController extends Controller
       ->with('success', 'Categoría especial creada con éxito.');
   }
 
-  /**
-   * Buscar productos y sus variantes para asignar a la categoría.
-   */
-  public function searchProducts(Request $request)
-  {
-    $search = $request->input('q');
 
-    $products = \App\Models\Products\Product::query()
-      ->where('name', 'ilike', "%{$search}%")
-      ->orWhere('code', 'ilike', "%{$search}%") // Buscamos por código de producto
-      ->with(['variants.attributeValues']) // Cargamos variantes y sus atributos (Rojo, 5L, etc)
-      ->limit(10)
-      ->get(['id', 'name']);
-
-    $formatted = $products->map(function ($product) {
-      return [
-        'id' => $product->id,
-        'name' => $product->name,
-        'variants' => $product->variants->map(function ($variant) {
-          // Obtenemos los nombres de los atributos (ej: "500ml", "Fragancia Limón")
-          // y los unimos con un guion. Si no tiene, usamos el SKU.
-          $attributesDescription = $variant->attributeValues->pluck('name')->implode(' - ');
-
-          return [
-            'id' => $variant->id,
-            'sku' => $variant->sku,
-            'name' => $attributesDescription ?: "Variante {$variant->sku}",
-          ];
-        })
-      ];
-    });
-
-    return response()->json($formatted);
-  }
   /**
    * Formulario de edición.
    */

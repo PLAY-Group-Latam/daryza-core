@@ -33,8 +33,7 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
     ->parameters([
       'lineas-de-negocio' => 'businessLine',
     ]);
-  Route::get('categorias-dinamicas/buscar-productos', [DynamicCategoryController::class, 'searchProducts'])
-    ->name('dynamic-categories.search-products');
+
   Route::resource('categorias-dinamicas', DynamicCategoryController::class)
     ->names('dynamic-categories')
     ->parameters([
