@@ -15,7 +15,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('banner_image')->nullable(); // Imagen promocional para la web
+            // $table->string('banner_image')->nullable(); // Imagen promocional para la web
             $table->boolean('is_active')->default(true);
 
             // Opcional: Para que las ofertas se desactiven solas

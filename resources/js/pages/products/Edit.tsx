@@ -2,14 +2,16 @@ import FormProduct from '@/components/custom-ui/products/items-table/create-form
 import AppLayout from '@/layouts/app-layout';
 import { CategorySelect } from '@/types/products';
 import { Attribute } from '@/types/products/attributes';
-import { Product } from '@/types/products/product';
+import { BusinessLine } from '@/types/products/businessLines';
+import { ProductEdit } from '@/types/products/product';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Edit() {
-    const { categories, attributes, product } = usePage<{
-        product: Product;
+    const { categories, attributes, product, businessLines } = usePage<{
+        product: ProductEdit;
         categories: CategorySelect[];
         attributes: Attribute[];
+        businessLines: BusinessLine[];
     }>().props;
     console.log('producto individual:', product);
     return (
@@ -33,6 +35,7 @@ export default function Edit() {
                     categories={categories}
                     attributes={attributes}
                     product={product}
+                    businessLines={businessLines}
                 />
             </div>
         </AppLayout>

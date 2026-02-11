@@ -21,6 +21,10 @@ import { CategoryTreeSelect } from './CategoryArrayTreeSelect';
 import { SpecificationsAttributes } from './SpecificationsFormAttributes';
 import { TechnicalSheetsForm } from './TechnicalSheetsForm';
 import { VariantForm } from './VariantForm';
+import { BusinessLine } from '@/types/products/businessLines';
+import { MultiSelect } from '@/components/custom-ui/MultiSelect';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const VariantAttributeSchema = z.object({
     attribute_id: z.string(), // ULID
@@ -56,6 +60,7 @@ const ProductSchema = z.object({
     categories: z
         .array(z.string())
         .min(1, 'Debes seleccionar al menos una categoría'),
+    business_lines: z.array(z.string()).optional(), // <--- Agregar esto
     brief_description: z.string().optional(),
     description: z.string().optional(),
     is_active: z.boolean(),
@@ -82,10 +87,12 @@ export default function FormProduct({
     categories,
     attributes,
     product,
+    businessLines
 }: {
     categories: CategorySelect[];
     attributes: Attribute[];
-    product?: ProductEdit; // 👈 opcional
+    product?: ProductEdit;
+    businessLines: BusinessLine[];
 }) {
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
@@ -93,6 +100,8 @@ export default function FormProduct({
             name: '',
             slug: '',
             categories: [],
+            business_lines: [], // <--- Agregar esto
+            brief_description: '',
             description: '',
             is_active: true,
             metadata: {
@@ -121,6 +130,7 @@ export default function FormProduct({
                 name: product.name,
                 slug: product.slug,
                 categories: product.categories || [],
+                business_lines: product.business_lines || [], // <--- Agregar esto
                 brief_description: product.brief_description,
                 description: product.description,
                 is_active: product.is_active,
@@ -321,6 +331,34 @@ export default function FormProduct({
                             )}
                         />
 
+                        <Controller
+                            name="business_lines"
+                            control={control}
+                            render={({ field }) => (
+                                <div className="w-full space-y-2">
+                                    <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
+                                        ● Líneas de Negocio
+                                    </p>
+
+                                    <MultiSelect
+                                        options={businessLines.map((line) => ({
+                                            label: line.name,
+                                            value: line.id,
+                                        }))}
+                                        value={field.value || []}
+                                        onChange={field.onChange}
+                                        placeholder="Seleccionar líneas..."
+                                        searchPlaceholder="Buscar línea de negocio..."
+                                    />
+                                    {errors.business_lines && (
+                                        <p className="text-sm text-red-500">
+                                            {errors.business_lines.message}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        />
+
                         {/* CATEGORY */}
                         <Controller
                             name="categories" // Cambio de category_id a categories                            control={control}
@@ -344,78 +382,70 @@ export default function FormProduct({
                             )}
                         />
 
-                        <div className="space-y-2">
-                            <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
+                        <div className="space-y-4">
+                            <p className="text-xs font-bold tracking-widest uppercase">
                                 ● SEO & Metadatos
                             </p>
-                            {/* SEO ENGINE */}
+
                             <Controller
                                 name="metadata.meta_title"
                                 control={control}
                                 render={({ field }) => (
-                                    <div>
-                                        <Label>Meta título</Label>
-                                        <Input {...field} />
-                                    </div>
+                                    <Input
+                                        {...field}
+                                        placeholder="Meta title"
+                                    />
                                 )}
                             />
+
                             <Controller
                                 name="metadata.meta_description"
                                 control={control}
                                 render={({ field }) => (
-                                    <div>
-                                        <Label>Meta Descripción</Label>
-                                        <textarea
-                                            {...field}
-                                            className="h-24 w-full rounded-xl border p-3"
-                                        />
-                                    </div>
+                                    <Textarea
+                                        {...field}
+                                        className="h-24 w-full rounded-xl border p-3 text-sm"
+                                        placeholder="Meta description"
+                                    />
                                 )}
                             />
+
                             <Controller
                                 name="metadata.canonical_url"
                                 control={control}
                                 render={({ field }) => (
-                                    <div>
-                                        <Label>Canonical URL</Label>
-                                        <Input {...field} />
-                                    </div>
+                                    <Input
+                                        {...field}
+                                        placeholder="Canonical URL"
+                                    />
                                 )}
                             />
-                            <div className="flex items-center gap-2">
+
+                            <div className="flex gap-4">
                                 <Controller
                                     name="metadata.noindex"
                                     control={control}
                                     render={({ field }) => (
                                         <label className="flex items-center gap-2 text-sm">
-                                            <input
-                                                type="checkbox"
+                                            <Checkbox
                                                 checked={field.value}
-                                                onChange={(e) =>
-                                                    field.onChange(
-                                                        e.target.checked,
-                                                    )
-                                                }
+                                                onCheckedChange={field.onChange}
                                             />
-                                            No-Index
+                                            No index
                                         </label>
                                     )}
                                 />
+
                                 <Controller
                                     name="metadata.nofollow"
                                     control={control}
                                     render={({ field }) => (
                                         <label className="flex items-center gap-2 text-sm">
-                                            <input
-                                                type="checkbox"
+                                            <Checkbox
                                                 checked={field.value}
-                                                onChange={(e) =>
-                                                    field.onChange(
-                                                        e.target.checked,
-                                                    )
-                                                }
+                                                onCheckedChange={field.onChange}
                                             />
-                                            No-Follow
+                                            No follow
                                         </label>
                                     )}
                                 />

@@ -52,7 +52,7 @@ export function TreeItem({
                         )}
                     >
                         {isSelected && (
-                            <Check className="size-3 text-gray-200" />
+                            <Check className="size-3 text-gray-200" strokeWidth={3}/>
                         )}
                     </div>
                 ) : (

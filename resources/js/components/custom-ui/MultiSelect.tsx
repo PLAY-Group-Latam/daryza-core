@@ -110,14 +110,15 @@ export function MultiSelect({
                                     >
                                         <div
                                             className={cn(
-                                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
+                                                'mr-2 flex h-4 w-4 items-center justify-center rounded border transition-all',
                                                 isSelected
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'opacity-50',
+                                                    ? 'border-primary bg-primary text-primary-foreground'
+                                                    : 'border-input',
                                             )}
                                         >
                                             {isSelected && (
-                                                <Check className="h-4 w-4" />
+                                                <Check className="size-3 text-gray-200" strokeWidth={3}/>
+
                                             )}
                                         </div>
 

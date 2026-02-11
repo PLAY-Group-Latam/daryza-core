@@ -50,10 +50,10 @@ class BusinessLine extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(
-            Product::class, 
-            'product_business_line', 
-            'business_line_id', 
+            Product::class,
+            'product_business_line',
+            'business_line_id',
             'product_id'
-        )->withTimestamps();
+        )->using(ProductBusinessLinePivot::class)->withTimestamps();
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
+use App\Models\Products\BusinessLine;
 use App\Models\Products\Product;
 use App\Models\Products\ProductCategory;
 use Illuminate\Support\Facades\Log;
@@ -56,9 +57,10 @@ class ProductController extends Controller
 
   public function edit(Product $product)
   {
-  
+
     $product->load([
-'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
+      'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
+      'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
       'variants.variantAttributeValues.attributeValue.attribute',
       'variants.media',
@@ -74,6 +76,7 @@ class ProductController extends Controller
       'name' => $product->name,
       'slug' => $product->slug,
       'categories' => $product->categories->pluck('id')->toArray(),
+      'business_lines' => $product->businessLines->pluck('id')->toArray(),
       'brief_description' => $product->brief_description,
       'description' => $product->description,
       'is_active' => $product->is_active,
@@ -141,11 +144,15 @@ class ProductController extends Controller
       ->get(['id', 'name', 'parent_id', 'order']);
 
     $attributes = Attribute::with(['values'])->get();
+    $businessLines = BusinessLine::where('is_active', true)
+      ->latest()
+      ->get(['id', 'name']);
 
     return Inertia::render('products/Edit', [
       'product' => $productForForm,
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
+      'businessLines' => $businessLines, // <--- Pasar a la vista
     ]);
   }
 
@@ -163,12 +170,14 @@ class ProductController extends Controller
 
     $attributes = Attribute::with(['values'])
       ->get();
-
+    $businessLines = BusinessLine::where('is_active', true)
+      ->latest()
+      ->get(['id', 'name']);
 
     return Inertia::render('products/Create', [
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
-
+      'businessLines' => $businessLines, // Las pasamos a la vista
     ]);
   }
 

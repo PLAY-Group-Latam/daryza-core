@@ -34,78 +34,86 @@ class ProductService
     });
   }
 
-public function update(Product $product, array $data): Product
-    {
-        return DB::transaction(function () use ($product, $data) {
-            // Actualización base
-            $product->update(collect($data)->only([
-                'name', 'slug',  'brief_description', 'description', 'is_active'
-            ])->toArray());
+  public function update(Product $product, array $data): Product
+  {
+    return DB::transaction(function () use ($product, $data) {
+      // Actualización base
+      $product->update(collect($data)->only([
+        'name',
+        'slug',
+        'brief_description',
+        'description',
+        'is_active'
+      ])->toArray());
 
-            // 3. Sincronizar categorías en el Update
-        if (isset($data['categories'])) {
-            $product->categories()->sync($data['categories']);
+      // 3. Sincronizar categorías en el Update
+      if (isset($data['categories'])) {
+        $product->categories()->sync($data['categories']);
+      }
+
+      if (isset($data['business_lines'])) {
+        $product->businessLines()->sync($data['business_lines']);
+      }
+      // 1. Metadata
+      if (isset($data['metadata'])) {
+        $product->metadata()->updateOrCreate(
+          ['metadatable_id' => $product->id, 'metadatable_type' => Product::class],
+          $data['metadata']
+        );
+      }
+
+      // 2. Fichas Técnicas
+      if (!empty($data['technicalSheets'])) {
+        $this->createTechnicalSheets($product, $data['technicalSheets']);
+      }
+
+      // 3. Especificaciones (Reemplazo total)
+      if (isset($data['specifications'])) {
+        $product->specifications()->delete();
+        $this->createSpecifications($product, $data['specifications']);
+      }
+
+      // 4. Variantes
+      if (isset($data['variants'])) {
+        $this->updateVariants($product, $data['variants']);
+      }
+
+      return $product;
+    });
+  }
+
+  protected function updateVariants(Product $product, array $variantsData): void
+  {
+    foreach ($variantsData as $variantData) {
+      // Limpiamos campos que no pertenecen a la tabla
+      $cleanData = collect($variantData)->except(['attributes', 'media', 'new_media'])->toArray();
+
+      $variant = $product->variants()->updateOrCreate(
+        ['sku' => $variantData['sku']],
+        $cleanData
+      );
+
+      // 3. REEMPLAZO DE SYNC (La solución al error)
+      if (isset($variantData['attributes'])) {
+        // Borramos los registros actuales usando la relación HasMany
+        $variant->variantAttributeValues()->delete();
+
+        // Insertamos los nuevos uno por uno para que se generen los ULIDs
+        foreach ($variantData['attributes'] as $attr) {
+          if (empty($attr['attribute_value_id'])) continue;
+
+          $variant->variantAttributeValues()->create([
+            'attribute_value_id' => $attr['attribute_value_id']
+          ]);
         }
-            // 1. Metadata
-            if (isset($data['metadata'])) {
-                $product->metadata()->updateOrCreate(
-                    ['metadatable_id' => $product->id, 'metadatable_type' => Product::class],
-                    $data['metadata']
-                );
-            }
+      }
 
-            // 2. Fichas Técnicas
-            if (!empty($data['technicalSheets'])) {
-                $this->createTechnicalSheets($product, $data['technicalSheets']);
-            }
-
-            // 3. Especificaciones (Reemplazo total)
-            if (isset($data['specifications'])) {
-                $product->specifications()->delete();
-                $this->createSpecifications($product, $data['specifications']);
-            }
-
-            // 4. Variantes
-            if (isset($data['variants'])) {
-                $this->updateVariants($product, $data['variants']);
-            }
-
-            return $product;
-        });
+      // Nuevos archivos
+      if (!empty($variantData['new_media'])) {
+        $this->createVariantMedia($variant, $variantData['new_media']);
+      }
     }
-
-    protected function updateVariants(Product $product, array $variantsData): void
-    {
-        foreach ($variantsData as $variantData) {
-            // Limpiamos campos que no pertenecen a la tabla
-            $cleanData = collect($variantData)->except(['attributes', 'media', 'new_media'])->toArray();
-
-            $variant = $product->variants()->updateOrCreate(
-                ['sku' => $variantData['sku']],
-                $cleanData
-            );
-
-        // 3. REEMPLAZO DE SYNC (La solución al error)
-        if (isset($variantData['attributes'])) {
-            // Borramos los registros actuales usando la relación HasMany
-            $variant->variantAttributeValues()->delete();
-
-            // Insertamos los nuevos uno por uno para que se generen los ULIDs
-            foreach ($variantData['attributes'] as $attr) {
-                if (empty($attr['attribute_value_id'])) continue;
-
-                $variant->variantAttributeValues()->create([
-                    'attribute_value_id' => $attr['attribute_value_id']
-                ]);
-            }
-        }
-
-            // Nuevos archivos
-            if (!empty($variantData['new_media'])) {
-                $this->createVariantMedia($variant, $variantData['new_media']);
-            }
-        }
-    }
+  }
 
   /**
    * Orquestador de relaciones para mantener el método create limpio.
@@ -115,9 +123,13 @@ public function update(Product $product, array $data): Product
 
     // 4. Sincronizar categorías al crear
     if (!empty($data['categories'])) {
-        // Laravel usará el ProductCategoryPivot automáticamente
-        $product->categories()->sync($data['categories']);
+      // Laravel usará el ProductCategoryPivot automáticamente
+      $product->categories()->sync($data['categories']);
     }
+    if (!empty($data['business_lines'])) {
+      $product->businessLines()->sync($data['business_lines']);
+    }
+
     $this->createMetadata($product, $data['metadata'] ?? []);
     $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
     $this->createVariants($product, $data['variants'] ?? []);
@@ -219,6 +231,4 @@ public function update(Product $product, array $data): Product
   {
     return "products/{$productId}/{$folder->value}";
   }
-
-  
 }
