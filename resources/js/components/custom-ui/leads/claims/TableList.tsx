@@ -5,10 +5,10 @@ import { router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
-import { Claim } from '@/types/claim';
+import { Claim } from '@/types/leads/claim';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye } from 'lucide-react';
-import { DataTable } from '../tables/DataTable';
+import { DataTable } from '../../tables/DataTable';
 import { ModalClaimList } from './ModalList';
 
 interface TableListProps {

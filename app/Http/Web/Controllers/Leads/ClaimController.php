@@ -3,87 +3,60 @@
 namespace App\Http\Web\Controllers\Leads;
 
 use App\Http\Web\Controllers\Controller;
-use App\Models\Leads\Claim;
+use App\Models\Leads\Lead;
 use App\Http\Web\Services\Leads\ClaimService;
 use App\Http\Web\Requests\Leads\ClaimRequest;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ClaimController extends Controller
 {
-    /**
-     * LISTAR: Mostrar lista paginada de reclamaciones.
-     */
-   public function index(Request $request) 
-{
-    $service = new ClaimService();
-    
-    $search = $request->input('search');
+    protected $service;
 
-    return Inertia::render('leads/claims/Index', [
-        'paginatedClaims' => $service->getPaginatedClaims(10, $search),
-        'filters' => $request->only(['search']) 
-    ]);
-}
-
-    public function create()
+    public function __construct(ClaimService $service)
     {
-        return Inertia::render('leads/claims/Create');
+        $this->service = $service;
     }
 
-    /**
-     * GUARDAR: Almacenar una nueva reclamación.
-     */
+    public function index(Request $request) 
+    {
+        $search = $request->input('search');
+
+        return Inertia::render('leads/claims/Index', [
+            'paginatedClaims' => $this->service->getPaginatedClaims(10, $search),
+            'filters' => $request->only(['search']) 
+        ]);
+    }
+
     public function store(ClaimRequest $request)
     {
-        $service = new ClaimService();
-        
-        $service->save($request->validated());
+       
+        $this->service->save($request->validated());
 
         return redirect()->route('claims.items.index')
-            ->with('success', 'Reclamación enviada y registrada correctamente.');
+            ->with('success', 'Reclamación enviada correctamente.');
     }
 
-    public function show(Claim $claim)
+    public function show(Lead $claim)
     {
-        $service = new ClaimService();
-
         return Inertia::render('leads/claims/Show', [
-            'claim' => $service->getDetails($claim)
+            'claim' => $this->service->getDetails($claim)
         ]);
     }
 
-    public function edit(Claim $claim)
+    public function update(ClaimRequest $request, Lead $claim)
     {
-        return Inertia::render('leads/claims/Edit', [
-            'claim' => $claim
-        ]);
-    }
-
-  
-    public function update(ClaimRequest $request, Claim $claim)
-    {
-        
-        $claim->update([
-            'full_name' => $request->name,
-            'email'     => $request->email,
-            'phone'     => $request->phone_number,
-            'status'    => $request->status ?? $claim->status,
-        ]);
+       
+        $this->service->update($claim, $request->validated());
 
         return redirect()->route('claims.items.index')
             ->with('success', 'Reclamación actualizada exitosamente');
     }
 
-    public function destroy(Claim $claim)
+    public function destroy(Lead $claim)
     {
-       
-        if ($claim->file_path) {
-            Storage::disk('public')->delete($claim->file_path);
-        }
-
-        $claim->delete();
+        
+        $this->service->delete($claim);
 
         return redirect()->route('claims.items.index')
             ->with('success', 'Reclamación eliminada exitosamente');
