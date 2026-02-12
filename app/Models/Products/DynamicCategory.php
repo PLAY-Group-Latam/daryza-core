@@ -45,12 +45,30 @@ class DynamicCategory extends Model
   //     ->withTimestamps();
   // }
 
-  public function variants()
+  // En DynamicCategory.php
+  public function products(): BelongsToMany
   {
-    // Asumiendo que tu tabla pivot se llama dynamic_category_variant
-    return $this->belongsToMany(ProductVariant::class, 'dynamic_category_variant')
+    return $this->belongsToMany(
+      Product::class,              // Apuntamos al Producto padre
+      'product_dynamic_category',  // Tabla pivote
+      'dynamic_category_id',
+      'product_id'                 // ID del producto guardado en el pivote
+    )
+      ->using(DynamicCategoryPivot::class)
       ->withTimestamps();
   }
+
+  // public function variants(): BelongsToMany
+  // {
+  //   return $this->belongsToMany(
+  //     ProductVariant::class, // El modelo relacionado
+  //     'product_dynamic_category', // La tabla pivote
+  //     'dynamic_category_id', // FK en pivote para este modelo
+  //     'product_id' // <--- CAMBIAR ESTO: Es el nombre que pusiste en tu migración
+  //   )
+  //     ->using(DynamicCategoryPivot::class)
+  //     ->withTimestamps();
+  // }
 
   /**
    * Scope para filtrar categorías que están vigentes según la fecha actual.
