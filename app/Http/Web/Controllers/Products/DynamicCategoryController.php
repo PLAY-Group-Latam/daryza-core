@@ -4,7 +4,9 @@ namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
 use App\Models\Products\DynamicCategory;
+use App\Models\Products\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -40,9 +42,9 @@ class DynamicCategoryController extends Controller
     if (strlen($search) >= 3) {
       $searchTerm = "%{$search}%";
 
-      // Buscamos directamente en la tabla de variantes
-      $results = \App\Models\Products\ProductVariant::query()
-        ->select('id', 'product_id', 'sku', 'price')
+      $results = ProductVariant::query()
+        // Añadimos campos de promoción al select
+        ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
         ->where('sku', 'ilike', $searchTerm)
         ->with([
           'product:id,name',
@@ -54,9 +56,11 @@ class DynamicCategoryController extends Controller
           'id'           => $variant->id,
           'sku'          => $variant->sku,
           'price'        => $variant->price,
-          // El nombre ahora incluye el producto para que el usuario no se pierda
+          // Información de promoción
+          'is_on_promo'  => $variant->is_on_promo,
           'product_name' => $variant->product?->name ?? 'Sin nombre',
-          'name'         => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+          'variant_name'         => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+
         ]);
     }
 
@@ -72,50 +76,134 @@ class DynamicCategoryController extends Controller
   public function store(Request $request)
   {
     $validated = $request->validate([
-      'name'         => 'required|string|max:255',
-      'slug'         => 'required|string|unique:dynamic_categories,slug',
-      'is_active'    => 'boolean',
-      'starts_at'    => 'nullable|date',
-      'ends_at'      => 'nullable|date|after_or_equal:starts_at',
-      'variant_ids' => 'required|array', // Array de IDs de variantes elegidas
+      'name'          => 'required|string|max:255',
+      'slug'          => 'required|string|unique:dynamic_categories,slug',
+      'is_active'     => 'boolean',
+      'starts_at'     => 'nullable|date',
+      'ends_at'       => 'nullable|date|after_or_equal:starts_at',
+      'variant_ids'   => 'required|array|min:1',
       'variant_ids.*' => 'exists:product_variants,id',
     ]);
 
-    DynamicCategory::create($validated);
+    return DB::transaction(function () use ($validated) {
+      $dynamicCategory = DynamicCategory::create($validated);
 
-    return redirect()->route('products.dynamic-categories.index')
-      ->with('success', 'Categoría especial creada con éxito.');
+      // --- AQUÍ ESTÁ LA CORRECCIÓN ---
+      // 1. Buscamos los product_id únicos asociados a esas variantes
+      $productIds = ProductVariant::whereIn('id', $validated['variant_ids'])
+        ->pluck('product_id') // Obtenemos la columna product_id
+        ->unique()            // Evitamos duplicados
+        ->toArray();
+
+      // 2. Sincronizamos usando los IDs de PRODUCTOS
+      $dynamicCategory->variants()->sync($productIds);
+
+      return redirect()->route('products.dynamic-categories.index')
+        ->with('success', 'Categoría creada con éxito.');
+    });
   }
 
 
   /**
    * Formulario de edición.
    */
-  public function edit(DynamicCategory $dynamicCategory)
+  public function edit(Request $request, DynamicCategory $dynamicCategory)
   {
-    return Inertia::render('products/dynamic-categories/Edit', [
-      'category' => $dynamicCategory
+    // 1. Manejamos la búsqueda (igual que en create por si el usuario busca más productos al editar)
+    $search = trim($request->input('q', ''));
+    $searchResults = collect();
+
+    if (strlen($search) >= 3) {
+      $searchTerm = "%{$search}%";
+      $searchResults = ProductVariant::query()
+        ->select('id', 'product_id', 'sku', 'price', 'is_on_promo')
+        ->where('sku', 'ilike', $searchTerm)
+        ->with(['product:id,name', 'attributeValues:id,value'])
+        ->limit(15)
+        ->get()
+        ->map(fn($variant) => [
+          'id'           => $variant->id,
+          'sku'          => $variant->sku,
+          'price'        => $variant->price,
+          'is_on_promo'  => $variant->is_on_promo,
+          'product_name' => $variant->product?->name ?? 'Sin nombre',
+          'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+        ]);
+    }
+
+    $selectedVariants = $dynamicCategory->products() // Usamos la relación corregida
+      ->with(['variants.product', 'variants.attributeValues'])
+      ->get()
+      ->flatMap(function ($product) {
+        // De cada producto asociado, sacamos TODAS sus variantes
+        return $product->variants->map(function ($variant) {
+          return [
+            'id'           => $variant->id,
+            'sku'          => $variant->sku,
+            'price'        => $variant->price,
+            'is_on_promo'  => $variant->is_on_promo,
+            'product_name' => $variant->product?->name ?? 'Sin nombre',
+            'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+          ];
+        });
+      });
+
+
+    return Inertia::render('products/dynamicCategories/Edit', [
+      'dynamicCategory' => [
+        'id'          => $dynamicCategory->id,
+        'name'        => $dynamicCategory->name,
+        'slug'        => $dynamicCategory->slug,
+        'is_active'   => $dynamicCategory->is_active,
+        // Formateo ISO para inputs datetime-local de HTML5
+        'starts_at'   => $dynamicCategory->starts_at?->format('Y-m-d\TH:i'),
+        'ends_at'     => $dynamicCategory->ends_at?->format('Y-m-d\TH:i'),
+        // Pasamos los IDs de las variantes para el estado inicial del formulario
+        'variant_ids' => $selectedVariants->pluck('id'),
+      ],
+      'selectedVariants' => $selectedVariants,
+      'searchResults'    => $searchResults,
+      'filters'          => ['q' => $search]
     ]);
   }
 
   /**
    * Actualizar categoría existente.
    */
+  /**
+   * Actualizar categoría existente.
+   */
   public function update(Request $request, DynamicCategory $dynamicCategory)
   {
     $validated = $request->validate([
-      'name'         => 'required|string|max:255',
-      'slug'         => 'required|string|unique:dynamic_categories,slug,' . $dynamicCategory->id,
-      'banner_image' => 'nullable|string',
-      'is_active'    => 'boolean',
-      'starts_at'    => 'nullable|date',
-      'ends_at'      => 'nullable|date|after_or_equal:starts_at',
+      'name'          => 'required|string|max:255',
+      'slug'          => 'required|string|unique:dynamic_categories,slug,' . $dynamicCategory->id,
+      'banner_image'  => 'nullable|string',
+      'is_active'     => 'boolean',
+      'starts_at'     => 'nullable|date',
+      'ends_at'       => 'nullable|date|after_or_equal:starts_at',
+      'variant_ids'   => 'required|array|min:1',
+      'variant_ids.*' => 'exists:product_variants,id',
     ]);
 
-    $dynamicCategory->update($validated);
+    return DB::transaction(function () use ($validated, $dynamicCategory) {
+      // 1. Actualizar los datos básicos de la categoría
+      $dynamicCategory->update($validated);
 
-    return redirect()->route('products.dynamic-categories.index')
-      ->with('success', 'Categoría actualizada correctamente.');
+      // 2. Obtener los product_id únicos a partir de las variantes enviadas
+      // Esto es necesario porque tu relación en el pivote es con 'product_id'
+      $productIds = ProductVariant::whereIn('id', $validated['variant_ids'])
+        ->pluck('product_id')
+        ->unique()
+        ->toArray();
+
+      // 3. Sincronizar la tabla pivote (borra los que ya no están y agrega los nuevos)
+      // Usamos la relación products() que definimos en el modelo
+      $dynamicCategory->products()->sync($productIds);
+
+      return redirect()->route('products.dynamic-categories.index')
+        ->with('success', 'Categoría actualizada correctamente.');
+    });
   }
 
   /**

@@ -67,7 +67,6 @@ export interface Product {
     category_id?: string;
     categories?: string[];
     variant_attribute_ids?: string[];
-
 }
 
 export interface VariantAttributeEdit {
@@ -119,7 +118,7 @@ export interface ProductEdit {
     name: string;
     slug: string;
     categories: string[];
-business_lines: string[]; // <--- ¡No olvides este para las líneas de negocio!
+    business_lines: string[]; // <--- ¡No olvides este para las líneas de negocio!
     brief_description?: string;
     description?: string;
 

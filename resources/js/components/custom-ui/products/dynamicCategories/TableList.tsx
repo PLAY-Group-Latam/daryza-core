@@ -1,12 +1,15 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
+import products from '@/routes/products';
 import {
     DynamicCategory,
     PaginatedDynamicCategories,
 } from '@/types/products/dynamicCategories';
+import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Calendar } from 'lucide-react';
+import { Calendar, Edit } from 'lucide-react';
 import { DataTable } from '../../tables/DataTable';
 
 interface TableListProps {
@@ -56,15 +59,16 @@ const columns: ColumnDef<DynamicCategory>[] = [
                 );
 
             return (
-                <div className="flex flex-col gap-1 text-[10px] text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="size-3.5" />
                         <span>
                             Desde: {start ? formatDate(start, false) : '∞'}
                         </span>
                     </div>
+                    -
                     <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="size-3.5" />
                         <span>Hasta: {end ? formatDate(end, false) : '∞'}</span>
                     </div>
                 </div>
@@ -81,6 +85,13 @@ const columns: ColumnDef<DynamicCategory>[] = [
         ),
     },
     {
+        accessorKey: 'updated_at',
+        header: 'Actualizado el',
+        cell: ({ row }) => (
+            <span>{formatDate(row.original.updated_at, true)}</span>
+        ),
+    },
+    {
         id: 'actions',
         header: 'Acciones',
         cell: ({ row }) => {
@@ -88,19 +99,20 @@ const columns: ColumnDef<DynamicCategory>[] = [
 
             return (
                 <div className="flex items-center gap-2">
-                    {/* <Button
+                    <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        title="Editar categoría"
+                        title="Editar dinámica"
                         asChild
                     >
                         <Link
-                            href={productsNamespace.dynamicCategories.edit(category.id)}
+                            href={products.dynamicCategories.edit(category.id)}
                         >
                             <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
+                    {/* 
                     <ConfirmDeleteAlert
                         resourceId={category.id}
                         resourceName={category.name}
