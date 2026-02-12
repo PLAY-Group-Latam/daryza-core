@@ -259,11 +259,13 @@ export default function DynamicCategoriesForm({
                 {/* BUSCADOR */}
                 <div>
                     <div className="flex flex-col gap-1.5">
-                        <Label className="pb-2">Añadir productos por SKU</Label>
+                        <Label className="pb-2">
+                            Añadir productos por SKU DARYZA
+                        </Label>
                         <div className="relative">
                             <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
-                                placeholder="Ingrese el SKU daryza(mínimo 3 caracteres)..."
+                                placeholder="Ingrese el SKU daryza (mínimo 3 caracteres)..."
                                 className="pl-11"
                                 onChange={(e) => handleSearch(e.target.value)}
                             />

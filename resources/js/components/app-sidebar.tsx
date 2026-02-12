@@ -70,6 +70,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Dinámicas de Negocio',
                 href: '/productos/categorias-dinamicas',
             },
+            {
+                title: 'Lista de Packs',
+                href: '/productos/packs',
+            },
         ],
     },
     {
@@ -87,28 +91,28 @@ const mainNavItems: NavItem[] = [
         ],
     },
 
- {
-    title: 'Leads',
-    icon: Headset,
-    children: [
-        {
-            title: 'Lista de Reclamaciones',
-            href: '/claims/items'  
-        },
-        {
-            title:' Lista de Contactos',
-            href: '/contacts/items'
-        },
-        {
-            title:'Lista de Nosotros',
-            href: '/aboutus/items'
-        },
-        {
-            title :'Lista de Trabajos',
-            href: '/jobs/items'
-        }
-    ]
-},
+    {
+        title: 'Leads',
+        icon: Headset,
+        children: [
+            {
+                title: 'Lista de Reclamaciones',
+                href: '/claims/items',
+            },
+            {
+                title: ' Lista de Contactos',
+                href: '/contacts/items',
+            },
+            {
+                title: 'Lista de Nosotros',
+                href: '/aboutus/items',
+            },
+            {
+                title: 'Lista de Trabajos',
+                href: '/jobs/items',
+            },
+        ],
+    },
 
     {
         title: 'Configuración',

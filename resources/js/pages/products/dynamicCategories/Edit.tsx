@@ -25,7 +25,7 @@ export default function Edit() {
             <div className="p-6">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-slate-900">
-                        Editar Categoría Especial
+                        Editar Dinámica de negocio
                     </h1>
                     <p className="text-sm text-slate-500">
                         Gestiona los productos y la vigencia de la categoría.

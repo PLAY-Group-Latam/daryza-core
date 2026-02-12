@@ -17,7 +17,7 @@ export default function Create() {
             <Head title="Crear Línea de Negocio" />
             <div className="p-6">
                 <h1 className="mb-6 text-2xl font-bold">
-                    Nueva Categoría Especial
+                    Nueva Dinámica de negocio
                 </h1>
 
                 <DynamicCategoriesForm
