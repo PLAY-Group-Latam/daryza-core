@@ -22,15 +22,12 @@ class AboutService
                   ->orWhere('leads.email', 'ilike', $searchTerm)
                   ->orWhere('leads.phone', 'ilike', $searchTerm);
 
-                // Búsqueda en JSON (PostgreSQL usa ->> para obtener texto)
                 $q->orWhereRaw("(leads.data->>'ruc_dni')::text ilike ?", [$searchTerm])
                   ->orWhereRaw("(leads.data->>'company_name')::text ilike ?", [$searchTerm])
                   ->orWhereRaw("(leads.data->>'last_name')::text ilike ?", [$searchTerm]);
             });
         }
 
-        // Retornamos el paginador DIRECTO. 
-        // Laravel convertirá automáticamente la columna 'data' en un objeto/array para el JSON.
         return $query->orderBy('leads.created_at', 'desc')
                      ->paginate($perPage)
                      ->withQueryString();

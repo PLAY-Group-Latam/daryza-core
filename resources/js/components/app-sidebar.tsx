@@ -21,6 +21,7 @@ import {
     FileCode,
     Headset,
     LayoutGrid,
+    LayoutTemplate,
     Newspaper,
     SearchCheck,
     Store,
@@ -87,28 +88,33 @@ const mainNavItems: NavItem[] = [
         ],
     },
 
- {
-    title: 'Leads',
-    icon: Headset,
-    children: [
-        {
-            title: 'Lista de Reclamaciones',
-            href: '/claims/items'  
-        },
-        {
-            title:' Lista de Contactos',
-            href: '/contacts/items'
-        },
-        {
-            title:'Lista de Nosotros',
-            href: '/aboutus/items'
-        },
-        {
-            title :'Lista de Trabajos',
-            href: '/jobs/items'
-        }
-    ]
-},
+    {
+        title: 'Leads',
+        icon: Headset,
+        children: [
+            {
+                title: 'Lista de Reclamaciones',
+                href: '/claims/items',
+            },
+            {
+                title: ' Lista de Contactos',
+                href: '/contacts/items',
+            },
+            {
+                title: 'Lista de Nosotros',
+                href: '/aboutus/items',
+            },
+            {
+                title: 'Lista de Trabajos',
+                href: '/jobs/items',
+            },
+        ],
+    },
+    {
+        title: 'Contenido General',
+        href: '/content/items',
+        icon: LayoutTemplate,
+    },
 
     {
         title: 'Configuración',

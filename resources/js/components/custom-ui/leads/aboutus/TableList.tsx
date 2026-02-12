@@ -122,7 +122,7 @@ export default function TableList({ data, filters }: TableListProps) {
 
     return (
         <div className="w-full space-y-4">
-            <div className="rounded-xl bg-white shadow-sm overflow-hidden border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
+            <div>
                 <DataTable
                     columns={columns}
                     data={data}

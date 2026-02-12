@@ -48,14 +48,4 @@ class AboutUsController extends Controller
 
         return back()->with('success', 'Tu solicitud de información ha sido enviada correctamente.');
     }
-
-    /**
-     * Obtiene los detalles de un lead específico (para el Modal)
-     */
-    public function show(string $id): JsonResponse
-    {
-        $aboutus = $this->aboutService->getDetails($id);
-        
-        return response()->json($aboutus);
-    }
 }

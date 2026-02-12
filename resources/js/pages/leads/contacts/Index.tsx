@@ -114,8 +114,6 @@ export default function Index() {
                     </div>
                 </div>
 
-                <hr />
-
                 {/* Tabla Dinámica */}
                 <div>
                     <TableList data={paginatedContacts} filters={filters} />
