@@ -8,10 +8,8 @@ Route::prefix('content')->name('content.')->middleware('auth')->group(function (
     
    
     Route::get('/items', [ContentController::class, 'index'])->name('index');
-
-  
-  Route::get('/{slug}/{id}', [ContentController::class, 'edit'])->name('edit');
-  
-    Route::post('/update/{id}', [ContentController::class, 'update'])->name('update');
+    Route::get('/{slug}/{type}/{id}', [ContentController::class, 'edit'])->name('edit');
+    Route::post('/update/{slug}/{type}/{id}', [ContentController::class, 'update'])->name('update');
+    
 
 });
