@@ -2,7 +2,7 @@
 
 import { CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 import { Check, CornerDownRight } from 'lucide-react';
 
 interface TreeItemProps {
@@ -21,8 +21,7 @@ export function TreeItem({
     const isSelected = selectedValue.includes(node.id);
 
     // Una categoría es seleccionable SOLO si no tiene hijos activos
-    const isSelectable =
-        !node.active_children || node.active_children.length === 0;
+    const isSelectable = !node.children || node.children.length === 0;
 
     return (
         <>
@@ -52,7 +51,10 @@ export function TreeItem({
                         )}
                     >
                         {isSelected && (
-                            <Check className="size-3 text-gray-200" strokeWidth={3}/>
+                            <Check
+                                className="size-3 text-gray-200"
+                                strokeWidth={3}
+                            />
                         )}
                     </div>
                 ) : (
@@ -77,7 +79,7 @@ export function TreeItem({
             </CommandItem>
 
             {/* Renderizado recursivo de hijos */}
-            {node.active_children?.map((child) => (
+            {node.children?.map((child) => (
                 <TreeItem
                     key={child.id}
                     node={child}

@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Run the migrations. this table pivot
      */
     public function up(): void
     {
         Schema::create('product_category', function (Blueprint $table) {
-            $table->ulid('id')->primary();
+            $table->id();
             $table->foreignUlid('product_id')->constrained()->onDelete('cascade');
             $table->foreignUlid('category_id')->constrained('product_categories')->onDelete('cascade');
             $table->timestamps();

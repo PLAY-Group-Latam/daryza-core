@@ -65,12 +65,10 @@ const packSchema = z
 type PackFormValues = z.infer<typeof packSchema>;
 
 export default function FormPack({
-    products, // Se mantiene por prop, aunque no se use en tabla
     pack,
     searchResults = [],
     filters,
 }: {
-    products: any[];
     pack?: any;
     searchResults: SelectableVariant[];
     filters?: { q?: string };

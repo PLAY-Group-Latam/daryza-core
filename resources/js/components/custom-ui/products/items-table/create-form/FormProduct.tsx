@@ -4,12 +4,16 @@
 
 'use client';
 
+import { MultiSelect } from '@/components/custom-ui/MultiSelect';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import products from '@/routes/products';
-import { CategorySelect } from '@/types/products';
 import { Attribute } from '@/types/products/attributes';
+import { BusinessLine } from '@/types/products/businessLines';
+import { CategorySelect } from '@/types/products/categories';
 import { ProductEdit } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
@@ -21,10 +25,6 @@ import { CategoryTreeSelect } from './CategoryArrayTreeSelect';
 import { SpecificationsAttributes } from './SpecificationsFormAttributes';
 import { TechnicalSheetsForm } from './TechnicalSheetsForm';
 import { VariantForm } from './VariantForm';
-import { BusinessLine } from '@/types/products/businessLines';
-import { MultiSelect } from '@/components/custom-ui/MultiSelect';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const VariantAttributeSchema = z.object({
     attribute_id: z.string(), // ULID
@@ -87,7 +87,7 @@ export default function FormProduct({
     categories,
     attributes,
     product,
-    businessLines
+    businessLines,
 }: {
     categories: CategorySelect[];
     attributes: Attribute[];

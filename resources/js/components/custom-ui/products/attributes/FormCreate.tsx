@@ -1,12 +1,13 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import {
-    NativeSelect,
-    NativeSelectOption,
-} from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     Tooltip,
     TooltipContent,
@@ -15,254 +16,245 @@ import {
 import attributes from '@/routes/products/attributes';
 import { Attribute, AttributeTypeOption } from '@/types/products/attributes';
 import { useForm } from '@inertiajs/react';
-import { Info, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { Info, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface FormData {
     name: string;
     type: string;
     is_filterable: boolean;
-    is_variant: boolean; // 👈 nuevo
-
+    is_variant: boolean;
     values: string[];
 }
 
 interface Props {
-    types: AttributeTypeOption[];
+    types: AttributeTypeOption[]; // Se mantiene por compatibilidad de interfaz, aunque ya no se usa el select
     attribute?: Attribute;
 }
 
-export default function FormCreate({ types, attribute }: Props) {
+export default function FormCreate({ attribute }: Props) {
     const isEdit = Boolean(attribute?.id);
-
     const { data, setData, post, put, processing, errors } = useForm<FormData>({
         name: attribute?.name || '',
-        type: attribute?.type || '',
-        is_filterable: attribute?.is_filterable ?? true,
+        type: attribute?.type || 'text',
+        is_filterable: attribute?.is_filterable ?? false, // Por defecto false según pedido
         is_variant: attribute?.is_variant ?? false,
-        values: attribute?.values?.map((v) => v.value) || [''], // 👈 aquí mapeamos los valores
+        values: attribute?.values?.map((v) => v.value) || [''],
     });
+
     const [useColor, setUseColor] = useState(false);
+
+    useEffect(() => {
+        if (isEdit && data.values.length > 0) {
+            const isHex = /^#[0-9A-F]{6}$/i.test(data.values[0]);
+            if (isHex) setUseColor(true);
+        }
+    }, [isEdit]);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (isEdit && attribute) {
-            // Actualización
-            const action = attributes.update(attribute.id).url;
-            put(action); // PUT para editar
-        } else {
-            // Creación
-            const action = attributes.store().url;
-            post(action); // POST para crear
-        }
-        console.log(data);
+        isEdit && attribute
+            ? put(attributes.update(attribute.id).url)
+            : post(attributes.store().url);
     };
 
-    // helpers para values
+    const handlePurposeChange = (value: string) => {
+        const isVariant = value === 'variant';
+        setData((prev) => ({
+            ...prev,
+            is_variant: isVariant,
+            // LÓGICA AUTOMÁTICA: Variante -> select | Especificación -> text
+            type: isVariant ? 'select' : 'text',
+        }));
+    };
+
     const updateValue = (index: number, value: string) => {
         const newValues = [...data.values];
         newValues[index] = value;
         setData('values', newValues);
     };
 
-    const addValue = () => setData('values', [...data.values, '']);
-
-    const removeValue = (index: number) => {
-        setData(
-            'values',
-            data.values.filter((_, i) => i !== index),
-        );
-    };
-
     return (
-        <form onSubmit={submit} className="space-y-8">
-            {/* Sección básica */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Nombre */}
-                <div className="flex flex-col gap-2">
-                    <label className="block text-sm font-medium">Nombre</label>
+        <form onSubmit={submit} className="max-w-3xl space-y-8">
+            {/* --- BLOQUE PRINCIPAL: DEFINICIÓN --- */}
+            <section className="grid grid-cols-1 gap-10 md:grid-cols-2">
+                <div className="flex flex-col justify-between gap-3">
+                    <Label htmlFor="name">Nombre del atributo</Label>
                     <Input
+                        id="name"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
-                        placeholder="Ej: Color, Aroma, Talla, Peso"
+                        placeholder="Ej: Color, Material, Talla..."
                     />
                     {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">
+                        <p className="text-xs font-medium text-red-500">
                             {errors.name}
                         </p>
                     )}
                 </div>
 
-                {/* Tipo */}
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-1.5">
-                        <label className="block text-sm font-medium">
-                            Tipo de Atributo
-                        </label>
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                        <Label>Tipo de Atributo</Label>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="text-blue-600 hover:text-blue-800"
-                                >
-                                    <Info size={16} />
-                                </button>
+                                <Info className="h-4 w-4 cursor-help text-slate-400" />
                             </TooltipTrigger>
                             <TooltipContent
-                                side="top"
-                                className="max-w-xs text-sm"
+                                side="right"
+                                className="max-w-[240px] p-3"
                             >
-                                <strong>Ejemplos de tipos:</strong>
-                                <ul className="mt-1 ml-4 list-disc">
-                                    <li>
-                                        <strong>Lista de opciones:</strong>{' '}
-                                        Colores, Tallas
-                                    </li>
-                                    <li>
-                                        <strong>Número:</strong> Peso, Largo
-                                    </li>
-                                    <li>
-                                        <strong>Sí / No:</strong> Es vegano
-                                    </li>
-                                    <li>
-                                        <strong>Texto libre:</strong> Notas
-                                    </li>
-                                </ul>
+                                <p className="text-xs leading-relaxed">
+                                    <strong>Especificación:</strong> Texto libre
+                                    para detalles técnicos.
+                                    <br />
+                                    <br />
+                                    <strong>Variantes:</strong> Lista de
+                                    opciones que el cliente debe seleccionar.
+                                </p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
-
-                    <NativeSelect
-                        value={data.type}
-                        onChange={(e) => setData('type', e.target.value)}
-                        className="focus-visible:ring-0"
+                    <RadioGroup
+                        value={data.is_variant ? 'variant' : 'spec'}
+                        onValueChange={handlePurposeChange}
+                        className="flex h-9 w-max items-center gap-6 rounded-md border px-4"
                     >
-                        <NativeSelectOption value="" disabled hidden>
-                            Selecciona
-                        </NativeSelectOption>
-
-                        {types.map((t) => (
-                            <NativeSelectOption key={t.value} value={t.value}>
-                                {t.label}
-                            </NativeSelectOption>
-                        ))}
-                    </NativeSelect>
-
-                    {errors.type && (
-                        <p className="mt-1 text-sm text-red-600">
-                            {errors.type}
-                        </p>
-                    )}
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="spec" id="spec" />
+                            <Label htmlFor="spec" className="cursor-pointer">
+                                Especificación
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="variant" id="variant" />
+                            <Label htmlFor="variant" className="cursor-pointer">
+                                Variante
+                            </Label>
+                        </div>
+                    </RadioGroup>
                 </div>
-            </div>
+            </section>
 
-            {/* Filtrable */}
-            {/* Flags del atributo */}
-            <div className="flex flex-col gap-4">
-                {/* Filtrable */}
-                <div className="flex items-center gap-3">
-                    <Checkbox
-                        checked={data.is_filterable}
-                        onCheckedChange={(checked) =>
-                            setData('is_filterable', Boolean(checked))
-                        }
-                    />
-                    <span className="text-sm">
-                        ¿Usar como filtro en el catálogo?
-                    </span>
-                </div>
-
-                {/* Variante */}
-                <div className="flex items-center gap-3">
-                    <Checkbox
-                        checked={data.is_variant}
-                        onCheckedChange={(checked) =>
-                            setData('is_variant', Boolean(checked))
-                        }
-                    />
-                    <span className="text-sm">
-                        ¿Este atributo define variantes del producto?
-                    </span>
-                </div>
-            </div>
-
-            {/* Valores solo si es select */}
-            {data.type === 'select' && (
-                <div className="max-w-md space-y-4">
-                    {/* Activar paleta de color */}
+            {/* --- BLOQUE DINÁMICO: VALORES (Solo para Variantes) --- */}
+            {data.is_variant && (
+                <section className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">
-                            Valores
-                        </label>
                         <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-slate-800">
+                                Opciones de variante
+                            </h3>
+                        </div>
+                        <div className="flex items-center space-x-2">
                             <Checkbox
+                                id="color-mode"
                                 checked={useColor}
                                 onCheckedChange={(checked) =>
                                     setUseColor(Boolean(checked))
                                 }
                             />
-                            <label className="text-sm font-medium">
-                                Usar paleta de color
-                            </label>
+                            <Label
+                                htmlFor="color-mode"
+                                className="cursor-pointer text-xs font-bold tracking-tight uppercase"
+                            >
+                                Usar Colores
+                            </Label>
                         </div>
                     </div>
 
-                    {data.values.map((val, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            <Input
-                                value={val}
-                                onChange={(e) =>
-                                    updateValue(index, e.target.value)
-                                }
-                                placeholder={
-                                    useColor
-                                        ? '#000000'
-                                        : 'Ej: Rojo, Azul, Verde'
-                                }
-                                className="flex-1"
-                            />
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {data.values.map((val, index) => (
+                            <div
+                                key={index}
+                                className="group flex items-center gap-2"
+                            >
+                                <div className="relative h-full flex-1">
+                                    <Input
+                                        value={val}
+                                        onChange={(e) =>
+                                            updateValue(index, e.target.value)
+                                        }
+                                        placeholder={
+                                            useColor
+                                                ? '#HEX '
+                                                : 'Ej: XL, Madera...'
+                                        }
+                                        className="pr-10 focus-visible:ring-blue-500"
+                                    />
+                                    {useColor && (
+                                        <div className="absolute top-1/2 right-1.5 h-6 -translate-y-1/2">
+                                            <input
+                                                type="color"
+                                                className="h-full w-6 cursor-pointer rounded-sm border"
+                                                value={
+                                                    val.startsWith('#')
+                                                        ? val
+                                                        : '#000000'
+                                                }
+                                                onChange={(e) =>
+                                                    updateValue(
+                                                        index,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                {data.values.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-9 border text-slate-300 hover:bg-red-50 hover:text-red-500"
+                                        onClick={() =>
+                                            setData(
+                                                'values',
+                                                data.values.filter(
+                                                    (_, i) => i !== index,
+                                                ),
+                                            )
+                                        }
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
 
-                            {useColor && (
-                                <input
-                                    type="color"
-                                    value={val || '#000000'}
-                                    onChange={(e) =>
-                                        updateValue(index, e.target.value)
-                                    }
-                                />
-                            )}
-
-                            {data.values.length > 1 && (
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={() => removeValue(index)}
-                                    title="Eliminar"
-                                >
-                                    <Trash />
-                                </Button>
-                            )}
-                        </div>
-                    ))}
-
-                    <Button type="button" variant="outline" onClick={addValue}>
-                        + Agregar valor
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setData('values', [...data.values, ''])}
+                        className="h-10 border-dashed border-slate-300 text-muted-foreground hover:border-blue-200 hover:bg-transparent hover:text-blue-600"
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Añadir otra opción
                     </Button>
-
-                    {errors.values && (
-                        <p className="mt-1 text-sm text-red-600">
-                            Todos los valores son obligatorios.
-                        </p>
-                    )}
-                </div>
+                </section>
             )}
 
-            {/* Botón principal */}
-            <div className="flex w-fit items-center justify-start">
-                <Button type="submit" disabled={processing}>
-                    Guardar atributo
+            {!isEdit && (
+                <section className="rounded-xl border border-dashed border-gray-700 p-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        Este atributo se guardará como{' '}
+                        <strong>Texto Libre</strong>.<br />
+                        Podrás escribir cualquier especificación técnica al
+                        crear el producto.
+                    </p>
+                </section>
+            )}
+            <footer className="flex justify-start">
+                <Button
+                    type="submit"
+                    size="lg"
+                    disabled={processing}
+                    className="min-w-[250px] bg-slate-900 text-white shadow-xl transition-all hover:bg-black active:scale-95"
+                >
+                    {isEdit ? 'Actualizar Atributo' : 'Guardar Atributo'}
                 </Button>
-            </div>
+            </footer>
         </form>
     );
 }

@@ -8,99 +8,87 @@ use App\Http\Web\Requests\Products\UpdateCategoryRequest;
 use App\Http\Web\Services\Products\ProductCategoryService;
 use App\Models\Products\ProductCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+// use Illuminate\Support\Facades\Log;
+// use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ProductCategoryController extends Controller
 {
+    protected $categoryService;
+
+    public function __construct(ProductCategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
     /**
      * Listar categorías (árbol completo)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $perPage = request()->input('per_page', 10);
+        // 1. Extraemos los parámetros de la request
+        $perPage = $request->integer('per_page', 10);
 
-        $categories = ProductCategory::roots()
-            ->with('children')
-            ->orderBy('order', 'desc')
-            ->paginate($perPage);
-
-        $categoriesForSelect = ProductCategory::roots()
-            ->active()
-            ->with('activeChildren')
-            ->get(['id', 'name', 'parent_id', 'order']);
-
+        $paginatedTree = $this->categoryService->getPaginatedTree($perPage);
+        $treeForSelect = $this->categoryService->getActiveTreeForSelect();
 
         return Inertia::render('products/categories/Index', [
-            'paginatedProductCategories' => $categories,
-            'categoriesForSelect' => $categoriesForSelect,
+            'paginatedCategories' => $paginatedTree,
+            'categoriesForSelect'        => $treeForSelect,
         ]);
     }
-
     /**
      * Crear una categoría
      */
     public function store(StoreCategoryRequest $request)
     {
-        $data = $request->validated();
-        $data['order'] = $data['order'] ?? 0;
+        try {
+            $this->categoryService->storeCategory($request->validated());
 
-
-        // Validación del padre (máximo 2 niveles)
-        if (!empty($data['parent_id'])) {
-            $parent = ProductCategory::with('parent.parent')->findOrFail($data['parent_id']);
-
-            if (!$parent->canCreateChild()) {
-                return back()->withErrors([
-                    'parent_id' => 'No se puede crear una categoría en este nivel. El máximo permitido es de 2 niveles.'
-                ]);
-            }
-
-            // Asignamos el order automáticamente como el último entre los hijos del padre
-            $maxOrder = ProductCategory::where('parent_id', $data['parent_id'])->max('order');
-            $data['order'] = $maxOrder ? $maxOrder + 1 : 1;
-        } else {
-            // Es categoría padre, asignamos order entre los padres
-            $maxOrder = ProductCategory::whereNull('parent_id')->max('order');
-            $data['order'] = $maxOrder ? $maxOrder + 1 : 1;
+            return redirect()->route('products.categories.index')
+                ->with('success', 'Categoría creada correctamente.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['parent_id' => $e->getMessage()]);
         }
-
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
-        }
-
-
-        ProductCategory::create($data);
-
-        return back()->with('success', 'Categoría creada correctamente.');
     }
 
-    public function update(UpdateCategoryRequest $request, $id, ProductCategoryService $service)
+    /**
+     * Mostrar el formulario de creación de categorías.
+     */
+    public function create()
     {
-        $category = ProductCategory::findOrFail($id);
-        $data = $request->validated();
+        $treeForSelect = $this->categoryService->getActiveTreeForSelect();
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
-        }
+        return Inertia::render('products/categories/Create', [
+            'categoriesForSelect' => $treeForSelect
+        ]);
+    }
 
-        if (!empty($data['parent_id'])) {
-            $parent = ProductCategory::findOrFail($data['parent_id']);
-            if (!$parent->canCreateChild()) {
-                return back()->withErrors([
-                    'parent_id' => 'No se puede asignar esta categoría como padre. El máximo permitido es de 2 niveles.'
-                ]);
-            }
-        }
+    /**
+     * Mostrar el formulario de edición.
+     */
+    public function edit(ProductCategory $category)
+    {
+        // 1. Obtenemos el árbol para el select (mismo que en create e index)
+        $treeForSelect = $this->categoryService->getActiveTreeForSelect();
 
-        $result = $service->updateCategory($category, $data);
+        // 2. Renderizamos la vista enviando ambos datos
+        return Inertia::render('products/categories/Edit', [
+            'category'            => $category,
+            'categoriesForSelect' => $treeForSelect
+        ]);
+    }
+
+    public function update(UpdateCategoryRequest $request, ProductCategory $category)
+    {
+        // Delegamos todo al servicio
+        $result = $this->categoryService->updateCategory($category, $request->validated());
 
         if (!$result['success']) {
             return back()->withErrors(['order' => $result['error']]);
         }
 
-        return back()->with('success', 'Categoría actualizada correctamente.');
+        return redirect()->route('products.categories.index')
+            ->with('success', 'Categoría actualizada correctamente.');
     }
 
 
@@ -109,10 +97,9 @@ class ProductCategoryController extends Controller
      * Eliminar una categoría
      * (gracias al cascade se borran sus hijas)
      */
-    public function destroy($id)
+    public function destroy(ProductCategory $category)
     {
-        $category = ProductCategory::findOrFail($id);
-        $category->delete();
+        $this->categoryService->deleteCategory($category);
 
         return back()->with('success', 'Categoría eliminada correctamente.');
     }

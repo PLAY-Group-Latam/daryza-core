@@ -22,13 +22,19 @@ class ProductService
       $product = Product::create([
         'name'              => $data['name'],
         'slug'              => $data['slug'],
-        // 'category_id'       => $data['category_id'],
         'brief_description' => $data['brief_description'],
         'description'       => $data['description'],
         'is_active'         => $data['is_active'] ?? true,
       ]);
 
-      $this->processProductRelations($product, $data);
+      $product->categories()->sync($data['categories'] ?? []);
+      $product->businessLines()->sync($data['business_lines'] ?? []);
+
+      // 3. Procesar componentes complejos
+      $this->createMetadata($product, $data['metadata'] ?? []);
+      $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
+      $this->createSpecifications($product, $data['specifications'] ?? []);
+      $this->createVariants($product, $data['variants'] ?? []);
 
       return $product;
     });
@@ -118,23 +124,23 @@ class ProductService
   /**
    * Orquestador de relaciones para mantener el método create limpio.
    */
-  protected function processProductRelations(Product $product, array $data): void
-  {
+  // protected function processProductRelations(Product $product, array $data): void
+  // {
 
-    // 4. Sincronizar categorías al crear
-    if (!empty($data['categories'])) {
-      // Laravel usará el ProductCategoryPivot automáticamente
-      $product->categories()->sync($data['categories']);
-    }
-    if (!empty($data['business_lines'])) {
-      $product->businessLines()->sync($data['business_lines']);
-    }
+  //   // 4. Sincronizar categorías al crear
+  //   if (!empty($data['categories'])) {
+  //     // Laravel usará el ProductCategoryPivot automáticamente
+  //     $product->categories()->sync($data['categories']);
+  //   }
+  //   if (!empty($data['business_lines'])) {
+  //     $product->businessLines()->sync($data['business_lines']);
+  //   }
 
-    $this->createMetadata($product, $data['metadata'] ?? []);
-    $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
-    $this->createVariants($product, $data['variants'] ?? []);
-    $this->createSpecifications($product, $data['specifications'] ?? []);
-  }
+  //   $this->createMetadata($product, $data['metadata'] ?? []);
+  //   $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
+  //   $this->createVariants($product, $data['variants'] ?? []);
+  //   $this->createSpecifications($product, $data['specifications'] ?? []);
+  // }
 
   protected function createMetadata(Product $product, array $metadata): void
   {
@@ -153,14 +159,17 @@ class ProductService
   protected function createTechnicalSheets(Product $product, array $sheets): void
   {
     foreach ($sheets as $sheet) {
-      if (empty($sheet['file'])) continue;
+      // 1. Usamos null coalescing para ser más seguros
+      $file = $sheet['file'] ?? null;
+      if (!$file) continue;
 
+      // 2. Simplificamos la obtención de la ruta
       $folder = $this->getStoragePath($product->id, StorageFolder::TECHNICAL_SHEETS);
-      $path = $this->gcsService->uploadFile($sheet['file'], $folder);
 
+      // 3. Creamos directamente
       $product->technicalSheets()->create([
-        'file_path' => $path,
-        'type'      => 'technical_sheet',
+        'file_path' => $this->gcsService->uploadFile($file, $folder),
+        'type'      => 'technical_sheet', // Si usas Enums aquí, mejor.
         'folder'    => $folder,
       ]);
     }
@@ -168,32 +177,43 @@ class ProductService
 
   protected function createVariants(Product $product, array $variants): void
   {
-    foreach ($variants as $variantData) {
-      $attributes = $variantData['attributes'] ?? [];
-      $mediaFiles = $variantData['media'] ?? [];
+    $hasMain = collect($variants)->contains('is_main', true);
+    foreach ($variants as $index => $vData) {
+      $cleanData = collect($vData)->except(['attributes', 'media'])->toArray();
 
-      // Limpiamos los datos para la creación masiva
-      $variant = $product->variants()->create(
-        collect($variantData)->except(['attributes', 'media'])->toArray()
-      );
+      // Regla de negocio: la primera variante siempre es la principal por defecto
+      if (!$hasMain && $index === 0) {
+        $cleanData['is_main'] = true;
+      }
 
-      $this->attachVariantAttributes($variant, $attributes);
-      $this->createVariantMedia($variant, $mediaFiles);
+      $variant = $product->variants()->create($cleanData);
+
+      if (!empty($vData['attributes'])) {
+        $this->attachVariantAttributes($variant, $vData['attributes']);
+      }
+
+      // 3. Media
+      if (!empty($vData['media'])) {
+        $this->createVariantMedia($variant, $vData['media']);
+      }
     }
   }
 
   protected function createVariantMedia(ProductVariant $variant, array $mediaFiles): void
   {
-    foreach ($mediaFiles as $file) {
-      $isImg = str_starts_with($file->getMimeType(), 'image/');
-      $type  = $isImg ? 'image' : 'video';
+    foreach ($mediaFiles as  $file) {
+      $mime = $file->getMimeType();
+      $isImg = str_starts_with($mime, 'image/');
+      $isVid = str_starts_with($mime, 'video/');
 
-      $subFolder = $isImg ? StorageFolder::PRODUCT_IMAGES : StorageFolder::PRODUCT_VIDEOS;
-      $folder = $this->getStoragePath($variant->product_id, $subFolder);
-      $path = $this->gcsService->uploadFile($file, $folder);
+      // Determinamos el tipo y carpeta dinámicamente
+      $type = $isImg ? 'image' : ($isVid ? 'video' : 'other');
+      $folderEnum = $isImg ? StorageFolder::PRODUCT_IMAGES : StorageFolder::PRODUCT_VIDEOS;
+
+      $folder = $this->getStoragePath($variant->product_id, $folderEnum);
 
       $variant->media()->create([
-        'file_path' => $path,
+        'file_path' => $this->gcsService->uploadFile($file, $folder),
         'type'      => $type,
         'folder'    => $folder,
       ]);
@@ -202,12 +222,13 @@ class ProductService
 
   protected function attachVariantAttributes(ProductVariant $variant, array $attributes): void
   {
-    $validAttributes = collect($attributes)
+    $payload = collect($attributes)
       ->filter(fn($attr) => !empty($attr['attribute_value_id']))
-      ->map(fn($attr) => ['attribute_value_id' => $attr['attribute_value_id']]);
+      ->map(fn($attr) => ['attribute_value_id' => $attr['attribute_value_id']])
+      ->toArray();
 
-    if ($validAttributes->isNotEmpty()) {
-      $variant->variantAttributeValues()->createMany($validAttributes->toArray());
+    if (!empty($payload)) {
+      $variant->selections()->createMany($payload);
     }
   }
 

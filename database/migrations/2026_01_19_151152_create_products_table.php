@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('products', function (Blueprint $table) {
+        Schema::create('products', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
             $table->string('code')->nullable()->index(); // código interno
             $table->string('name');
             $table->string('slug')->unique();
 
-            $table->foreignUlid('category_id')
-                ->nullable()
-                ->constrained('product_categories')
-                ->nullOnDelete();
+
 
             $table->text('brief_description')->nullable();
             $table->longText('description')->nullable();

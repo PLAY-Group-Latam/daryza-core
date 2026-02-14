@@ -20,7 +20,6 @@ class Product extends Model
         'code',
         'name',
         'slug',
-        'category_id',
         'brief_description',
         'description',
         'is_active',
@@ -39,7 +38,6 @@ class Product extends Model
     public function categories()
     {
         return $this->belongsToMany(ProductCategory::class, 'product_category', 'product_id', 'category_id')
-            ->using(ProductCategoryPivot::class)
             ->withTimestamps();
     }
 

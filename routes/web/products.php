@@ -13,7 +13,7 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
   Route::resource('categorias', ProductCategoryController::class)
     ->names('categories')
     ->parameters([
-      'categorias' => 'categories',
+      'categorias' => 'category',
     ]);
 
   Route::get('items/import', [ProductExcelController::class, 'showForm'])

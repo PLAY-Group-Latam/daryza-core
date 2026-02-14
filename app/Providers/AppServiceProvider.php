@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Products\Product;
+use App\Models\Products\ProductCategory;
+use App\Observers\Web\Product\ProductCategoryObserver;
 use App\Observers\Web\Product\ProductObserver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +29,6 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Product::observe(ProductObserver::class);
-        
+        ProductCategory::observe(ProductCategoryObserver::class);
     }
 }

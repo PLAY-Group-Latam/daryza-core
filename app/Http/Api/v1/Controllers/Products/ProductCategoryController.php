@@ -15,13 +15,15 @@ class ProductCategoryController extends Controller
   {
     $categories = ProductCategory::roots()
       ->active()
-      ->with('activeChildren')
+      ->with('children')
+      ->orderBy('order')
+
       ->get(['id', 'name', 'parent_id', 'order', 'slug']);
-      
-        //       Log::info('Categorias obtenidas desde BD:', [
-        //     'count' => $categories->count(),
-        //     'data'  => $categories->toArray(),
-        // ]);
+
+    //       Log::info('Categorias obtenidas desde BD:', [
+    //     'count' => $categories->count(),
+    //     'data'  => $categories->toArray(),
+    // ]);
 
     return $this->success('Categorias Obtenidas correctamente', $categories);
   }

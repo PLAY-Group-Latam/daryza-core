@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('mediable_type'); // nombre del modelo 
             $table->string('type'); // 'image', 'technical_sheet', 'video', etc
             $table->string('file_path'); // URL o path en storage
+            $table->string('folder')->nullable(); // Agrégalo si lo guardas en el Service
             $table->boolean('is_main')->default(false); // solo aplica a imágenes
             $table->integer('order')->default(0); // ordenar en galerías
 

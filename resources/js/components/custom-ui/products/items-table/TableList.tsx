@@ -17,7 +17,7 @@ interface TableListProps {
 export const columns: ColumnDef<Product>[] = [
     {
         accessorKey: 'name',
-        header: 'Slug / Nombre / Categoría',
+        header: 'Slug / Nombre ',
         cell: ({ row }) => {
             const product = row.original;
             const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
@@ -36,24 +36,32 @@ export const columns: ColumnDef<Product>[] = [
                         <span className="font-medium text-black">
                             {product.name}
                         </span>
-
-                        {product.category?.name && (
-                            <>
-                                {'-'}
-                                <span className="text-blue-600">
-                                    {product.category?.name}
-                                </span>
-                            </>
-                        )}
                     </div>
                 </div>
             );
         },
     },
-
+    {
+        accessorKey: 'brief_description',
+        header: 'Descripción Corta',
+        cell: ({ row }) => {
+            const description = row.original.brief_description;
+            return (
+                <div className="w-full max-w-[300px]">
+                    <p className="w-full truncate text-sm">
+                        {description || (
+                            <span className="text-gray-300">
+                                Sin descripción
+                            </span>
+                        )}
+                    </p>
+                </div>
+            );
+        },
+    },
     {
         id: 'product_info',
-        header: 'Producto / Sku / Stock',
+        header: 'Precio / Sku Daryza / Stock',
         cell: ({ row }) => {
             const product = row.original;
             const mainVariant = getMainVariant(product);
@@ -68,12 +76,11 @@ export const columns: ColumnDef<Product>[] = [
                     />
 
                     <div className="flex flex-col text-sm">
-                        <span className="font-semibold text-gray-800">
-                            {product.name}
-                        </span>
-
                         {mainVariant ? (
                             <>
+                                <span className="font-semibold text-gray-800">
+                                    S/{mainVariant.price}
+                                </span>
                                 <span className="text-xs text-gray-500">
                                     SKU: {mainVariant.sku || '—'}
                                 </span>

@@ -7,6 +7,7 @@ use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Requests\Products\StoreProductImportRequest;
 use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
+use App\Http\Web\Services\Products\ProductCategoryService;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\BusinessLine;
@@ -19,13 +20,17 @@ class ProductController extends Controller
 {
 
   protected ProductService $productService;
+  protected ProductCategoryService $categoryService;
+
   /**
    * Inyectamos el servicio en el constructor
    */
-  public function __construct(ProductService $productService)
+  public function __construct(ProductService $productService, ProductCategoryService $categoryService)
   {
     $this->productService = $productService;
+    $this->categoryService = $categoryService;
   }
+
 
 
 
@@ -35,16 +40,13 @@ class ProductController extends Controller
     $perPage = request()->input('per_page', 10);
 
     $products = Product::with([
-      'categories',
       'variants' => function ($q) {
         $q->with([
           'attributeValues.attribute',
           'media',
         ]);
       },
-      'technicalSheets',
-      'specifications.attribute',
-      'metadata',
+
     ])
       ->latest()
       ->paginate($perPage);
@@ -138,10 +140,8 @@ class ProductController extends Controller
         'value' => $spec->value,
       ])->values(),
     ];
-    $categoriesForSelect = ProductCategory::roots()
-      ->active()
-      ->with('activeChildren')
-      ->get(['id', 'name', 'parent_id', 'order']);
+    $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
+
 
     $attributes = Attribute::with(['values'])->get();
     $businessLines = BusinessLine::where('is_active', true)
@@ -163,10 +163,7 @@ class ProductController extends Controller
   public function create()
   {
     // Necesitas categorías para el select
-    $categoriesForSelect = ProductCategory::roots()
-      ->active()
-      ->with('activeChildren')
-      ->get(['id', 'name', 'parent_id', 'order']);
+    $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
 
     $attributes = Attribute::with(['values'])
       ->get();

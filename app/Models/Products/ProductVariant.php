@@ -46,6 +46,26 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+
+    public function selections()
+    {
+        return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');
+    }
+
+    /**
+     * RELACIÓN VISUAL (Valores)
+     * Se usa para mostrar: $variant->attributes (Ej: Color Rojo, Talla XL)
+     */
+    public function attributes()
+    {
+        return $this->belongsToMany(
+            AttributesValue::class,
+            'product_variant_attribute_values',
+            'product_variant_id',
+            'attribute_value_id'
+        )->withTimestamps();
+    }
+
     // Valores seleccionados de atributos
     public function variantAttributeValues()
     {
@@ -64,8 +84,8 @@ class ProductVariant extends Model
             'product_variant_id',
             'attribute_value_id'
         )
-        
-        ->withTimestamps();
+
+            ->withTimestamps();
     }
 
 
@@ -103,8 +123,10 @@ class ProductVariant extends Model
      */
     public function getActivePriceAttribute()
     {
-        return $this->is_on_promo && $this->promo_price
-            ? $this->promo_price
-            : $this->price;
+        $isPromoActive = $this->is_on_promo &&
+            (!$this->promo_start_at || $this->promo_start_at->isPast()) &&
+            (!$this->promo_end_at || $this->promo_end_at->isFuture());
+
+        return $isPromoActive ? $this->promo_price : $this->price;
     }
 }

@@ -1,4 +1,4 @@
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 
 export function flattenTree(
     nodes: CategorySelect[],
@@ -6,8 +6,8 @@ export function flattenTree(
 ): CategorySelect[] {
     for (const node of nodes) {
         acc.push(node);
-        if (node.active_children?.length) {
-            flattenTree(node.active_children, acc);
+        if (node.children?.length) {
+            flattenTree(node.children, acc);
         }
     }
     return acc;
@@ -22,14 +22,14 @@ export function filterTree(
     return nodes
         .map((node) => {
             const matchesSelf = node.name.toLowerCase().includes(lower);
-            const filteredChildren = node.active_children
-                ? filterTree(node.active_children, term)
+            const filteredChildren = node.children
+                ? filterTree(node.children, term)
                 : [];
 
             if (matchesSelf || filteredChildren.length) {
                 return {
                     ...node,
-                    active_children: filteredChildren,
+                    children: filteredChildren,
                 };
             }
 

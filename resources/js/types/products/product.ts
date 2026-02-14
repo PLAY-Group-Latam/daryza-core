@@ -54,14 +54,14 @@ export interface Product {
     id: string;
     name: string;
     slug: string;
-    category: ProductCategory | null;
+    category?: ProductCategory | null;
     brief_description: string;
     description: string;
     is_active: boolean;
     variants: ProductVariant[];
-    technicalSheets: Media[];
-    specifications: ProductSpecification[];
-    metadata: Metadata;
+    technicalSheets?: Media[];
+    specifications?: ProductSpecification[];
+    metadata?: Metadata;
     created_at: string;
     updated_at: string;
     category_id?: string;

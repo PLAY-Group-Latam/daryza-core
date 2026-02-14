@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { filterTree, flattenTree } from '@/lib/utils/category-tree';
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 import { ChevronDown, X } from 'lucide-react';
 import * as React from 'react';
 import { TreeItem } from './TreeItem';

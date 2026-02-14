@@ -118,11 +118,66 @@ class ProductPackController extends Controller
     /**
      * Formulario de edición
      */
-    public function edit(ProductPack $productPack): Response
+    /**
+     * Formulario de edición de Pack.
+     */
+    public function edit(Request $request, ProductPack $productPack): Response
     {
-        return Inertia::render('Packs/Edit', [
-            'pack' => $productPack->load('items'),
-            'products' => Product::with('variants')->get()
+        // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
+        $search = trim($request->input('q', ''));
+        $searchResults = collect();
+
+        if (strlen($search) >= 3) {
+            $searchTerm = "%{$search}%";
+            $searchResults = ProductVariant::query()
+                ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
+                ->where('sku', 'ilike', $searchTerm)
+                ->with(['product:id,name', 'attributeValues:id,value'])
+                ->limit(15)
+                ->get()
+                ->map(fn($variant) => [
+                    'id'           => $variant->id,
+                    'product_id'   => $variant->product_id, // Necesario para el store/update
+                    'sku'          => $variant->sku,
+                    'price'        => $variant->price,
+                    'is_on_promo'  => $variant->is_on_promo,
+                    'product_name' => $variant->product?->name ?? 'Sin nombre',
+                    'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+                ]);
+        }
+
+        // 2. Cargar los items actuales formateados para el formulario
+        // Esto asegura que el frontend vea los mismos campos que el searchResults
+        $currentItems = $productPack->items()
+            ->with(['variant.product', 'variant.attributeValues'])
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id'           => $item->variant->id, // ID de la variante para machear con la UI
+                    'product_id'   => $item->product_id,
+                    'variant_id'   => $item->variant_id,
+                    'sku'          => $item->variant->sku,
+                    'price'        => $item->variant->price,
+                    'quantity'     => $item->quantity, // Campo específico de packs
+                    'product_name' => $item->product?->name ?? 'Sin nombre',
+                    'variant_name' => $item->variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+                ];
+            });
+
+        return Inertia::render('products/packs/Edit', [
+            'pack' => [
+                'id'              => $productPack->id,
+                'name'            => $productPack->name,
+                'price'           => $productPack->price,
+                'promo_price'     => $productPack->promo_price,
+                'is_on_promotion' => (bool)$productPack->is_on_promotion,
+                // Formateo para datetime-local
+                'promo_start_at'  => $productPack->promo_start_at?->format('Y-m-d\TH:i'),
+                'promo_end_at'    => $productPack->promo_end_at?->format('Y-m-d\TH:i'),
+                'items'           => $currentItems,
+            ],
+            'searchResults' => $searchResults,
+            'filters'       => ['q' => $search]
         ]);
     }
 

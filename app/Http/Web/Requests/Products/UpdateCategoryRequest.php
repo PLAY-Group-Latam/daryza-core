@@ -2,60 +2,59 @@
 
 namespace App\Http\Web\Requests\Products;
 
+use App\Models\Products\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateCategoryRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
-        $categoryId = $this->route('categories'); // obtiene el ID de la categoría desde la ruta
+        $category = $this->route('category');
+        // Extraemos el ID ya sea que venga el objeto o el ULID
+        $categoryId = $category instanceof ProductCategory ? $category->id : $category;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => [
-                'nullable',
+            'name'      => ['required', 'string', 'max:255'],
+            'slug'      => [
+                'required',
                 'string',
                 'max:255',
-                Rule::unique('product_categories')->ignore($categoryId),
+                Rule::unique('product_categories', 'slug')->ignore($categoryId)
             ],
             'parent_id' => [
                 'nullable',
+                'string',
                 'exists:product_categories,id',
-                'not_in:' . $categoryId,
+                Rule::notIn([$categoryId])
             ],
-            'order' => ['nullable', 'integer', 'min:0'],
+            'order'     => ['nullable', 'integer', 'min:0'],
             'is_active' => ['required', 'boolean'],
-            'image' => ['nullable', 'image', 'max:2048'], // máximo 2MB
+            'image'     => [
+                'nullable',
+                // Si es un archivo, aplicamos reglas de imagen. Si es string (URL), solo validamos que sea string.
+                $this->hasFile('image') ? 'image' : 'string',
+                $this->hasFile('image') ? 'mimes:jpg,jpeg,png,webp' : '',
+                $this->hasFile('image') ? 'max:2048' : '',
+            ],
         ];
     }
+
+
 
     public function messages(): array
     {
         return [
-            'name.required'      => 'El nombre de la categoría es obligatorio.',
-            'name.string'        => 'El nombre debe ser un texto válido.',
-            'name.max'           => 'El nombre no puede exceder los 255 caracteres.',
-
-            'slug.string'        => 'El slug debe ser un texto válido.',
-            'slug.max'           => 'El slug no puede exceder los 255 caracteres.',
-            'slug.unique'        => 'Este slug ya está en uso. Por favor, elige otro.',
-
-            'parent_id.exists'   => 'La categoría padre seleccionada no es válida.',
-            'parent_id.not_in'   => 'No puedes asignar esta categoría como padre de sí misma.',
-
-            'order.integer'      => 'El orden debe ser un número entero.',
-            'order.min'          => 'El orden no puede ser menor que 0.',
-
-            'is_active.boolean'  => 'El valor de activo debe ser verdadero o falso.',
-
-            'image.image'        => 'El archivo debe ser una imagen válida.',
-            'image.max'          => 'La imagen no puede superar los 2MB.',
+            'name.required'    => 'El nombre es obligatorio.',
+            'slug.unique'      => 'Este slug ya está en uso.',
+            'parent_id.not_in' => 'La categoría no puede ser su propio padre.',
+            'image.image'      => 'El archivo debe ser una imagen válida.',
+            'image.max'        => 'La imagen no debe superar los 2MB.',
         ];
-    }
-
-    public function authorize(): bool
-    {
-        return true; // ajustar según permisos
     }
 }
