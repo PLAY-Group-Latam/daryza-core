@@ -7,7 +7,6 @@ use App\Http\Web\Services\Content\ContentService;
 use App\Http\Web\Requests\Content\ContentRequest;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\RedirectResponse;
 
 class ContentController extends Controller
@@ -27,33 +26,20 @@ class ContentController extends Controller
         return Inertia::render('content/EditSection', ['section' => $section]);
     }
 
- public function update(ContentRequest $request, string $slug, string $type, int $id): RedirectResponse
-{
-    Log::info('🔵 [Controller] Update request recibido', [
-        'slug' => $slug,
-        'type' => $type,
-        'id' => $id,
-        'has_file' => $request->hasFile('content.image'),
-        'all_input' => $request->all(),
-        'all_files' => $request->allFiles(),
-    ]);
+    public function update(ContentRequest $request, string $slug, string $type, int $id): RedirectResponse
+    {
+   
+        $this->contentService->getValidatedSection($slug, $type, $id);
 
-    $validated = $request->validated();
-    $content = $validated['content'];
+       
+        $content = array_replace_recursive(
+            $request->input('content', []),
+            $request->file('content', [])
+        );
 
-    if ($request->hasFile('content.image')) {
+      
+        $this->contentService->updateSectionContent($id, $content);
 
-        Log::info('🟢 Archivo detectado en Controller', [
-            'file_class' => get_class($request->file('content.image')),
-        ]);
-
-        $content['image'] = $request->file('content.image');
+        return back()->with('success', '¡Sección actualizada correctamente!');
     }
-
-    $this->contentService->updateSectionContent($id, $content);
-
-    return back()->with('success', '¡Updated successfully!');
-}
-
-
 }

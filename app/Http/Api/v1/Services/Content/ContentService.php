@@ -3,19 +3,21 @@
 namespace App\Http\Api\v1\Services\Content;
 
 use App\Models\Content\PageSection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ContentService
 {
    
-   public function getSectionContent(string $slug, string $type, int $id): array
+    public function getSectionContent(string $slug, string $type, int $id): array
 {
     try {
-        Log::info('Buscando sección', [
+
+        Log::info('Consultando sección', [
             'slug' => $slug,
             'type' => $type,
-            'id' => $id
+            'id'   => $id,
         ]);
 
         $section = PageSection::with(['content', 'page'])
@@ -29,7 +31,7 @@ class ContentService
         Log::info('Sección encontrada', [
             'section_id' => $section->id,
             'section_type' => $section->type,
-            'content' => $section->content->content ?? null
+            'page_slug' => $section->page->slug,
         ]);
 
         return [
@@ -43,10 +45,10 @@ class ContentService
 
     } catch (ModelNotFoundException $e) {
 
-        Log::error('Sección no encontrada', [
+        Log::error('Sección NO encontrada', [
             'slug' => $slug,
             'type' => $type,
-            'id' => $id
+            'id'   => $id,
         ]);
 
         abort(404, 'La sección solicitada no existe o la ruta es inválida.');
@@ -54,7 +56,6 @@ class ContentService
 }
 
 
-    
     public function getPageFullContent(string $slug): array
     {
         $sections = PageSection::with('content')
@@ -64,8 +65,27 @@ class ContentService
             ->orderBy('sort_order', 'asc')
             ->get();
 
-        return $sections->mapWithKeys(function ($section) {
-            return [$section->type => $section->content->content ?? []];
-        })->toArray();
+        $hoy = Carbon::today();
+
+        // En App\Http\Api\v1\Services\Content\ContentService.php
+
+return $sections->mapWithKeys(function ($section) use ($hoy) {
+    $content = $section->content->content ?? [];
+
+    // Si no hay contenido, devolvemos objeto vacío pero con la llave del tipo
+    if (empty($content)) {
+        return [$section->type => new \stdClass()]; 
+    }
+
+    // Lógica de visibilidad...
+    if (isset($content['is_visible'])) {
+        $isVisible = filter_var($content['is_visible'], FILTER_VALIDATE_BOOLEAN);
+        if (!$isVisible) return [$section->type => new \stdClass()];
+    }
+
+    // ... resto de validaciones de fecha ...
+
+    return [$section->type => $content];
+})->toArray();
     }
 }

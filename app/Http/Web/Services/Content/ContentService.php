@@ -6,18 +6,13 @@ use App\Models\Content\Page;
 use App\Models\Content\PageSection;
 use App\Models\Content\SectionContent;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use App\Http\Web\Services\GcsService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Log;
 
 class ContentService
-
-
 {
-
     protected GcsService $gcs;
         
     public function __construct(GcsService $gcs)
@@ -42,42 +37,38 @@ class ContentService
 
         return $section;
     }
-public function updateSectionContent(int $sectionId, array $content): bool
-{
-    return DB::transaction(function () use ($sectionId, $content) {
 
-        Log::info('🔵 Iniciando updateSectionContent', [
-            'section_id' => $sectionId
-        ]);
+   
+    public function updateSectionContent(int $sectionId, array $content): bool
+    {
+        return DB::transaction(function () use ($sectionId, $content) {
 
-        $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
+            $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
 
-        if (isset($content['image']) && $content['image'] instanceof UploadedFile) {
+            foreach ($content as $key => $value) {
+               
+                if ($value instanceof UploadedFile) {
+                   
+                    $mime = $value->getMimeType();
+                    $typeFolder = Str::contains($mime, 'video') ? 'videos' : 
+                                 (Str::contains($mime, 'pdf') ? 'docs' : 'images');
 
-            $directory = "sections/{$sectionId}/images";
+                    $directory = "sections/{$sectionId}/{$typeFolder}";
 
-            $publicUrl = $this->gcs->uploadFile(
-                $content['image'],
-                $directory
-            );
+                    $publicUrl = $this->gcs->uploadFile($value, $directory);
 
-            $content['image'] = $publicUrl;
+                   
+                    $content[$key] = $publicUrl;
+                }
+            }
 
-            Log::info('🟢 Imagen subida a GCS', [
-                'url' => $publicUrl
+        
+            $existingContent = $sectionContent->content ?? [];
+            $finalData = array_merge($existingContent, $content);
+
+            return $sectionContent->update([
+                'content' => $finalData
             ]);
-        }
-
-        Log::info('🟣 JSON final guardado', [
-            'content' => $content
-        ]);
-
-        return $sectionContent->update([
-            'content' => $content
-        ]);
-    });
-}
-
-
-
+        });
+    }
 }
