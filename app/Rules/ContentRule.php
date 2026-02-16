@@ -17,30 +17,43 @@ class ContentRule implements ValidationRule
         }
 
         $rules = [];
+
         foreach ($value as $key => $val) {
-            // 1. Archivos (Imágenes, videos, etc)
+            
             if (preg_match('/(image|logo|banner|icon|photo|video|file|pdf|media)/i', $key)) {
-                // Si el valor es un archivo que se está subiendo ahora
-                if ($val instanceof UploadedFile) {
+
+                if (is_array($val)) {
+                    
+                    $rules[$key] = 'array';
+                    foreach ($val as $i => $item) {
+                   
+                        $rules["$key.$i.src"] = ['required', function($attribute, $value, $fail) {
+                            if (!is_string($value) && !($value instanceof UploadedFile)) {
+                                $fail("$attribute debe ser un string o un archivo válido.");
+                            }
+                        }];
+
+                        $rules["$key.$i.type"] = 'required|in:image,video';
+                        $rules["$key.$i.device"] = 'nullable|in:desktop,mobile,both';
+                        $rules["$key.$i.link_url"] = 'nullable|string';
+                    }
+                } elseif ($val instanceof UploadedFile) {
                     $rules[$key] = 'file|mimes:jpeg,png,jpg,gif,svg,mp4,pdf|max:10240';
                 } else {
-                    // Si no es un archivo, debe ser la URL (string) ya guardada
                     $rules[$key] = 'nullable|string';
                 }
             }
-            // 2. Fechas
+            
             elseif (preg_match('/(date|at|time|horario)/i', $key)) {
                 $rules[$key] = 'nullable|date';
             }
-            // 3. Listas dinámicas
+            
             elseif (is_array($val)) {
-                $rules[$key] = preg_match('/(benefits|attributes|items)/i', $key) 
-                    ? 'array|max:10' 
-                    : 'array';
+                $rules[$key] = 'array';
             }
-            // 4. Todo lo demás (Textos, links, visibility)
+           
             else {
-                $rules[$key] = 'nullable'; // Permitimos tipos mixtos (bool, string, int)
+                $rules[$key] = 'nullable';
             }
         }
 

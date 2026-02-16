@@ -5,11 +5,23 @@ export interface ModalContent {
     is_visible: boolean;
 }
 
-export interface BannerContent {
-    media_desktop: File | string | null;
-    media_mobile: File | string | null;
+export interface MediaItem {
+    src: File | string | null;
+    device?: 'desktop' | 'mobile' | 'both'; // opcional, por si quieres filtrar
     type: 'image' | 'video';
     link_url?: string;
+}
+
+export interface BannerContent {
+    media: MediaItem[];   // 🔥 Lista dinámica de medios
+    is_visible: boolean;
+    link_url?: string;   // 🔥 URL opcional para todo el banner
+}
+
+export interface ModalContent {
+    image: File | string | null;
+    start_date: string;
+    end_date: string;
     is_visible: boolean;
 }
 
@@ -27,8 +39,7 @@ export interface ContentSectionProps {
             title?: string; 
         };
         content: {
-            
-            content: ModalContent & BannerContent & GenericContent;
+            content: ModalContent | BannerContent | GenericContent;
         };
     };
 }

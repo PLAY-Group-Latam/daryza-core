@@ -8,9 +8,19 @@ interface UploadProps {
     onFileChange?: (file: File | null) => void;
     value?: File | string | null;
     previewClassName?: string;
+    accept?: string; 
+    placeholder?: string; 
+    type?: 'image' | 'video'; 
 }
 
-export function Upload({ onFileChange, value, previewClassName }: UploadProps) {
+export function Upload({ 
+    onFileChange, 
+    value, 
+    previewClassName,
+    accept = 'image/*',
+    placeholder = 'Subir imagen',
+    type = 'image'
+}: UploadProps) {
     const [preview, setPreview] = useState<string | null>(
         typeof value === 'string'
             ? value
@@ -41,16 +51,26 @@ export function Upload({ onFileChange, value, previewClassName }: UploadProps) {
         onFileChange?.(null);
     };
 
+    const isVideo = type === 'video' || accept.includes('video');
+
     return (
         <div className="flex flex-col gap-3">
             {preview ? (
                 <>
                     <div className={cn('relative overflow-hidden rounded-xl bg-slate-50 border border-slate-200', previewClassName)}>
-                        <img
-                            src={preview}
-                            alt="Preview"
-                            className="w-full h-full object-contain"
-                        />
+                        {isVideo ? (
+                            <video
+                                src={preview}
+                                controls
+                                className="w-full h-full object-contain"
+                            />
+                        ) : (
+                            <img
+                                src={preview}
+                                alt="Preview"
+                                className="w-full h-full object-contain"
+                            />
+                        )}
                         {onFileChange && (
                             <button
                                 type="button"
@@ -86,14 +106,14 @@ export function Upload({ onFileChange, value, previewClassName }: UploadProps) {
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
                     <span className="text-sm text-slate-500">
-                        Subir imagen
+                        {placeholder}
                     </span>
                 </div>
             )}
 
             <Input
                 type="file"
-                accept="image/*"
+                accept={accept}
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleChange}

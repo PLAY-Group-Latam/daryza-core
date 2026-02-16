@@ -1,170 +1,376 @@
 'use client';
 
-import { useForm } from '@inertiajs/react';
-import { Save, ImageIcon, Video, Link, Eye, EyeOff, Layout, Monitor, Smartphone } from 'lucide-react';
+import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useForm } from '@inertiajs/react';
+import {
+    Eye,
+    EyeOff,
+    ImageIcon,
+    Layout,
+    Link,
+    Plus,
+    Save,
+    Trash2,
+    Video,
+    Monitor,
+    Smartphone,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { Upload } from '@/components/custom-ui/upload';
-import { ContentSectionProps as Props } from '../../../../../types/content/content';
+import {
+    BannerContent,
+    ContentSectionProps,
+    MediaItem,
+} from '../../../../../types/content/content';
 
-export default function BannerDinamicoEditor({ section }: Props) {
-    const initialContent = section.content?.content;
+export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
+    const normalizeMediaArray = (rawContent: any): BannerContent => {
+        if (!rawContent || !Array.isArray(rawContent.media)) {
+            return {
+                media: [{ src: '', type: 'image', device: 'desktop' }],
+                is_visible: true,
+            };
+        }
 
-    const { data, setData, put, processing, errors } = useForm({
-        content: {
-            media_desktop: initialContent?.media_desktop ?? null,
-            media_mobile: initialContent?.media_mobile ?? null,
-            type: initialContent?.type ?? 'image', // 'image' | 'video'
-            link_url: initialContent?.link_url ?? '',
-            is_visible: initialContent?.is_visible ?? true,
-        },
+        const itemsWithDevice = rawContent.media.filter((m: any) => m.device && !m.src);
+        const itemsWithSrc = rawContent.media.filter((m: any) => m.src);
+
+        const wellFormatted = rawContent.media.filter((m: any) => m.src && m.device);
+        if (wellFormatted.length > 0) {
+            return {
+                ...rawContent,
+                media: wellFormatted,
+                is_visible: rawContent.is_visible ?? true,
+            };
+        }
+
+        const normalized = itemsWithSrc.map((srcItem: any, index: number) => ({
+            src: srcItem.src,
+            type: itemsWithDevice[index]?.type || 'image',
+            device: itemsWithDevice[index]?.device || 'desktop',
+            link_url: rawContent.link_url,
+        }));
+
+        return {
+            media: normalized.length > 0
+                ? normalized
+                : [{ src: '', type: 'image', device: 'desktop' }],
+            is_visible: rawContent.is_visible ?? true,
+            link_url: rawContent.link_url,
+        };
+    };
+
+    const initialContent: BannerContent = normalizeMediaArray(section.content?.content);
+
+    const { data, setData, put, processing } = useForm<{
+        content: BannerContent;
+    }>({
+        content: initialContent,
     });
 
-    const updateField = (key: string, value: any) => {
+    const updateField = <K extends keyof BannerContent>(
+        key: K,
+        value: BannerContent[K],
+    ) => {
         setData('content', { ...data.content, [key]: value });
+    };
+
+    const updateMediaItem = (index: number, newItem: MediaItem) => {
+        const newMedia = [...data.content.media];
+        newMedia[index] = newItem;
+        setData('content', { ...data.content, media: newMedia });
+    };
+
+    const addMediaItem = () => {
+        setData('content', {
+            ...data.content,
+            media: [
+                ...data.content.media,
+                { src: '', type: 'image', device: 'desktop' },
+            ],
+        });
+    };
+
+    const removeMediaItem = (index: number) => {
+        if (data.content.media.length === 1) {
+            toast.error('Debe haber al menos un elemento');
+            return;
+        }
+        const newMedia = [...data.content.media];
+        newMedia.splice(index, 1);
+        setData('content', { ...data.content, media: newMedia });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            onSuccess: () => toast.success('¡Banner Dinámico actualizado!'),
-        });
+        put(
+            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+            {
+                forceFormData: true,
+                onSuccess: () => toast.success('¡Banner Dinámico actualizado!'),
+            },
+        );
     };
 
     return (
-        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6 pb-10">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                
-                {/* Cabecera Estilizada */}
-                <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-slate-900 rounded-2xl text-white shadow-lg shadow-slate-200">
-                                <Layout size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Banner Dinámico</h3>
-                                <p className="text-sm text-slate-500 font-medium">Configura versiones para escritorio y dispositivos móviles.</p>
-                            </div>
+        <form onSubmit={handleSubmit} className="mx-auto max-w-6xl space-y-6 pb-10">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                            <Layout className="h-6 w-6" />
                         </div>
-
-                        {/* Selector de Tipo (Switch Moderno) */}
-                        <div className="flex p-1 bg-slate-200/50 rounded-xl">
-                            <button
-                                type="button"
-                                onClick={() => updateField('type', 'image')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                                    data.content.type === 'image' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                <ImageIcon size={14} /> IMAGEN
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => updateField('type', 'video')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                                    data.content.type === 'video' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                <Video size={14} /> VIDEO
-                            </button>
+                        <div>
+                            <CardTitle>Banner Dinámico</CardTitle>
+                            <CardDescription>
+                                Gestiona las imágenes y videos del carrusel principal
+                            </CardDescription>
                         </div>
                     </div>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Lista de Slides */}
+                    <div className="space-y-4">
+                        {data.content.media.map((item, index) => (
+                            <Card key={index} className="overflow-hidden">
+                                <CardHeader className="bg-muted/50 pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Badge variant="secondary" className="h-7 w-7 justify-center p-0">
+                                                {index + 1}
+                                            </Badge>
+                                            <div>
+                                                <p className="text-sm font-semibold">Slide #{index + 1}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {item.type === 'image' ? 'Imagen' : 'Video'} •{' '}
+                                                    {item.device === 'desktop' ? 'Desktop' : item.device === 'mobile' ? 'Mobile' : 'Ambos dispositivos'}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                <div className="p-8 space-y-10">
-                    
-                    {/* Grid de Medios (Desktop y Mobile) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        
-                        {/* Versión Desktop */}
-                        <div className="lg:col-span-8 space-y-4">
-                            <div className="flex items-center gap-2 text-slate-800">
-                                <Monitor size={18} className="text-slate-400" />
-                                <span className="text-sm font-bold uppercase tracking-wider">Versión Desktop</span>
-                            </div>
-                            <Upload
-                                value={data.content.media_desktop}
-                                onFileChange={(file) => updateField('media_desktop', file)}
-                                previewClassName="w-full aspect-[21/9] rounded-2xl object-cover bg-slate-50 border-2 border-dashed border-slate-200 hover:border-slate-400 transition-colors"
-                            />
-                            <p className="text-[11px] text-slate-400 italic text-right">Recomendado: 1920x820px</p>
-                        </div>
+                                        {data.content.media.length > 1 && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeMediaItem(index)}
+                                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Eliminar
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardHeader>
 
-                        {/* Versión Móvil */}
-                        <div className="lg:col-span-4 space-y-4">
-                            <div className="flex items-center gap-2 text-slate-800">
-                                <Smartphone size={18} className="text-slate-400" />
-                                <span className="text-sm font-bold uppercase tracking-wider">Versión Móvil</span>
-                            </div>
-                            <Upload
-                                value={data.content.media_mobile}
-                                onFileChange={(file) => updateField('media_mobile', file)}
-                                previewClassName="w-full aspect-[9/12] rounded-2xl object-cover bg-slate-50 border-2 border-dashed border-slate-200 hover:border-slate-400 transition-colors"
-                            />
-                            <p className="text-[11px] text-slate-400 italic text-right">Recomendado: 600x800px</p>
-                        </div>
+                                <CardContent className="space-y-4 pt-6">
+                                    {/* Tipo de Media */}
+                                    <div className="space-y-2">
+                                        <Label>Tipo de contenido</Label>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant={item.type === 'image' ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() =>
+                                                    updateMediaItem(index, {
+                                                        ...item,
+                                                        type: 'image',
+                                                        src: '',
+                                                        device: 'desktop',
+                                                    })
+                                                }
+                                                className="flex-1"
+                                            >
+                                                <ImageIcon className="mr-2 h-4 w-4" />
+                                                Imagen
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={item.type === 'video' ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() =>
+                                                    updateMediaItem(index, {
+                                                        ...item,
+                                                        type: 'video',
+                                                        src: '',
+                                                        device: 'both',
+                                                    })
+                                                }
+                                                className="flex-1"
+                                            >
+                                                <Video className="mr-2 h-4 w-4" />
+                                                Video
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Upload de Imagen */}
+                                    {item.type === 'image' && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <Label>Imagen Promocional</Label>
+                                                <Upload
+                                                    value={item.src}
+                                                    onFileChange={(file) =>
+                                                        updateMediaItem(index, {
+                                                            ...item,
+                                                            src: file,
+                                                        })
+                                                    }
+                                                    accept="image/*"
+                                                    placeholder="Subir imagen promocional"
+                                                    type="image"
+                                                    previewClassName="w-full aspect-[21/9] rounded-lg object-cover border-2 border-dashed"
+                                                />
+                                            </div>
+
+                                            {/* Selector de dispositivo SOLO para imágenes */}
+                                            <div className="space-y-2">
+                                                <Label>Dispositivo</Label>
+                                                <Select
+                                                    value={item.device}
+                                                    onValueChange={(value) =>
+                                                        updateMediaItem(index, {
+                                                            ...item,
+                                                            device: value as 'desktop' | 'mobile',
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="desktop">
+                                                            <div className="flex items-center gap-2">
+                                                                <Monitor className="h-4 w-4" />
+                                                                Desktop
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="mobile">
+                                                            <div className="flex items-center gap-2">
+                                                                <Smartphone className="h-4 w-4" />
+                                                                Mobile
+                                                            </div>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Upload de Video */}
+                                    {item.type === 'video' && (
+                                        <div className="space-y-2">
+                                            <Label>Video Promocional</Label>
+                                            <Upload
+                                                value={item.src}
+                                                onFileChange={(file) =>
+                                                    updateMediaItem(index, {
+                                                        ...item,
+                                                        src: file,
+                                                    })
+                                                }
+                                                accept="video/*"
+                                                placeholder="Subir video promocional"
+                                                type="video"
+                                                previewClassName="w-full aspect-[21/9] rounded-lg object-cover border-2 border-dashed"
+                                            />
+
+                                            <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                                                <Video className="h-4 w-4" />
+                                                <p>Este video se mostrará en desktop y mobile</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
 
-                    <div className="h-px bg-slate-100" />
+                    {/* Botón Agregar Slide */}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addMediaItem}
+                        className="w-full border-dashed"
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Agregar Slide
+                    </Button>
 
-                    {/* Fila Inferior: URL y Visibilidad */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-                        
-                        {/* Enlace opcional */}
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-800 flex items-center gap-2 ml-1">
-                                <Link size={16} className="text-slate-400" />
-                                Enlace de Redirección (URL)
-                            </label>
-                            <Input
-                                placeholder="https://ejemplo.com/oferta"
-                                value={data.content.link_url}
-                                onChange={(e) => updateField('link_url', e.target.value)}
-                                className="h-12 rounded-xl border-slate-200 focus:ring-slate-900 bg-slate-50/30"
-                            />
-                        </div>
+                    <Separator />
 
-                        {/* Toggle de Visibilidad */}
-                        <div className={`flex items-center justify-between rounded-2xl border p-4 transition-all ${
-                            data.content.is_visible ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-slate-50 border-slate-200 text-slate-400 grayscale'
-                        }`}>
-                            <div className="flex items-center gap-3 pl-2">
-                                {data.content.is_visible ? <Eye size={20} /> : <EyeOff size={20} />}
-                                <div>
-                                    <p className="text-sm font-bold">Visibilidad del Banner</p>
-                                    <p className={`text-[11px] ${data.content.is_visible ? 'text-slate-300' : 'text-slate-400'}`}>
-                                        {data.content.is_visible ? 'Activo en el sitio web' : 'Oculto para usuarios'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => updateField('is_visible', !data.content.is_visible)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    data.content.is_visible ? 'bg-white' : 'bg-slate-300'
-                                }`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
-                                    data.content.is_visible ? 'translate-x-6 bg-slate-900' : 'translate-x-1 bg-white'
-                                }`} />
-                            </button>
-                        </div>
+                    {/* Enlace de Redirección */}
+                    <div className="space-y-2">
+                        <Label htmlFor="link-url" className="flex items-center gap-2">
+                            <Link className="h-4 w-4" />
+                            Enlace de Redirección (Opcional)
+                        </Label>
+                        <Input
+                            id="link-url"
+                            placeholder="https://ejemplo.com/promocion"
+                            value={data.content.media[0]?.link_url || ''}
+                            onChange={(e) => {
+                                const updatedMedia = data.content.media.map((m) => ({
+                                    ...m,
+                                    link_url: e.target.value,
+                                }));
+                                updateField('media', updatedMedia);
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Este enlace se aplicará a todos los slides del banner
+                        </p>
                     </div>
-                </div>
-            </div>
 
-            {/* Footer de Acción */}
-            <div className="flex justify-end pt-4">
-                <Button 
-                    type="submit" 
-                    disabled={processing} 
-                    className="h-14 px-12 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200 gap-3 text-base font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                    <Save size={20} />
+                    <Separator />
+
+                    {/* Visibilidad */}
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                {data.content.is_visible ? (
+                                    <Eye className="h-4 w-4 text-green-600" />
+                                ) : (
+                                    <EyeOff className="h-4 w-4 text-gray-400" />
+                                )}
+                                <Label htmlFor="visibility" className="font-semibold">
+                                    Visibilidad del Banner
+                                </Label>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                {data.content.is_visible
+                                    ? 'El banner está visible en el sitio web'
+                                    : 'El banner está oculto para los usuarios'}
+                            </p>
+                        </div>
+                        <Switch
+                            id="visibility"
+                            checked={!!data.content.is_visible}
+                            onCheckedChange={(checked) => updateField('is_visible', checked)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Botón Guardar */}
+            <div className="flex justify-end">
+                <Button type="submit" disabled={processing} size="lg">
+                    <Save className="mr-2 h-4 w-4" />
                     {processing ? 'Guardando...' : 'Actualizar Banner'}
                 </Button>
             </div>

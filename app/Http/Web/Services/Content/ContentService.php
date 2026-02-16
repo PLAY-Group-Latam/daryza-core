@@ -38,37 +38,66 @@ class ContentService
         return $section;
     }
 
-   
     public function updateSectionContent(int $sectionId, array $content): bool
     {
         return DB::transaction(function () use ($sectionId, $content) {
-
             $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
 
+            // ✅ PRIMERO: Procesar campos individuales de archivos (image, logo, banner, video, etc.)
+            // Esto debe ir ANTES del procesamiento de media array
             foreach ($content as $key => $value) {
-               
+                // Si es un UploadedFile individual (no dentro de un array)
                 if ($value instanceof UploadedFile) {
-                   
                     $mime = $value->getMimeType();
-                    $typeFolder = Str::contains($mime, 'video') ? 'videos' : 
-                                 (Str::contains($mime, 'pdf') ? 'docs' : 'images');
-
+                    $typeFolder = Str::contains($mime, 'video') ? 'videos' : 'images';
                     $directory = "sections/{$sectionId}/{$typeFolder}";
-
-                    $publicUrl = $this->gcs->uploadFile($value, $directory);
-
-                   
-                    $content[$key] = $publicUrl;
+                    $content[$key] = $this->gcs->uploadFile($value, $directory);
                 }
             }
 
-        
+            // ✅ SEGUNDO: Procesar array de media (para banners dinámicos)
+            if (isset($content['media']) && is_array($content['media'])) {
+                $processedMedia = [];
+                
+                foreach ($content['media'] as $i => $item) {
+                    // Solo procesar items que tengan src válido
+                    if (!isset($item['src']) || empty($item['src'])) {
+                        continue;
+                    }
+                    
+                    // Si es archivo, subirlo
+                    if ($item['src'] instanceof UploadedFile) {
+                        $mime = $item['src']->getMimeType();
+                        $typeFolder = Str::contains($mime, 'video') ? 'videos' : 'images';
+                        $directory = "sections/{$sectionId}/{$typeFolder}";
+
+                        $item['src'] = $this->gcs->uploadFile($item['src'], $directory);
+                    }
+                    
+                    // Asegurar que tenga todos los campos necesarios
+                    $processedMedia[] = [
+                        'src' => $item['src'],
+                        'type' => $item['type'] ?? 'image',
+                        'device' => $item['device'] ?? 'desktop',
+                        'link_url' => $item['link_url'] ?? null,
+                    ];
+                }
+                
+                $content['media'] = $processedMedia;
+            }
+
+            // ✅ TERCERO: Hacer merge con contenido existente
             $existingContent = $sectionContent->content ?? [];
+            
+            // Si estamos actualizando media, reemplazar completamente el array
+            if (isset($content['media'])) {
+                $existingContent['media'] = $content['media'];
+                unset($content['media']); // Ya lo procesamos
+            }
+            
             $finalData = array_merge($existingContent, $content);
 
-            return $sectionContent->update([
-                'content' => $finalData
-            ]);
+            return $sectionContent->update(['content' => $finalData]);
         });
     }
 }

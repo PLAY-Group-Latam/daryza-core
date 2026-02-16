@@ -13,9 +13,7 @@ class ContentApiController extends Controller
     use ApiTrait;
 
    
-    public function __construct(
-        protected ContentService $contentService
-    ) {}
+    public function __construct(protected ContentService $contentService) {} 
 
     
     public function show(ContentRequest $request, string $slug, string $type, int $id): JsonResponse
@@ -38,4 +36,4 @@ class ContentApiController extends Controller
             'sections' => $data
         ]);
     }
-}
+}   

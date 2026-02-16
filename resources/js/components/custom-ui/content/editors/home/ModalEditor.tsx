@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import { Save, Calendar, Eye, EyeOff, LayoutPanelTop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -10,16 +10,29 @@ import { Upload } from '@/components/custom-ui/upload';
 import { ModalContent, ContentSectionProps as Props } from '../../../../../types/content/content';
 
 export default function ModalEditor({ section }: Props) {
-    const initialContent = section.content?.content;
+    // ✅ Type guard para verificar que es ModalContent
+    const isModalContent = (content: any): content is ModalContent => {
+        return content && ('image' in content || 'start_date' in content || 'end_date' in content);
+    };
 
-    const { data, setData, put, processing, errors } = useForm<{
+    const rawContent = section.content?.content;
+    const initialContent: ModalContent = isModalContent(rawContent) 
+        ? rawContent 
+        : {
+            image: null,
+            start_date: '',
+            end_date: '',
+            is_visible: true,
+        };
+
+    const { data, setData, processing } = useForm<{
         content: ModalContent;
     }>({
         content: {
-            image: initialContent?.image ?? null,
-            start_date: initialContent?.start_date ?? '',
-            end_date: initialContent?.end_date ?? '',
-            is_visible: Number(initialContent?.is_visible) === 1 || initialContent?.is_visible === true,
+            image: initialContent.image ?? null,
+            start_date: initialContent.start_date ?? '',
+            end_date: initialContent.end_date ?? '',
+            is_visible: Number(initialContent.is_visible) === 1 || initialContent.is_visible === true,
         },
     });
 
@@ -27,15 +40,29 @@ export default function ModalEditor({ section }: Props) {
         setData('content', { ...data.content, [key]: value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Configuración guardada!'),
-            onError: () => toast.error('Error al guardar los cambios.'),
-        });
-    };
+ const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    router.post(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
+        _method: 'PUT',
+        content: {
+            image: data.content.image,
+            start_date: data.content.start_date,
+            end_date: data.content.end_date,
+            is_visible: data.content.is_visible ? '1' : '0',
+        }
+    }, {
+        forceFormData: true, 
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('¡Configuración guardada!');
+        },
+        onError: (errors) => {
+            console.error('❌ Errores:', errors);
+            toast.error('Error de validación.');
+        },
+    });
+};
 
     return (
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
@@ -64,13 +91,12 @@ export default function ModalEditor({ section }: Props) {
                         
                         <Upload
                             value={data.content.image}
-                            onFileChange={(file) => updateField('image', file)}
+                            onFileChange={(file) => {
+                                console.log('🖼️ Imagen seleccionada:', file);
+                                updateField('image', file);
+                            }}
                             previewClassName="!w-full !aspect-video !rounded-xl !object-cover !border-0 !bg-transparent"
                         />
-                        
-                        {errors['content.image'] && (
-                            <p className="text-sm text-red-500 font-medium mt-2">{errors['content.image']}</p>
-                        )}
                     </div>
 
                     <div className="h-px bg-slate-100" />
