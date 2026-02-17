@@ -11,6 +11,7 @@ import { Category } from '@/types/products/categories';
 import { Link } from '@inertiajs/react';
 import { ChevronRight, Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
+import { StatusBadge } from '../../StatusBadge';
 import { DataTableExpandable } from '../../tables/table-dnd-expanded/DataTableExpandable';
 
 interface TableListProps {
@@ -58,17 +59,7 @@ const columns: ColumnDef<Category>[] = [
     {
         accessorKey: 'is_active',
         header: 'Estado',
-        cell: ({ row }) => (
-            <span
-                className={
-                    row.original.is_active
-                        ? 'font-medium text-green-600'
-                        : 'font-medium text-red-600'
-                }
-            >
-                {row.original.is_active ? 'Activo' : 'Inactivo'}
-            </span>
-        ),
+        cell: ({ row }) => <StatusBadge status={row.original.is_active} />,
     },
     {
         accessorKey: 'created_at',

@@ -53,7 +53,7 @@ class ProductPackController extends Controller
                 ->where('sku', 'ilike', $searchTerm)
                 ->with([
                     'product:id,name',
-                    'attributeValues:id,value'
+                    'attributes:id,value'
                 ])
                 ->limit(15)
                 ->get()
@@ -64,7 +64,7 @@ class ProductPackController extends Controller
                     // Información de promoción
                     'is_on_promo'  => $variant->is_on_promo,
                     'product_name' => $variant->product?->name ?? 'Sin nombre',
-                    'variant_name'         => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+                    'variant_name'         => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
 
                 ]);
         }
@@ -132,7 +132,7 @@ class ProductPackController extends Controller
             $searchResults = ProductVariant::query()
                 ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
                 ->where('sku', 'ilike', $searchTerm)
-                ->with(['product:id,name', 'attributeValues:id,value'])
+                ->with(['product:id,name', 'attributes:id,value'])
                 ->limit(15)
                 ->get()
                 ->map(fn($variant) => [
@@ -142,14 +142,14 @@ class ProductPackController extends Controller
                     'price'        => $variant->price,
                     'is_on_promo'  => $variant->is_on_promo,
                     'product_name' => $variant->product?->name ?? 'Sin nombre',
-                    'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+                    'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
                 ]);
         }
 
         // 2. Cargar los items actuales formateados para el formulario
         // Esto asegura que el frontend vea los mismos campos que el searchResults
         $currentItems = $productPack->items()
-            ->with(['variant.product', 'variant.attributeValues'])
+            ->with(['variant.product', 'variant.attributes'])
             ->get()
             ->map(function ($item) {
                 return [
@@ -160,7 +160,7 @@ class ProductPackController extends Controller
                     'price'        => $item->variant->price,
                     'quantity'     => $item->quantity, // Campo específico de packs
                     'product_name' => $item->product?->name ?? 'Sin nombre',
-                    'variant_name' => $item->variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+                    'variant_name' => $item->variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
                 ];
             });
 

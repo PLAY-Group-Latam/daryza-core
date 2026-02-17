@@ -11,6 +11,7 @@ import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
+import { StatusBadge } from '../../StatusBadge';
 import { DataTable } from '../../tables/DataTable';
 
 interface TableListProps {
@@ -33,17 +34,7 @@ const columns: ColumnDef<BusinessLine>[] = [
     {
         accessorKey: 'is_active',
         header: 'Estado',
-        cell: ({ row }) => (
-            <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    row.original.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                }`}
-            >
-                {row.original.is_active ? 'Activo' : 'Inactivo'}
-            </span>
-        ),
+        cell: ({ row }) => <StatusBadge status={row.original.is_active} />,
     },
     {
         accessorKey: 'created_at',

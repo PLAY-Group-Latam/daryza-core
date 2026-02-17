@@ -2,9 +2,7 @@
 
 namespace App\Http\Web\Controllers\Products;
 
-use App\Enums\OgType;
 use App\Http\Web\Controllers\Controller;
-use App\Http\Web\Requests\Products\StoreProductImportRequest;
 use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
 use App\Http\Web\Services\Products\ProductCategoryService;
@@ -12,7 +10,6 @@ use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\Product;
-use App\Models\Products\ProductCategory;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -42,7 +39,7 @@ class ProductController extends Controller
     $products = Product::with([
       'variants' => function ($q) {
         $q->with([
-          'attributeValues.attribute',
+          'attributes.attribute',
           'media',
         ]);
       },
@@ -64,10 +61,10 @@ class ProductController extends Controller
       'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
-      'variants.variantAttributeValues.attributeValue.attribute',
+      'variants.selections.attributeValue', // ← Usamos selections
       'variants.media',
-      'specifications.attribute',
-      'specifications.attributeValue',
+      'variants.specifications.attribute',
+
     ]);
     Log::info('[Product EDIT] Loaded product', [
       'product' => $product->toArray(),
@@ -82,6 +79,7 @@ class ProductController extends Controller
       'brief_description' => $product->brief_description,
       'description' => $product->description,
       'is_active' => $product->is_active,
+      'is_home' => $product->is_home,
 
       'metadata' => $product->metadata ? [
         'meta_title' => $product->metadata->meta_title,
@@ -96,6 +94,7 @@ class ProductController extends Controller
       'variants' => $product->variants->map(function ($variant) {
         return [
           'sku' => $variant->sku,
+          'sku_supplier' => $variant->sku_supplier,
           'price' => (float) $variant->price,
           'promo_price' => $variant->promo_price
             ? (float) $variant->promo_price
@@ -108,21 +107,28 @@ class ProductController extends Controller
           'is_main' => (bool) $variant->is_main,
           'media' => $variant->media,
 
-          // 👇 ZOD-COMPATIBLE
-          'attributes' => $variant->attributeValues->map(function ($attrValue) {
+
+          'attributes' => $variant->selections->map(function ($sel) {
             return [
-              'attribute_id' => $attrValue->attribute->id,
-              'attribute_value_id' => $attrValue->id,
-              'value' => $attrValue->value,
+              'attribute_id' => $sel->attributeValue->attribute_id,
+              'attribute_value_id' => $sel->attribute_value_id,
+
             ];
           })->values(),
+          // ✅ NUEVO: Especificaciones técnicas mapeadas DENTRO de la variante
+          'specifications' => $variant->specifications->map(fn($spec) => [
+            'attribute_id' => $spec->attribute_id,
+            'value' => $spec->value, // Como acordamos, solo manejamos string
+          ])->values(),
+
+          'specification_selector' => '', // Valor
         ];
       })->values(),
 
       'variant_attribute_ids' => $product->variants
         ->flatMap(
           fn($variant) =>
-          $variant->attributeValues
+          $variant->attributes
             ->map(fn($attrValue) => $attrValue->attribute->id)
         )
         ->unique()
@@ -135,10 +141,7 @@ class ProductController extends Controller
           'file_path' => $sheet->file_path,
         ];
       })->values(),
-      'specifications' => $product->specifications->map(fn($spec) => [
-        'attribute_id' => $spec->attribute_id,
-        'value' => $spec->value,
-      ])->values(),
+
     ];
     $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
 
@@ -207,11 +210,22 @@ class ProductController extends Controller
    * Eliminar una categoría
    * (gracias al cascade se borran sus hijas)
    */
-  public function destroy($id)
-  {
-    $category = Product::findOrFail($id);
-    $category->delete();
 
-    return back()->with('success', 'Categoría eliminada correctamente.');
+  public function destroy(Product $product)
+  {
+    try {
+      // Ejecutamos la lógica senior desde el servicio
+      $this->productService->delete($product);
+
+      return redirect()
+        ->route('products.items.index')
+        ->with('success', 'El producto ha sido movido a la papelera y desvinculado de sus categorías.');
+    } catch (\Exception $e) {
+      Log::error("Error al eliminar producto [{$product->id}]: " . $e->getMessage());
+
+      return back()->withErrors([
+        'message' => 'No se pudo eliminar el producto correctamente.'
+      ]);
+    }
   }
 }

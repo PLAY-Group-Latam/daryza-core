@@ -28,6 +28,7 @@ class ProductVariant extends Model
         'is_main', // ← agregar aquí
 
     ];
+    protected $appends = ['active_price']; // ✅ Esto hace que aparezca en el JSON de la API
 
     protected $casts = [
         'is_on_promo' => 'boolean',
@@ -66,28 +67,18 @@ class ProductVariant extends Model
         )->withTimestamps();
     }
 
-    // Valores seleccionados de atributos
-    public function variantAttributeValues()
-    {
-        return $this->hasMany(ProductVariantAttributeValue::class, 'product_variant_id');
-    }
-
     /**
-     * Valores de atributos asociados a esta variante
-     * Ej: Rojo, XL, 500ml
+     * Relación para obtener solo la imagen de portada de la variante
      */
-    public function attributeValues()
+    public function mainImage()
     {
-        return $this->belongsToMany(
-            AttributesValue::class,
-            'product_variant_attribute_values',
-            'product_variant_id',
-            'attribute_value_id'
-        )
-
-            ->withTimestamps();
+        // Usamos hasOne aunque la relación base sea morphMany/hasMany
+        return $this->hasOne(ProductMedia::class, 'mediable_id')
+            ->where('mediable_type', self::class) // Si usas Polymorphic
+            ->where('type', 'image')
+            ->orderBy('order', 'asc')
+            ->oldest();
     }
-
 
     /**
      * Media específica de la variante
@@ -100,7 +91,11 @@ class ProductVariant extends Model
     /**
      * Especificaciones técnicas
      */
-
+    public function specifications()
+    {
+        // 🔥 Apuntamos a la nueva llave foránea en la tabla de especificaciones
+        return $this->hasMany(ProductSpecificationValue::class, 'product_variant_id');
+    }
 
     /**
      * Scope: variantes en promoción
@@ -117,6 +112,7 @@ class ProductVariant extends Model
     {
         return $query->where('stock', '>', 0);
     }
+
 
     /**
      * Precio activo (promo o normal)

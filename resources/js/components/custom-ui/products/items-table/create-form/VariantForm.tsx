@@ -10,9 +10,13 @@ import { VariantRow } from './VariantRow';
 
 interface Props {
     variantAttributes: Attribute[];
+    specificationAttributes: Attribute[]; // 👈 Atributos para la ficha técnica (Material, etc)
 }
 
-export function VariantForm({ variantAttributes }: Props) {
+export function VariantForm({
+    variantAttributes,
+    specificationAttributes,
+}: Props) {
     const { control, watch } = useFormContext<ProductFormValues>();
     const { fields, append, remove } = useFieldArray({
         control,
@@ -31,8 +35,8 @@ export function VariantForm({ variantAttributes }: Props) {
         price: 0,
         promo_price: undefined,
         is_on_promo: false,
-        promo_start_at: '',
-        promo_end_at: '',
+        promo_start_at: undefined,
+        promo_end_at: undefined,
         stock: 0,
         is_active: true,
         attributes: activeVariantAttributes.map((attr) => {
@@ -57,6 +61,8 @@ export function VariantForm({ variantAttributes }: Props) {
         }),
         media: [],
         is_main: isFirst, // 👈 aquí está la clave
+        specifications: [], // 👈 Inicializamos el array vacío para la nueva variante
+        specification_selector: '', // 👈 Inicializamos el selector
     });
 
     const handleToggleAttribute = (
@@ -159,6 +165,9 @@ export function VariantForm({ variantAttributes }: Props) {
                                 index={index}
                                 remove={remove}
                                 variantAttributes={activeVariantAttributes}
+                                specificationAttributes={
+                                    specificationAttributes
+                                }
                             />
                         ))}
                     </div>

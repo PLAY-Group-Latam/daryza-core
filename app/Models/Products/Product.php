@@ -23,10 +23,12 @@ class Product extends Model
         'brief_description',
         'description',
         'is_active',
+        'is_home', // ✅ Agregado aquí
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_home' => 'boolean', // ✅ Agregado aquí
     ];
 
     /**
@@ -60,6 +62,12 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class, 'product_id');
     }
 
+    public function mainVariant()
+    {
+        // En E-commerce, esto es sagrado para el rendimiento
+        return $this->hasOne(ProductVariant::class)->where('is_main', true);
+    }
+
     // SEO (polimórfico)
     public function metadata()
     {
@@ -75,15 +83,19 @@ class Product extends Model
     }
 
 
-    public function specifications()
-    {
-        return $this->hasMany(ProductSpecificationValue::class);
-    }
+    // public function specifications()
+    // {
+    //     return $this->hasMany(ProductSpecificationValue::class);
+    // }
     /**
      * Scopes
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+    public function scopeHome($query)
+    {
+        return $query->where('is_home', true)->where('is_active', true);
     }
 }

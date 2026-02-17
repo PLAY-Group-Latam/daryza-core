@@ -91,7 +91,7 @@ export interface ProductVariantEdit {
     is_on_promo: boolean;
     promo_start_at?: string | null;
     promo_end_at?: string | null;
-
+    sku_supplier?: string | null; // ✅ Nuevo campo para SKU del proveedor
     stock: number;
 
     is_active?: boolean;
@@ -100,6 +100,7 @@ export interface ProductVariantEdit {
     media: MediaExisting[]; // puedes tiparlo luego si quieres
 
     attributes: VariantAttributeEdit[];
+    specifications: ProductSpecificationEdit[];
 }
 
 export interface TechnicalSheetEdit {
@@ -121,7 +122,7 @@ export interface ProductEdit {
     business_lines: string[]; // <--- ¡No olvides este para las líneas de negocio!
     brief_description?: string;
     description?: string;
-
+    is_home: boolean;
     is_active: boolean;
 
     metadata: Metadata;
@@ -131,6 +132,4 @@ export interface ProductEdit {
     variants: ProductVariantEdit[];
 
     technicalSheets: TechnicalSheetEdit[];
-
-    specifications: ProductSpecificationEdit[];
 }

@@ -22,7 +22,6 @@ import { Controller, FormProvider, Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SlugInput } from '../../../slug-text';
 import { CategoryTreeSelect } from './CategoryArrayTreeSelect';
-import { SpecificationsAttributes } from './SpecificationsFormAttributes';
 import { TechnicalSheetsForm } from './TechnicalSheetsForm';
 import { VariantForm } from './VariantForm';
 
@@ -31,25 +30,41 @@ const VariantAttributeSchema = z.object({
     attribute_value_id: z.string().nullable().optional(),
     value: z.union([z.string(), z.boolean(), z.number()]).optional(),
 });
-
+const SpecificationAttributeSchema = z.object({
+    attribute_id: z.string(), // ULID
+    value: z.union([z.string(), z.boolean(), z.number()]),
+});
 const VariantSchema = z.object({
     sku: z.string().min(1),
     price: z.coerce.number(),
     promo_price: z.coerce.number().optional(),
     is_on_promo: z.boolean(),
-    promo_start_at: z.string().nullable().optional(),
-    promo_end_at: z.string().nullable().optional(),
+    promo_start_at: z
+        .date({
+            error: (issue) =>
+                issue.input === undefined
+                    ? 'La fecha es obligatorio'
+                    : 'La Fecha es inválida',
+        })
+        .optional(),
+    promo_end_at: z
+        .date({
+            error: (issue) =>
+                issue.input === undefined
+                    ? 'La fecha es obligatorio'
+                    : 'La Fecha es inválida',
+        })
+        .optional(),
     stock: z.coerce.number(),
     attributes: z.array(VariantAttributeSchema),
+    sku_supplier: z.string().optional(), // ✅ Nuevo campo opcional
     media: z.array(z.any()),
     is_active: z.boolean().default(true).optional(),
     is_main: z.boolean().default(false), // ✅ nuevo campo
+    specifications: z.array(SpecificationAttributeSchema),
+    specification_selector: z.string().optional(),
 });
 
-const SpecificationAttributeSchema = z.object({
-    attribute_id: z.string(), // ULID
-    value: z.union([z.string(), z.boolean(), z.number()]),
-});
 const TechnicalSheetSchema = z.object({
     file: z.instanceof(File).optional(), // archivo cargado
     file_path: z.string().optional(), // archivo existente en backend
@@ -64,12 +79,11 @@ const ProductSchema = z.object({
     brief_description: z.string().optional(),
     description: z.string().optional(),
     is_active: z.boolean(),
-
+    is_home: z.boolean(), // ✅ Agregado aquí
     variant_attribute_ids: z.array(z.string()), // ULID
     variants: z.array(VariantSchema),
     technicalSheets: z.array(TechnicalSheetSchema), // ✅ fichas técnicas del producto
-    specifications: z.array(SpecificationAttributeSchema),
-    specification_selector: z.string().optional(),
+
     metadata: z.object({
         meta_title: z.string().optional(),
         meta_description: z.string().optional(),
@@ -104,6 +118,7 @@ export default function FormProduct({
             brief_description: '',
             description: '',
             is_active: true,
+            is_home: false, // ✅ Inicializar en false
             metadata: {
                 meta_title: '',
                 meta_description: '',
@@ -116,7 +131,7 @@ export default function FormProduct({
             variant_attribute_ids: [],
             variants: [],
             technicalSheets: [],
-            specifications: [],
+            // specifications: [],
         },
     });
 
@@ -134,6 +149,7 @@ export default function FormProduct({
                 brief_description: product.brief_description,
                 description: product.description,
                 is_active: product.is_active,
+                is_home: product.is_home ?? false, // ✅ Mapear desde el backend
 
                 metadata: {
                     meta_title: product.metadata?.meta_title ?? '',
@@ -152,21 +168,25 @@ export default function FormProduct({
                     price: v.price,
                     promo_price: v.promo_price ?? undefined, // 🔥 FIX
                     is_on_promo: v.is_on_promo,
-                    promo_start_at: v.promo_start_at ?? undefined,
-                    promo_end_at: v.promo_end_at ?? undefined,
+                    promo_start_at: v.promo_start_at
+                        ? new Date(v.promo_start_at)
+                        : undefined,
+                    promo_end_at: v.promo_end_at
+                        ? new Date(v.promo_end_at)
+                        : undefined,
                     stock: v.stock,
                     is_active: v.is_active,
                     is_main: v.is_main,
                     media: mapMediaToEdit(v.media),
                     attributes: v.attributes ?? [],
+                    specifications: v.specifications ?? [],
+                    sku_supplier: v.sku_supplier ?? '', // ✅ Mapeo del valor del backend
                 })),
 
                 technicalSheets:
                     product.technicalSheets?.map((ts) => ({
                         file_path: ts.file_path,
                     })) ?? [],
-
-                specifications: product.specifications ?? [],
             });
         }
     }, [product]);
@@ -286,11 +306,11 @@ export default function FormProduct({
                             </div>
                         </div>
 
-                        <VariantForm variantAttributes={variantAttributes} />
-
-                        <SpecificationsAttributes
-                            availableAttributes={specificationAttributes}
+                        <VariantForm
+                            variantAttributes={variantAttributes}
+                            specificationAttributes={specificationAttributes}
                         />
+
                         {/* PLACEHOLDERS PARA MEDIA / VARIANTS / SPECS */}
                         <Controller
                             name="technicalSheets"
@@ -310,7 +330,7 @@ export default function FormProduct({
                             render={({ field }) => (
                                 <div className="space-y-3">
                                     <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
-                                        ● Público
+                                        ● Producto Público
                                     </p>
                                     <div className="flex items-center justify-between rounded-2xl border bg-background p-4">
                                         <div className="space-y-0.5">
@@ -330,7 +350,31 @@ export default function FormProduct({
                                 </div>
                             )}
                         />
-
+                        <Controller
+                            name="is_home"
+                            control={control}
+                            render={({ field }) => (
+                                <div className="space-y-3">
+                                    <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
+                                        ● Destacado Home
+                                    </p>
+                                    <div className="flex items-center justify-between rounded-2xl border bg-background p-4">
+                                        <div className="space-y-0.5">
+                                            <h3 className="text-sm font-medium">
+                                                Visibilidad
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground">
+                                                Mostrar en la página principal
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        />
                         <Controller
                             name="business_lines"
                             control={control}

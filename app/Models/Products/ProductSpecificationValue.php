@@ -17,7 +17,7 @@ class ProductSpecificationValue extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'product_id',
+        'product_variant_id',
         'attribute_id',
         'attribute_value_id',
         'value',
@@ -25,9 +25,9 @@ class ProductSpecificationValue extends Model
 
     // Relaciones
 
-    public function product(): BelongsTo
+    public function variant(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function attribute(): BelongsTo
@@ -40,7 +40,7 @@ class ProductSpecificationValue extends Model
         return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
     }
 
-//accesor 
+    //accesor 
     public function getSpecificationAttribute(): ?string
     {
         return $this->attribute_value_id

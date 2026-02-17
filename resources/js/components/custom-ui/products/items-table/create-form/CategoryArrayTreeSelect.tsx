@@ -68,7 +68,7 @@ export function CategoryTreeSelect({
                     variant="outline"
                     role="combobox"
                     className={cn(
-                        'h-auto min-h-10 w-full justify-between px-3 py-2 text-left',
+                        'h-auto min-h-10 w-full justify-between rounded-xl px-3 py-2 text-left',
                         value.length > 0 ? 'bg-background' : '',
                     )}
                 >

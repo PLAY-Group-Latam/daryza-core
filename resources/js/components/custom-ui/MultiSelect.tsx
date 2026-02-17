@@ -66,7 +66,10 @@ export function MultiSelect({
                 <Button
                     variant="outline"
                     role="combobox"
-                    className={cn('w-full justify-between', className)}
+                    className={cn(
+                        'h-auto w-full justify-between rounded-xl',
+                        className,
+                    )}
                 >
                     {value.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -117,8 +120,10 @@ export function MultiSelect({
                                             )}
                                         >
                                             {isSelected && (
-                                                <Check className="size-3 text-gray-200" strokeWidth={3}/>
-
+                                                <Check
+                                                    className="size-3 text-gray-200"
+                                                    strokeWidth={3}
+                                                />
                                             )}
                                         </div>
 

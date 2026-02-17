@@ -4,7 +4,7 @@ namespace App\Http\Api\v1\Controllers\Products;
 
 use App\Http\Api\v1\Controllers\Controller;
 use App\Models\Products\ProductCategory;
-use Illuminate\Support\Facades\Log;
+// use Illuminate\Support\Facades\Log;
 
 class ProductCategoryController extends Controller
 {
@@ -19,11 +19,6 @@ class ProductCategoryController extends Controller
       ->orderBy('order')
 
       ->get(['id', 'name', 'parent_id', 'order', 'slug']);
-
-    //       Log::info('Categorias obtenidas desde BD:', [
-    //     'count' => $categories->count(),
-    //     'data'  => $categories->toArray(),
-    // ]);
 
     return $this->success('Categorias Obtenidas correctamente', $categories);
   }

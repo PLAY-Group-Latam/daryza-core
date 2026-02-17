@@ -48,7 +48,7 @@ class DynamicCategoryController extends Controller
         ->where('sku', 'ilike', $searchTerm)
         ->with([
           'product:id,name',
-          'attributeValues:id,value'
+          'attributes:id,value'
         ])
         ->limit(15)
         ->get()
@@ -59,7 +59,7 @@ class DynamicCategoryController extends Controller
           // Información de promoción
           'is_on_promo'  => $variant->is_on_promo,
           'product_name' => $variant->product?->name ?? 'Sin nombre',
-          'variant_name'         => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+          'variant_name'         => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
 
         ]);
     }
@@ -118,7 +118,7 @@ class DynamicCategoryController extends Controller
       $searchResults = ProductVariant::query()
         ->select('id', 'product_id', 'sku', 'price', 'is_on_promo')
         ->where('sku', 'ilike', $searchTerm)
-        ->with(['product:id,name', 'attributeValues:id,value'])
+        ->with(['product:id,name', 'attributes:id,value'])
         ->limit(15)
         ->get()
         ->map(fn($variant) => [
@@ -127,12 +127,12 @@ class DynamicCategoryController extends Controller
           'price'        => $variant->price,
           'is_on_promo'  => $variant->is_on_promo,
           'product_name' => $variant->product?->name ?? 'Sin nombre',
-          'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+          'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
         ]);
     }
 
     $selectedVariants = $dynamicCategory->products() // Usamos la relación corregida
-      ->with(['variants.product', 'variants.attributeValues'])
+      ->with(['variants.product', 'variants.attributes'])
       ->get()
       ->flatMap(function ($product) {
         // De cada producto asociado, sacamos TODAS sus variantes
@@ -143,7 +143,7 @@ class DynamicCategoryController extends Controller
             'price'        => $variant->price,
             'is_on_promo'  => $variant->is_on_promo,
             'product_name' => $variant->product?->name ?? 'Sin nombre',
-            'variant_name' => $variant->attributeValues->pluck('value')->implode(' - ') ?: "Variante única",
+            'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
           ];
         });
       });

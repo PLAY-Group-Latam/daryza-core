@@ -41,9 +41,12 @@ class ProductExcelController extends Controller
 
     public function export()
     {
+        // Genera algo como: productos_2026-02-16_16-55-20.xlsx
+        $fileName = 'productos_daryza_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+
         return Excel::download(
             new ProductsExport(),
-            'productos.xlsx'
+            $fileName
         );
     }
 }

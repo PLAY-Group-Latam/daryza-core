@@ -19,12 +19,18 @@ class ProductService
   public function create(array $data): Product
   {
     return DB::transaction(function () use ($data) {
+
+      $hasVariants = !empty($data['variants']);
+      $isActive = ($data['is_active'] ?? true) && $hasVariants;
+
       $product = Product::create([
         'name'              => $data['name'],
         'slug'              => $data['slug'],
         'brief_description' => $data['brief_description'],
         'description'       => $data['description'],
-        'is_active'         => $data['is_active'] ?? true,
+        'is_active'         => $isActive, // <--- Aplicamos la regla aquí
+        'is_home'         => $data['is_home'] ?? false,
+
       ]);
 
       $product->categories()->sync($data['categories'] ?? []);
@@ -33,9 +39,10 @@ class ProductService
       // 3. Procesar componentes complejos
       $this->createMetadata($product, $data['metadata'] ?? []);
       $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
-      $this->createSpecifications($product, $data['specifications'] ?? []);
-      $this->createVariants($product, $data['variants'] ?? []);
-
+      // Si hay variantes, las creamos
+      if ($hasVariants) {
+        $this->createVariants($product, $data['variants']);
+      }
       return $product;
     });
   }
@@ -49,7 +56,9 @@ class ProductService
         'slug',
         'brief_description',
         'description',
-        'is_active'
+        'is_active',
+        'is_home',
+
       ])->toArray());
 
       // 3. Sincronizar categorías en el Update
@@ -74,10 +83,10 @@ class ProductService
       }
 
       // 3. Especificaciones (Reemplazo total)
-      if (isset($data['specifications'])) {
-        $product->specifications()->delete();
-        $this->createSpecifications($product, $data['specifications']);
-      }
+      // if (isset($data['specifications'])) {
+      //   $product->specifications()->delete();
+      //   $this->createSpecifications($product, $data['specifications']);
+      // }
 
       // 4. Variantes
       if (isset($data['variants'])) {
@@ -91,56 +100,49 @@ class ProductService
   protected function updateVariants(Product $product, array $variantsData): void
   {
     foreach ($variantsData as $variantData) {
-      // Limpiamos campos que no pertenecen a la tabla
-      $cleanData = collect($variantData)->except(['attributes', 'media', 'new_media'])->toArray();
+      // 1. Identificar archivos nuevos dentro del array 'media'
+      // Filtramos: si es una instancia de UploadedFile, es algo que hay que subir.
+      $newFiles = collect($variantData['media'] ?? [])->filter(function ($file) {
+        return $file instanceof \Illuminate\Http\UploadedFile;
+      })->toArray();
+
+      // 2. Limpiamos campos que no van a la tabla de variantes
+      // Quitamos 'media' porque contiene archivos y URLs que darían error en el update
+      $cleanData = collect($variantData)->except([
+        'attributes',
+        'media',
+        'specifications',
+        'new_media' // Por si acaso
+      ])->toArray();
 
       $variant = $product->variants()->updateOrCreate(
         ['sku' => $variantData['sku']],
         $cleanData
       );
 
-      // 3. REEMPLAZO DE SYNC (La solución al error)
+      // 3. Procesar Atributos
       if (isset($variantData['attributes'])) {
-        // Borramos los registros actuales usando la relación HasMany
-        $variant->variantAttributeValues()->delete();
-
-        // Insertamos los nuevos uno por uno para que se generen los ULIDs
+        $variant->selections()->delete();
         foreach ($variantData['attributes'] as $attr) {
           if (empty($attr['attribute_value_id'])) continue;
-
-          $variant->variantAttributeValues()->create([
-            'attribute_value_id' => $attr['attribute_value_id']
-          ]);
+          $variant->selections()->create(['attribute_value_id' => $attr['attribute_value_id']]);
         }
       }
 
-      // Nuevos archivos
-      if (!empty($variantData['new_media'])) {
-        $this->createVariantMedia($variant, $variantData['new_media']);
+      // 4. Procesar Especificaciones
+      if (isset($variantData['specifications'])) {
+        $variant->specifications()->delete();
+        $this->createSpecifications($variant, $variantData['specifications']);
+      }
+
+      // 5. GUARDAR IMÁGENES: Ahora usamos los archivos que filtramos arriba
+      if (!empty($newFiles)) {
+        $this->createVariantMedia($variant, $newFiles);
       }
     }
   }
 
-  /**
-   * Orquestador de relaciones para mantener el método create limpio.
-   */
-  // protected function processProductRelations(Product $product, array $data): void
-  // {
 
-  //   // 4. Sincronizar categorías al crear
-  //   if (!empty($data['categories'])) {
-  //     // Laravel usará el ProductCategoryPivot automáticamente
-  //     $product->categories()->sync($data['categories']);
-  //   }
-  //   if (!empty($data['business_lines'])) {
-  //     $product->businessLines()->sync($data['business_lines']);
-  //   }
-
-  //   $this->createMetadata($product, $data['metadata'] ?? []);
-  //   $this->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
-  //   $this->createVariants($product, $data['variants'] ?? []);
-  //   $this->createSpecifications($product, $data['specifications'] ?? []);
-  // }
 
   protected function createMetadata(Product $product, array $metadata): void
   {
@@ -179,7 +181,12 @@ class ProductService
   {
     $hasMain = collect($variants)->contains('is_main', true);
     foreach ($variants as $index => $vData) {
-      $cleanData = collect($vData)->except(['attributes', 'media'])->toArray();
+      $cleanData = collect($vData)->except([
+        'attributes',
+        'media',
+        'specifications',
+        'specification_selector'
+      ])->toArray();
 
       // Regla de negocio: la primera variante siempre es la principal por defecto
       if (!$hasMain && $index === 0) {
@@ -190,6 +197,10 @@ class ProductService
 
       if (!empty($vData['attributes'])) {
         $this->attachVariantAttributes($variant, $vData['attributes']);
+      }
+      // ✅ NUEVO: Guardar especificaciones técnicas de la variante
+      if (!empty($vData['specifications'])) {
+        $this->createSpecifications($variant, $vData['specifications']);
       }
 
       // 3. Media
@@ -232,11 +243,11 @@ class ProductService
     }
   }
 
-  protected function createSpecifications(Product $product, array $specs): void
+  protected function createSpecifications(ProductVariant $variant, array $specs): void
   {
     if (empty($specs)) return;
 
-    $product->specifications()->createMany(
+    $variant->specifications()->createMany(
       collect($specs)->map(fn($spec) => [
         'attribute_id'       => $spec['attribute_id'],
         'attribute_value_id' => $spec['attribute_value_id'] ?? null,
@@ -251,5 +262,23 @@ class ProductService
   protected function getStoragePath(string $productId, StorageFolder $folder): string
   {
     return "products/{$productId}/{$folder->value}";
+  }
+
+
+  public function delete(Product $product): void
+  {
+    DB::transaction(function () use ($product) {
+      // 1. Desvincular de categorías y líneas (Limpieza de pivotes)
+      // Esto evita que productos "borrados" ensucien los contadores de los filtros.
+      $product->categories()->detach();
+      $product->businessLines()->detach();
+
+      // 2. Ejecutar el Soft Delete
+      // El Observer o el método booted() se encargarán de las variantes.
+      $product->delete();
+
+      // 3. Opcional: Anular en índices de búsqueda (Algolia/Meilisearch)
+      // $product->unsearchable(); 
+    });
   }
 }
