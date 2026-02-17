@@ -1,18 +1,14 @@
-import { ModalFormCategories } from '@/components/custom-ui/products/categories/ModalFormCategories';
 import TableList from '@/components/custom-ui/products/categories/TableList';
-import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { CategorySelect, PaginatedProductCategories } from '@/types/products';
-import { Head, usePage } from '@inertiajs/react';
+import { PaginatedProductCategories } from '@/types/products/categories';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { paginatedProductCategories, categoriesForSelect } = usePage<{
-        paginatedProductCategories: PaginatedProductCategories;
-        categoriesForSelect: CategorySelect[];
+    const { paginatedCategories } = usePage<{
+        paginatedCategories: PaginatedProductCategories;
     }>().props;
 
-    // console.log(categoriesForSelect);
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />
@@ -21,7 +17,7 @@ export default function Index() {
                     <h1 className="text-lg font-bold lg:text-2xl">
                         Lista de Categorías
                     </h1>
-                    <ModalFormCategories
+                    {/* <ModalFormCategories
                         parentCategories={categoriesForSelect}
                         trigger={
                             <Button variant="default">
@@ -29,13 +25,17 @@ export default function Index() {
                                 Categoria
                             </Button>
                         }
-                    />
+                    /> */}
+                    <Link
+                        href="/productos/categorias/create"
+                        className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
+                    >
+                        <Plus className="mr-1 h-4 w-4" />
+                        Crear Categoría
+                    </Link>
                 </div>
 
-                <TableList
-                    data={paginatedProductCategories}
-                    parentCategories={categoriesForSelect}
-                />
+                <TableList data={paginatedCategories} />
             </div>
         </AppLayout>
     );

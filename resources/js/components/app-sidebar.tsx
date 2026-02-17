@@ -19,6 +19,7 @@ import {
     Apple,
     CreditCard,
     FileCode,
+    Headset,
     LayoutGrid,
     Newspaper,
     SearchCheck,
@@ -26,7 +27,6 @@ import {
     Truck,
     User,
     Users,
-    Headset,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -62,6 +62,18 @@ const mainNavItems: NavItem[] = [
                 title: 'Atributos',
                 href: '/productos/attributes',
             },
+            {
+                title: 'Líneas de Negocio',
+                href: '/productos/lineas-de-negocio',
+            },
+            {
+                title: 'Dinámicas de Negocio',
+                href: '/productos/categorias-dinamicas',
+            },
+            {
+                title: 'Lista de Packs',
+                href: '/productos/packs',
+            },
         ],
     },
     {
@@ -78,16 +90,30 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
- {
-    title: 'Leads',
-    icon: Headset,
-    children: [
-        {
-            title: 'Lista de Reclamaciones',
-            href: '/claims/items'  
-        }
-    ]
-},
+
+    {
+        title: 'Leads',
+        icon: Headset,
+        children: [
+            {
+                title: 'Lista de Reclamaciones',
+                href: '/claims/items',
+            },
+            {
+                title: ' Lista de Contactos',
+                href: '/contacts/items',
+            },
+            {
+                title: 'Lista de Nosotros',
+                href: '/aboutus/items',
+            },
+            {
+                title: 'Lista de Trabajos',
+                href: '/jobs/items',
+            },
+        ],
+    },
+
     {
         title: 'Configuración',
         icon: Store,

@@ -6,7 +6,9 @@ use App\Enums\AttributeType;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
+  BusinessLine,
   Product,
+  ProductCategory,
   ProductVariant
 };
 use Illuminate\Support\Str;
@@ -18,18 +20,35 @@ class ProductImportService
    */
   public function createProduct(array $data): Product
   {
-    return Product::firstOrCreate(
-      ['code' => $data['code']],
-      [
-        'id' => Str::ulid(),
+    // Buscamos incluyendo eliminados
+    $product = Product::withTrashed()->where('code', $data['code'])->first();
+
+    if ($product) {
+      // Si estaba en la papelera, lo restauramos
+      if ($product->trashed()) {
+        $product->restore();
+      }
+      // Actualizamos los datos básicos por si cambiaron en el Excel
+      $product->update([
         'name' => $data['name'],
-        'slug' => Str::slug($data['name']),
-        'brief_description' => $data['brief_description'] ?? null,
-        'description' => $data['description'] ?? null,
-        'brand' => $data['brand'] ?? null,
-        'is_active' => true,
-      ]
-    );
+        'brief_description' => $data['brief_description'] ?? $product->brief_description,
+        'description' => $data['description'] ?? $product->description,
+        // 'slug' => Str::slug($data['name']), // Aseguramos que se limpie
+      ]);
+      return $product;
+    }
+
+    // Si realmente no existe, lo creamos
+    return Product::create([
+      'id' => Str::ulid(),
+      'code' => $data['code'],
+      'name' => $data['name'],
+      'slug' => Str::slug($data['name']),
+      'brief_description' => $data['brief_description'] ?? null,
+      'description' => $data['description'] ?? null,
+      'is_active' => $data['is_active'] ?? true,
+      'is_home' => $data['is_home'] ?? false,
+    ]);
   }
 
 
@@ -38,20 +57,81 @@ class ProductImportService
    */
   public function createVariant(Product $product, array $data): ProductVariant
   {
-    return ProductVariant::firstOrCreate(
-      [
-        'product_id' => $product->id,
-        'sku' => $data['sku_daryza'],
-      ],
+    // Buscamos la variante por SKU incluyendo las borradas
+    $variant = ProductVariant::withTrashed()
+      ->where('sku', $data['sku_daryza'])
+      ->first();
+
+    $variantData = [
+      'product_id'     => $product->id,
+      'sku_supplier'   => $data['sku_supplier'] ?? null,
+      'price'          => $data['price'],
+      'promo_price'    => $data['promo_price'] ?? null,
+      'is_on_promo'    => $data['is_on_promo'] ?? false,
+      'promo_start_at' => $data['promo_start_at'] ?? null,
+      'promo_end_at'   => $data['promo_end_at'] ?? null,
+      'stock'          => $data['stock'] ?? 0,
+      'is_active'      => $data['is_active'] ?? true,
+    ];
+
+    if ($variant) {
+      // 1. Si estaba borrada, la restauramos
+      if ($variant->trashed()) {
+        $variant->restore();
+      }
+      // 2. Actualizamos con los nuevos datos del Excel
+      $variant->update($variantData);
+      return $variant;
+    }
+
+    $isFirstVariant = !$product->variants()->exists();
+    $variantData['is_main'] = $isFirstVariant;
+    // 3. Si no existe, creación limpia
+    $variantData['id'] = Str::ulid();
+    $variantData['sku'] = $data['sku_daryza'];
+
+    return ProductVariant::create($variantData);
+  }
+
+
+  /**
+   * Asociar especificaciones técnicas a una variante
+   */
+  public function associateVariantSpecifications(ProductVariant $variant, array $specifications): void
+  {
+    foreach ($specifications as $name => $value) {
+      if (!$value) continue;
+
+      // Buscamos o creamos el atributo de tipo TEXT
+      $attribute = $this->findOrCreateSpecificationAttribute($name);
+
+      // Usamos updateOrCreate en la relación de especificaciones
+      $variant->specifications()->updateOrCreate(
+        ['attribute_id' => $attribute->id],
+        [
+          'id' => Str::ulid(),
+          'value' => $value,
+          'attribute_value_id' => null, // Al ser texto, no requiere un valor predefinido
+        ]
+      );
+    }
+  }
+
+  /**
+   * Buscar o crear atributo para especificaciones (Tipo TEXT)
+   */
+  protected function findOrCreateSpecificationAttribute(string $name): Attribute
+  {
+    return Attribute::firstOrCreate(
+      ['name' => trim($name)],
       [
         'id' => Str::ulid(),
-        'sku_supplier' => $data['sku_supplier'] ?? null,
-        'price' => $data['price'],
-        'is_main' => false,
+        'type' => AttributeType::TEXT, // Importante: TEXT para que no aparezca como selector de variantes
+        'is_filterable' => false,
+        'is_variant' => false,
       ]
     );
   }
-
 
   /**
    * Asociar atributos y valores a una variante
@@ -68,7 +148,7 @@ class ProductImportService
       $attributeValue = $this->findOrCreateAttributeValue($attribute, $value);
 
       // Usar syncWithoutDetaching para no duplicar
-      $variant->attributeValues()->syncWithoutDetaching([
+      $variant->attributes()->syncWithoutDetaching([
         $attributeValue->id => [
           'id' => Str::ulid(),
           'created_at' => now(),
@@ -271,5 +351,93 @@ class ProductImportService
     $color_name = strtolower($color_name);
 
     return isset($colors[$color_name]) ? '#' . $colors[$color_name] : '#808080'; // fallback gris
+  }
+
+  /**
+   * Asociar Categoría y múltiples Subcategorías
+   */
+  public function associateProductCategories(Product $product, string $catName, string $subCatNames): void
+  {
+    if (empty(trim($catName))) return;
+
+    $catName = trim($catName);
+    $parentSlug = Str::slug($catName);
+
+    // 1. Buscar primero por slug para evitar colisión de Unique Constraint
+    $parentCategory = ProductCategory::where('slug', $parentSlug)->first();
+
+    if (!$parentCategory) {
+      $parentCategory = ProductCategory::create([
+        'id' => Str::ulid(),
+        'name' => $catName,
+        'slug' => $parentSlug,
+        'parent_id' => null
+      ]);
+    }
+
+    $categoryIds = [$parentCategory->id];
+
+    // 2. Procesar subcategorías
+    if ($subCatNames) {
+      $subCats = array_map('trim', explode(',', $subCatNames));
+
+      foreach ($subCats as $subName) {
+        if (empty($subName)) continue;
+
+        $subSlug = Str::slug($subName);
+
+        // Buscar subcategoría que pertenezca a este padre
+        $subCategory = ProductCategory::where('slug', $subSlug)
+          ->where('parent_id', $parentCategory->id)
+          ->first();
+
+        if (!$subCategory) {
+          $subCategory = ProductCategory::create([
+            'id' => Str::ulid(),
+            'name' => $subName,
+            'slug' => $subSlug,
+            'parent_id' => $parentCategory->id
+          ]);
+        }
+        $categoryIds[] = $subCategory->id;
+      }
+    }
+
+    // 3. Sincronizar (Reemplaza asociaciones anteriores con las actuales)
+    $product->categories()->sync($categoryIds);
+  }
+
+  /**
+   * Asociar Líneas de Negocio (Relación Muchos a Muchos)
+   */
+  public function associateProductBusinessLines(Product $product, string $linesString): void
+  {
+    if (empty(trim($linesString))) return;
+
+    $lineNames = array_map('trim', explode(',', $linesString));
+    $lineIds = [];
+
+    foreach ($lineNames as $name) {
+      if (empty($name)) continue;
+
+      $slug = Str::slug($name);
+
+      // Buscar por slug antes de crear
+      $line = BusinessLine::where('slug', $slug)->first();
+
+      if (!$line) {
+        $line = BusinessLine::create([
+          'id'   => Str::ulid(),
+          'name' => $name,
+          'slug' => $slug
+        ]);
+      }
+
+      $lineIds[] = $line->id;
+    }
+
+    if (!empty($lineIds)) {
+      $product->businessLines()->sync($lineIds);
+    }
   }
 }

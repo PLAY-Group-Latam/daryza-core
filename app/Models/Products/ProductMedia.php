@@ -16,6 +16,7 @@ class ProductMedia extends Model
         'type',       // image, technical_sheet, video...
         'file_path',
         'is_main',
+        'folder',
         'order',
     ];
 
@@ -41,19 +42,13 @@ class ProductMedia extends Model
         return $query->where('type', 'image');
     }
 
+    public function scopeVideos($query)
+    {
+        return $query->where('type', 'video');
+    }
+
     public function scopeTechnicalSheets($query)
     {
         return $query->where('type', 'technical_sheet');
-    }
-
-    public function scopeMain($query)
-    {
-        return $query->where('type', 'image')
-            ->where('is_main', true);
-    }
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('order', 'asc');
     }
 }

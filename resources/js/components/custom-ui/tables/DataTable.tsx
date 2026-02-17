@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 'use client';
 
 import { Input } from '@/components/ui/input';
@@ -21,23 +22,34 @@ import { DataTablePagination } from './data-table-pagination';
 interface DataTableProps<T> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
-    onSearch?: (value: string) => void; 
+    onSearch?: (value: string) => void;
     initialSearch?: string;
 }
 
-export function DataTable<T>({ 
-    columns, 
-    data, 
-    onSearch, 
-    initialSearch = '' 
+export function DataTable<T>({
+    columns,
+    data,
+    onSearch,
+    initialSearch = '',
 }: DataTableProps<T>) {
-    const [globalFilter, setGlobalFilter] = React.useState(initialSearch);
+   
+    const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? "");
 
-    // Manejo de la búsqueda con debounce (500ms)
+    const isFirstRender = React.useRef(true);
+    const lastSearchRef = React.useRef(initialSearch ?? "");
+
     React.useEffect(() => {
         if (!onSearch) return;
 
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (globalFilter === lastSearchRef.current) return;
+
         const timer = setTimeout(() => {
+            lastSearchRef.current = globalFilter;
             onSearch(globalFilter);
         }, 500);
 
@@ -51,7 +63,7 @@ export function DataTable<T>({
             globalFilter,
         },
         manualPagination: true,
-        manualFiltering: true, // El servidor se encarga del filtrado
+        manualFiltering: true,
         pageCount: data.last_page,
         getCoreRowModel: getCoreRowModel(),
         onGlobalFilterChange: setGlobalFilter,
@@ -64,13 +76,13 @@ export function DataTable<T>({
             <div className="flex items-center justify-between">
                 <Input
                     placeholder="Buscar..."
-                    value={globalFilter}
+                    value={globalFilter ?? ""} 
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"
                 />
             </div>
 
-            <div className="mb-4 overflow-x-auto rounded-md border">
+            <div className="mb-4 overflow-x-auto">
                 <Table>
                     <TableHeader className="sticky top-0 z-10 bg-muted">
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -80,9 +92,10 @@ export function DataTable<T>({
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
                                     </TableHead>
                                 ))}
                             </TableRow>
@@ -106,7 +119,7 @@ export function DataTable<T>({
                                         <TableCell key={cell.id}>
                                             {flexRender(
                                                 cell.column.columnDef.cell,
-                                                cell.getContext()
+                                                cell.getContext(),
                                             )}
                                         </TableCell>
                                     ))}

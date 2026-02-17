@@ -5,16 +5,16 @@ namespace App\Enums;
 enum AttributeType: string
 {
   case SELECT = 'select';
-  case NUMBER = 'number';
-  case BOOLEAN = 'boolean';
+    // case NUMBER = 'number';
+    // case BOOLEAN = 'boolean';
   case TEXT = 'text';
 
   public function label(): string
   {
     return match ($this) {
       self::SELECT => 'Lista de opciones',
-      self::NUMBER => 'Número',
-      self::BOOLEAN => 'Sí / No',
+      // self::NUMBER => 'Número',
+      // self::BOOLEAN => 'Sí / No',
       self::TEXT => 'Texto libre',
     };
   }

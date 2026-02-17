@@ -2,80 +2,68 @@
 
 namespace App\Http\Web\Services\Leads;
 
-use App\Models\Leads\Claim;
+use App\Models\Leads\Lead;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 
 class ClaimService
 {
-    /**
-     * LISTAR: Obtener lista paginada de reclamaciones con soporte para búsqueda.
-     */
-public function getPaginatedClaims(int $perPage = 10, ?string $search = null): LengthAwarePaginator
-{
-    // Usamos el nombre de la tabla para evitar ambigüedades en Postgres
-    $query = Claim::query()->where('leads.type', '=', Claim::TYPE_CLAIM);
+    public function getPaginatedClaims(int $perPage = 10, ?string $search = null): LengthAwarePaginator
+    {
+        
+        $query = Lead::query()->where('type', Lead::TYPE_CLAIM);
 
-    if ($search) {
-        $query->where(function ($q) use ($search) {
-            $searchTerm = "%" . trim($search) . "%";
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $searchTerm = "%" . trim($search) . "%";
+                $q->where('full_name', 'ilike', $searchTerm)
+                  ->orWhere('email', 'ilike', $searchTerm)
+                  ->orWhereRaw("data->>'document_number' ilike ?", [$searchTerm]);
+            });
+        }
 
-            // 1. Columnas de texto (con cast explícito a texto para Postgres)
-            $q->where('leads.full_name', 'ilike', $searchTerm)
-              ->orWhere('leads.email', 'ilike', $searchTerm);
-
-            // 2. Columnas JSONB (Sintaxis nativa de Postgres)
-            // Agregamos un cast ::text para asegurar la comparación con el ILIKE
-            $q->orWhereRaw("(leads.data->>'document_number')::text ilike ?", [$searchTerm])
-              ->orWhereRaw("(leads.data->>'type_of_claim_id')::text ilike ?", [$searchTerm])
-              ->orWhereRaw("(leads.data->>'well_hired_id')::text ilike ?", [$searchTerm]);
-        });
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    // Importante: latest() en Postgres a veces falla si no hay created_at, 
-    // usamos el ID o created_at explícito
-    return $query->orderBy('leads.created_at', 'desc')
-        ->paginate($perPage)
-        ->withQueryString();
-}
-
-    /**
-     * CREAR: Crear una nueva reclamación.
-     */
-    public function save(array $data): Claim
+    public function save(array $data): Lead
     {
-        // Preparar estructura para la tabla 'leads'
         $payload = [
-            'type'      => Claim::TYPE_CLAIM,
+            'type'      => Lead::TYPE_CLAIM,
             'full_name' => $data['name'],
             'email'     => $data['email'],
             'phone'     => $data['phone_number'],
-            'status'    => Claim::STATUS_NEW, 
+            'status'    => Lead::STATUS_NEW, 
             'data'      => $this->mapJsonFields($data),
         ];
 
-        // Manejo del archivo adjunto en PDF si es que hay
         if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
             $payload['file_path'] = $data['file_attached']->store('leads/claims', 'public');
             $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
         }
 
-        return Claim::create($payload);
+        return Lead::create($payload);
     }
 
-  
-    /**
-     * DETALLES: Obtener detalles de una reclamación específica.
-     */
-    public function getDetails(Claim $claim): Claim
+    public function update(Lead $claim, array $data): bool
     {
-        return $claim;
+        return $claim->update([
+            'full_name' => $data['name'] ?? $claim->full_name,
+            'email'     => $data['email'] ?? $claim->email,
+            'phone'     => $data['phone_number'] ?? $claim->phone,
+            'status'    => $data['status'] ?? $claim->status,
+           
+        ]);
     }
 
+    public function delete(Lead $claim): ?bool
+    {
+        if ($claim->file_path) {
+            Storage::disk('public')->delete($claim->file_path);
+        }
+        return $claim->delete();
+    }
 
-    /**
-     * Mapea los campos específicos del formulario al formato JSON esperado.
-     */
     protected function mapJsonFields(array $data): array
     {
         return [

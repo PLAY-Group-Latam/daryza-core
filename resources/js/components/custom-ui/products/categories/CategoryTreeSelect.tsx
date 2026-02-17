@@ -14,7 +14,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { filterTree, flattenTree } from '@/lib/utils/category-tree';
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { RootItem } from './CategoryRootItem';

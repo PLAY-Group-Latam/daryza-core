@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::create('product_specification_values', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignUlid('product_variant_id')
+                ->constrained('product_variants')
+                ->cascadeOnDelete();
             $table->foreignUlid('attribute_id')->constrained('attributes')->cascadeOnDelete();
             $table->foreignUlid('attribute_value_id')->nullable()->constrained('attributes_values')->cascadeOnDelete();
-            $table->string('value')->nullable(); 
+            $table->string('value')->nullable();
             $table->timestamps();
 
-            $table->unique(['product_id', 'attribute_id']); // evita duplicados
+            $table->unique(['product_variant_id', 'attribute_id'], 'variant_attr_unique');
         });
     }
 

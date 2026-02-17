@@ -2,7 +2,7 @@
 
 import { CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 import { Check, CornerDownRight } from 'lucide-react';
 
 interface TreeItemProps {
@@ -40,7 +40,7 @@ export function TreeItem({
                 )}
             </CommandItem>
 
-            {node.active_children?.map((child) => (
+            {node.children?.map((child) => (
                 <TreeItem
                     key={child.id}
                     node={child}

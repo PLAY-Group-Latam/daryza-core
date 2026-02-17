@@ -1,9 +1,11 @@
 import * as React from "react"
+
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react"
+
 import {
   DayPicker,
   getDefaultClassNames,
@@ -130,7 +132,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Root: ({ className, rootRef, ...props }) => {
+      Root: ({ className, rootRef, ...props }) => {
           return (
             <div
               data-slot="calendar"

@@ -5,21 +5,20 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { cn } from '@/lib/utils';
+import products from '@/routes/products';
 import categories from '@/routes/products/categories';
-import { Category, CategorySelect } from '@/types/products';
+import { Category } from '@/types/products/categories';
+import { Link } from '@inertiajs/react';
 import { ChevronRight, Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
+import { StatusBadge } from '../../StatusBadge';
 import { DataTableExpandable } from '../../tables/table-dnd-expanded/DataTableExpandable';
-import { ModalFormCategories } from './ModalFormCategories';
 
 interface TableListProps {
     data: Paginated<Category>;
-    parentCategories?: CategorySelect[];
 }
 
-const columns = (
-    parentCategories: CategorySelect[] = [],
-): ColumnDef<Category>[] => [
+const columns: ColumnDef<Category>[] = [
     {
         id: 'expander',
         header: () => null,
@@ -46,7 +45,7 @@ const columns = (
 
     {
         accessorKey: 'order',
-        header: 'Nº',
+        header: 'Ordenº',
     },
     {
         accessorKey: 'name',
@@ -60,17 +59,7 @@ const columns = (
     {
         accessorKey: 'is_active',
         header: 'Estado',
-        cell: ({ row }) => (
-            <span
-                className={
-                    row.original.is_active
-                        ? 'font-medium text-green-600'
-                        : 'font-medium text-red-600'
-                }
-            >
-                {row.original.is_active ? 'Activo' : 'Inactivo'}
-            </span>
-        ),
+        cell: ({ row }) => <StatusBadge status={row.original.is_active} />,
     },
     {
         accessorKey: 'created_at',
@@ -94,21 +83,17 @@ const columns = (
             // console.log(category);
             return (
                 <div className="flex items-center gap-2">
-                    <ModalFormCategories
-                        category={category}
-                        parentCategories={parentCategories} // Aquí pasamos los padres
-                        trigger={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                title="Editar Categoría"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <Edit />
-                            </Button>
-                        }
-                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Editar atributo"
+                        asChild
+                    >
+                        <Link href={products.categories.edit(category.id)}>
+                            <Edit />
+                        </Link>
+                    </Button>
                     <ConfirmDeleteAlert
                         resourceId={category.id}
                         resourceName={category.name}
@@ -131,7 +116,7 @@ const columns = (
     },
 ];
 
-export default function TableList({ data, parentCategories }: TableListProps) {
+export default function TableList({ data }: TableListProps) {
     if (!data) {
         return (
             <div className="p-4 text-center text-gray-500">
@@ -139,7 +124,6 @@ export default function TableList({ data, parentCategories }: TableListProps) {
             </div>
         );
     }
-    const tableColumns = columns(parentCategories);
 
-    return <DataTableExpandable columns={tableColumns} data={data} />;
+    return <DataTableExpandable columns={columns} data={data} />;
 }

@@ -4,9 +4,11 @@
 import { Trash2Icon, UploadIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+type UploadItem = File | string;
+
 interface UploadMultipleProps {
-    value?: File[]; // ✅ solo archivos
-    onFilesChange?: (files: File[]) => void; // ✅ callback con archivos
+    value?: UploadItem[];
+    onFilesChange?: (files: UploadItem[]) => void;
     previewClassName?: string;
 }
 
@@ -19,38 +21,48 @@ export function UploadMultiple({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const dragIndex = useRef<number | null>(null);
 
-    // Generar previews de archivos
+    // 🔥 Generar previews correctamente
     useEffect(() => {
-        const urls = value.map((file) => URL.createObjectURL(file));
+        const urls = value.map((item) => {
+            if (item instanceof File) {
+                return URL.createObjectURL(item);
+            }
+            return item; // string URL existente
+        });
+
         setPreviews(urls);
 
-        // Cleanup URLs cuando cambia el array
         return () => {
-            urls.forEach((url) => URL.revokeObjectURL(url));
+            value.forEach((item, index) => {
+                if (item instanceof File) {
+                    URL.revokeObjectURL(urls[index]);
+                }
+            });
         };
     }, [value]);
 
-    // Cuando se seleccionan nuevos archivos
+    // 📥 Nuevos archivos
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
-        if (files.length === 0) return;
-        onFilesChange?.([...value, ...files]); // ✅ solo File
+        if (!files.length) return;
+
+        onFilesChange?.([...value, ...files]);
     };
 
-    // Eliminar archivo
+    // ❌ Eliminar
     const handleRemove = (index: number) => {
-        const newFiles = [...value];
-        newFiles.splice(index, 1);
-        onFilesChange?.(newFiles);
+        const newItems = [...value];
+        newItems.splice(index, 1);
+        onFilesChange?.(newItems);
     };
 
-    // --- Drag & Drop Nativo ---
+    // 🧲 Drag & Drop
     const handleDragStart = (index: number) => {
         dragIndex.current = index;
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); // necesario para permitir drop
+        e.preventDefault();
     };
 
     const handleDrop = (index: number) => {
@@ -58,9 +70,8 @@ export function UploadMultiple({
 
         const newValue = [...value];
         const draggedItem = newValue[dragIndex.current];
-        // eliminar del lugar original
+
         newValue.splice(dragIndex.current, 1);
-        // insertar en la posición nueva
         newValue.splice(index, 0, draggedItem);
 
         dragIndex.current = null;
@@ -80,7 +91,7 @@ export function UploadMultiple({
                 >
                     <img
                         src={src}
-                        className="h-24 w-24 rounded-xl border object-fill"
+                        className="h-24 w-24 rounded-xl border object-cover"
                     />
                     <button
                         type="button"

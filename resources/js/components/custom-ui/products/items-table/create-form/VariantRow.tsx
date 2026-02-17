@@ -1,5 +1,6 @@
 'use client';
 
+import { DatePicker } from '@/components/custom-ui/DatePicker';
 import { UploadMultiple } from '@/components/custom-ui/UploadMultiple';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Attribute } from '@/types/products/attributes';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ProductFormValues } from './FormProduct';
+import { SpecificationsAttributes } from './SpecificationsFormAttributes';
 import { VariantAttributes } from './VariantAttributes';
 import { VariantMainSwitch } from './VariantMainSwitch';
 
@@ -16,9 +18,15 @@ interface Props {
     index: number;
     remove: (index: number) => void;
     variantAttributes: Attribute[];
+    specificationAttributes: Attribute[]; // 👈 Atributos para la ficha técnica (Material, etc)
 }
 
-export function VariantRow({ index, remove, variantAttributes }: Props) {
+export function VariantRow({
+    index,
+    remove,
+    variantAttributes,
+    specificationAttributes,
+}: Props) {
     const { control } = useFormContext<ProductFormValues>();
 
     // Observamos si la variante está en promo
@@ -27,10 +35,6 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
         name: `variants.${index}.is_on_promo`,
         defaultValue: false,
     });
-
-    // Helper para datetime-local
-    const formatDateForInput = (value?: string | null) =>
-        value ? new Date(value).toISOString().slice(0, 16) : '';
 
     return (
         <Card className="space-y-4 rounded-2xl border border-slate-200 p-5 shadow-sm">
@@ -74,12 +78,24 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                         defaultValue=""
                         render={({ field }) => (
                             <div>
-                                <Label className="text-xs">SKU</Label>
+                                <Label className="text-xs">Sku Dariza</Label>
                                 <Input {...field} />
                             </div>
                         )}
                     />
-
+                    <Controller
+                        name={`variants.${index}.sku_supplier`}
+                        control={control}
+                        defaultValue=""
+                        render={({ field }) => (
+                            <div>
+                                <Label className="text-xs font-medium text-slate-500">
+                                    Sku Proveedor
+                                </Label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
                     <Controller
                         name={`variants.${index}.price`}
                         control={control}
@@ -91,7 +107,6 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                             </div>
                         )}
                     />
-
                     <Controller
                         name={`variants.${index}.stock`}
                         control={control}
@@ -109,7 +124,7 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                         control={control}
                         defaultValue={true}
                         render={({ field }) => (
-                            <div className="mt-2 flex items-center gap-2 md:mt-0">
+                            <div className="mt-2 flex items-end gap-2 md:mt-0">
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
@@ -121,12 +136,14 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                         )}
                     />
 
+                    {/* Otros inputs */}
+                    <VariantMainSwitch index={index} />
                     <Controller
                         name={`variants.${index}.is_on_promo`}
                         control={control}
                         defaultValue={false}
                         render={({ field }) => (
-                            <div className="mt-2 flex items-center gap-2 md:mt-0">
+                            <div className="mt-2 flex h-9 items-end gap-2 md:mt-0">
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
@@ -139,9 +156,6 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                             </div>
                         )}
                     />
-
-                    {/* Otros inputs */}
-                    <VariantMainSwitch index={index} />
                 </div>
             </div>
 
@@ -169,19 +183,15 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                     <Controller
                         name={`variants.${index}.promo_start_at`}
                         control={control}
-                        defaultValue=""
                         render={({ field }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">
                                     Inicio Promoción
                                 </Label>
-                                <Input
-                                    {...field}
-                                    type="datetime-local"
-                                    value={formatDateForInput(field.value)}
-                                    onChange={(e) =>
-                                        field.onChange(e.target.value)
-                                    }
+                                <DatePicker
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar fecha"
                                 />
                             </div>
                         )}
@@ -190,17 +200,13 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                     <Controller
                         name={`variants.${index}.promo_end_at`}
                         control={control}
-                        defaultValue=""
                         render={({ field }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">Fin Promoción</Label>
-                                <Input
-                                    {...field}
-                                    type="datetime-local"
-                                    value={formatDateForInput(field.value)}
-                                    onChange={(e) =>
-                                        field.onChange(e.target.value)
-                                    }
+                                <DatePicker
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar fecha"
                                 />
                             </div>
                         )}
@@ -213,6 +219,11 @@ export function VariantRow({ index, remove, variantAttributes }: Props) {
                 control={control}
                 variantIndex={index}
                 attributes={variantAttributes}
+            />
+
+            <SpecificationsAttributes
+                variantIndex={index}
+                availableAttributes={specificationAttributes}
             />
         </Card>
     );
