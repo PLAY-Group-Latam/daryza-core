@@ -43,61 +43,142 @@ class ContentService
         return DB::transaction(function () use ($sectionId, $content) {
             $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
 
-            // ✅ PRIMERO: Procesar campos individuales de archivos (image, logo, banner, video, etc.)
-            // Esto debe ir ANTES del procesamiento de media array
-            foreach ($content as $key => $value) {
-                // Si es un UploadedFile individual (no dentro de un array)
-                if ($value instanceof UploadedFile) {
-                    $mime = $value->getMimeType();
-                    $typeFolder = Str::contains($mime, 'video') ? 'videos' : 'images';
-                    $directory = "sections/{$sectionId}/{$typeFolder}";
-                    $content[$key] = $this->gcs->uploadFile($value, $directory);
-                }
-            }
+            $content = $this->processSingleFiles($content, $sectionId);
+            $content = $this->processMediaArray($content, $sectionId);
+            $content = $this->processBrandsArray($content, $sectionId);
+             $content = $this->processItemsArray($content, $sectionId);
 
-            // ✅ SEGUNDO: Procesar array de media (para banners dinámicos)
-            if (isset($content['media']) && is_array($content['media'])) {
-                $processedMedia = [];
-                
-                foreach ($content['media'] as $i => $item) {
-                    // Solo procesar items que tengan src válido
-                    if (!isset($item['src']) || empty($item['src'])) {
-                        continue;
-                    }
-                    
-                    // Si es archivo, subirlo
-                    if ($item['src'] instanceof UploadedFile) {
-                        $mime = $item['src']->getMimeType();
-                        $typeFolder = Str::contains($mime, 'video') ? 'videos' : 'images';
-                        $directory = "sections/{$sectionId}/{$typeFolder}";
-
-                        $item['src'] = $this->gcs->uploadFile($item['src'], $directory);
-                    }
-                    
-                    // Asegurar que tenga todos los campos necesarios
-                    $processedMedia[] = [
-                        'src' => $item['src'],
-                        'type' => $item['type'] ?? 'image',
-                        'device' => $item['device'] ?? 'desktop',
-                        'link_url' => $item['link_url'] ?? null,
-                    ];
-                }
-                
-                $content['media'] = $processedMedia;
-            }
-
-            // ✅ TERCERO: Hacer merge con contenido existente
-            $existingContent = $sectionContent->content ?? [];
-            
-            // Si estamos actualizando media, reemplazar completamente el array
-            if (isset($content['media'])) {
-                $existingContent['media'] = $content['media'];
-                unset($content['media']); // Ya lo procesamos
-            }
-            
-            $finalData = array_merge($existingContent, $content);
+            $finalData = $this->mergeWithExisting($sectionContent->content ?? [], $content);
 
             return $sectionContent->update(['content' => $finalData]);
         });
+    }
+
+    // Funciones Privadas
+
+    private function uploadFile(UploadedFile $file, int $sectionId): string
+    {
+        $mime = $file->getMimeType();
+        $typeFolder = Str::contains($mime, 'video') ? 'videos' : 'images';
+        return $this->gcs->uploadFile($file, "sections/{$sectionId}/{$typeFolder}");
+    }
+
+    private function processSingleFiles(array $content, int $sectionId): array
+    {
+        foreach ($content as $key => $value) {
+            if ($value instanceof UploadedFile) {
+                $content[$key] = $this->uploadFile($value, $sectionId);
+            }
+        }
+        return $content;
+    }
+
+    private function processMediaArray(array $content, int $sectionId): array
+    {
+        if (!isset($content['media']) || !is_array($content['media'])) {
+            return $content;
+        }
+
+        $processed = [];
+
+        foreach ($content['media'] as $item) {
+            if (!isset($item['src']) || empty($item['src'])) continue;
+
+            if ($item['src'] instanceof UploadedFile) {
+                $item['src'] = $this->uploadFile($item['src'], $sectionId);
+            }
+
+            $processed[] = [
+                'src'      => $item['src'],
+                'type'     => $item['type'] ?? 'image',
+                'device'   => $item['device'] ?? 'desktop',
+                'link_url' => $item['link_url'] ?? null,
+            ];
+        }
+
+        $content['media'] = $processed;
+        return $content;
+    }
+
+    private function processBrandsArray(array $content, int $sectionId): array
+    {
+        if (!isset($content['brands']) || !is_array($content['brands'])) {
+            return $content;
+        }
+
+        $processed = [];
+
+        foreach ($content['brands'] as $item) {
+            if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
+                $item['image'] = $this->uploadFile($item['image'], $sectionId);
+            }
+
+            $processed[] = [
+                'image' => $item['image'] ?? null,
+                'name'  => $item['name'] ?? '',
+            ];
+        }
+
+        $content['brands'] = $processed;
+        return $content;
+    }
+
+   private function processItemsArray(array $content, int $sectionId): array
+{
+    if (!isset($content['items']) || !is_array($content['items'])) {
+        return $content;
+    }
+
+    $existingById = [];
+    $sectionContent = SectionContent::where('page_section_id', $sectionId)->first();
+    if ($sectionContent && isset($sectionContent->content['items'])) {
+        foreach ($sectionContent->content['items'] as $existingItem) {
+            $existingById[$existingItem['id']] = $existingItem;
+        }
+    }
+
+    $processed = [];
+
+    foreach ($content['items'] as $item) {
+        $itemId  = $item['id'];
+        $existing = $existingById[$itemId] ?? [];
+        $result  = ['id' => $itemId];
+
+       
+        foreach ($item as $field => $value) {
+            if ($field === 'id') continue;
+
+            if ($value instanceof UploadedFile) {
+                
+                $result[$field] = $this->uploadFile($value, $sectionId);
+            } elseif (empty($value) && isset($existing[$field])) {
+               
+                $result[$field] = $existing[$field];
+            } else {
+                
+                $result[$field] = $value;
+            }
+        }
+
+        $processed[] = $result;
+    }
+
+    $content['items'] = $processed;
+    return $content;
+}
+
+    private function mergeWithExisting(array $existing, array $content): array
+    {
+        
+        $replaceableArrays = ['media', 'brands','items'];
+
+        foreach ($replaceableArrays as $key) {
+            if (isset($content[$key])) {
+                $existing[$key] = $content[$key];
+                unset($content[$key]);
+            }
+        }
+
+        return array_merge($existing, $content);
     }
 }

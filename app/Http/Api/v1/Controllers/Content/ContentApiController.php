@@ -26,14 +26,21 @@ class ContentApiController extends Controller
     }
 
    
-    public function getPage(string $slug): JsonResponse
-    {
-        $data = $this->contentService->getPageFullContent($slug);
+   public function getPage(string $slug): JsonResponse
+{
+    $data = $this->contentService->getPageFullContent($slug);
 
-        return response()->json([
-            'success' => true,
+    return response()->json([
+        'success' => true,
+        'data' => [
             'page' => $slug,
-            'sections' => $data
-        ]);
-    }
+            'sections' => $data,
+        ],
+        'metadata' => [
+            'section_name' => $slug,
+            'updated_at' => now()->toDateTimeString(),
+        ]
+    ]);
+}
+
 }   

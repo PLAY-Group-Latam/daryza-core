@@ -7,7 +7,10 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 // Importación de los editores
 import ModalEditor from '@/components/custom-ui/content/editors/home/ModalEditor';
 import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BannerDinamicoEditor';
-
+import BrandsEditor from '@/components/custom-ui/content/editors/home/MarcasEditor';
+import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagenPromocionalEditor';
+import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagenesPromocionalesEditor';
+import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
 interface Props {
     section: {
         id: number;
@@ -24,12 +27,16 @@ interface Props {
 }
 
 /**
- * Mapeo de componentes según el tipo de sección.
- * IMPORTANTE: La llave debe coincidir EXACTAMENTE con el 'type' de la BD.
+  * Mapeo de componentes según el tipo de sección.
+  * IMPORTANTE: La llave debe coincidir EXACTAMENTE con el 'type' de la BD.
  */
 const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'home_modal': ModalEditor,
-    'home_banner': BannerDinamicoEditor, // Cambiado de 'home_banner_dinamico' a 'home_banner'
+    'home_banner': BannerDinamicoEditor, 
+    'home_brands': BrandsEditor,
+    'home_promo_image': ImagenPromocionalEditor,
+    'home_promo_dynamic': ImagenesPromocionalesEditor,
+    'home_attributes': AtributosEditor,
 };
 
 export default function EditSection({ section }: Props) {

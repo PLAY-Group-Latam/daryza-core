@@ -3,7 +3,7 @@
 namespace App\Http\Web\Requests\Content;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Rules\ContentRule; 
+use App\Rules\Web\Content\ContentRule;
 
 class ContentRequest extends FormRequest
 {
@@ -15,7 +15,7 @@ class ContentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Validamos que el contenido sea un array y pase nuestra regla dinámica
+         
             'content' => ['required', 'array', new ContentRule],
         ];
     }

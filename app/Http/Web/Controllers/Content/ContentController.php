@@ -8,7 +8,6 @@ use App\Http\Web\Requests\Content\ContentRequest;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
 
 class ContentController extends Controller
 {
@@ -27,38 +26,38 @@ class ContentController extends Controller
         return Inertia::render('content/EditSection', ['section' => $section]);
     }
 
-   public function update(ContentRequest $request, string $slug, string $type, int $id): RedirectResponse
-{
-    $this->contentService->getValidatedSection($slug, $type, $id);
+    public function update(ContentRequest $request, string $slug, string $type, int $id): RedirectResponse
+    {
+        $this->contentService->getValidatedSection($slug, $type, $id);
 
-    // 1. Obtenemos los datos de texto (start_date, end_date, etc.)
-    $content = $request->input('content', []);
-    
-    // 2. Obtenemos los archivos (image, media, etc.)
-    $files = $request->file('content', []);
+        $content = $this->mergeFilesIntoContent(
+            $request->input('content', []),
+            $request->file('content', []),
+        );
 
-    // 3. Fusionamos los archivos dentro del array $content
-    // Esto asegura que $content['image'] contenga el objeto UploadedFile
-    foreach ($files as $key => $file) {
-        if ($key === 'media' && is_array($file)) {
-            foreach ($file as $index => $mediaFile) {
-                if (isset($mediaFile['src'])) {
-                    $content['media'][$index]['src'] = $mediaFile['src'];
-                }
-            }
-        } else {
-            $content[$key] = $file;
-        }
+        $this->contentService->updateSectionContent($id, $content);
+
+        return back()->with('success', '¡Sección actualizada correctamente!');
     }
 
-    // ✅ Ahora $content tiene TODO: strings y objetos UploadedFile
-    Log::info('📦 Content procesado con archivos:', [
-        'keys' => array_keys($content),
-        'has_image' => isset($content['image']) && $content['image'] instanceof \Illuminate\Http\UploadedFile
-    ]);
+    private function mergeFilesIntoContent(array $content, array $files): array
+    {
+        foreach ($files as $key => $file) {
+            if (is_array($file)) {
+                foreach ($file as $index => $nestedFiles) {
+                    if (is_array($nestedFiles)) {
+                        foreach ($nestedFiles as $field => $uploadedFile) {
+                            $content[$key][$index][$field] = $uploadedFile;
+                        }
+                    } else {
+                        $content[$key][$index] = $nestedFiles;
+                    }
+                }
+            } else {
+                $content[$key] = $file;
+            }
+        }
 
-    $this->contentService->updateSectionContent($id, $content);
-
-    return back()->with('success', '¡Sección actualizada correctamente!');
-}
+        return $content;
+    }
 }

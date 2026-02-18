@@ -1,45 +1,69 @@
+export interface BrandItem {
+image: File | string | null; // 👈
+  name: string;
+}
+
+export interface BrandsContent {
+  brands: BrandItem[];
+}
+
+export interface ImagenPromocionalContent {
+  image: File | string | null;
+}
+
+export interface PromoGridItem {
+  id: number;
+  src: File | string | null;
+  alt?: string;
+  link?: string;
+}
+
+export interface ImagenesPromocionalesContent {
+  items: PromoGridItem[];
+}
+
+
+
 export interface ModalContent {
-    image: File | string | null;
-    start_date: string;
-    end_date: string;
-    is_visible: boolean;
+  image: File | string | null;
+  start_date: string;
+  end_date: string;
+  is_visible: boolean;
 }
 
 export interface MediaItem {
-    src: File | string | null;
-    device?: 'desktop' | 'mobile' | 'both'; // opcional, por si quieres filtrar
-    type: 'image' | 'video';
-    link_url?: string;
+  src: File | string | null;
+  device?: 'desktop' | 'mobile' | 'both';
+  type: 'image' | 'video';
+  link_url?: string;
 }
 
 export interface BannerContent {
-    media: MediaItem[];   // 🔥 Lista dinámica de medios
-    is_visible: boolean;
-    link_url?: string;   // 🔥 URL opcional para todo el banner
-}
-
-export interface ModalContent {
-    image: File | string | null;
-    start_date: string;
-    end_date: string;
-    is_visible: boolean;
+  media: MediaItem[];
+  is_visible: boolean;
+  link_url?: string;
 }
 
 export interface GenericContent {
-    [key: string]: any;
+  [key: string]: any;
 }
 
 export interface ContentSectionProps {
-    section: {
-        id: number;
-        name: string;
-        type: string;
-        page: {
-            slug: string;
-            title?: string; 
-        };
-        content: {
-            content: ModalContent | BannerContent | GenericContent;
-        };
+  section: {
+    id: number;
+    name: string;
+    type: string;
+    page: {
+      slug: string;
+      title?: string;
     };
+    content: {
+      content:
+        | ModalContent
+        | BannerContent
+        | BrandsContent
+        | ImagenesPromocionalesContent
+        | GenericContent;
+    };
+  };
 }
