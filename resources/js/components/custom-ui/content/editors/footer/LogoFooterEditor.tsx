@@ -46,13 +46,14 @@ function LogoUpload({
       >
         {preview ? (
           <>
+            {/* Preview sobre fondo oscuro para simular el footer */}
+            <div className="absolute inset-0 bg-darysa-gris-800 opacity-80 rounded-xl" />
             <img
               src={preview}
               alt="logo preview"
-              className="max-h-32 max-w-[280px] object-contain p-4"
+              className="relative z-10 max-h-32 max-w-[280px] object-contain p-4"
             />
-            {/* Overlay hover */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
+            <div className="absolute inset-0 z-20 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
                             flex flex-col items-center justify-center gap-2 rounded-xl">
               <ImagePlus size={22} className="text-white" />
               <span className="text-white text-xs font-semibold">Cambiar logo</span>
@@ -70,7 +71,7 @@ function LogoUpload({
   );
 }
 
-export default function LogoHeaderEditor({ section }: Props) {
+export default function LogoFooterEditor({ section }: Props) {
   const rawContent = section.content?.content as LogoContent;
 
   const initialContent: LogoContent = {
@@ -81,18 +82,19 @@ export default function LogoHeaderEditor({ section }: Props) {
     content: initialContent,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    put(
-      `/content/update/${section.page.slug}/${section.type}/${section.id}`,
-      {
-        forceFormData: true,
-        preserveScroll: true,
-        onSuccess: () => toast.success('¡Logo actualizado!'),
-        onError: () => toast.error('Error al guardar el logo'),
-      }
-    );
-  };
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  console.log('LogoFooter content a enviar:', data.content);  // ← aquí
+  put(
+    `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+    {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => toast.success('¡Logo del footer actualizado!'),
+      onError: () => toast.error('Error al guardar el logo'),
+    }
+  );
+};
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
@@ -109,7 +111,7 @@ export default function LogoHeaderEditor({ section }: Props) {
                 Configuración de {section.name}
               </h3>
               <p className="text-sm text-slate-500">
-                Sube el logo que aparece en el header del sitio.
+                Sube el logo que aparece en el footer del sitio — se mostrará sobre fondo oscuro.
               </p>
             </div>
           </div>
@@ -118,7 +120,7 @@ export default function LogoHeaderEditor({ section }: Props) {
         {/* Upload zone */}
         <div className="p-8">
           <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-3 block">
-            Logo del header
+            Logo del footer
           </Label>
           <LogoUpload
             value={data.content.image}
@@ -126,7 +128,7 @@ export default function LogoHeaderEditor({ section }: Props) {
           />
           {data.content.image && (
             <p className="mt-2 text-[10px] text-slate-400 text-center">
-              Haz clic en la imagen para cambiarla
+              Haz clic en la imagen para cambiarla — la previsualización simula el fondo oscuro del footer
             </p>
           )}
         </div>

@@ -2,15 +2,28 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Puzzle, ChevronRight } from 'lucide-react';
 
 // Importación de los editores
 import ModalEditor from '@/components/custom-ui/content/editors/home/ModalEditor';
-import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BannerDinamicoEditor';
-import BrandsEditor from '@/components/custom-ui/content/editors/home/MarcasEditor';
-import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagenPromocionalEditor';
-import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagenesPromocionalesEditor';
+import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BanneDynamicEditor';
+import BrandsEditor from '@/components/custom-ui/content/editors/home/BrandsEditor';
+import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagePromEditor';
+import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagesDynamicsEditor';
 import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
+import TituloSectionEditor from '@/components/custom-ui/content/editors/home/TitleSectionEditor';
+import LogoHeaderEditor from '@/components/custom-ui/content/editors/footer/LogoHeaderEditor';
+import BanksEditor from '@/components/custom-ui/content/editors/footer/BankIconFooter';
+import LogoFooterEditor from '@/components/custom-ui/content/editors/footer/LogoFooterEditor';
+import HoursEditor from '@/components/custom-ui/content/editors/footer/HoursEditor';
+import PhoneEditor from '@/components/custom-ui/content/editors/footer/PhoneEditor';
+import EmailEditor from '@/components/custom-ui/content/editors/footer/EmailEditor';
+import OfficeEditor from '@/components/custom-ui/content/editors/footer/OfficeEditor';
+import SocialsEditor from '@/components/custom-ui/content/editors/footer/SocialsEditor';
+import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
+import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
+import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
+
 interface Props {
     section: {
         id: number;
@@ -27,79 +40,137 @@ interface Props {
 }
 
 /**
-  * Mapeo de componentes según el tipo de sección.
-  * IMPORTANTE: La llave debe coincidir EXACTAMENTE con el 'type' de la BD.
+ * Mapeo de componentes según el tipo de sección.
+ * IMPORTANTE: La llave debe coincidir EXACTAMENTE con el 'type' de la BD.
  */
 const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
-    'home_modal': ModalEditor,
-    'home_banner': BannerDinamicoEditor, 
-    'home_brands': BrandsEditor,
-    'home_promo_image': ImagenPromocionalEditor,
-    'home_promo_dynamic': ImagenesPromocionalesEditor,
-    'home_attributes': AtributosEditor,
+    // Home
+    'home_modal':           ModalEditor,
+    'home_banner':          BannerDinamicoEditor,
+    'home_brands':          BrandsEditor,
+    'home_promo_image':     ImagenPromocionalEditor,
+    'home_promo_dynamic':   ImagenesPromocionalesEditor,
+    'home_attributes':      AtributosEditor,
+    'home_section_titles':  TituloSectionEditor,
+    // Footer
+    'footer_logo_header':   LogoHeaderEditor,
+    'footer_logo_footer':   LogoFooterEditor,
+    'footer_phone':         PhoneEditor,
+    'footer_email':         EmailEditor,
+    'footer_office':        OfficeEditor,
+    'footer_hours':         HoursEditor,
+    'footer_socials':       SocialsEditor,
+    'footer_banks':         BanksEditor,
+    // Legales
+    'tyc_editor':           TermsConditionsEditor,
+    'anticorrupcion_editor':PrivacyPoliticEditor,
+    'libro_editor':         ComplaintsBookEditor,
 };
 
 export default function EditSection({ section }: Props) {
-    // Si section.type es "home_banner", ahora sí encontrará el componente
     const EditorComponent = EDITOR_COMPONENTS[section.type];
 
     return (
         <AppLayout>
-            <Head title={`Editar ${section.name}`} />
+            <Head title={`Editar · ${section.name}`} />
 
-            <div className="flex flex-1 flex-col gap-6 p-4 lg:p-8">
-                
-                {/* Cabecera de la Página */}
-                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                    <div className="flex items-center gap-4">
-                        <Link 
-                            href="/content/items" 
-                            className="rounded-full p-2 transition-colors hover:bg-slate-100 text-slate-500"
+            <div className="flex flex-1 flex-col gap-0">
+
+                {/* ── Topbar ──────────────────────────────────────────── */}
+                <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8">
+                    
+                    {/* Botón volver */}
+                    <Link
+                        href="/content/items"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                        <ArrowLeft size={15} />
+                    </Link>
+
+                    {/* Breadcrumb */}
+                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                        <Link
+                            href="/content/items"
+                            className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground sm:block"
                         >
-                            <ArrowLeft size={20} />
+                            Contenido
                         </Link>
-                        <div>
-                            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                                {section.name}
-                            </h1>
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                                {section.page?.title || 'Sección de Contenido'}
-                            </p>
-                        </div>
+                        <ChevronRight size={13} className="hidden shrink-0 text-muted-foreground/50 sm:block" />
+                        {section.page?.title && (
+                            <>
+                                <span className="hidden shrink-0 text-muted-foreground sm:block">
+                                    {section.page.title}
+                                </span>
+                                <ChevronRight size={13} className="hidden shrink-0 text-muted-foreground/50 sm:block" />
+                            </>
+                        )}
+                        <span className="truncate font-semibold text-foreground">
+                            {section.name}
+                        </span>
+                    </div>
+
+                    {/* Badge tipo */}
+                    <div className="ml-auto shrink-0">
+                        <span className="rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                            {section.type}
+                        </span>
                     </div>
                 </div>
 
-                {/* Renderizado del Editor Correspondiente */}
-                <div className="mx-auto w-full max-w-5xl">
-                    {EditorComponent ? (
-                        <EditorComponent section={section} />
-                    ) : (
-                        /* Estado vacío: Cuando no existe un editor registrado para el 'type' */
-                        <div className="flex flex-col items-center gap-6 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-24 text-center">
-                            <div className="rounded-2xl bg-white p-4 shadow-sm text-slate-400">
-                                <AlertCircle size={40} />
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-lg font-bold text-slate-900">
-                                    Editor no configurado
-                                </p>
-                                <p className="text-sm text-slate-500 max-w-xs mx-auto">
-                                    Aún no hay un componente definido para el tipo: 
-                                    <code className="ml-1 px-2 py-1 bg-slate-200 rounded text-slate-700 font-mono text-xs text-red-500 font-bold">
-                                        {section.type}
-                                    </code>
-                                </p>
-                            </div>
-                            <Link 
-                                href="/content/items"
-                                className="text-sm font-bold text-slate-900 underline underline-offset-4 hover:text-slate-700"
-                            >
-                                Volver al listado
-                            </Link>
-                        </div>
-                    )}
+                {/* ── Contenido ───────────────────────────────────────── */}
+                <div className="flex flex-1 flex-col gap-6 p-4 lg:p-8">
+
+                    {/* Título de sección */}
+                    <div className="flex flex-col gap-1">
+                        <h1 className="text-xl font-bold tracking-tight text-foreground">
+                            {section.name}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {section.page?.title
+                                ? `Editando sección de la página "${section.page.title}"`
+                                : 'Editando sección de contenido'}
+                        </p>
+                    </div>
+
+                    {/* Editor o estado vacío */}
+                    <div className="mx-auto w-full max-w-5xl">
+                        {EditorComponent ? (
+                            <EditorComponent section={section} />
+                        ) : (
+                            <NotConfigured type={section.type} />
+                        )}
+                    </div>
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+/* ── Estado vacío ─────────────────────────────────────────────────────────── */
+function NotConfigured({ type }: { type: string }) {
+    return (
+        <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-border bg-muted/30 py-24 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
+                <Puzzle size={26} className="text-muted-foreground" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+                <p className="text-base font-semibold text-foreground">
+                    Editor no configurado
+                </p>
+                <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+                    No existe un componente registrado para el tipo:
+                </p>
+                <code className="mx-auto mt-1 rounded-lg border border-border bg-muted px-3 py-1 font-mono text-xs text-destructive">
+                    {type}
+                </code>
+            </div>
+            <Link
+                href="/content/items"
+                className="mt-2 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+                <ArrowLeft size={14} />
+                Volver al listado
+            </Link>
+        </div>
     );
 }

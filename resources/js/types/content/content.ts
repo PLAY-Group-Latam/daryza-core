@@ -23,6 +23,25 @@ export interface ImagenesPromocionalesContent {
 }
 
 
+export interface TitleItem {
+  key: 'brands' | 'best_sellers' | 'pack' | 'blog';
+  label: string;
+}
+
+export interface SectionTitlesContent {
+  titles: TitleItem[];
+}
+
+
+export interface BankItem {
+  id: number;
+  image: File | string | null;
+}
+
+export interface BanksFooterContent {
+  banks: BankItem[];
+}
+
 
 export interface ModalContent {
   image: File | string | null;
@@ -63,6 +82,8 @@ export interface ContentSectionProps {
         | BannerContent
         | BrandsContent
         | ImagenesPromocionalesContent
+        | SectionTitlesContent
+        | BanksFooterContent
         | GenericContent;
     };
   };

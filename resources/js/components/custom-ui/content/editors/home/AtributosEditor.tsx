@@ -1,13 +1,13 @@
 'use client';
 
 import { useForm } from '@inertiajs/react';
-import { Save, LayoutGrid } from 'lucide-react';
+import { Save, LayoutGrid, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Upload } from '@/components/custom-ui/upload';
 import { ContentSectionProps as Props } from '../../../../../types/content/content';
+import { useRef } from 'react';
 
 interface AtributoItem {
   id: number;
@@ -25,6 +25,62 @@ const DEFAULT_ITEMS: AtributoItem[] = [
   { id: 3, icon: null, text: 'Servicio postventa comprometido contigo' },
   { id: 4, icon: null, text: 'Pagos 100% seguros y protegidos' },
 ];
+
+function IconUpload({
+  value,
+  onChange,
+}: {
+  value: File | string | null;
+  onChange: (file: File) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const preview =
+    value instanceof File
+      ? URL.createObjectURL(value)
+      : value ?? null;
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onChange(file);
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="group relative w-14 h-14 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50
+                   hover:border-primary/60 hover:bg-primary/5 transition-all overflow-hidden flex items-center justify-center"
+      >
+        {preview ? (
+          <>
+            <img
+              src={preview}
+              alt="icon"
+              className="w-full h-full object-contain p-1"
+            />
+            {/* Overlay sutil solo al hacer hover */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
+                            flex items-center justify-center rounded-xl">
+              <ImagePlus size={16} className="text-white" />
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-primary transition-colors">
+            <ImagePlus size={18} />
+            <span className="text-[9px] font-semibold uppercase tracking-wide">Subir</span>
+          </div>
+        )}
+      </button>
+    </>
+  );
+}
 
 export default function AtributosEditor({ section }: Props) {
   const rawContent = section.content?.content;
@@ -76,77 +132,77 @@ export default function AtributosEditor({ section }: Props) {
                 Configuración de {section.name}
               </h3>
               <p className="text-sm text-slate-500">
-                4 atributos destacados — cada uno con icono y texto.
+                4 atributos fijos — edita el ícono y el texto de cada uno.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Preview banner — muestra cómo se verá en el front */}
+        {/* Vista previa */}
         <div className="px-8 pt-6">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
             Vista previa
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 rounded-xl overflow-hidden border border-slate-100">
-            {items.map((item, i) => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-3 px-4 py-3 ${
-                  i % 2 === 0 ? 'bg-primary' : 'bg-slate-600'
-                }`}
-              >
-                {/* Icono preview */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                  {item.icon ? (
-                    <img
-                      src={item.icon instanceof File ? URL.createObjectURL(item.icon) : item.icon}
-                      alt=""
-                      className="w-5 h-5 object-contain"
-                    />
-                  ) : (
-                    <div className="w-4 h-4 rounded-sm bg-white/40" />
-                  )}
+            {items.map((item, i) => {
+              const preview =
+                item.icon instanceof File
+                  ? URL.createObjectURL(item.icon)
+                  : item.icon ?? null;
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 px-4 py-4 ${
+                    i % 2 === 0 ? 'bg-primary' : 'bg-slate-600'
+                  }`}
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden">
+                    {preview ? (
+                      <img src={preview} alt="" className="w-6 h-6 object-contain" />
+                    ) : (
+                      <div className="w-4 h-4 rounded bg-white/30" />
+                    )}
+                  </div>
+                  {/* ← Aquí el fix: whitespace normal + line-clamp */}
+                  <span className="text-white text-xs font-semibold leading-snug line-clamp-3 whitespace-normal break-words">
+                    {item.text || '…'}
+                  </span>
                 </div>
-                <span className="text-white text-xs font-semibold leading-tight line-clamp-2">
-                  {item.text || '…'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Items editor */}
-        <div className="p-8 space-y-4">
+        <div className="p-8 space-y-3">
           {items.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-center gap-5 p-4 rounded-xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-sm transition-all"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white
+                         hover:border-primary/30 hover:shadow-sm transition-all"
             >
-              {/* Número badge */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-500 text-sm font-bold flex items-center justify-center">
+              {/* Número */}
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center">
                 {index + 1}
               </div>
 
-              {/* Icono upload — compacto */}
-              <div className="flex-shrink-0">
-                <Label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 block">
-                  Icono
-                </Label>
-                <div className="relative w-16 h-16">
-                  <Upload
-                    value={item.icon}
-                    onFileChange={(file) => updateItem(index, { icon: file })}
-                    previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-contain !p-1.5"
-                  />
-                </div>
+              {/* Icon upload limpio */}
+              <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
+                  Ícono
+                </span>
+                <IconUpload
+                  value={item.icon}
+                  onChange={(file) => updateItem(index, { icon: file })}
+                />
               </div>
 
               {/* Divider */}
-              <div className="w-px h-14 bg-slate-200 flex-shrink-0" />
+              <div className="w-px h-12 bg-slate-200 flex-shrink-0" />
 
               {/* Texto */}
               <div className="flex-1">
-                <Label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 block">
+                <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 block">
                   Texto del atributo
                 </Label>
                 <Input

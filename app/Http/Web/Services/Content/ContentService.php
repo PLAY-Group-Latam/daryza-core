@@ -46,8 +46,9 @@ class ContentService
             $content = $this->processSingleFiles($content, $sectionId);
             $content = $this->processMediaArray($content, $sectionId);
             $content = $this->processBrandsArray($content, $sectionId);
-             $content = $this->processItemsArray($content, $sectionId);
-
+            $content = $this->processItemsArray($content, $sectionId);
+            $content = $this->processBanksArray($content, $sectionId);
+            $content = $this->processSocialsArray($content, $sectionId);
             $finalData = $this->mergeWithExisting($sectionContent->content ?? [], $content);
 
             return $sectionContent->update(['content' => $finalData]);
@@ -167,10 +168,57 @@ class ContentService
     return $content;
 }
 
+private function processBanksArray(array $content, int $sectionId): array
+{
+    if (!isset($content['banks']) || !is_array($content['banks'])) {
+        return $content;
+    }
+
+    $processed = [];
+
+    foreach ($content['banks'] as $item) {
+        if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
+            $item['image'] = $this->uploadFile($item['image'], $sectionId);
+        }
+
+        $processed[] = [
+            'id'    => $item['id'],
+            'image' => $item['image'] ?? null,
+        ];
+    }
+
+    $content['banks'] = $processed;
+    return $content;
+}
+
+private function processSocialsArray(array $content, int $sectionId): array
+{
+    if (!isset($content['socials']) || !is_array($content['socials'])) {
+        return $content;
+    }
+
+    $processed = [];
+
+    foreach ($content['socials'] as $item) {
+        if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
+            $item['image'] = $this->uploadFile($item['image'], $sectionId);
+        }
+
+        $processed[] = [
+            'id'    => $item['id'],
+            'image' => $item['image'] ?? null,
+            'url'   => $item['url'] ?? '',
+        ];
+    }
+
+    $content['socials'] = $processed;
+    return $content;
+}
+
     private function mergeWithExisting(array $existing, array $content): array
     {
         
-        $replaceableArrays = ['media', 'brands','items'];
+        $replaceableArrays = ['media', 'brands','items','banks','socials'];
 
         foreach ($replaceableArrays as $key) {
             if (isset($content[$key])) {

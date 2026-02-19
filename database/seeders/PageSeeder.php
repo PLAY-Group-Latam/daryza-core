@@ -26,22 +26,38 @@ class PageSeeder extends Seeder
             ['name' => 'Imágenes Promocionales Dinámico', 'type' => 'home_promo_dynamic'],
             ['name' => 'Items de Atributos', 'type' => 'home_attributes'],
             ['name' => 'Modal', 'type' => 'home_modal'],
+            ['name' => 'Titulos de Secciones ', 'type' => 'home_section_titles'],
         ];
 
-        foreach ($homeSections as $index => $sec) {
-            $section = PageSection::create([
-                'page_id' => $home->id,
-                'name' => $sec['name'],
-                'type' => $sec['type'],
-                'sort_order' => $index + 1,
-                'is_active' => true,
-            ]);
+        
 
-            SectionContent::create([
-                'page_section_id' => $section->id,
-                'content' => [],
-            ]);
-        }
+       foreach ($homeSections as $index => $sec) {
+    $section = PageSection::create([
+        'page_id' => $home->id,
+        'name' => $sec['name'],
+        'type' => $sec['type'],
+        'sort_order' => $index + 1,
+        'is_active' => true,
+    ]);
+
+    $defaultContent = match($sec['type']) {
+        'home_section_titles' => [
+            'titles' => [
+                ['key' => 'brands',       'label' => 'Marcas Aliadas'],
+                ['key' => 'best_sellers', 'label' => 'Los más vendidos'],
+                ['key' => 'pack',         'label' => 'Pack de Productos'],
+                ['key' => 'blog',         'label' => 'Nuestro Blog'],
+            ]
+        ],
+        default => [],
+    };
+
+    SectionContent::create([
+        'page_section_id' => $section->id,
+        'content' => $defaultContent,
+    ]);
+}
+
 
         // ==================== FOOTER ====================
         $footer = Page::create([

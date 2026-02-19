@@ -10,7 +10,9 @@ use App\Rules\Web\Content\Resolvers\BrandsFieldResolver;
 use App\Rules\Web\Content\Resolvers\DateFieldResolver;
 use App\Rules\Web\Content\Resolvers\FallbackFieldResolver;
 use App\Rules\Web\Content\Resolvers\ItemsFieldResolver;
-
+use App\Rules\Web\Content\Resolvers\BanksFieldResolver;
+use App\Rules\Web\Content\Resolvers\ImageFieldResolver;
+use App\Rules\Web\Content\Resolvers\TimeFieldResolver;
 class ContentRule implements ValidationRule
 {
     private array $resolvers;
@@ -20,9 +22,13 @@ class ContentRule implements ValidationRule
         $this->resolvers = [
             new BrandsFieldResolver(),
             new MediaFieldResolver(),
+            new TimeFieldResolver(),
             new DateFieldResolver(),
             new ItemsFieldResolver(),
+            new BanksFieldResolver(),
+            new ImageFieldResolver(),
             new FallbackFieldResolver(),
+           
         ];
     }
 
