@@ -5,6 +5,7 @@ namespace App\Http\Web\Controllers\Products;
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
+use App\Http\Web\Resources\MetadataResource;
 use App\Http\Web\Services\Products\ProductCategoryService;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
@@ -81,30 +82,22 @@ class ProductController extends Controller
       'is_active' => $product->is_active,
       'is_home' => $product->is_home,
 
-      'metadata' => $product->metadata ? [
-        'meta_title' => $product->metadata->meta_title,
-        'meta_description' => $product->metadata->meta_description,
-        'canonical_url' => $product->metadata->canonical_url,
-        'og_title' => $product->metadata->og_title,
-        'og_description' => $product->metadata->og_description,
-        'noindex' => (bool) $product->metadata->noindex,
-        'nofollow' => (bool) $product->metadata->nofollow,
-      ] : null,
+      'metadata' => $product->metadata
+        ? (new MetadataResource($product->metadata))->toArray(request())
+        : null,
 
       'variants' => $product->variants->map(function ($variant) {
         return [
           'sku' => $variant->sku,
           'sku_supplier' => $variant->sku_supplier,
-          'price' => (float) $variant->price,
-          'promo_price' => $variant->promo_price
-            ? (float) $variant->promo_price
-            : null,
-          'is_on_promo' => (bool) $variant->is_on_promo,
-          'promo_start_at' => optional($variant->promo_start_at)?->toISOString(),
-          'promo_end_at' => optional($variant->promo_end_at)?->toISOString(),
-          'stock' => (int) $variant->stock,
-          'is_active' => true,
-          'is_main' => (bool) $variant->is_main,
+          'price'          => $variant->price,
+          'promo_price'    => $variant->promo_price,
+          'is_on_promo'    => $variant->is_on_promo,
+          'promo_start_at' => $variant->promo_start_at?->toISOString(),
+          'promo_end_at'   => $variant->promo_end_at?->toISOString(),
+          'stock'          => $variant->stock,
+          'is_active'      => $variant->is_active,
+          'is_main'        => $variant->is_main,
           'media' => $variant->media,
 
 
@@ -121,7 +114,7 @@ class ProductController extends Controller
             'value' => $spec->value, // Como acordamos, solo manejamos string
           ])->values(),
 
-          'specification_selector' => '', // Valor
+          // 'specification_selector' => '', // Valor
         ];
       })->values(),
 

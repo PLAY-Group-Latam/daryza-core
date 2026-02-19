@@ -56,4 +56,31 @@ class ProductController extends Controller
 
         return $this->success('Productos listados correctamente', $products);
     }
+
+    /**
+     * Productos destacados para la Home (Límite fijo y optimizado)
+     */
+    public function home(Request $request)
+    {
+        // Definimos un límite (por defecto 8, máximo 12 para no saturar)
+        $limit = min($request->input('limit', 5), 10);
+
+        $products = Product::query()
+            ->select('id', 'name', 'slug')
+            ->home()
+            ->has('mainVariant')
+            ->with([
+                'mainVariant' => function ($q) {
+                    $q->select('id', 'product_id', 'price', 'promo_price', 'is_on_promo');
+                },
+                'mainVariant.mainImage' => function ($q) {
+                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path');
+                }
+            ])
+            ->latest() // Traer los más nuevos
+            ->take($limit)
+            ->get(); // Usamos get() porque en la Home no solemos paginar
+
+        return $this->success('Productos para Home listados correctamente', $products);
+    }
 }

@@ -14,6 +14,7 @@ import products from '@/routes/products';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
+import { Media } from '@/types/products/media';
 import { ProductEdit } from '@/types/products/product';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
@@ -135,7 +136,7 @@ export default function FormProduct({
         },
     });
 
-    const mapMediaToEdit = (media: any[] = []) => {
+    const mapMediaToEdit = (media: Media[] = []) => {
         return media.map((m) => m.file_path); // 🔥 SOLO URL
     };
 
@@ -146,8 +147,9 @@ export default function FormProduct({
                 slug: product.slug,
                 categories: product.categories || [],
                 business_lines: product.business_lines || [], // <--- Agregar esto
-                brief_description: product.brief_description,
-                description: product.description,
+                // DENTRO DEL useEffect -> reset
+                brief_description: product.brief_description ?? '', // Agrega el ?? ''
+                description: product.description ?? '', // Agrega el ?? ''
                 is_active: product.is_active,
                 is_home: product.is_home ?? false, // ✅ Mapear desde el backend
 

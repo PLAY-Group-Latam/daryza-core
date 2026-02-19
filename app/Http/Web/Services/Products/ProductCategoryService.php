@@ -135,12 +135,7 @@ class ProductCategoryService
     {
         return ProductCategory::roots()
             ->active()
-            ->whereHas('children', function ($query) {
-                $query->active();
-            })
-            ->with(['children' => function ($query) {
-                $query->active()->orderBy('order')->select('id', 'name', 'parent_id', 'order');
-            }])
+            ->withWhereHas('children', fn($q) => $q->active()->orderBy('order')->select('id', 'name', 'parent_id', 'order'))
             ->orderBy('order')
             ->get(['id', 'name', 'parent_id', 'order']);
     }
