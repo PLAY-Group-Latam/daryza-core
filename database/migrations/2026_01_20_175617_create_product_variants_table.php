@@ -23,8 +23,8 @@ return new class extends Migration
             $table->boolean('is_on_promo')->default(false);
             $table->timestamp('promo_start_at')->nullable();
             $table->timestamp('promo_end_at')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_main')->default(false);
+            $table->boolean('is_active')->default(true)->index(); // Indexar estados
+            $table->boolean('is_main')->default(false)->index();
             $table->integer('stock')->default(0);
             $table->timestamps();
             $table->softDeletes();

@@ -6,13 +6,14 @@ use App\Http\Web\Controllers\Products\DynamicCategoryController;
 use App\Http\Web\Controllers\Products\ProductCategoryController;
 use App\Http\Web\Controllers\Products\ProductController;
 use App\Http\Web\Controllers\Products\ProductExcelController;
+use App\Http\Web\Controllers\Products\ProductPackController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('productos')->name('products.')->middleware('auth')->group(function () {
   Route::resource('categorias', ProductCategoryController::class)
     ->names('categories')
     ->parameters([
-      'categorias' => 'categories',
+      'categorias' => 'category',
     ]);
 
   Route::get('items/import', [ProductExcelController::class, 'showForm'])
@@ -33,6 +34,10 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
     ->parameters([
       'lineas-de-negocio' => 'businessLine',
     ]);
+
+  Route::resource('packs', ProductPackController::class)->parameters([
+    'packs' => 'pack', // Coincide con el Type-hinting del controlador
+  ]);
 
   Route::resource('categorias-dinamicas', DynamicCategoryController::class)
     ->names('dynamic-categories')

@@ -23,7 +23,7 @@ class AttributeController extends Controller
       ->latest()
       ->paginate($perPage);
 
-// Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
+    // Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
 
 
     return Inertia::render('products/attributes/Index', [
@@ -67,45 +67,45 @@ class AttributeController extends Controller
       ->with('success', 'Atributo creado correctamente.');
   }
 
-/**
- * Página para editar atributo
- */
-public function edit(Attribute $attribute)
-{
+  /**
+   * Página para editar atributo
+   */
+  public function edit(Attribute $attribute)
+  {
     return Inertia::render('products/attributes/Edit', [
-        'attribute' => $attribute->load('values'), // cargamos los valores existentes
-        'types' => AttributeType::options(),
+      'attribute' => $attribute->load('values'), // cargamos los valores existentes
+      'types' => AttributeType::options(),
     ]);
-}
+  }
 
-public function update(UpdateAttributeRequest $request, Attribute $attribute)
-{
+  public function update(UpdateAttributeRequest $request, Attribute $attribute)
+  {
     $data = $request->validated();
 
     DB::transaction(function () use ($attribute, $data) {
-        // Actualizamos el atributo
-        $attribute->update($data);
+      // Actualizamos el atributo
+      $attribute->update($data);
 
-        // Si es tipo SELECT, actualizamos los valores
-        if ($attribute->type === AttributeType::SELECT) {
-            // Eliminamos valores antiguos
-            $attribute->values()->delete();
+      // Si es tipo SELECT, actualizamos los valores
+      if ($attribute->type === AttributeType::SELECT) {
+        // Eliminamos valores antiguos
+        $attribute->values()->delete();
 
-            // Creamos nuevos valores
-            if (!empty($data['values'])) {
-                foreach ($data['values'] as $value) {
-                    $attribute->values()->create([
-                        'value' => $value,
-                    ]);
-                }
-            }
+        // Creamos nuevos valores
+        if (!empty($data['values'])) {
+          foreach ($data['values'] as $value) {
+            $attribute->values()->create([
+              'value' => $value,
+            ]);
+          }
         }
+      }
     });
 
     return redirect()
-        ->route('products.attributes.index')
-        ->with('success', 'Atributo actualizado correctamente.');
-}
+      ->route('products.attributes.index')
+      ->with('success', 'Atributo actualizado correctamente.');
+  }
   /**
    * Eliminar un atributo
    */

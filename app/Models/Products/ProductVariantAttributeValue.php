@@ -26,11 +26,18 @@ class ProductVariantAttributeValue extends Model
   }
 
   /**
-   * Valor del atributo (ej: Rojo, Azul, XL)
+   * Valor del atributo (ej: Rojo, Azul, XL) esto se borra y se usa option
    */
   public function attributeValue()
   {
     return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
   }
-
+  /**
+   * El valor real del atributo (ej: Rojo, XL).
+   * Cambiamos el nombre a 'option' para que sea más corto y claro.
+   */
+  public function option()
+  {
+    return $this->belongsTo(AttributesValue::class, 'attribute_value_id');
+  }
 }

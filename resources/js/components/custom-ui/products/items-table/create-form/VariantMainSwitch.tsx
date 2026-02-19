@@ -37,7 +37,7 @@ export function VariantMainSwitch({ index }: Props) {
     };
 
     return (
-        <div className="mt-2 flex items-center gap-2 md:mt-0">
+        <div className="mt-2 flex items-end gap-2 md:mt-0">
             <Switch checked={!!isMain} onCheckedChange={handleMainChange} />
             <span className="text-xs">Principal</span>
         </div>

@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { filterTree, flattenTree } from '@/lib/utils/category-tree';
-import { CategorySelect } from '@/types/products';
+import { CategorySelect } from '@/types/products/categories';
 import { ChevronDown, X } from 'lucide-react';
 import * as React from 'react';
 import { TreeItem } from './TreeItem';
@@ -68,7 +68,7 @@ export function CategoryTreeSelect({
                     variant="outline"
                     role="combobox"
                     className={cn(
-                        'h-auto min-h-10 w-full justify-between px-3 py-2 text-left',
+                        'h-auto min-h-10 w-full justify-between rounded-xl px-3 py-2 text-left',
                         value.length > 0 ? 'bg-background' : '',
                     )}
                 >

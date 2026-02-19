@@ -3,21 +3,18 @@
 namespace App\Models\Products;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DynamicCategory extends Model
 {
-  use HasFactory, HasUlids;
-
-  protected $table = 'dynamic_categories';
+  use HasFactory, HasUlids, SoftDeletes;
 
   protected $fillable = [
     'name',
     'slug',
-    'banner_image',
     'is_active',
     'starts_at',
     'ends_at',
@@ -30,58 +27,11 @@ class DynamicCategory extends Model
   ];
 
   /**
-   * Relación con Productos (Muchos a Muchos)
-   * Usamos el método ->using() para que Laravel genere el ULID de la tabla pivote automáticamente.
+   * Relación con los items vinculados.
+   * Usamos esto para el with(['items.variant.product'])
    */
-  // public function products(): BelongsToMany
-  // {
-  //     return $this->belongsToMany(
-  //         Product::class,
-  //         'product_dynamic_category',
-  //         'dynamic_category_id',
-  //         'product_id'
-  //     )
-  //     ->using(DynamicCategoryPivot::class)
-  //     ->withTimestamps();
-  // }
-
-  // En DynamicCategory.php
-  public function products(): BelongsToMany
+  public function items(): HasMany
   {
-    return $this->belongsToMany(
-      Product::class,              // Apuntamos al Producto padre
-      'product_dynamic_category',  // Tabla pivote
-      'dynamic_category_id',
-      'product_id'                 // ID del producto guardado en el pivote
-    )
-      ->using(DynamicCategoryPivot::class)
-      ->withTimestamps();
-  }
-
-  // public function variants(): BelongsToMany
-  // {
-  //   return $this->belongsToMany(
-  //     ProductVariant::class, // El modelo relacionado
-  //     'product_dynamic_category', // La tabla pivote
-  //     'dynamic_category_id', // FK en pivote para este modelo
-  //     'product_id' // <--- CAMBIAR ESTO: Es el nombre que pusiste en tu migración
-  //   )
-  //     ->using(DynamicCategoryPivot::class)
-  //     ->withTimestamps();
-  // }
-
-  /**
-   * Scope para filtrar categorías que están vigentes según la fecha actual.
-   */
-  public function scopeCurrent($query)
-  {
-    $now = now();
-    return $query->where('is_active', true)
-      ->where(function ($q) use ($now) {
-        $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
-      })
-      ->where(function ($q) use ($now) {
-        $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
-      });
+    return $this->hasMany(DynamicCategoryItem::class, 'dynamic_category_id');
   }
 }

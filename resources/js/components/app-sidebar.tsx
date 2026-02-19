@@ -71,6 +71,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Dinámicas de Negocio',
                 href: '/productos/categorias-dinamicas',
             },
+            {
+                title: 'Lista de Packs',
+                href: '/productos/packs',
+            },
         ],
     },
     {

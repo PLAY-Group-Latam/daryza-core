@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import DynamicCategoriesForm from '@/components/custom-ui/products/dynamicCategories/DynamicCategoriesForm';
+import CreateDynamicCategoryForm from '@/components/custom-ui/products/dynamicCategories/CreateDynamicCategoryForm';
 import AppLayout from '@/layouts/app-layout';
+import { SearchResult } from '@/types/products/packs';
 import { PageProps } from '@inertiajs/core';
 import { Head, usePage } from '@inertiajs/react';
 
 interface CreateProps extends PageProps {
-    searchResults?: any[];
+    searchResults?: SearchResult[];
     filters?: { q?: string };
 }
 
@@ -14,13 +14,9 @@ export default function Create() {
 
     return (
         <AppLayout>
-            <Head title="Crear Línea de Negocio" />
-            <div className="p-6">
-                <h1 className="mb-6 text-2xl font-bold">
-                    Nueva Categoría Especial
-                </h1>
-
-                <DynamicCategoriesForm
+            <Head title="Crear Categoría Dinámica" />
+            <div>
+                <CreateDynamicCategoryForm
                     searchResults={searchResults || []}
                     filters={filters} // Cambiado para coincidir con la interfaz del hijo
                 />

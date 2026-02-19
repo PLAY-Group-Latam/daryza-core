@@ -28,19 +28,4 @@ class AttributesValue extends Model
     {
         return $this->belongsTo(Attribute::class, 'attribute_id');
     }
-
-
-    /**
-     * Variantes de producto que tienen este valor
-     * Ej: Variante Roja, Variante Azul
-     */
-    // public function productVariants()
-    // {
-    //     return $this->belongsToMany(
-    //         ProductVariant::class,
-    //         'product_variant_attribute_values',
-    //         'attribute_value_id',
-    //         'product_variant_id'
-    //     )->withTimestamps();
-    // }
 }

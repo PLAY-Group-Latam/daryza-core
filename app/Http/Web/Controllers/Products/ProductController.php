@@ -2,16 +2,15 @@
 
 namespace App\Http\Web\Controllers\Products;
 
-use App\Enums\OgType;
 use App\Http\Web\Controllers\Controller;
-use App\Http\Web\Requests\Products\StoreProductImportRequest;
 use App\Http\Web\Requests\Products\StoreProductRequest;
 use App\Http\Web\Requests\Products\UpdateProductRequest;
+use App\Http\Web\Resources\MetadataResource;
+use App\Http\Web\Services\Products\ProductCategoryService;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\Product;
-use App\Models\Products\ProductCategory;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -19,13 +18,17 @@ class ProductController extends Controller
 {
 
   protected ProductService $productService;
+  protected ProductCategoryService $categoryService;
+
   /**
    * Inyectamos el servicio en el constructor
    */
-  public function __construct(ProductService $productService)
+  public function __construct(ProductService $productService, ProductCategoryService $categoryService)
   {
     $this->productService = $productService;
+    $this->categoryService = $categoryService;
   }
+
 
 
 
@@ -35,16 +38,13 @@ class ProductController extends Controller
     $perPage = request()->input('per_page', 10);
 
     $products = Product::with([
-      'categories',
       'variants' => function ($q) {
         $q->with([
-          'attributeValues.attribute',
+          'attributes.attribute',
           'media',
         ]);
       },
-      'technicalSheets',
-      'specifications.attribute',
-      'metadata',
+
     ])
       ->latest()
       ->paginate($perPage);
@@ -62,10 +62,10 @@ class ProductController extends Controller
       'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
-      'variants.variantAttributeValues.attributeValue.attribute',
+      'variants.selections.attributeValue', // ← Usamos selections
       'variants.media',
-      'specifications.attribute',
-      'specifications.attributeValue',
+      'variants.specifications.attribute',
+
     ]);
     Log::info('[Product EDIT] Loaded product', [
       'product' => $product->toArray(),
@@ -80,47 +80,48 @@ class ProductController extends Controller
       'brief_description' => $product->brief_description,
       'description' => $product->description,
       'is_active' => $product->is_active,
+      'is_home' => $product->is_home,
 
-      'metadata' => $product->metadata ? [
-        'meta_title' => $product->metadata->meta_title,
-        'meta_description' => $product->metadata->meta_description,
-        'canonical_url' => $product->metadata->canonical_url,
-        'og_title' => $product->metadata->og_title,
-        'og_description' => $product->metadata->og_description,
-        'noindex' => (bool) $product->metadata->noindex,
-        'nofollow' => (bool) $product->metadata->nofollow,
-      ] : null,
+      'metadata' => $product->metadata
+        ? (new MetadataResource($product->metadata))->toArray(request())
+        : null,
 
       'variants' => $product->variants->map(function ($variant) {
         return [
           'sku' => $variant->sku,
-          'price' => (float) $variant->price,
-          'promo_price' => $variant->promo_price
-            ? (float) $variant->promo_price
-            : null,
-          'is_on_promo' => (bool) $variant->is_on_promo,
-          'promo_start_at' => optional($variant->promo_start_at)?->toISOString(),
-          'promo_end_at' => optional($variant->promo_end_at)?->toISOString(),
-          'stock' => (int) $variant->stock,
-          'is_active' => true,
-          'is_main' => (bool) $variant->is_main,
+          'sku_supplier' => $variant->sku_supplier,
+          'price'          => $variant->price,
+          'promo_price'    => $variant->promo_price,
+          'is_on_promo'    => $variant->is_on_promo,
+          'promo_start_at' => $variant->promo_start_at?->toISOString(),
+          'promo_end_at'   => $variant->promo_end_at?->toISOString(),
+          'stock'          => $variant->stock,
+          'is_active'      => $variant->is_active,
+          'is_main'        => $variant->is_main,
           'media' => $variant->media,
 
-          // 👇 ZOD-COMPATIBLE
-          'attributes' => $variant->attributeValues->map(function ($attrValue) {
+
+          'attributes' => $variant->selections->map(function ($sel) {
             return [
-              'attribute_id' => $attrValue->attribute->id,
-              'attribute_value_id' => $attrValue->id,
-              'value' => $attrValue->value,
+              'attribute_id' => $sel->attributeValue->attribute_id,
+              'attribute_value_id' => $sel->attribute_value_id,
+
             ];
           })->values(),
+          // ✅ NUEVO: Especificaciones técnicas mapeadas DENTRO de la variante
+          'specifications' => $variant->specifications->map(fn($spec) => [
+            'attribute_id' => $spec->attribute_id,
+            'value' => $spec->value, // Como acordamos, solo manejamos string
+          ])->values(),
+
+          // 'specification_selector' => '', // Valor
         ];
       })->values(),
 
       'variant_attribute_ids' => $product->variants
         ->flatMap(
           fn($variant) =>
-          $variant->attributeValues
+          $variant->attributes
             ->map(fn($attrValue) => $attrValue->attribute->id)
         )
         ->unique()
@@ -133,15 +134,10 @@ class ProductController extends Controller
           'file_path' => $sheet->file_path,
         ];
       })->values(),
-      'specifications' => $product->specifications->map(fn($spec) => [
-        'attribute_id' => $spec->attribute_id,
-        'value' => $spec->value,
-      ])->values(),
+
     ];
-    $categoriesForSelect = ProductCategory::roots()
-      ->active()
-      ->with('activeChildren')
-      ->get(['id', 'name', 'parent_id', 'order']);
+    $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
+
 
     $attributes = Attribute::with(['values'])->get();
     $businessLines = BusinessLine::where('is_active', true)
@@ -163,10 +159,7 @@ class ProductController extends Controller
   public function create()
   {
     // Necesitas categorías para el select
-    $categoriesForSelect = ProductCategory::roots()
-      ->active()
-      ->with('activeChildren')
-      ->get(['id', 'name', 'parent_id', 'order']);
+    $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
 
     $attributes = Attribute::with(['values'])
       ->get();
@@ -210,11 +203,22 @@ class ProductController extends Controller
    * Eliminar una categoría
    * (gracias al cascade se borran sus hijas)
    */
-  public function destroy($id)
-  {
-    $category = Product::findOrFail($id);
-    $category->delete();
 
-    return back()->with('success', 'Categoría eliminada correctamente.');
+  public function destroy(Product $product)
+  {
+    try {
+      // Ejecutamos la lógica senior desde el servicio
+      $this->productService->delete($product);
+
+      return redirect()
+        ->route('products.items.index')
+        ->with('success', 'El producto ha sido movido a la papelera y desvinculado de sus categorías.');
+    } catch (\Exception $e) {
+      Log::error("Error al eliminar producto [{$product->id}]: " . $e->getMessage());
+
+      return back()->withErrors([
+        'message' => 'No se pudo eliminar el producto correctamente.'
+      ]);
+    }
   }
 }

@@ -1,32 +1,32 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { usePage } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 export const useFlashMessage = () => {
-    const { flash, errors } = usePage().props as {
-        flash?: {
-            success?: string;
-            error?: string;
-        };
-        errors?: Record<string, string>;
-    };
-    const shownRef = useRef<Set<string>>(new Set());
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string };
+    const errors = props.errors as Record<string, string>;
 
     useEffect(() => {
-        if (flash?.success && !shownRef.current.has(flash.success)) {
-            shownRef.current.add(flash.success);
+        // 1. Mensajes Flash de Sesión
+        if (flash?.success) {
             toast.success(flash.success);
         }
 
-        if (flash?.error && !shownRef.current.has(flash.error)) {
-            shownRef.current.add(flash.error);
+        if (flash?.error) {
             toast.error(flash.error);
         }
 
-        const firstError = errors && Object.values(errors)[0];
-        if (firstError && !shownRef.current.has(firstError)) {
-            shownRef.current.add(firstError);
-            toast.error(firstError);
+        // 2. Errores de Validación (Todos)
+        const errorEntries = Object.entries(errors);
+
+        if (errorEntries.length > 0) {
+            errorEntries.forEach(([_, message]) => {
+                // Mostramos un toast por cada error
+                toast.error(message);
+                // Si quieres ser más específico: toast.error(`${field}: ${message}`);
+            });
         }
-    }, [flash?.success, flash?.error, errors]);
+    }, [flash, errors]);
 };
