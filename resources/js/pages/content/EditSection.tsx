@@ -13,12 +13,8 @@ import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/
 import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
 import TituloSectionEditor from '@/components/custom-ui/content/editors/home/TitleSectionEditor';
 import LogoHeaderEditor from '@/components/custom-ui/content/editors/footer/LogoHeaderEditor';
-import BanksEditor from '@/components/custom-ui/content/editors/footer/BankIconFooter';
+import ContactInfoEditor from '@/components/custom-ui/content/editors/footer/ContanctInfoEdito';
 import LogoFooterEditor from '@/components/custom-ui/content/editors/footer/LogoFooterEditor';
-import HoursEditor from '@/components/custom-ui/content/editors/footer/HoursEditor';
-import PhoneEditor from '@/components/custom-ui/content/editors/footer/PhoneEditor';
-import EmailEditor from '@/components/custom-ui/content/editors/footer/EmailEditor';
-import OfficeEditor from '@/components/custom-ui/content/editors/footer/OfficeEditor';
 import SocialsEditor from '@/components/custom-ui/content/editors/footer/SocialsEditor';
 import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
 import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
@@ -51,16 +47,13 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'home_promo_image':     ImagenPromocionalEditor,
     'home_promo_dynamic':   ImagenesPromocionalesEditor,
     'home_attributes':      AtributosEditor,
-    'home_section_titles':  TituloSectionEditor,
+    'home_section_title':  TituloSectionEditor,
     // Footer
     'footer_logo_header':   LogoHeaderEditor,
     'footer_logo_footer':   LogoFooterEditor,
-    'footer_phone':         PhoneEditor,
-    'footer_email':         EmailEditor,
-    'footer_office':        OfficeEditor,
-    'footer_hours':         HoursEditor,
+    'footer_contact_info':  ContactInfoEditor,
     'footer_socials':       SocialsEditor,
-    'footer_banks':         BanksEditor,
+   
     // Legales
     'tyc_editor':           TermsConditionsEditor,
     'anticorrupcion_editor':PrivacyPoliticEditor,
@@ -77,7 +70,7 @@ export default function EditSection({ section }: Props) {
             <div className="flex flex-1 flex-col gap-0">
 
                 {/* ── Topbar ──────────────────────────────────────────── */}
-                <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8">
+                <div className="sticky top-0 z-20 flex items-center gap-3  bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8">
                     
                     {/* Botón volver */}
                     <Link
@@ -110,11 +103,7 @@ export default function EditSection({ section }: Props) {
                     </div>
 
                     {/* Badge tipo */}
-                    <div className="ml-auto shrink-0">
-                        <span className="rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                            {section.type}
-                        </span>
-                    </div>
+                   
                 </div>
 
                 {/* ── Contenido ───────────────────────────────────────── */}

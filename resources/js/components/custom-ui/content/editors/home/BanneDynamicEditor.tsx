@@ -3,375 +3,319 @@
 import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useForm } from '@inertiajs/react';
 import {
-    Eye,
-    EyeOff,
-    ImageIcon,
-    Layout,
-    Link,
-    Plus,
-    Save,
-    Trash2,
-    Video,
-    Monitor,
-    Smartphone,
+    Eye, EyeOff, GripVertical, ImageIcon, Layout,
+    Link2, Monitor, Plus, Save, Smartphone, Trash2, Video,
 } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-    BannerContent,
-    ContentSectionProps,
-    MediaItem,
-} from '../../../../../types/content/content';
+import { ContentSectionProps } from '@/types/content/content';
 
-export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
-    const normalizeMediaArray = (rawContent: any): BannerContent => {
-        if (!rawContent || !Array.isArray(rawContent.media)) {
-            return {
-                media: [{ src: '', type: 'image', device: 'desktop' }],
-                is_visible: true,
-            };
-        }
+// ── Tipos ────────────────────────────────────────────────────────────────────
+type SlideType = 'image' | 'video' | 'url';
 
-        const itemsWithDevice = rawContent.media.filter((m: any) => m.device && !m.src);
-        const itemsWithSrc = rawContent.media.filter((m: any) => m.src);
+interface Slide {
+    id:          number;
+    type:        SlideType;
+    is_active:   boolean;
+    src_desktop: File | string | null;  // upload real
+    src_mobile:  File | string | null;  // upload real
+    src_video:   File | string | null;  // upload real
+    link_url:    string;                // solo en tab "url"
+}
 
-        const wellFormatted = rawContent.media.filter((m: any) => m.src && m.device);
-        if (wellFormatted.length > 0) {
-            return {
-                ...rawContent,
-                media: wellFormatted,
-                is_visible: rawContent.is_visible ?? true,
-            };
-        }
+interface BannerContent { slides: Slide[] }
 
-        const normalized = itemsWithSrc.map((srcItem: any, index: number) => ({
-            src: srcItem.src,
-            type: itemsWithDevice[index]?.type || 'image',
-            device: itemsWithDevice[index]?.device || 'desktop',
-            link_url: rawContent.link_url,
-        }));
-
-        return {
-            media: normalized.length > 0
-                ? normalized
-                : [{ src: '', type: 'image', device: 'desktop' }],
-            is_visible: rawContent.is_visible ?? true,
-            link_url: rawContent.link_url,
-        };
+function newSlide(): Slide {
+    return {
+        id: Date.now(), type: 'image', is_active: true,
+        src_desktop: null, src_mobile: null, src_video: null, link_url: '',
     };
+}
 
-    const initialContent: BannerContent = normalizeMediaArray(section.content?.content);
+function normalize(raw: any): BannerContent {
+    if (raw?.slides && Array.isArray(raw.slides)) return raw as BannerContent;
+    return { slides: [newSlide()] };
+}
 
-    const { data, setData, put, processing } = useForm<{
-        content: BannerContent;
-    }>({
-        content: initialContent,
+const TYPE_TABS: { key: SlideType; label: string; Icon: React.ElementType }[] = [
+    { key: 'image', label: 'Imagen',     Icon: ImageIcon },
+    { key: 'video', label: 'Video',      Icon: Video     },
+    { key: 'url',   label: 'Imagen URL', Icon: Link2     },
+];
+
+// ── SlideCard ─────────────────────────────────────────────────────────────────
+function SlideCard({
+    slide, index, isDragOver,
+    onDragStart, onDragOver, onDrop, onDragEnd,
+    onChange, onRemove, canRemove,
+}: {
+    slide: Slide; index: number; isDragOver: boolean;
+    onDragStart: () => void;
+    onDragOver: (e: React.DragEvent) => void;
+    onDrop: (e: React.DragEvent) => void;
+    onDragEnd: () => void;
+    onChange: (s: Slide) => void;
+    onRemove: () => void;
+    canRemove: boolean;
+}) {
+    const set = (patch: Partial<Slide>) => onChange({ ...slide, ...patch });
+
+    return (
+        <div
+            draggable
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragEnd={onDragEnd}
+            className={`rounded-2xl border bg-white shadow-sm transition-all select-none
+                ${isDragOver
+                    ? 'border-primary/50 bg-primary/5 shadow-lg scale-[1.01]'
+                    : 'border-slate-200 hover:border-slate-300'}
+                ${!slide.is_active ? 'opacity-50' : ''}`}
+        >
+            {/* ── Cabecera ── */}
+            <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-3 rounded-t-2xl">
+                <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors">
+                    <GripVertical size={18} />
+                </div>
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 flex-shrink-0">
+                    {index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">Slide #{index + 1}</p>
+                    <p className="text-[10px] text-slate-400">
+                        {slide.type === 'image' ? 'Imagen' : slide.type === 'video' ? 'Video' : 'Imagen URL'}
+                        {' · '}{slide.is_active ? 'Activo' : 'Inactivo'}
+                    </p>
+                </div>
+
+                {/* Toggle activo/inactivo */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {slide.is_active
+                        ? <Eye size={14} className="text-green-500" />
+                        : <EyeOff size={14} className="text-slate-400" />}
+                    <Switch
+                        checked={slide.is_active}
+                        onCheckedChange={(v) => set({ is_active: v })}
+                    />
+                </div>
+
+                {canRemove && (
+                    <button type="button" onClick={onRemove}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all flex-shrink-0">
+                        <Trash2 size={13} />
+                    </button>
+                )}
+            </div>
+
+            {/* ── Cuerpo ── */}
+            <div className="p-5 space-y-5">
+
+                {/* Tabs tipo */}
+                <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+                    {TYPE_TABS.map(({ key, label, Icon }) => (
+                        <button key={key} type="button" onClick={() => set({ type: key })}
+                            className={`flex flex-1 items-center justify-center gap-2 py-2 text-sm font-medium transition-colors
+                                ${slide.type === key
+                                    ? 'bg-slate-900 text-white'
+                                    : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
+                            <Icon size={14} />{label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── IMAGEN: 2 uploads reales, sin link ── */}
+                {slide.type === 'image' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                <Monitor size={12} /> Imagen Desktop
+                            </Label>
+                            <Upload
+                                value={slide.src_desktop}
+                                onFileChange={(file) => set({ src_desktop: file })}
+                                accept="image/*" placeholder="Subir imagen" type="image"
+                                previewClassName="w-full aspect-video rounded-xl object-cover border border-dashed border-slate-200"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                <Smartphone size={12} /> Imagen Mobile
+                            </Label>
+                            <Upload
+                                value={slide.src_mobile}
+                                onFileChange={(file) => set({ src_mobile: file })}
+                                accept="image/*" placeholder="Subir imagen" type="image"
+                                previewClassName="w-full aspect-video rounded-xl object-cover border border-dashed border-slate-200"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* ── VIDEO: 1 upload real, sin link ── */}
+                {slide.type === 'video' && (
+                    <div className="space-y-1.5">
+                        <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <Video size={12} /> Video Promocional
+                        </Label>
+                        <Upload
+                            value={slide.src_video}
+                            onFileChange={(file) => set({ src_video: file })}
+                            accept="video/*" placeholder="Subir video" type="video"
+                            previewClassName="w-full aspect-video rounded-xl object-cover border border-dashed border-slate-200"
+                        />
+                        <p className="text-[10px] text-slate-400">El video se mostrará en desktop y mobile</p>
+                    </div>
+                )}
+
+                {/* ── IMAGEN URL: 2 uploads reales + 1 input de link de redirección ── */}
+                {slide.type === 'url' && (
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                    <Monitor size={12} /> Imagen Desktop
+                                </Label>
+                                <Upload
+                                    value={slide.src_desktop}
+                                    onFileChange={(file) => set({ src_desktop: file })}
+                                    accept="image/*" placeholder="Subir imagen" type="image"
+                                    previewClassName="w-full aspect-video rounded-xl object-cover border border-dashed border-slate-200"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                    <Smartphone size={12} /> Imagen Mobile
+                                </Label>
+                                <Upload
+                                    value={slide.src_mobile}
+                                    onFileChange={(file) => set({ src_mobile: file })}
+                                    accept="image/*" placeholder="Subir imagen" type="image"
+                                    previewClassName="w-full aspect-video rounded-xl object-cover border border-dashed border-slate-200"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Input de URL de redirección */}
+                        <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                <Link2 size={12} /> Enlace de redirección al hacer clic
+                            </Label>
+                            <Input
+                                value={slide.link_url}
+                                onChange={(e) => set({ link_url: e.target.value })}
+                                placeholder="https://ejemplo.com/promo"
+                                className="text-sm"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ── Editor principal ──────────────────────────────────────────────────────────
+export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
+    const raw = section.content?.content;
+    const { data, setData, put, processing } = useForm<{ content: BannerContent }>({
+        content: normalize(raw),
     });
 
-    const updateField = <K extends keyof BannerContent>(
-        key: K,
-        value: BannerContent[K],
-    ) => {
-        setData('content', { ...data.content, [key]: value });
+    const dragIndex = useRef<number | null>(null);
+    const [dragOver, setDragOver] = useState<number | null>(null);
+
+    const setSlides = (slides: Slide[]) => setData('content', { slides });
+    const addSlide  = () => setSlides([...data.content.slides, newSlide()]);
+    const removeSlide = (i: number) => {
+        if (data.content.slides.length === 1) { toast.error('Debe haber al menos un slide'); return; }
+        setSlides(data.content.slides.filter((_, idx) => idx !== i));
+    };
+    const updateSlide = (i: number, s: Slide) => {
+        const slides = [...data.content.slides];
+        slides[i] = s;
+        setSlides(slides);
     };
 
-    const updateMediaItem = (index: number, newItem: MediaItem) => {
-        const newMedia = [...data.content.media];
-        newMedia[index] = newItem;
-        setData('content', { ...data.content, media: newMedia });
-    };
-
-    const addMediaItem = () => {
-        setData('content', {
-            ...data.content,
-            media: [
-                ...data.content.media,
-                { src: '', type: 'image', device: 'desktop' },
-            ],
-        });
-    };
-
-    const removeMediaItem = (index: number) => {
-        if (data.content.media.length === 1) {
-            toast.error('Debe haber al menos un elemento');
-            return;
-        }
-        const newMedia = [...data.content.media];
-        newMedia.splice(index, 1);
-        setData('content', { ...data.content, media: newMedia });
+    const handleDragStart = (i: number) => { dragIndex.current = i; };
+    const handleDragOver  = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOver(i); };
+    const handleDragEnd   = () => { dragIndex.current = null; setDragOver(null); };
+    const handleDrop      = (e: React.DragEvent, dropIdx: number) => {
+        e.preventDefault();
+        if (dragIndex.current === null || dragIndex.current === dropIdx) { setDragOver(null); return; }
+        const slides = [...data.content.slides];
+        const [dragged] = slides.splice(dragIndex.current, 1);
+        slides.splice(dropIdx, 0, dragged);
+        setSlides(slides);
+        dragIndex.current = null;
+        setDragOver(null);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(
-            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
-            {
-                forceFormData: true,
-                onSuccess: () => toast.success('¡Banner Dinámico actualizado!'),
-            },
-        );
+        console.log('Submitting banner with content:', data.content);
+        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success('¡Banner actualizado!'),
+            onError:   () => toast.error('Error al guardar'),
+        });
     };
 
     return (
-        <form onSubmit={handleSubmit} className="mx-auto max-w-6xl space-y-6 pb-10">
-            <Card>
-                <CardHeader>
+        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <Layout className="h-6 w-6" />
-                        </div>
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary"><Layout size={20} /></div>
                         <div>
-                            <CardTitle>Banner Dinámico</CardTitle>
-                            <CardDescription>
-                                Gestiona las imágenes y videos del carrusel principal
-                            </CardDescription>
+                            <h3 className="text-lg font-bold text-slate-900">Banner Dinámico</h3>
+                            <p className="text-sm text-slate-500">Gestiona las imágenes y videos del carrusel principal.</p>
                         </div>
                     </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Lista de Slides */}
-                    <div className="space-y-4">
-                        {data.content.media.map((item, index) => (
-                            <Card key={index} className="overflow-hidden">
-                                <CardHeader className="bg-muted/50 pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <Badge variant="secondary" className="h-7 w-7 justify-center p-0">
-                                                {index + 1}
-                                            </Badge>
-                                            <div>
-                                                <p className="text-sm font-semibold">Slide #{index + 1}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {item.type === 'image' ? 'Imagen' : 'Video'} •{' '}
-                                                    {item.device === 'desktop' ? 'Desktop' : item.device === 'mobile' ? 'Mobile' : 'Ambos dispositivos'}
-                                                </p>
-                                            </div>
-                                        </div>
+                </div>
 
-                                        {data.content.media.length > 1 && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeMediaItem(index)}
-                                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Eliminar
-                                            </Button>
-                                        )}
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent className="space-y-4 pt-6">
-                                    {/* Tipo de Media */}
-                                    <div className="space-y-2">
-                                        <Label>Tipo de contenido</Label>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                type="button"
-                                                variant={item.type === 'image' ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() =>
-                                                    updateMediaItem(index, {
-                                                        ...item,
-                                                        type: 'image',
-                                                        src: '',
-                                                        device: 'desktop',
-                                                    })
-                                                }
-                                                className="flex-1"
-                                            >
-                                                <ImageIcon className="mr-2 h-4 w-4" />
-                                                Imagen
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant={item.type === 'video' ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() =>
-                                                    updateMediaItem(index, {
-                                                        ...item,
-                                                        type: 'video',
-                                                        src: '',
-                                                        device: 'both',
-                                                    })
-                                                }
-                                                className="flex-1"
-                                            >
-                                                <Video className="mr-2 h-4 w-4" />
-                                                Video
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Upload de Imagen */}
-                                    {item.type === 'image' && (
-                                        <>
-                                            <div className="space-y-2">
-                                                <Label>Imagen Promocional</Label>
-                                                <Upload
-                                                    value={item.src}
-                                                    onFileChange={(file) =>
-                                                        updateMediaItem(index, {
-                                                            ...item,
-                                                            src: file,
-                                                        })
-                                                    }
-                                                    accept="image/*"
-                                                    placeholder="Subir imagen promocional"
-                                                    type="image"
-                                                    previewClassName="w-full aspect-[21/9] rounded-lg object-cover border-2 border-dashed"
-                                                />
-                                            </div>
-
-                                            {/* Selector de dispositivo SOLO para imágenes */}
-                                            <div className="space-y-2">
-                                                <Label>Dispositivo</Label>
-                                                <Select
-                                                    value={item.device}
-                                                    onValueChange={(value) =>
-                                                        updateMediaItem(index, {
-                                                            ...item,
-                                                            device: value as 'desktop' | 'mobile',
-                                                        })
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="desktop">
-                                                            <div className="flex items-center gap-2">
-                                                                <Monitor className="h-4 w-4" />
-                                                                Desktop
-                                                            </div>
-                                                        </SelectItem>
-                                                        <SelectItem value="mobile">
-                                                            <div className="flex items-center gap-2">
-                                                                <Smartphone className="h-4 w-4" />
-                                                                Mobile
-                                                            </div>
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {/* Upload de Video */}
-                                    {item.type === 'video' && (
-                                        <div className="space-y-2">
-                                            <Label>Video Promocional</Label>
-                                            <Upload
-                                                value={item.src}
-                                                onFileChange={(file) =>
-                                                    updateMediaItem(index, {
-                                                        ...item,
-                                                        src: file,
-                                                    })
-                                                }
-                                                accept="video/*"
-                                                placeholder="Subir video promocional"
-                                                type="video"
-                                                previewClassName="w-full aspect-[21/9] rounded-lg object-cover border-2 border-dashed"
-                                            />
-
-                                            <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                                                <Video className="h-4 w-4" />
-                                                <p>Este video se mostrará en desktop y mobile</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-
-                    {/* Botón Agregar Slide */}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addMediaItem}
-                        className="w-full border-dashed"
-                    >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Agregar Slide
-                    </Button>
-
-                    <Separator />
-
-                    {/* Enlace de Redirección */}
-                    <div className="space-y-2">
-                        <Label htmlFor="link-url" className="flex items-center gap-2">
-                            <Link className="h-4 w-4" />
-                            Enlace de Redirección (Opcional)
-                        </Label>
-                        <Input
-                            id="link-url"
-                            placeholder="https://ejemplo.com/promocion"
-                            value={data.content.media[0]?.link_url || ''}
-                            onChange={(e) => {
-                                const updatedMedia = data.content.media.map((m) => ({
-                                    ...m,
-                                    link_url: e.target.value,
-                                }));
-                                updateField('media', updatedMedia);
-                            }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Este enlace se aplicará a todos los slides del banner
+                <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                            Slides ({data.content.slides.length})
                         </p>
+                        <p className="text-[10px] text-slate-400">Arrastra para reordenar</p>
                     </div>
 
-                    <Separator />
-
-                    {/* Visibilidad */}
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                                {data.content.is_visible ? (
-                                    <Eye className="h-4 w-4 text-green-600" />
-                                ) : (
-                                    <EyeOff className="h-4 w-4 text-gray-400" />
-                                )}
-                                <Label htmlFor="visibility" className="font-semibold">
-                                    Visibilidad del Banner
-                                </Label>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                {data.content.is_visible
-                                    ? 'El banner está visible en el sitio web'
-                                    : 'El banner está oculto para los usuarios'}
-                            </p>
-                        </div>
-                        <Switch
-                            id="visibility"
-                            checked={!!data.content.is_visible}
-                            onCheckedChange={(checked) => updateField('is_visible', checked)}
+                    {data.content.slides.map((slide, index) => (
+                        <SlideCard
+                            key={slide.id}
+                            slide={slide}
+                            index={index}
+                            isDragOver={dragOver === index}
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDrop={(e) => handleDrop(e, index)}
+                            onDragEnd={handleDragEnd}
+                            onChange={(s) => updateSlide(index, s)}
+                            onRemove={() => removeSlide(index)}
+                            canRemove={data.content.slides.length > 1}
                         />
-                    </div>
-                </CardContent>
-            </Card>
+                    ))}
 
-            {/* Botón Guardar */}
+                    <button type="button" onClick={addSlide}
+                        className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-400
+                                   hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all
+                                   flex items-center justify-center gap-2 text-sm font-medium">
+                        <Plus size={16} /> Agregar Slide
+                    </button>
+                </div>
+            </div>
+
             <div className="flex justify-end">
-                <Button type="submit" disabled={processing} size="lg">
-                    <Save className="mr-2 h-4 w-4" />
-                    {processing ? 'Guardando...' : 'Actualizar Banner'}
+                <Button type="submit" disabled={processing} className="px-10 py-6 rounded-xl shadow-md gap-2 text-base font-bold">
+                    <Save size={20} />
+                    {processing ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
             </div>
         </form>

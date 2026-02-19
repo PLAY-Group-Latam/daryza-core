@@ -44,6 +44,7 @@ class ContentService
             $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
 
             $content = $this->processSingleFiles($content, $sectionId);
+            $content = $this->processSlidesArray($content, $sectionId);
             $content = $this->processMediaArray($content, $sectionId);
             $content = $this->processBrandsArray($content, $sectionId);
             $content = $this->processItemsArray($content, $sectionId);
@@ -98,6 +99,56 @@ class ContentService
         }
 
         $content['media'] = $processed;
+        return $content;
+    }
+    private function processSlidesArray(array $content, int $sectionId): array
+    {
+        if (!isset($content['slides']) || !is_array($content['slides'])) {
+            return $content;
+        }
+
+        $processed = [];
+
+        foreach ($content['slides'] as $slide) {
+            $result = [
+                'id'        => $slide['id'],
+                'type'      => $slide['type'] ?? 'image',
+                'is_active' => filter_var($slide['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'link_url'  => $slide['link_url'] ?? null,
+            ];
+
+            switch ($result['type']) {
+                case 'image':
+                    $result['src_desktop'] = isset($slide['src_desktop']) && $slide['src_desktop'] instanceof UploadedFile
+                        ? $this->uploadFile($slide['src_desktop'], $sectionId)
+                        : ($slide['src_desktop'] ?? null);
+
+                    $result['src_mobile'] = isset($slide['src_mobile']) && $slide['src_mobile'] instanceof UploadedFile
+                        ? $this->uploadFile($slide['src_mobile'], $sectionId)
+                        : ($slide['src_mobile'] ?? null);
+                    break;
+
+                case 'video':
+                    $result['src_video'] = isset($slide['src_video']) && $slide['src_video'] instanceof UploadedFile
+                        ? $this->uploadFile($slide['src_video'], $sectionId)
+                        : ($slide['src_video'] ?? null);
+                    break;
+
+                case 'url':
+                    $result['src_desktop'] = isset($slide['src_desktop']) && $slide['src_desktop'] instanceof UploadedFile
+                        ? $this->uploadFile($slide['src_desktop'], $sectionId)
+                        : ($slide['src_desktop'] ?? null);
+
+                    $result['src_mobile'] = isset($slide['src_mobile']) && $slide['src_mobile'] instanceof UploadedFile
+                        ? $this->uploadFile($slide['src_mobile'], $sectionId)
+                        : ($slide['src_mobile'] ?? null);
+                    break;
+            }
+
+            $processed[] = $result;
+        }
+
+        $content['slides'] = $processed;
         return $content;
     }
 
@@ -218,7 +269,7 @@ private function processSocialsArray(array $content, int $sectionId): array
     private function mergeWithExisting(array $existing, array $content): array
     {
         
-        $replaceableArrays = ['media', 'brands','items','banks','socials'];
+        $replaceableArrays = ['slides','media', 'brands','items','banks','socials'];
 
         foreach ($replaceableArrays as $key) {
             if (isset($content[$key])) {
