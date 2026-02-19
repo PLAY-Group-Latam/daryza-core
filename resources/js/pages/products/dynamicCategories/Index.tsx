@@ -5,8 +5,8 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { categories } = usePage<{
-        categories: PaginatedDynamicCategories;
+    const { paginatedCategories } = usePage<{
+        paginatedCategories: PaginatedDynamicCategories;
     }>().props;
 
     return (
@@ -26,7 +26,7 @@ export default function Index() {
                     </Link>
                 </div>
 
-                <TableList data={categories} />
+                <TableList data={paginatedCategories} />
             </div>
         </AppLayout>
     );

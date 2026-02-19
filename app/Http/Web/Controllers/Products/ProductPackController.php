@@ -3,6 +3,7 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Services\Products\ProductSearchService;
 use App\Models\Products\ProductPack;
 use App\Models\Products\Product; // Para cargar la lista de productos en el form
 use App\Models\Products\ProductVariant;
@@ -14,6 +15,14 @@ use Inertia\Response;
 
 class ProductPackController extends Controller
 {
+
+    protected $searchService;
+
+    // Inyectamos el servicio en el constructor
+    public function __construct(ProductSearchService $searchService)
+    {
+        $this->searchService = $searchService;
+    }
     /**
      * Listado de packs
      */
@@ -40,37 +49,14 @@ class ProductPackController extends Controller
      */
     public function create(Request $request): Response
     {
-
         $search = trim($request->input('q', ''));
-        $results = collect();
 
-        if (strlen($search) >= 3) {
-            $searchTerm = "%{$search}%";
+        // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
+        $searchResults = $this->searchService->searchVariantsBySku($search);
 
-            $results = ProductVariant::query()
-                // Añadimos campos de promoción al select
-                ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
-                ->where('sku', 'ilike', $searchTerm)
-                ->with([
-                    'product:id,name',
-                    'attributes:id,value'
-                ])
-                ->limit(15)
-                ->get()
-                ->map(fn($variant) => [
-                    'id'           => $variant->id,
-                    'sku'          => $variant->sku,
-                    'price'        => $variant->price,
-                    // Información de promoción
-                    'is_on_promo'  => $variant->is_on_promo,
-                    'product_name' => $variant->product?->name ?? 'Sin nombre',
-                    'variant_name'         => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-
-                ]);
-        }
         return Inertia::render('products/packs/Create', [
-            'searchResults' => $results,
-            'filters'       => ['q' => $search]
+            'searchResults' => $searchResults,
+            'filters' => ['q' => $search]
         ]);
     }
 
@@ -79,40 +65,47 @@ class ProductPackController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Validamos todos los campos, incluyendo el array de items
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'promo_price' => 'nullable|numeric|lt:price',
-            'is_on_promotion' => 'boolean',
-            'promo_start_at' => 'nullable|date',
-            'promo_end_at' => 'nullable|date|after:promo_start_at',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'name'              => 'required|string|max:255',
+            'slug'              => 'required|string|max:255|unique:product_packs,slug',
+            'brief_description' => 'nullable|string',
+            'description'       => 'nullable|string',
+            'stock'             => 'required|integer|min:0',
+            'price'             => 'required|numeric|min:0',
+            'promo_price'       => 'nullable|numeric|lt:price',
+            'is_on_promotion'   => 'boolean',
+            'show_on_home'      => 'boolean',
+            'is_active'         => 'boolean',
+            'promo_start_at'    => 'nullable|date',
+            'promo_end_at'      => 'nullable|date|after_or_equal:promo_start_at',
+
+            // Validación de los productos (items) que vienen del formulario
+            'items'              => 'required|array|min:1',
             'items.*.variant_id' => 'required|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
+        // 2. Usamos una transacción para asegurar que se cree el pack Y sus productos
         DB::transaction(function () use ($validated) {
-            $pack = ProductPack::create([
-                'name' => $validated['name'],
-                'slug' => Str::slug($validated['name']) . '-' . rand(100, 999),
-                'code' => 'PACK-' . strtoupper(Str::random(8)),
-                'price' => $validated['price'],
-                'promo_price' => $validated['promo_price'],
-                'is_on_promotion' => $validated['is_on_promotion'] ?? false,
-                'promo_start_at' => $validated['promo_start_at'],
-                'promo_end_at' => $validated['promo_end_at'],
-                'is_active' => true,
-            ]);
+            // Creamos el Pack (filtramos 'items' para que no de error al insertar en la tabla de packs)
+            $pack = ProductPack::create(collect($validated)->except('items')->toArray());
 
+            // Creamos los productos asociados (items)
             foreach ($validated['items'] as $item) {
-                $pack->items()->create($item);
+                $pack->items()->create([
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'],
+                    'quantity'   => $item['quantity'],
+                    // 'price'     => $item['price'] ?? 0, // Por si guardas el precio histórico
+                ]);
             }
         });
 
-        // En Inertia, redirigimos con un mensaje flash
-        return redirect()->route('packs.index')
-            ->with('message', 'Pack creado exitosamente');
+        // 3. Redirección al listado con mensaje de éxito
+        return redirect()->route('products.packs.index')
+            ->with('success', 'Pack creado exitosamente con sus productos.');
     }
 
     /**
@@ -121,100 +114,110 @@ class ProductPackController extends Controller
     /**
      * Formulario de edición de Pack.
      */
-    public function edit(Request $request, ProductPack $productPack): Response
+    public function edit(Request $request, ProductPack $pack): Response
     {
-        // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
         $search = trim($request->input('q', ''));
-        $searchResults = collect();
 
-        if (strlen($search) >= 3) {
-            $searchTerm = "%{$search}%";
-            $searchResults = ProductVariant::query()
-                ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
-                ->where('sku', 'ilike', $searchTerm)
-                ->with(['product:id,name', 'attributes:id,value'])
-                ->limit(15)
-                ->get()
-                ->map(fn($variant) => [
-                    'id'           => $variant->id,
-                    'product_id'   => $variant->product_id, // Necesario para el store/update
-                    'sku'          => $variant->sku,
-                    'price'        => $variant->price,
-                    'is_on_promo'  => $variant->is_on_promo,
-                    'product_name' => $variant->product?->name ?? 'Sin nombre',
-                    'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-                ]);
-        }
+        // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
+        $searchResults = $this->searchService->searchVariantsBySku($search);
 
-        // 2. Cargar los items actuales formateados para el formulario
-        // Esto asegura que el frontend vea los mismos campos que el searchResults
-        $currentItems = $productPack->items()
-            ->with(['variant.product', 'variant.attributes'])
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id'           => $item->variant->id, // ID de la variante para machear con la UI
-                    'product_id'   => $item->product_id,
-                    'variant_id'   => $item->variant_id,
-                    'sku'          => $item->variant->sku,
-                    'price'        => $item->variant->price,
-                    'quantity'     => $item->quantity, // Campo específico de packs
-                    'product_name' => $item->product?->name ?? 'Sin nombre',
-                    'variant_name' => $item->variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-                ];
-            });
+        $pack->load(['items.variant.product', 'items.variant.attributes']);
 
         return Inertia::render('products/packs/Edit', [
             'pack' => [
-                'id'              => $productPack->id,
-                'name'            => $productPack->name,
-                'price'           => $productPack->price,
-                'promo_price'     => $productPack->promo_price,
-                'is_on_promotion' => (bool)$productPack->is_on_promotion,
-                // Formateo para datetime-local
-                'promo_start_at'  => $productPack->promo_start_at?->format('Y-m-d\TH:i'),
-                'promo_end_at'    => $productPack->promo_end_at?->format('Y-m-d\TH:i'),
-                'items'           => $currentItems,
+                // Pasamos todos los campos del modelo (incluye stock, descripciones, etc.)
+                ...$pack->toArray(),
+                // Formateo específico para JS Date o datetime-local
+                'promo_start_at' => $pack->promo_start_at?->format('Y-m-d\TH:i'),
+                'promo_end_at'   => $pack->promo_end_at?->format('Y-m-d\TH:i'),
+                // Formateamos items para que la tabla en React los maneje fácil
+                'items' => $pack->items->map(fn($item) => [
+                    'variant_id'   => $item->variant_id,
+                    'product_id'   => $item->product_id,
+                    'sku'          => $item->variant->sku,
+                    'quantity'     => $item->quantity,
+                    'product_name' => $item->variant->product->name,
+                    'variant_name'        => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
+                ]),
             ],
             'searchResults' => $searchResults,
-            'filters'       => ['q' => $search]
+            'filters' => ['q' => $search]
         ]);
     }
 
     /**
      * Actualizar
      */
-    public function update(Request $request, ProductPack $productPack)
+    public function update(Request $request, ProductPack $pack) // El parámetro debe coincidir con la ruta o usar el objeto
     {
+        // 1. Validación exhaustiva coincidente con el Formulario
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'items' => 'required|array|min:1',
+            'name'              => 'required|string|max:255',
+            'slug'              => 'required|string|max:255|unique:product_packs,slug,' . $pack->id,
+            'brief_description' => 'nullable|string',
+            'description'       => 'nullable|string',
+            'stock'             => 'required|integer|min:0',
+            'price'             => 'required|numeric|min:0',
+            'promo_price'       => 'nullable|numeric|lt:price',
+            'is_on_promotion'   => 'boolean',
+            'show_on_home'      => 'boolean',
+            'is_active'         => 'boolean',
+            'promo_start_at'    => 'nullable|date',
+            'promo_end_at'      => 'nullable|date|after_or_equal:promo_start_at',
+
+            // Validación de los items (productos del pack)
+            'items'             => 'required|array|min:1',
+            'items.*.variant_id' => 'required|exists:product_variants,id',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($validated, $productPack) {
-            $productPack->update($validated);
+        // 2. Transacción para asegurar que no queden items huérfanos si falla algo
+        DB::transaction(function () use ($validated, $pack) {
 
-            if (isset($validated['items'])) {
-                $productPack->items()->delete();
-                foreach ($validated['items'] as $item) {
-                    $productPack->items()->create($item);
-                }
+            // Actualizamos los datos generales del pack
+            // collect($validated)->except('items')->toArray() filtra para no intentar guardar 'items' en la tabla packs
+            $pack->update(collect($validated)->except('items')->toArray());
+
+            // Sincronizamos los productos (items)
+            // La forma más limpia en Packs es borrar y volver a crear
+            $pack->items()->delete();
+
+            foreach ($validated['items'] as $item) {
+                $pack->items()->create([
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'],
+                    'quantity'   => $item['quantity'],
+                    // 'price' => $item['price'], // Opcional si guardas el precio histórico
+                ]);
             }
         });
 
-        return redirect()->route('packs.index')
-            ->with('message', 'Pack actualizado correctamente');
+        return redirect()->route('products.packs.index')
+            ->with('success', "El pack '{$pack->name}' ha sido actualizado.");
     }
 
-    /**
-     * Eliminar
-     */
-    public function destroy(ProductPack $productPack)
-    {
-        $productPack->delete();
 
-        return redirect()->back()
-            ->with('message', 'Pack eliminado');
+    /**
+     * Eliminar el pack y sus items asociados.
+     */
+    public function destroy(ProductPack $pack)
+    {
+        try {
+            DB::transaction(function () use ($pack) {
+                // 1. Eliminamos primero los items relacionados
+                // (Si no tienes cascade delete a nivel BD)
+                $pack->items()->delete();
+
+                // 2. Eliminamos el pack
+                $pack->delete();
+            });
+
+            return redirect()->route('products.packs.index')
+                ->with('success', "El pack '{$pack->name}' ha sido eliminado correctamente.");
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'No se pudo eliminar el pack porque tiene datos relacionados.');
+        }
     }
 }

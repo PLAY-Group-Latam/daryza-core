@@ -3,217 +3,167 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Services\Products\ProductSearchService;
 use App\Models\Products\DynamicCategory;
-use App\Models\Products\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DynamicCategoryController extends Controller
 {
+  protected $searchService;
+
+  public function __construct(ProductSearchService $searchService)
+  {
+    $this->searchService = $searchService;
+  }
+
   /**
-   * Listado de categorías especiales con paginación.
+   * Listado de Categorías Dinámicas
    */
   public function index()
   {
     $perPage = request()->input('per_page', 10);
 
-    $categories = DynamicCategory::query()
+    // Cargamos con conteo de items para mostrar en la tabla principal
+    $categories = DynamicCategory::withCount('items')
       ->latest()
       ->paginate($perPage)
       ->withQueryString();
 
     return Inertia::render('products/dynamicCategories/Index', [
-      'categories' => $categories
+      'paginatedCategories' => $categories,
     ]);
   }
 
   /**
-   * Formulario de creación.
+   * Formulario de creación
    */
-  // DynamicCategoryController.php
-
-  public function create(Request $request)
+  public function create(Request $request): Response
   {
     $search = trim($request->input('q', ''));
-    $results = collect();
-
-    if (strlen($search) >= 3) {
-      $searchTerm = "%{$search}%";
-
-      $results = ProductVariant::query()
-        // Añadimos campos de promoción al select
-        ->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo')
-        ->where('sku', 'ilike', $searchTerm)
-        ->with([
-          'product:id,name',
-          'attributes:id,value'
-        ])
-        ->limit(15)
-        ->get()
-        ->map(fn($variant) => [
-          'id'           => $variant->id,
-          'sku'          => $variant->sku,
-          'price'        => $variant->price,
-          // Información de promoción
-          'is_on_promo'  => $variant->is_on_promo,
-          'product_name' => $variant->product?->name ?? 'Sin nombre',
-          'variant_name'         => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-
-        ]);
-    }
+    $searchResults = $this->searchService->searchVariantsBySku($search);
 
     return Inertia::render('products/dynamicCategories/Create', [
-      'searchResults' => $results,
-      'filters'       => ['q' => $search]
+      'searchResults' => $searchResults,
+      'filters' => ['q' => $search]
     ]);
   }
 
   /**
-   * Guardar nueva categoría.
+   * Guardar Categoría
    */
   public function store(Request $request)
   {
     $validated = $request->validate([
-      'name'          => 'required|string|max:255',
-      'slug'          => 'required|string|unique:dynamic_categories,slug',
-      'is_active'     => 'boolean',
-      'starts_at'     => 'nullable|date',
-      'ends_at'       => 'nullable|date|after_or_equal:starts_at',
-      'variant_ids'   => 'required|array|min:1',
-      'variant_ids.*' => 'exists:product_variants,id',
+      'name'        => 'required|string|max:255',
+      'slug'        => 'required|string|max:255|unique:dynamic_categories,slug',
+      'is_active'   => 'boolean',
+      'starts_at'   => 'required|date',
+      'ends_at'     => 'required|date|after_or_equal:starts_at',
+      'items'              => 'required|array|min:1',
+      'items.*.variant_id' => 'required|exists:product_variants,id',
+      'items.*.product_id' => 'required|exists:products,id',
     ]);
 
-    return DB::transaction(function () use ($validated) {
-      $dynamicCategory = DynamicCategory::create($validated);
+    DB::transaction(function () use ($validated) {
+      $category = DynamicCategory::create(collect($validated)->except('items')->toArray());
 
-      // --- AQUÍ ESTÁ LA CORRECCIÓN ---
-      // 1. Buscamos los product_id únicos asociados a esas variantes
-      $productIds = ProductVariant::whereIn('id', $validated['variant_ids'])
-        ->pluck('product_id') // Obtenemos la columna product_id
-        ->unique()            // Evitamos duplicados
-        ->toArray();
-
-      // 2. Sincronizamos usando los IDs de PRODUCTOS
-      $dynamicCategory->variants()->sync($productIds);
-
-      return redirect()->route('products.dynamic-categories.index')
-        ->with('success', 'Categoría creada con éxito.');
+      foreach ($validated['items'] as $item) {
+        $category->items()->create([
+          'product_id' => $item['product_id'],
+          'variant_id' => $item['variant_id'],
+        ]);
+      }
     });
+    return redirect()->route('products.dynamic-categories.index')
+      ->with('success', 'Categoría dinámica creada con éxito.');
   }
 
-
   /**
-   * Formulario de edición.
+   * Formulario de edición
    */
-  public function edit(Request $request, DynamicCategory $dynamicCategory)
+  public function edit(Request $request, DynamicCategory $dynamicCategory): Response
   {
-    // 1. Manejamos la búsqueda (igual que en create por si el usuario busca más productos al editar)
     $search = trim($request->input('q', ''));
-    $searchResults = collect();
+    $searchResults = $this->searchService->searchVariantsBySku($search);
 
-    if (strlen($search) >= 3) {
-      $searchTerm = "%{$search}%";
-      $searchResults = ProductVariant::query()
-        ->select('id', 'product_id', 'sku', 'price', 'is_on_promo')
-        ->where('sku', 'ilike', $searchTerm)
-        ->with(['product:id,name', 'attributes:id,value'])
-        ->limit(15)
-        ->get()
-        ->map(fn($variant) => [
-          'id'           => $variant->id,
-          'sku'          => $variant->sku,
-          'price'        => $variant->price,
-          'is_on_promo'  => $variant->is_on_promo,
-          'product_name' => $variant->product?->name ?? 'Sin nombre',
-          'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-        ]);
-    }
-
-    $selectedVariants = $dynamicCategory->products() // Usamos la relación corregida
-      ->with(['variants.product', 'variants.attributes'])
-      ->get()
-      ->flatMap(function ($product) {
-        // De cada producto asociado, sacamos TODAS sus variantes
-        return $product->variants->map(function ($variant) {
-          return [
-            'id'           => $variant->id,
-            'sku'          => $variant->sku,
-            'price'        => $variant->price,
-            'is_on_promo'  => $variant->is_on_promo,
-            'product_name' => $variant->product?->name ?? 'Sin nombre',
-            'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
-          ];
-        });
-      });
-
+    // Cargamos los items con sus variantes y atributos para el frontend
+    $dynamicCategory->load(['items.variant.product', 'items.variant.attributes']);
 
     return Inertia::render('products/dynamicCategories/Edit', [
-      'dynamicCategory' => [
-        'id'          => $dynamicCategory->id,
-        'name'        => $dynamicCategory->name,
-        'slug'        => $dynamicCategory->slug,
-        'is_active'   => $dynamicCategory->is_active,
-        // Formateo ISO para inputs datetime-local de HTML5
-        'starts_at'   => $dynamicCategory->starts_at?->format('Y-m-d\TH:i'),
-        'ends_at'     => $dynamicCategory->ends_at?->format('Y-m-d\TH:i'),
-        // Pasamos los IDs de las variantes para el estado inicial del formulario
-        'variant_ids' => $selectedVariants->pluck('id'),
+      'category' => [
+        ...$dynamicCategory->toArray(),
+        // Formateo para DatePickers de React
+        'starts_at' => $dynamicCategory->starts_at?->format('Y-m-d\TH:i'),
+        'ends_at'   => $dynamicCategory->ends_at?->format('Y-m-d\TH:i'),
+        // Formateamos para que SelectedVariantsTable lo lea igual que en el buscador
+        'items' => $dynamicCategory->items->map(fn($item) => [
+          'id'           => $item->variant_id, // ID de la variante para el checkbox/remove
+          'variant_id'   => $item->variant_id,
+          'product_id'   => $item->product_id,
+          'sku'          => $item->variant->sku,
+          'product_name' => $item->variant->product->name,
+          'variant_name' => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
+        ]),
+
       ],
-      'selectedVariants' => $selectedVariants,
-      'searchResults'    => $searchResults,
-      'filters'          => ['q' => $search]
+      'searchResults' => $searchResults,
+      'filters' => ['q' => $search]
     ]);
   }
 
   /**
-   * Actualizar categoría existente.
-   */
-  /**
-   * Actualizar categoría existente.
+   * Actualizar Categoría
    */
   public function update(Request $request, DynamicCategory $dynamicCategory)
   {
     $validated = $request->validate([
-      'name'          => 'required|string|max:255',
-      'slug'          => 'required|string|unique:dynamic_categories,slug,' . $dynamicCategory->id,
-      'banner_image'  => 'nullable|string',
-      'is_active'     => 'boolean',
-      'starts_at'     => 'nullable|date',
-      'ends_at'       => 'nullable|date|after_or_equal:starts_at',
-      'variant_ids'   => 'required|array|min:1',
-      'variant_ids.*' => 'exists:product_variants,id',
+      'name'        => 'required|string|max:255',
+      'slug'        => 'required|string|max:255|unique:dynamic_categories,slug,' . $dynamicCategory->id,
+      'is_active'   => 'boolean',
+      'starts_at'   => 'required|date',
+      'ends_at'     => 'required|date|after_or_equal:starts_at',
+
+      // Ahora validamos 'items' como array de objetos, igual que el store
+      'items'              => 'required|array|min:1',
+      'items.*.variant_id' => 'required|exists:product_variants,id',
+      'items.*.product_id' => 'required|exists:products,id',
     ]);
 
-    return DB::transaction(function () use ($validated, $dynamicCategory) {
-      // 1. Actualizar los datos básicos de la categoría
-      $dynamicCategory->update($validated);
+    DB::transaction(function () use ($validated, $dynamicCategory) {
+      // Actualizamos los datos de la categoría exceptuando los items
+      $dynamicCategory->update(collect($validated)->except('items')->toArray());
 
-      // 2. Obtener los product_id únicos a partir de las variantes enviadas
-      // Esto es necesario porque tu relación en el pivote es con 'product_id'
-      $productIds = ProductVariant::whereIn('id', $validated['variant_ids'])
-        ->pluck('product_id')
-        ->unique()
-        ->toArray();
+      // Sincronización limpia: Borramos anteriores y creamos nuevos desde el array items
+      $dynamicCategory->items()->delete();
 
-      // 3. Sincronizar la tabla pivote (borra los que ya no están y agrega los nuevos)
-      // Usamos la relación products() que definimos en el modelo
-      $dynamicCategory->products()->sync($productIds);
-
-      return redirect()->route('products.dynamic-categories.index')
-        ->with('success', 'Categoría actualizada correctamente.');
+      foreach ($validated['items'] as $item) {
+        $dynamicCategory->items()->create([
+          'product_id' => $item['product_id'],
+          'variant_id' => $item['variant_id'],
+        ]);
+      }
     });
+
+    // En update()
+    return redirect()->route('products.dynamic-categories.index')
+      ->with('success', "Categoría '{$dynamicCategory->name}' actualizada correctamente.");
   }
 
-  /**
-   * Eliminar categoría (Soft Delete).
-   */
   public function destroy(DynamicCategory $dynamicCategory)
   {
-    $dynamicCategory->delete();
-
-    return redirect()->route('products.dynamic-categories.index')
-      ->with('success', 'Categoría eliminada correctamente.');
+    try {
+      DB::transaction(function () use ($dynamicCategory) {
+        $dynamicCategory->items()->delete();
+        $dynamicCategory->delete();
+      });
+      // En destroy()
+      return redirect()->route('products.dynamic-categories.index')
+        ->with('success', 'Categoría eliminada con éxito.');
+    } catch (\Exception $e) {
+      return redirect()->back()->with('error', 'No se pudo eliminar la categoría.');
+    }
   }
 }

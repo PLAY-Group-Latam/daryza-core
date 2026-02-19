@@ -3,21 +3,22 @@
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import packs from '@/routes/products/packs';
-import { Pack } from '@/types/products/packs';
+import { ProductPack } from '@/types/products/packs';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
+import { StatusBadge } from '../../StatusBadge';
 import { DataTable } from '../../tables/DataTable';
 
 interface TableListProps {
-    data: Paginated<Pack>;
+    data: Paginated<ProductPack>;
 }
 
-const columns: ColumnDef<Pack>[] = [
+const columns: ColumnDef<ProductPack>[] = [
     {
         accessorKey: 'name',
-        header: 'Nombre',
+        header: 'Nombre del Pack',
     },
     {
         accessorKey: 'price',
@@ -28,41 +29,11 @@ const columns: ColumnDef<Pack>[] = [
             </span>
         ),
     },
-    {
-        id: 'products',
-        header: 'Productos',
-        cell: ({ row }) => {
-            const products = row.original.products ?? [];
 
-            if (products.length === 0) {
-                return (
-                    <span className="text-xs text-gray-400 italic">
-                        Sin productos
-                    </span>
-                );
-            }
-
-            return (
-                <span className="text-sm text-gray-700">
-                    {products.length} producto{products.length > 1 && 's'}
-                </span>
-            );
-        },
-    },
     {
         accessorKey: 'is_active',
         header: 'Estado',
-        cell: ({ row }) => (
-            <span
-                className={
-                    row.original.is_active
-                        ? 'font-medium text-green-600'
-                        : 'font-medium text-red-600'
-                }
-            >
-                {row.original.is_active ? 'Activo' : 'Inactivo'}
-            </span>
-        ),
+        cell: ({ row }) => <StatusBadge status={row.original.is_active} />,
     },
     {
         accessorKey: 'created_at',
