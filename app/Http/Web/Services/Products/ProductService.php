@@ -18,6 +18,7 @@ class ProductService
    */
   public function create(array $data): Product
   {
+      
     return DB::transaction(function () use ($data) {
 
       $hasVariants = !empty($data['variants']);
@@ -49,6 +50,12 @@ class ProductService
 
   public function update(Product $product, array $data): Product
   {
+    //  Log::info('SYNC VARIANT MEDIA - Incoming media:', [
+    //     'media' => $data
+    // ]);
+    Log::info('[producto]:', [
+        'media' => $data
+    ]);
     return DB::transaction(function () use ($product, $data) {
       // Actualización base
       $product->update(collect($data)->only([
@@ -136,12 +143,64 @@ class ProductService
       }
 
       // 5. GUARDAR IMÁGENES: Ahora usamos los archivos que filtramos arriba
-      if (!empty($newFiles)) {
-        $this->createVariantMedia($variant, $newFiles);
-      }
+     if (isset($variantData['media'])) {
+    $this->syncVariantMedia($variant, $variantData['media']);
+}
     }
   }
 
+ protected function syncVariantMedia(ProductVariant $variant, array $media): void
+{
+
+    // 🔎 Log para inspeccionar qué está llegando
+    Log::info('SYNC VARIANT MEDIA - Incoming media:', [
+        'media' => $media
+    ]);
+    // 1️⃣ Extraer file_paths existentes (cuando vienen como objetos)
+    $existingPaths = collect($media)
+        ->filter(fn($item) => is_array($item) && isset($item['file_path']))
+        ->pluck('file_path')
+        ->toArray();
+
+    // 2️⃣ Detectar nuevos archivos
+    $newFiles = collect($media)
+        ->filter(fn($item) => $item instanceof \Illuminate\Http\UploadedFile);
+
+    // 3️⃣ Eliminar los que ya no están
+    $variant->media()->get()->each(function ($mediaItem) use ($existingPaths) {
+
+        if (!in_array($mediaItem->file_path, $existingPaths)) {
+            $this->gcsService->delete($mediaItem->file_path);
+            $mediaItem->delete();
+        }
+    });
+
+    // 4️⃣ Subir nuevos archivos
+    foreach ($newFiles as $file) {
+
+        $mime = $file->getMimeType();
+        $isImg = str_starts_with($mime, 'image/');
+        $isVid = str_starts_with($mime, 'video/');
+
+        $type = $isImg ? 'image' : ($isVid ? 'video' : 'other');
+        $folderEnum = $isImg
+            ? StorageFolder::PRODUCT_IMAGES
+            : StorageFolder::PRODUCT_VIDEOS;
+
+        $folder = $this->getStoragePath(
+            $variant->product_id,
+            $folderEnum
+        );
+
+        $path = $this->gcsService->uploadFile($file, $folder);
+
+        $variant->media()->create([
+            'file_path' => $path,
+            'type'      => $type,
+            'folder'    => $folder,
+        ]);
+    }
+}
 
 
   protected function createMetadata(Product $product, array $metadata): void

@@ -137,9 +137,8 @@ export default function FormProduct({
     });
 
     const mapMediaToEdit = (media: Media[] = []) => {
-        return media.map((m) => m.file_path); // 🔥 SOLO URL
+        return media; // ✅ el objeto Media completo
     };
-
     useEffect(() => {
         if (product) {
             methods.reset({
@@ -199,6 +198,16 @@ export default function FormProduct({
     const isEdit = Boolean(product);
 
     const onSubmit = (data: ProductFormValues) => {
+        console.log(
+            data.variants.map((v, i) => ({
+                variant: i,
+                media: v.media.map((m) => ({
+                    isFile: m instanceof File,
+                    type: typeof m,
+                    value: m,
+                })),
+            })),
+        );
         const action = isEdit
             ? products.items.update(product!.id).url
             : products.items.store().url;

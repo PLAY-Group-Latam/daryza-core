@@ -67,9 +67,9 @@ class ProductController extends Controller
       'variants.specifications.attribute',
 
     ]);
-    Log::info('[Product EDIT] Loaded product', [
-      'product' => $product->toArray(),
-    ]);
+    // Log::info('[Product EDIT] Loaded product', [
+    //   'product' => $product->toArray(),
+    // ]);
 
     $productForForm = [
       'id' => $product->id,
