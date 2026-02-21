@@ -19,6 +19,12 @@ import SocialsEditor from '@/components/custom-ui/content/editors/footer/Socials
 import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
 import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
 import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
+import ContactIndexEditor from '@/components/custom-ui/content/editors/contact/ContactIndexEditor';
+import HelpCenterEditor from '@/components/custom-ui/content/editors/contact/HelpCetnerEditor';
+import CustomerServiceEditor from '@/components/custom-ui/content/editors/contact/CustomerServiceEditor';
+import DistributorNetworkEditor from '@/components/custom-ui/content/editors/contact/DistribuitorNewtworkEditor';
+import ContactAdviceEditor from '@/components/custom-ui/content/editors/contact/ContactAdviceEditor';
+import ContactWorkEditor from '@/components/custom-ui/content/editors/contact/ContactWorkEditor';
 
 interface Props {
     section: {
@@ -58,6 +64,14 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'tyc_editor':           TermsConditionsEditor,
     'anticorrupcion_editor':PrivacyPoliticEditor,
     'libro_editor':         ComplaintsBookEditor,
+
+    // Contact
+    'contact_general':     ContactIndexEditor,
+    'contact_help':        HelpCenterEditor,
+    'contact_service':      CustomerServiceEditor,
+    'contact_distributors': DistributorNetworkEditor,
+    'contact_advisor':       ContactAdviceEditor,
+    'contact_work':         ContactWorkEditor,
 };
 
 export default function EditSection({ section }: Props) {

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Rules\Web\Content\Resolvers;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\UploadedFile;
 
@@ -8,6 +9,7 @@ class BrandsFieldResolver
 {
     public function matches(string $key): bool
     {
+        Log::info("BrandsFieldResolver::matches", ['key' => $key]);
         return $key === 'brands';
     }
 

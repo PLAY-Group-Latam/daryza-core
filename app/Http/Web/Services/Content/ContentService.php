@@ -44,12 +44,15 @@ class ContentService
             $sectionContent = SectionContent::where('page_section_id', $sectionId)->firstOrFail();
 
             $content = $this->processSingleFiles($content, $sectionId);
+            $content = $this->processBannerObject($content, $sectionId);
             $content = $this->processSlidesArray($content, $sectionId);
             $content = $this->processMediaArray($content, $sectionId);
-            $content = $this->processBrandsArray($content, $sectionId);
-            $content = $this->processItemsArray($content, $sectionId);
-            $content = $this->processBanksArray($content, $sectionId);
-            $content = $this->processSocialsArray($content, $sectionId);
+            $content = $this->processItemsArray($content, $sectionId, $sectionContent);
+            $content = $this->processCardsArray($content, $sectionId, $sectionContent);
+            $content = $this->processSimpleImageArray($content, 'brands', ['image' => null, 'name'  => ''], $sectionId);
+            $content = $this->processSimpleImageArray($content, 'banks',  ['id'    => null, 'image' => null], $sectionId);
+            $content = $this->processSimpleImageArray($content, 'socials', ['id'   => null, 'image' => null, 'url' => ''], $sectionId);
+
             $finalData = $this->mergeWithExisting($sectionContent->content ?? [], $content);
 
             return $sectionContent->update(['content' => $finalData]);
@@ -72,6 +75,53 @@ class ContentService
                 $content[$key] = $this->uploadFile($value, $sectionId);
             }
         }
+        return $content;
+    }
+
+    private function processBannerObject(array $content, int $sectionId): array
+    {
+        if (!isset($content['banner']) || !is_array($content['banner'])) {
+            return $content;
+        }
+
+        $banner = $content['banner'];
+
+        if (isset($banner['src_desktop']) && $banner['src_desktop'] instanceof UploadedFile) {
+            $banner['src_desktop'] = $this->uploadFile($banner['src_desktop'], $sectionId);
+        }
+
+        if (isset($banner['src_mobile']) && $banner['src_mobile'] instanceof UploadedFile) {
+            $banner['src_mobile'] = $this->uploadFile($banner['src_mobile'], $sectionId);
+        }
+
+        $content['banner'] = [
+            'type'        => $banner['type']        ?? 'image',
+            'src_desktop' => $banner['src_desktop']  ?? null,
+            'src_mobile'  => $banner['src_mobile']   ?? null,
+            'link_url'    => $banner['link_url']      ?? null,
+        ];
+
+        return $content;
+    }
+
+    private function processSimpleImageArray(array $content, string $key, array $fields, int $sectionId): array
+    {
+        if (!isset($content[$key]) || !is_array($content[$key])) {
+            return $content;
+        }
+
+        $content[$key] = array_map(function ($item) use ($fields, $sectionId) {
+            if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
+                $item['image'] = $this->uploadFile($item['image'], $sectionId);
+            }
+
+            $result = [];
+            foreach ($fields as $field => $default) {
+                $result[$field] = $item[$field] ?? $default;
+            }
+            return $result;
+        }, $content[$key]);
+
         return $content;
     }
 
@@ -101,6 +151,7 @@ class ContentService
         $content['media'] = $processed;
         return $content;
     }
+
     private function processSlidesArray(array $content, int $sectionId): array
     {
         if (!isset($content['slides']) || !is_array($content['slides'])) {
@@ -119,6 +170,7 @@ class ContentService
 
             switch ($result['type']) {
                 case 'image':
+                case 'url':
                     $result['src_desktop'] = isset($slide['src_desktop']) && $slide['src_desktop'] instanceof UploadedFile
                         ? $this->uploadFile($slide['src_desktop'], $sectionId)
                         : ($slide['src_desktop'] ?? null);
@@ -133,16 +185,6 @@ class ContentService
                         ? $this->uploadFile($slide['src_video'], $sectionId)
                         : ($slide['src_video'] ?? null);
                     break;
-
-                case 'url':
-                    $result['src_desktop'] = isset($slide['src_desktop']) && $slide['src_desktop'] instanceof UploadedFile
-                        ? $this->uploadFile($slide['src_desktop'], $sectionId)
-                        : ($slide['src_desktop'] ?? null);
-
-                    $result['src_mobile'] = isset($slide['src_mobile']) && $slide['src_mobile'] instanceof UploadedFile
-                        ? $this->uploadFile($slide['src_mobile'], $sectionId)
-                        : ($slide['src_mobile'] ?? null);
-                    break;
             }
 
             $processed[] = $result;
@@ -152,124 +194,80 @@ class ContentService
         return $content;
     }
 
-    private function processBrandsArray(array $content, int $sectionId): array
+    private function processItemsArray(array $content, int $sectionId, SectionContent $sectionContent): array
     {
-        if (!isset($content['brands']) || !is_array($content['brands'])) {
+        if (!isset($content['items']) || !is_array($content['items'])) {
             return $content;
+        }
+
+        $existingById = [];
+        if (isset($sectionContent->content['items'])) {
+            foreach ($sectionContent->content['items'] as $existingItem) {
+                $existingById[$existingItem['id']] = $existingItem;
+            }
         }
 
         $processed = [];
 
-        foreach ($content['brands'] as $item) {
-            if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
-                $item['image'] = $this->uploadFile($item['image'], $sectionId);
+        foreach ($content['items'] as $item) {
+            $itemId   = $item['id'];
+            $existing = $existingById[$itemId] ?? [];
+            $result   = ['id' => $itemId];
+
+            foreach ($item as $field => $value) {
+                if ($field === 'id') continue;
+
+                if ($value instanceof UploadedFile) {
+                    $result[$field] = $this->uploadFile($value, $sectionId);
+                } elseif (empty($value) && isset($existing[$field])) {
+                    $result[$field] = $existing[$field];
+                } else {
+                    $result[$field] = $value;
+                }
             }
 
-            $processed[] = [
-                'image' => $item['image'] ?? null,
-                'name'  => $item['name'] ?? '',
-            ];
+            $processed[] = $result;
         }
 
-        $content['brands'] = $processed;
+        $content['items'] = $processed;
         return $content;
     }
 
-   private function processItemsArray(array $content, int $sectionId): array
+    private function processCardsArray(array $content, int $sectionId, SectionContent $sectionContent): array
 {
-    if (!isset($content['items']) || !is_array($content['items'])) {
+    if (!isset($content['cards']) || !is_array($content['cards'])) {
         return $content;
     }
 
-    $existingById = [];
-    $sectionContent = SectionContent::where('page_section_id', $sectionId)->first();
-    if ($sectionContent && isset($sectionContent->content['items'])) {
-        foreach ($sectionContent->content['items'] as $existingItem) {
-            $existingById[$existingItem['id']] = $existingItem;
+    $existingCards = $sectionContent->content['cards'] ?? [];
+    $processed     = [];
+
+    foreach ($content['cards'] as $index => $card) {
+        $existing = $existingCards[$index] ?? [];
+        $result   = [];
+
+    
+        foreach ($card as $field => $value) {
+            if ($field === 'imagen') continue;
+            $result[$field] = $value ?? $existing[$field] ?? null;
         }
-    }
 
-    $processed = [];
-
-    foreach ($content['items'] as $item) {
-        $itemId  = $item['id'];
-        $existing = $existingById[$itemId] ?? [];
-        $result  = ['id' => $itemId];
-
-       
-        foreach ($item as $field => $value) {
-            if ($field === 'id') continue;
-
-            if ($value instanceof UploadedFile) {
-                
-                $result[$field] = $this->uploadFile($value, $sectionId);
-            } elseif (empty($value) && isset($existing[$field])) {
-               
-                $result[$field] = $existing[$field];
-            } else {
-                
-                $result[$field] = $value;
-            }
+        if (isset($card['imagen']) && $card['imagen'] instanceof UploadedFile) {
+            $result['imagen'] = $this->uploadFile($card['imagen'], $sectionId);
+        } else {
+            $result['imagen'] = !empty($card['imagen']) ? $card['imagen'] : ($existing['imagen'] ?? null);
         }
 
         $processed[] = $result;
     }
 
-    $content['items'] = $processed;
-    return $content;
-}
-
-private function processBanksArray(array $content, int $sectionId): array
-{
-    if (!isset($content['banks']) || !is_array($content['banks'])) {
-        return $content;
-    }
-
-    $processed = [];
-
-    foreach ($content['banks'] as $item) {
-        if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
-            $item['image'] = $this->uploadFile($item['image'], $sectionId);
-        }
-
-        $processed[] = [
-            'id'    => $item['id'],
-            'image' => $item['image'] ?? null,
-        ];
-    }
-
-    $content['banks'] = $processed;
-    return $content;
-}
-
-private function processSocialsArray(array $content, int $sectionId): array
-{
-    if (!isset($content['socials']) || !is_array($content['socials'])) {
-        return $content;
-    }
-
-    $processed = [];
-
-    foreach ($content['socials'] as $item) {
-        if (isset($item['image']) && $item['image'] instanceof UploadedFile) {
-            $item['image'] = $this->uploadFile($item['image'], $sectionId);
-        }
-
-        $processed[] = [
-            'id'    => $item['id'],
-            'image' => $item['image'] ?? null,
-            'url'   => $item['url'] ?? '',
-        ];
-    }
-
-    $content['socials'] = $processed;
+    $content['cards'] = $processed;
     return $content;
 }
 
     private function mergeWithExisting(array $existing, array $content): array
     {
-        
-        $replaceableArrays = ['slides','media', 'brands','items','banks','socials'];
+        $replaceableArrays = ['slides', 'media', 'brands', 'items', 'banks', 'socials', 'cards','banner'];
 
         foreach ($replaceableArrays as $key) {
             if (isset($content[$key])) {

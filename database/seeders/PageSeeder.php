@@ -65,7 +65,7 @@ class PageSeeder extends Seeder
             ['footer_logo_header',  'Logo Header',             []],
             ['footer_logo_footer',  'Logo Footer',             []],
             ['footer_contact_info', 'Información de Contacto', []], 
-            ['footer_banks',        'Bancos',                  ['dynamic' => true]],
+            ['footer_socials',        'Redes Sociales',        ['dynamic' => true]],
         ]);
 
         /*

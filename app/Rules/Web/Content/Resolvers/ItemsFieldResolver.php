@@ -3,11 +3,14 @@
 namespace App\Rules\Web\Content\Resolvers;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class ItemsFieldResolver
 {
     public function matches(string $key): bool
     {
+            Log::info("ItemssFieldResolver::matches", ['key' => $key]);
+
         return $key === 'items';
     }
 

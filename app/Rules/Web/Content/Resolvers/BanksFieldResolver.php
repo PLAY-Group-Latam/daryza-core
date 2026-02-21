@@ -1,11 +1,14 @@
 <?php
 
 namespace App\Rules\Web\Content\Resolvers;
+use Illuminate\Support\Facades\Log;
 
 class BanksFieldResolver
 {
     public function matches(string $key): bool
+
     {
+        Log::info("BankFieldResolver::matches", ['key' => $key]);
         return $key === 'banks';
     }
 

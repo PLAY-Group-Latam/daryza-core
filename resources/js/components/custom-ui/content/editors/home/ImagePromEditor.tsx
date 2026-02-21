@@ -5,7 +5,7 @@ import { Save, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Upload } from '@/components/custom-ui/upload';
-import { ContentSectionProps as Props } from '../../../../../types/content/content';
+import { ContentSectionProps as Props } from '@/types/content/content';
 
 interface ImagenPromocionalContent {
     image: File | string | null;
@@ -102,7 +102,7 @@ export default function ImagenPromocionalEditor({ section }: Props) {
                         <Upload
                             value={data.content.image}
                             onFileChange={(file) => {
-                                console.log('🖼️ Imagen seleccionada:', file);
+                                
                                 updateField(file);
                             }}
                             previewClassName="!w-full !aspect-[3/1] !rounded-xl !object-cover !border-0 !bg-transparent"

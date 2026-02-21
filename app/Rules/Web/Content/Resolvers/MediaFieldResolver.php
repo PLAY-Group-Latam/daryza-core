@@ -2,12 +2,15 @@
 namespace App\Rules\Web\Content\Resolvers;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class MediaFieldResolver
 {
     public function matches(string $key): bool
     {
-        return (bool) preg_match('/(image|logo|banner|icon|photo|video|file|pdf|media)/i', $key);
+            Log::info("MediaFieldResolver::matches", ['key' => $key]);
+
+        return (bool) preg_match('/(image|logo|icon|photo|video|file|pdf|media)/i', $key);
     }
 
     public function resolve(string $key, mixed $val): array
@@ -17,7 +20,7 @@ class MediaFieldResolver
         }
 
         if ($val instanceof UploadedFile) {
-            return [$key => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,pdf|max:10240'];
+            return [$key => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,pdf,webp|max:10240'];
         }
 
         return [$key => 'nullable|string'];

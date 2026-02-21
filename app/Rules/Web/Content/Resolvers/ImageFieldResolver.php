@@ -1,15 +1,18 @@
 <?php
 
 namespace App\Rules\Web\Content\Resolvers;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\UploadedFile;
 
 class ImageFieldResolver
 {
-    public function matches(string $key): bool
-    {
-        return str_contains($key, 'image') || str_contains($key, 'logo');
-    }
+   public function matches(string $key): bool
+{
+    $result = str_contains($key, 'image') || str_contains($key, 'logo');
+    Log::info("ImageFieldResolver::matches", ['key' => $key, 'result' => $result]);
+    return $result;
+}
 
     public function resolve(string $key, mixed $val): array
     {

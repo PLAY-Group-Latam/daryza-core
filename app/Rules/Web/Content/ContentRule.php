@@ -13,6 +13,9 @@ use App\Rules\Web\Content\Resolvers\ItemsFieldResolver;
 use App\Rules\Web\Content\Resolvers\BanksFieldResolver;
 use App\Rules\Web\Content\Resolvers\ImageFieldResolver;
 use App\Rules\Web\Content\Resolvers\TimeFieldResolver;
+use App\Rules\Web\Content\Resolvers\CardsFieldResolver;
+use App\Rules\Web\Content\Resolvers\BannerFieldResolver;
+use Illuminate\Support\Facades\Log;
 class ContentRule implements ValidationRule
 {
     private array $resolvers;
@@ -25,15 +28,19 @@ class ContentRule implements ValidationRule
             new TimeFieldResolver(),
             new DateFieldResolver(),
             new ItemsFieldResolver(),
+            new BannerFieldResolver(),
             new BanksFieldResolver(),
             new ImageFieldResolver(),
+            new CardsFieldResolver(),
             new FallbackFieldResolver(),
+            
            
         ];
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
+         Log::info('ContentRule keys recibidas:', ['keys' => array_keys($value)]);
         if (!is_array($value)) {
             $fail('El contenido debe ser un conjunto de datos válido.');
             return;
