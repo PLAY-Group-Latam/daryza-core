@@ -21,10 +21,16 @@ class ContentController extends Controller
     }
 
     public function edit(string $slug, string $type, int $id): Response
-    {
-        $section = $this->contentService->getValidatedSection($slug, $type, $id);
-        return Inertia::render('content/EditSection', ['section' => $section]);
-    }
+{
+    $section = $this->contentService->getValidatedSection($slug, $type, $id);
+
+    $extra = $this->contentService->getExtraDataForSection($type);
+
+    return Inertia::render('content/EditSection', [
+        'section' => $section,
+        ...$extra
+    ]);
+}
 
     public function update(ContentRequest $request, string $slug, string $type, int $id): RedirectResponse
     {
@@ -34,6 +40,8 @@ class ContentController extends Controller
             $request->input('content', []),
             $request->file('content', []),
         );
+
+        
 
         $this->contentService->updateSectionContent($id, $content);
 

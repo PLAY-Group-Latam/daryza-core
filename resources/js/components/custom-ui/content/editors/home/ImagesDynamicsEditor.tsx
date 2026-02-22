@@ -31,13 +31,13 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
     isImagenesPromocionalesContent(rawContent)
       ? rawContent
       : {
-          items: Array.from({ length: 8 }).map((_, i) => ({
-            id: i + 1,
-            src: null,
-            alt: '',
-            link: '',
-          })),
-        };
+        items: Array.from({ length: 8 }).map((_, i) => ({
+          id: i + 1,
+          src: null,
+          alt: '',
+          link: '',
+        })),
+      };
 
   const { data, setData, put, processing } = useForm<{
     content: ImagenesPromocionalesContent;
@@ -79,11 +79,10 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
     data.content.items.forEach((item, i) => {
       const isFile = item.src instanceof File;
       const isString = typeof item.src === 'string';
-      console.log(
-        `  [${i}] id=${item.id} | src tipo: ${
-          isFile ? `File (${(item.src as File).name}, ${(item.src as File).size}b)` :
+      (
+        `  [${i}] id=${item.id} | src tipo: ${isFile ? `File (${(item.src as File).name}, ${(item.src as File).size}b)` :
           isString ? `string (${(item.src as string).substring(0, 60)}...)` :
-          item.src === null ? 'null' : typeof item.src
+            item.src === null ? 'null' : typeof item.src
         }`
       );
     });
@@ -94,10 +93,8 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
     data.content.items.forEach((item, i) => {
       if (item.src instanceof File) {
         fd.append(`content[items][${i}][src]`, item.src);
-        console.log(`✅ FormData[${i}][src] → File adjuntado: ${item.src.name}`);
       } else if (typeof item.src === 'string') {
         fd.append(`content[items][${i}][src]`, item.src);
-        console.log(`🔗 FormData[${i}][src] → string URL`);
       } else {
         console.warn(`⚠️ FormData[${i}][src] → NULL/vacío, no se enviará imagen`);
       }
@@ -106,7 +103,6 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
       fd.append(`content[items][${i}][link]`, item.link ?? '');
     });
 
-    console.log('📬 Enviando con Inertia put...');
 
     put(
       `/content/update/${section.page.slug}/${section.type}/${section.id}`,
@@ -114,7 +110,6 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
-          console.log('✅ onSuccess — guardado correctamente');
           toast.success('¡Imágenes promocionales actualizadas!');
         },
         onError: (errors) => {
@@ -153,30 +148,48 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
             {/* ── Columna izquierda (col-span-2) ── */}
             <div className="col-span-2 grid grid-cols-2 gap-2.5 lg:gap-4">
               {items.slice(0, 4).map((item, i) => (
-                <div key={item.id} className="relative aspect-square">
-                  <Upload
-                    value={item.src}
-                    onFileChange={(file) => {
-                      console.log(`🖼️ Upload[${i}] cambió →`, file instanceof File ? `File: ${file.name}` : file);
-                      updateItem(i, { src: file });
-                    }}
-                    previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                <div key={item.id} className="flex flex-col gap-2">
+                  <div className="relative aspect-square">
+                    <Upload
+                      value={item.src}
+                      onFileChange={(file) => updateItem(i, { src: file })}
+                      previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                    />
+                    <RemoveButton onClick={() => removeItem(i)} />
+                  </div>
+
+                  <input
+                    type="text"
+                    value={item.link ?? ''}
+                    onChange={(e) => updateItem(i, { link: e.target.value })}
+                    placeholder="https://ejemplo.com"
+                    className="w-full text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                  <RemoveButton onClick={() => removeItem(i)} />
                 </div>
               ))}
 
               {items[4] && (
-                <div className="col-span-2 relative aspect-[16/5]">
-                  <Upload
-                    value={items[4].src}
-                    onFileChange={(file) => {
-                      console.log(`🖼️ Upload[4] cambió →`, file instanceof File ? `File: ${file.name}` : file);
-                      updateItem(4, { src: file });
-                    }}
-                    previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                <div className="col-span-2 flex flex-col gap-2">
+
+                  <div className="relative aspect-[16/5]">
+                    <Upload
+                      value={items[4].src}
+                      onFileChange={(file) => {
+                        updateItem(4, { src: file });
+                      }}
+                      previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                    />
+                    <RemoveButton onClick={() => removeItem(4)} />
+                  </div>
+
+                  <input
+                    type="text"
+                    value={items[4].link ?? ''}
+                    onChange={(e) => updateItem(4, { link: e.target.value })}
+                    placeholder="https://ejemplo.com"
+                    className="w-full text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                  <RemoveButton onClick={() => removeItem(4)} />
+
                 </div>
               )}
             </div>
@@ -185,17 +198,29 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
             <div className="col-span-1 flex flex-col gap-2.5 lg:gap-4">
               {items.slice(5, 7).map((item, i) => {
                 const index = i + 5;
+
                 return (
-                  <div key={item.id} className="relative aspect-[3/4]">
-                    <Upload
-                      value={item.src}
-                      onFileChange={(file) => {
-                        console.log(`🖼️ Upload[${index}] cambió →`, file instanceof File ? `File: ${file.name}` : file);
-                        updateItem(index, { src: file });
-                      }}
-                      previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                  <div key={item.id} className="flex flex-col gap-2">
+
+                    <div className="relative aspect-[3/4]">
+                      <Upload
+                        value={item.src}
+                        onFileChange={(file) => {
+                          updateItem(index, { src: file });
+                        }}
+                        previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
+                      />
+                      <RemoveButton onClick={() => removeItem(index)} />
+                    </div>
+
+                    <input
+                      type="text"
+                      value={item.link ?? ''}
+                      onChange={(e) => updateItem(index, { link: e.target.value })}
+                      placeholder="https://ejemplo.com"
+                      className="w-full text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                     />
-                    <RemoveButton onClick={() => removeItem(index)} />
+
                   </div>
                 );
               })}
@@ -203,18 +228,27 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
 
             {/* ── Columna derecha (col-span-1) ── */}
             {items[7] && (
-              <div className="col-span-1 self-stretch">
+              <div className="col-span-1 self-stretch flex flex-col gap-2">
+
                 <div className="relative h-full w-full">
                   <Upload
                     value={items[7].src}
                     onFileChange={(file) => {
-                      console.log(`🖼️ Upload[7] cambió →`, file instanceof File ? `File: ${file.name}` : file);
                       updateItem(7, { src: file });
                     }}
                     previewClassName="!absolute !inset-0 !h-full !w-full !rounded-lg !object-cover"
                   />
                   <RemoveButton onClick={() => removeItem(7)} />
                 </div>
+
+                <input
+                  type="text"
+                  value={items[7].link ?? ''}
+                  onChange={(e) => updateItem(7, { link: e.target.value })}
+                  placeholder="https://ejemplo.com"
+                  className="w-full text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+
               </div>
             )}
 

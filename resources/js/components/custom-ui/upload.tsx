@@ -18,7 +18,7 @@ export function Upload({
     value, 
     previewClassName,
     accept = 'image/*',
-    placeholder = 'Subir imagen',
+    placeholder,
     type = 'image'
 }: UploadProps) {
     const [preview, setPreview] = useState<string | null>(
@@ -52,6 +52,7 @@ export function Upload({
     };
 
     const isVideo = type === 'video' || accept.includes('video');
+    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen'); 
 
     return (
         <div className="flex flex-col gap-3">
@@ -106,7 +107,7 @@ export function Upload({
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
                     <span className="text-sm text-slate-500">
-                        {placeholder}
+                         {resolvedPlaceholder}
                     </span>
                 </div>
             )}

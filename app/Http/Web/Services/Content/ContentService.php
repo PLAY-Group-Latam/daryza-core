@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use App\Http\Web\Services\GcsService;
 use Illuminate\Http\UploadedFile;
+use App\Models\Products\Product;
+
 
 class ContentService
 {
@@ -37,6 +39,41 @@ class ContentService
 
         return $section;
     }
+public function getExtraDataForSection(string $type): array
+{
+    return match ($type) {
+
+        'blog_products' => [
+            'products' => Product::query()
+                ->where('is_active', true)
+                ->with([
+                    'variants' => function ($query) {
+                        $query->where('is_main', true)
+                              ->with(['media' => function ($q) {
+                                  $q->where('type', 'image');
+                              }]);
+                    }
+                ])
+                ->select('id', 'name', 'slug')
+                ->orderBy('name')
+                ->get()
+                ->map(function ($product) {
+
+                    $mainVariant = $product->variants->first();
+                    $image = $mainVariant?->media->first()?->file_path;
+
+                    return [
+                        'id'    => $product->id,
+                        'name'  => $product->name,
+                        'slug'  => $product->slug,
+                        'image' => $image,
+                    ];
+                }),
+        ],
+
+        default => [],
+    };
+}
 
     public function updateSectionContent(int $sectionId, array $content): bool
     {
@@ -45,6 +82,7 @@ class ContentService
 
             $content = $this->processSingleFiles($content, $sectionId);
             $content = $this->processBannerObject($content, $sectionId);
+            $content = $this->processYearsArray($content, $sectionId);
             $content = $this->processSlidesArray($content, $sectionId);
             $content = $this->processMediaArray($content, $sectionId);
             $content = $this->processItemsArray($content, $sectionId, $sectionContent);
@@ -95,11 +133,32 @@ class ContentService
         }
 
         $content['banner'] = [
-            'type'        => $banner['type']        ?? 'image',
-            'src_desktop' => $banner['src_desktop']  ?? null,
-            'src_mobile'  => $banner['src_mobile']   ?? null,
-            'link_url'    => $banner['link_url']      ?? null,
+            'type'        => $banner['type']       ?? 'image',
+            'src_desktop' => $banner['src_desktop'] ?? null,
+            'src_mobile'  => $banner['src_mobile']  ?? null,
+            'link_url'    => $banner['link_url']     ?? null,
         ];
+
+        return $content;
+    }
+
+    private function processYearsArray(array $content, int $sectionId): array
+    {
+        if (!isset($content['years']) || !is_array($content['years'])) {
+            return $content;
+        }
+
+        $content['years'] = array_map(function ($year) use ($sectionId) {
+            if (isset($year['imagen']) && $year['imagen'] instanceof UploadedFile) {
+                $year['imagen'] = $this->uploadFile($year['imagen'], $sectionId);
+            }
+
+            return [
+                'anio'   => $year['anio']   ?? '',
+                'imagen' => $year['imagen'] ?? null,
+                'texto'  => $year['texto']  ?? '',
+            ];
+        }, $content['years']);
 
         return $content;
     }
@@ -234,40 +293,39 @@ class ContentService
     }
 
     private function processCardsArray(array $content, int $sectionId, SectionContent $sectionContent): array
-{
-    if (!isset($content['cards']) || !is_array($content['cards'])) {
+    {
+        if (!isset($content['cards']) || !is_array($content['cards'])) {
+            return $content;
+        }
+
+        $existingCards = $sectionContent->content['cards'] ?? [];
+        $processed     = [];
+
+        foreach ($content['cards'] as $index => $card) {
+            $existing = $existingCards[$index] ?? [];
+            $result   = [];
+
+            foreach ($card as $field => $value) {
+                if ($field === 'imagen') continue;
+                $result[$field] = $value ?? $existing[$field] ?? null;
+            }
+
+            if (isset($card['imagen']) && $card['imagen'] instanceof UploadedFile) {
+                $result['imagen'] = $this->uploadFile($card['imagen'], $sectionId);
+            } else {
+                $result['imagen'] = !empty($card['imagen']) ? $card['imagen'] : ($existing['imagen'] ?? null);
+            }
+
+            $processed[] = $result;
+        }
+
+        $content['cards'] = $processed;
         return $content;
     }
 
-    $existingCards = $sectionContent->content['cards'] ?? [];
-    $processed     = [];
-
-    foreach ($content['cards'] as $index => $card) {
-        $existing = $existingCards[$index] ?? [];
-        $result   = [];
-
-    
-        foreach ($card as $field => $value) {
-            if ($field === 'imagen') continue;
-            $result[$field] = $value ?? $existing[$field] ?? null;
-        }
-
-        if (isset($card['imagen']) && $card['imagen'] instanceof UploadedFile) {
-            $result['imagen'] = $this->uploadFile($card['imagen'], $sectionId);
-        } else {
-            $result['imagen'] = !empty($card['imagen']) ? $card['imagen'] : ($existing['imagen'] ?? null);
-        }
-
-        $processed[] = $result;
-    }
-
-    $content['cards'] = $processed;
-    return $content;
-}
-
     private function mergeWithExisting(array $existing, array $content): array
     {
-        $replaceableArrays = ['slides', 'media', 'brands', 'items', 'banks', 'socials', 'cards','banner'];
+        $replaceableArrays = ['slides', 'media', 'brands', 'items', 'banks', 'socials', 'cards', 'banner', 'years'];
 
         foreach ($replaceableArrays as $key) {
             if (isset($content[$key])) {

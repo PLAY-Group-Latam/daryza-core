@@ -6,56 +6,76 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Upload } from '@/components/custom-ui/upload';
 import { ContentSectionProps as Props } from '@/types/content/content';
+import { FormDataConvertible } from '@inertiajs/core';
 
 interface ImagenPromocionalContent {
-    image: File | string | null;
+    image_desktop: File | string | null;
+    image_mobile: File | string | null;
+    link_url: string;
 }
 
 export default function ImagenPromocionalEditor({ section }: Props) {
 
     const isImagenContent = (content: any): content is ImagenPromocionalContent => {
-        return content && 'image' in content;
+        return content && (
+            'image_desktop' in content ||
+            'image_mobile' in content ||
+            'link_url' in content
+        );
     };
 
     const rawContent = section.content?.content;
 
     const initialContent: ImagenPromocionalContent = isImagenContent(rawContent)
-        ? rawContent
+        ? {
+            image_desktop: rawContent.image_desktop ?? null,
+            image_mobile: rawContent.image_mobile ?? null,
+            link_url: rawContent.link_url ?? '',
+        }
         : {
-            image: null,
+            image_desktop: null,
+            image_mobile: null,
+            link_url: '',
         };
 
     const { data, setData, processing } = useForm<{
         content: ImagenPromocionalContent;
     }>({
-        content: {
-            image: initialContent.image ?? null,
-        },
+        content: initialContent,
     });
 
-    const updateField = (value: File | string | null) => {
+    const updateImage = (
+        field: 'image_desktop' | 'image_mobile',
+        value: File | string | null
+    ) => {
         setData('content', {
             ...data.content,
-            image: value,
+            [field]: value,
+        });
+    };
+
+    const updateLink = (value: string) => {
+        setData('content', {
+            ...data.content,
+            link_url: value,
         });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Enviando datos:', data.content);
 
         router.post(
             `/content/update/${section.page.slug}/${section.type}/${section.id}`,
             {
                 _method: 'PUT',
-                content: {
-                    image: data.content.image,
-                },
+                content: data.content as unknown as FormDataConvertible,
             },
             {
                 forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('¡Imagen actualizada correctamente!');
+                    toast.success('¡Imagen promocional actualizada correctamente!');
                 },
                 onError: (errors) => {
                     console.error('❌ Errores:', errors);
@@ -80,7 +100,7 @@ export default function ImagenPromocionalEditor({ section }: Props) {
                                 Configuración de {section.name}
                             </h3>
                             <p className="text-sm text-slate-500">
-                                Administra la imagen promocional.
+                                Administra las imágenes promocionales.
                             </p>
                         </div>
                     </div>
@@ -88,25 +108,69 @@ export default function ImagenPromocionalEditor({ section }: Props) {
 
                 <div className="p-8 space-y-8">
 
-                    {/* Imagen */}
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="text-sm font-semibold text-slate-800">
-                                Imagen Promocional
-                            </label>
-                            <span className="text-xs text-slate-400 font-medium">
-                                Sugerido: 1200x500px
-                            </span>
+                    {/* Imágenes */}
+                    <div className="space-y-6">
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                            {/* Imagen Desktop */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                        Imagen Desktop
+                                    </label>
+                                    <span className="text-xs text-slate-400">
+                                        1200x500px
+                                    </span>
+                                </div>
+
+                                <Upload
+                                    value={data.content.image_desktop}
+                                    onFileChange={(file) =>
+                                        updateImage('image_desktop', file)
+                                    }
+                                    accept="image/*"
+                                    previewClassName="w-full aspect-[3/1] rounded-xl object-cover border border-dashed border-slate-200"
+                                />
+                            </div>
+
+                            {/* Imagen Mobile */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                        Imagen Mobile
+                                    </label>
+                                    <span className="text-xs text-slate-400">
+                                        750x900px aprox
+                                    </span>
+                                </div>
+
+                                <Upload
+                                    value={data.content.image_mobile}
+                                    onFileChange={(file) =>
+                                        updateImage('image_mobile', file)
+                                    }
+                                    accept="image/*"
+                                    previewClassName="w-full aspect-[3/1] rounded-xl object-cover border border-dashed border-slate-200"
+                                />
+                            </div>
+
                         </div>
 
-                        <Upload
-                            value={data.content.image}
-                            onFileChange={(file) => {
-                                
-                                updateField(file);
-                            }}
-                            previewClassName="!w-full !aspect-[3/1] !rounded-xl !object-cover !border-0 !bg-transparent"
-                        />
+                        {/* URL */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                Enlace de redirección
+                            </label>
+                            <input
+                                type="text"
+                                value={data.content.link_url}
+                                onChange={(e) => updateLink(e.target.value)}
+                                placeholder="https://ejemplo.com/promocion"
+                                className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+
                     </div>
                 </div>
             </div>

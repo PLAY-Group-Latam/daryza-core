@@ -43,6 +43,9 @@ class ProductController extends Controller
                 $q->where('slug', $request->category_slug);
             });
         }
+        if ($request->has('ids')) {
+    $query->whereIn('id', explode(',', $request->ids));
+}
 
         // 3. Búsqueda simple
         if ($request->has('search')) {

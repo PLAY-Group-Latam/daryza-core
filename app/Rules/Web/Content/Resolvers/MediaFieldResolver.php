@@ -20,7 +20,7 @@ class MediaFieldResolver
         }
 
         if ($val instanceof UploadedFile) {
-            return [$key => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,pdf,webp|max:10240'];
+            return [$key => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,pdf,webp|max:20480'];
         }
 
         return [$key => 'nullable|string'];

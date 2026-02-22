@@ -25,6 +25,16 @@ import CustomerServiceEditor from '@/components/custom-ui/content/editors/contac
 import DistributorNetworkEditor from '@/components/custom-ui/content/editors/contact/DistribuitorNewtworkEditor';
 import ContactAdviceEditor from '@/components/custom-ui/content/editors/contact/ContactAdviceEditor';
 import ContactWorkEditor from '@/components/custom-ui/content/editors/contact/ContactWorkEditor';
+import BannerPromotionalEditor from '@/components/custom-ui/content/editors/aboutus/BannerPromotionalEditor';
+import IntroAboutusEditor from '@/components/custom-ui/content/editors/aboutus/IntroAboutusEditor';
+import OurHistoryEditor from '@/components/custom-ui/content/editors/aboutus/OurHistoryEditor';
+import OurPurposeEditor from '@/components/custom-ui/content/editors/aboutus/OurPurposeEditor';
+import SustainabilityEditor from '@/components/custom-ui/content/editors/aboutus/SustainabilityEditor';
+import ImageFormEditor from '@/components/custom-ui/content/editors/aboutus/ImageFormEditor';
+import BannerIndexEditor from '@/components/custom-ui/content/editors/blog/BannerIndexEditor';
+import ImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/ImagePromotionalEditor';
+import ProductListEditor from '@/components/custom-ui/content/editors/blog/ProductListEditor';
+import PageImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/PageImagePromtionalEditor';
 
 interface Props {
     section: {
@@ -39,6 +49,7 @@ interface Props {
             slug: string;
         };
     };
+      products?: any[]; 
 }
 
 /**
@@ -72,9 +83,29 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'contact_distributors': DistributorNetworkEditor,
     'contact_advisor':       ContactAdviceEditor,
     'contact_work':         ContactWorkEditor,
+    
+
+    //Aboutus
+    'nosotros_banner': BannerPromotionalEditor,
+    'nosotros_intro' :IntroAboutusEditor,
+    'nosotros_historia':OurHistoryEditor,
+    'nosotros_proposito': OurPurposeEditor,
+    'nosotros_sostenibilidad':SustainabilityEditor,
+    'nosotros_formulario': ImageFormEditor,
+
+
+    //Blog
+    'blog_banner':BannerIndexEditor,
+    'blog_promos':ImagePromotionalEditor,
+    'blog_products':ProductListEditor,
+    'blog_post_promos':PageImagePromotionalEditor,
+    
+    
+
+
 };
 
-export default function EditSection({ section }: Props) {
+export default function EditSection({ section , products}: Props) {
     const EditorComponent = EDITOR_COMPONENTS[section.type];
 
     return (
@@ -138,7 +169,7 @@ export default function EditSection({ section }: Props) {
                     {/* Editor o estado vacío */}
                     <div className="mx-auto w-full max-w-5xl">
                         {EditorComponent ? (
-                            <EditorComponent section={section} />
+                            <EditorComponent section={section} products={products} />
                         ) : (
                             <NotConfigured type={section.type} />
                         )}

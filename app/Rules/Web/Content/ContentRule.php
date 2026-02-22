@@ -15,6 +15,7 @@ use App\Rules\Web\Content\Resolvers\ImageFieldResolver;
 use App\Rules\Web\Content\Resolvers\TimeFieldResolver;
 use App\Rules\Web\Content\Resolvers\CardsFieldResolver;
 use App\Rules\Web\Content\Resolvers\BannerFieldResolver;
+use App\Rules\Web\Content\Resolvers\BlogProductsItemsResolver;
 use Illuminate\Support\Facades\Log;
 class ContentRule implements ValidationRule
 {
@@ -27,6 +28,7 @@ class ContentRule implements ValidationRule
             new MediaFieldResolver(),
             new TimeFieldResolver(),
             new DateFieldResolver(),
+            new BlogProductsItemsResolver(),
             new ItemsFieldResolver(),
             new BannerFieldResolver(),
             new BanksFieldResolver(),
