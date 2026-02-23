@@ -18,6 +18,8 @@
         "laravel/wayfinder": "^0.1.9",
         "maatwebsite/excel": "^3.1",
         "spatie/eloquent-sortable": "^5.0",
+        "symfony/http-client": "^8.0",
+        "symfony/mailgun-mailer": "^8.0",
         "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
