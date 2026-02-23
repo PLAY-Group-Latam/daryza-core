@@ -35,7 +35,11 @@ import BannerIndexEditor from '@/components/custom-ui/content/editors/blog/Banne
 import ImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/ImagePromotionalEditor';
 import ProductListEditor from '@/components/custom-ui/content/editors/blog/ProductListEditor';
 import PageImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/PageImagePromtionalEditor';
-
+import ProfileEditor from '@/components/custom-ui/content/editors/system-all/ProfileEditor';
+import ProductInformativeEditor from '@/components/custom-ui/content/editors/system-all/ProductInformativeEditor';
+import CheckoutEditor from '@/components/custom-ui/content/editors/system-all/CheckoutEditor';
+import CartEditor from '@/components/custom-ui/content/editors/system-all/CartEditor';
+import FilterProductoEditor from '@/components/custom-ui/content/editors/system-all/FilterProductEditor';
 interface Props {
     section: {
         id: number;
@@ -100,6 +104,16 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'blog_products':ProductListEditor,
     'blog_post_promos':PageImagePromotionalEditor,
     
+
+    //System
+
+    'sistema_perfil':ProfileEditor,
+    'sistema_producto':ProductInformativeEditor,
+    'sistema_checkout':CheckoutEditor,
+    'sistema_carrito':CartEditor,
+    'sistema_filtrado':FilterProductoEditor,
+
+
     
 
 

@@ -90,6 +90,7 @@ public function getExtraDataForSection(string $type): array
             $content = $this->processSimpleImageArray($content, 'brands', ['image' => null, 'name'  => ''], $sectionId);
             $content = $this->processSimpleImageArray($content, 'banks',  ['id'    => null, 'image' => null], $sectionId);
             $content = $this->processSimpleImageArray($content, 'socials', ['id'   => null, 'image' => null, 'url' => ''], $sectionId);
+            $content = $this->processPromoObject($content, $sectionId);
 
             $finalData = $this->mergeWithExisting($sectionContent->content ?? [], $content);
 
@@ -183,6 +184,30 @@ public function getExtraDataForSection(string $type): array
 
         return $content;
     }
+    private function processPromoObject(array $content, int $sectionId): array
+{
+    if (!isset($content['promo']) || !is_array($content['promo'])) {
+        return $content;
+    }
+
+    $promo = $content['promo'];
+
+    if (isset($promo['src_desktop']) && $promo['src_desktop'] instanceof UploadedFile) {
+        $promo['src_desktop'] = $this->uploadFile($promo['src_desktop'], $sectionId);
+    }
+
+    if (isset($promo['src_mobile']) && $promo['src_mobile'] instanceof UploadedFile) {
+        $promo['src_mobile'] = $this->uploadFile($promo['src_mobile'], $sectionId);
+    }
+
+    $content['promo'] = [
+        'src_desktop' => $promo['src_desktop'] ?? null,
+        'src_mobile'  => $promo['src_mobile']  ?? null,
+        'link_url'    => $promo['link_url']     ?? null,
+    ];
+
+    return $content;
+}
 
     private function processMediaArray(array $content, int $sectionId): array
     {
@@ -325,7 +350,7 @@ public function getExtraDataForSection(string $type): array
 
     private function mergeWithExisting(array $existing, array $content): array
     {
-        $replaceableArrays = ['slides', 'media', 'brands', 'items', 'banks', 'socials', 'cards', 'banner', 'years'];
+        $replaceableArrays = ['slides', 'media', 'brands', 'items', 'banks', 'socials', 'cards', 'banner', 'years','promo'];
 
         foreach ($replaceableArrays as $key) {
             if (isset($content[$key])) {

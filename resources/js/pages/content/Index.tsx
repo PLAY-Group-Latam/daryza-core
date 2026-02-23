@@ -1,10 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { 
-    Edit3, 
-    Globe, 
-    Layers, 
-    LayoutTemplate, 
+import {
+    Edit3,
+    Globe,
+    Layers,
+    LayoutTemplate,
     Search,
     ChevronLeft,
     ChevronRight,
@@ -12,6 +12,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { SectionFrontendLink } from '@/components/custom-ui/PageSlugLink';
 
 interface PageSection {
     id: number;
@@ -214,9 +215,8 @@ export default function Index() {
                                     >
                                         <Globe size={14} className={isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} />
                                         <span>{page.title}</span>
-                                        <span className={`rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${
-                                            isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                                        }`}>
+                                        <span className={`rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                                            }`}>
                                             {page.sections?.length || 0}
                                         </span>
                                     </button>
@@ -236,6 +236,7 @@ export default function Index() {
                 )}
 
                 {/* Secciones — en orden exacto del seeder (sort_order) */}
+                {/* Secciones — en orden exacto del seeder (sort_order) */}
                 {!isGlobalSearchActive && activePage && (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {activePage.sections?.map((section) => (
@@ -243,6 +244,11 @@ export default function Index() {
                                 key={section.id}
                                 className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
                             >
+                                {/* 🔥 LINK AL FRONTEND */}
+                                <div className="mb-3">
+                                    <SectionFrontendLink type={section.type} />
+                                </div>
+
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex flex-col gap-1 min-w-0">
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -252,8 +258,13 @@ export default function Index() {
                                             {section.name}
                                         </h3>
                                     </div>
-                                    <Layers size={16} className="shrink-0 text-muted-foreground transition-colors group-hover:text-primary mt-0.5" />
+
+                                    <Layers
+                                        size={16}
+                                        className="shrink-0 text-muted-foreground transition-colors group-hover:text-primary mt-0.5"
+                                    />
                                 </div>
+
                                 <div className="mt-5 flex items-end justify-end">
                                     <Link
                                         href={`/content/${activePage.slug}/${section.type}/${section.id}`}

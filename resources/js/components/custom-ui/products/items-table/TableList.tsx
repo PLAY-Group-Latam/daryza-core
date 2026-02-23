@@ -71,7 +71,7 @@ export const columns: ColumnDef<Product>[] = [
     // },
     {
         id: 'product_info',
-        header: 'Precdadadaio / Sku Daryza / Stock',
+        header: 'Precio / Sku Daryza / Stock',
         cell: ({ row }) => {
             const product = row.original;
             const mainVariant = getMainVariant(product);

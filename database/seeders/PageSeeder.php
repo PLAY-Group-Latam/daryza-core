@@ -202,7 +202,7 @@ class PageSeeder extends Seeder
             ['sistema_checkout',       'Checkout',             []],
             ['sistema_perfil',         'Perfil',               []],
             ['sistema_producto',       'Información Producto', []],
-            ['sistema_distribuidores', 'Distribuidores',       []],
+            
         ]);
     }
 
@@ -222,7 +222,7 @@ class PageSeeder extends Seeder
                 'sort_order' => $index + 1,
                 'is_active'  => true,
                 'settings'   => empty($settings) ? null : $settings,
-            ]);
+            ]); 
 
             SectionContent::create([
                 'page_section_id' => $section->id,
