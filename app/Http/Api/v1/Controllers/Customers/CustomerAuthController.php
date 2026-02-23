@@ -6,6 +6,8 @@ use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Services\CustomerService;
+use App\Jobs\SendEmailJob;
+use App\Mail\Login\SuccessLogin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -43,6 +45,10 @@ class CustomerAuthController extends Controller
 
     $customer = auth('api')->user();
 
+    SendEmailJob::dispatch(
+      new SuccessLogin($customer->full_name ?? 'Usuario'),
+      $customer->email
+    );
 
     return $this->successWithCookie(
       'Login exitoso',

@@ -1,4 +1,4 @@
-import FormProduct from '@/components/custom-ui/products/items-table/create-form/FormProduct';
+import FormProduct from '@/components/custom-ui/products/product/FormProduct';
 import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';

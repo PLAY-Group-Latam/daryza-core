@@ -1,4 +1,4 @@
-import FormImport from '@/components/custom-ui/products/items-table/FormImport';
+import FormImport from '@/components/custom-ui/products/product/FormImport';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 
