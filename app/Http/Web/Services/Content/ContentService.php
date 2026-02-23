@@ -29,50 +29,72 @@ class ContentService
         }])->get();
     }
 
-    public function getValidatedSection(string $slug, string $type, int $id): PageSection
-    {
-        $section = PageSection::with(['content', 'page'])->findOrFail($id);
-
-        if ($section->page->slug !== $slug || $section->type !== $type) {
-            abort(404, 'Integridad de ruta inválida.');
-        }
-
-        return $section;
-    }
-public function getExtraDataForSection(string $type): array
+ public function getValidatedSection(string $slug, string $type, int $id): PageSection
 {
-    return match ($type) {
+    $section = PageSection::with(['content', 'page'])->findOrFail($id);
 
-        'blog_products' => [
-            'products' => Product::query()
-                ->where('is_active', true)
-                ->with([
-                    'variants' => function ($query) {
-                        $query->where('is_main', true)
-                              ->with(['media' => function ($q) {
-                                  $q->where('type', 'image');
-                              }]);
-                    }
-                ])
-                ->select('id', 'name', 'slug')
-                ->orderBy('name')
-                ->get()
-                ->map(function ($product) {
+    if ($section->page->slug !== $slug || $section->type !== $type) {
+        abort(404, 'Integridad de ruta inválida.');
+    }
 
-                    $mainVariant = $product->variants->first();
-                    $image = $mainVariant?->media->first()?->file_path;
+    return $section;
+}
+public function searchProductsByName(?string $search, int $limit = 10): array
+{
+    $search = trim($search ?? '');
 
-                    return [
-                        'id'    => $product->id,
-                        'name'  => $product->name,
-                        'slug'  => $product->slug,
-                        'image' => $image,
-                    ];
-                }),
-        ],
+    if (strlen($search) < 3) {
+        return ['searchResults' => []];
+    }
 
-        default => [],
-    };
+    $searchTerm = "%{$search}%";
+
+    $products = Product::query()
+        ->select('id', 'name', 'slug') // Traemos slug por si quieres linkear
+        ->where('name', 'ilike', $searchTerm)
+        ->active() 
+        ->with([
+            'mainVariant' => function ($q) {
+                // Seleccionamos todos los campos necesarios para el cálculo de promo
+                $q->select(
+                    'id', 'product_id', 'sku', 'price', 
+                    'promo_price', 'is_on_promo', 'promo_start_at', 'promo_end_at'
+                )
+                ->with(['media' => function($q) {
+                    $q->where('type', 'image')
+                      ->select('id', 'mediable_id', 'mediable_type', 'file_path')
+                      ->orderBy('order', 'asc');
+                }]);
+            }
+        ])
+        ->limit($limit)
+        ->get()
+        ->map(fn($p) => [
+            'product_id'   => $p->id,
+            'variant_id'   => $p->mainVariant?->id,
+            'product_name' => $p->name,
+            'slug'         => $p->slug,
+            'sku'          => $p->mainVariant?->sku ?? 'S/N',
+            'image'        => $p->mainVariant?->media->first()?->file_path ?? null,
+            
+            // --- Información de Precios ---
+            'price'        => $p->mainVariant?->price,
+            'promo_price'  => $p->mainVariant?->promo_price,
+            'is_on_promo'  => $p->mainVariant?->is_on_promo ?? false,
+            // Usamos el Accessor que ya tienes definido en ProductVariant
+            'active_price' => $p->mainVariant?->active_price, 
+            
+            // Opcional: Calcular si la promo es válida realmente ahora mismo
+            'has_valid_promo' => $p->mainVariant ? (
+                $p->mainVariant->is_on_promo && 
+                (!$p->mainVariant->promo_start_at || $p->mainVariant->promo_start_at->isPast()) && 
+                (!$p->mainVariant->promo_end_at || $p->mainVariant->promo_end_at->isFuture())
+            ) : false,
+        ]);
+
+    return [
+        'searchResults' => $products
+    ];
 }
 
     public function updateSectionContent(int $sectionId, array $content): bool
@@ -116,7 +138,7 @@ public function getExtraDataForSection(string $type): array
         }
         return $content;
     }
-
+  
     private function processBannerObject(array $content, int $sectionId): array
     {
         if (!isset($content['banner']) || !is_array($content['banner'])) {
@@ -278,44 +300,57 @@ public function getExtraDataForSection(string $type): array
         return $content;
     }
 
-    private function processItemsArray(array $content, int $sectionId, SectionContent $sectionContent): array
-    {
-        if (!isset($content['items']) || !is_array($content['items'])) {
-            return $content;
-        }
-
-        $existingById = [];
-        if (isset($sectionContent->content['items'])) {
-            foreach ($sectionContent->content['items'] as $existingItem) {
-                $existingById[$existingItem['id']] = $existingItem;
-            }
-        }
-
-        $processed = [];
-
-        foreach ($content['items'] as $item) {
-            $itemId   = $item['id'];
-            $existing = $existingById[$itemId] ?? [];
-            $result   = ['id' => $itemId];
-
-            foreach ($item as $field => $value) {
-                if ($field === 'id') continue;
-
-                if ($value instanceof UploadedFile) {
-                    $result[$field] = $this->uploadFile($value, $sectionId);
-                } elseif (empty($value) && isset($existing[$field])) {
-                    $result[$field] = $existing[$field];
-                } else {
-                    $result[$field] = $value;
-                }
-            }
-
-            $processed[] = $result;
-        }
-
-        $content['items'] = $processed;
+   private function processItemsArray(array $content, int $sectionId, SectionContent $sectionContent): array
+{
+    if (!isset($content['items']) || !is_array($content['items'])) {
         return $content;
     }
+
+    $existingById = [];
+    if (isset($sectionContent->content['items'])) {
+        foreach ($sectionContent->content['items'] as $existingItem) {
+            // Usamos product_id si existe, de lo contrario id
+            $idKey = isset($existingItem['product_id']) ? 'product_id' : 'id';
+            if (isset($existingItem[$idKey])) {
+                $existingById[$existingItem[$idKey]] = $existingItem;
+            }
+        }
+    }
+
+    $processed = [];
+
+    foreach ($content['items'] as $item) {
+        // DETECCION DINÁMICA DE LA LLAVE DE IDENTIFICACIÓN
+        $idKey = isset($item['product_id']) ? 'product_id' : 'id';
+
+        if (!isset($item[$idKey])) {
+            // Si por alguna razón no hay ninguna de las dos, saltamos o manejamos error
+            continue; 
+        }
+
+        $itemId   = $item[$idKey];
+        $existing = $existingById[$itemId] ?? [];
+        $result   = [$idKey => $itemId];
+
+        foreach ($item as $field => $value) {
+            // Saltamos la llave de identificación para no procesarla dos veces
+            if ($field === 'id' || $field === 'product_id') continue;
+
+            if ($value instanceof UploadedFile) {
+                $result[$field] = $this->uploadFile($value, $sectionId);
+            } elseif (empty($value) && isset($existing[$field])) {
+                $result[$field] = $existing[$field];
+            } else {
+                $result[$field] = $value;
+            }
+        }
+
+        $processed[] = $result;
+    }
+
+    $content['items'] = $processed;
+    return $content;
+}
 
     private function processCardsArray(array $content, int $sectionId, SectionContent $sectionContent): array
     {

@@ -102,7 +102,7 @@ export default function ImagenesPromocionalesEditor({ section }: Props) {
       fd.append(`content[items][${i}][alt]`, item.alt ?? '');
       fd.append(`content[items][${i}][link]`, item.link ?? '');
     });
-
+console.log('📤 FormData simulada para envío:',fd);
 
     put(
       `/content/update/${section.page.slug}/${section.type}/${section.id}`,

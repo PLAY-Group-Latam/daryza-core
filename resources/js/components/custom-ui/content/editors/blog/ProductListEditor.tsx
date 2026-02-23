@@ -1,172 +1,151 @@
-import { useMemo } from "react";
+'use client';
+
 import { useForm } from "@inertiajs/react";
+import { useEffect } from "react";
 import { toast } from "sonner";
-
-interface ProductLite {
-  id: string;
-  name: string;
-  slug: string;
-  image?: string | null;
-}
-
-interface ProductItem {
-  id: string;
-}
-
+import { BlogProductSearch } from "./BlogProductSearch";
+import { Save, Trash2, Package, LayoutList, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ProductLite } from  "@/types/content/content";
 interface Props {
-  section: any;
-  products?: ProductLite[];
+    section: any;
+    searchResults?: ProductLite[];
 }
 
-export default function ProductListEditor({
-  section,
-  products = [],
-}: Props) {
+export default function ProductListEditor({ section, searchResults = [] }: Props) {
+    
+    const initialItems: ProductLite[] = section.content?.content.items ?? [];
 
-  const safeProducts = Array.isArray(products) ? products : [];
-
- const initialItems: ProductItem[] = section.content?.content?.items ?? [];
-
- const { data, setData, put, processing, transform } = useForm({
-  items: initialItems,
-});
-
-  const selectedIds = useMemo(
-    () => new Set(data.items.map((p) => p.id)),
-    [data.items]
-  );
-
-  const availableProducts = useMemo(
-    () => safeProducts.filter((p) => !selectedIds.has(p.id)),
-    [safeProducts, selectedIds]
-  );
-
-  const addProduct = (product: ProductLite) => {
-    if (selectedIds.has(product.id)) return;
-    setData("items", [...data.items, { id: product.id }]);
-  };
-
-  const removeProduct = (id: string) => {
-    setData("items", data.items.filter((item) => item.id !== id));
-  };
-
-  const selectedProducts = useMemo(() => {
-    return data.items
-      .map((item) => safeProducts.find((p) => p.id === item.id))
-      .filter(Boolean) as ProductLite[];
-  }, [data.items, safeProducts]);
+    const { data, setData, put, processing, transform } = useForm({
+        items: initialItems, 
+    });
 
 
-  transform((values) => ({
-  content: {
-    items: values.items,
-  },
-}));
-const handleSubmit = () => {
-    console.log("Enviando productos:", data.items);
-  put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-    preserveScroll: true,
-    onSuccess: () => toast.success("Productos actualizados correctamente"),
-    onError: (errors) => {
-      console.log(errors);
-      toast.error("Error al guardar los productos");
-    },
-  });
-};
+    useEffect(() => {
+        if (section.content?.items) {
+            setData("items", section.content.content.items);
+        }
+    }, [section.content]);
 
-  return (
-    <div className="space-y-8">
+    const addProduct = (product: ProductLite) => {
 
-      {/* Productos Disponibles */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Productos Activos</h3>
+        const exists = data.items.some((item: any) => item.product_id === product.product_id);
+        if (exists) return toast.warning("Este producto ya está en la lista");
+        
+  
+        const newItems = [...data.items, product] as any;
+        setData("items", newItems);
+      
+    };
 
-        {availableProducts.length === 0 && (
-          <p className="text-sm text-gray-500">No hay más productos disponibles.</p>
-        )}
+    const removeProduct = (id: string) => {
+       
+        setData("items", data.items.filter((item: any) => item.product_id !== id) as any);
+        toast.info("Producto removido de la lista");
+    };
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {availableProducts.map((product) => (
-            <div
-              key={product.id}
-              className="border rounded-lg overflow-hidden flex flex-col justify-between"
-            >
-              <div className="h-36 bg-gray-100 flex items-center justify-center overflow-hidden">
-                {product.image ? (
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs text-gray-400">Sin imagen</span>
-                )}
-              </div>
+   
+    transform((values) => ({
+        content: { items: values.items },
+    }));
 
-              <div className="p-3 flex flex-col gap-1 flex-1 justify-between">
-                <div>
-                  <p className="font-medium text-sm">{product.name}</p>
-                  <p className="text-xs text-gray-500">/{product.slug}</p>
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+
+        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
+            preserveScroll: true,
+          
+        });
+    };
+
+    return (
+        <div className="max-w-3xl mx-auto space-y-10 py-12 px-4">
+            <div className="text-center space-y-6">
+                <div className="inline-flex p-3 bg-primary/10 rounded-2xl text-primary shadow-sm">
+                    <Package size={32} />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => addProduct(product)}
-                  className="mt-2 text-sm bg-black text-white px-3 py-1 rounded w-full"
-                >
-                  Agregar
-                </button>
-              </div>
+                <div className="space-y-1">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight italic">Panel de Productos</h2>
+                    <p className="text-slate-500 text-sm">
+                        Agrega nuevos productos o quita los existentes. 
+                        No se guardarán cambios en la web hasta que hagas clic en el botón inferior.
+                    </p>
+                </div>
+
+                <BlogProductSearch 
+                    searchResults={searchResults} 
+                    onSelect={addProduct} 
+                />
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Productos Seleccionados */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Productos Seleccionados</h3>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4 px-2">
+                    <h3 className="flex items-center gap-2 font-bold text-slate-800 text-sm uppercase tracking-widest">
+                        <LayoutList size={18} className="text-primary" />
+                        Productos en la sección ({data.items.length})
+                    </h3>
+                </div>
 
-        {selectedProducts.length === 0 && (
-          <p className="text-sm text-gray-500">No hay productos seleccionados.</p>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {selectedProducts.map((product) => (
-            <div
-              key={product.id}
-              className="border rounded-lg overflow-hidden relative bg-gray-50"
-            >
-              <button
-                type="button"
-                onClick={() => removeProduct(product.id)}
-                className="absolute top-2 right-2 text-xs text-red-500 bg-white px-2 py-0.5 rounded shadow z-10"
-              >
-                Quitar
-              </button>
-
-              <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
-                {product.image ? (
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                {data.items.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400">
+                        <Package size={40} className="mb-3 opacity-20" />
+                        <p className="text-sm italic font-medium">La sección está vacía.</p>
+                    </div>
                 ) : (
-                  <span className="text-xs text-gray-400">Sin imagen</span>
+                    <div className="grid gap-2">
+                        {data.items.map((product: any) => (
+                            <div 
+                                key={product.product_id}
+                                className="group flex items-center gap-4 p-2 bg-white border border-slate-200 rounded-2xl shadow-sm transition-all hover:border-primary/40"
+                            >
+                                <div className="pl-2 text-slate-300 group-hover:text-slate-400 cursor-default">
+                                    <GripVertical size={18} />
+                                </div>
+                                
+                                <div className="h-12 w-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 flex-shrink-0">
+                                    <img 
+                                        src={product.image || '/images/placeholder.png'} 
+                                        className="h-full w-full object-cover" 
+                                        alt=""
+                                    />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-slate-900 truncate text-sm leading-tight">
+                                        {product.product_name}
+                                    </h4>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-mono text-slate-400 uppercase">SKU: {product.sku}</span>
+                                        <span className="text-xs font-bold text-slate-700">${product.active_price}</span>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeProduct(product.product_id)}
+                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full h-9 w-9 transition-colors"
+                                >
+                                    <Trash2 size={18} />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
                 )}
-              </div>
-
-              <div className="p-3">
-                <p className="font-medium text-sm">{product.name}</p>
-                <p className="text-xs text-gray-500">/{product.slug}</p>
-              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Guardar */}
-      <div className="pt-6">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={processing}
-          className="bg-black text-white px-6 py-2 rounded disabled:opacity-50"
-        >
-          {processing ? "Guardando..." : "Guardar cambios"}
-        </button>
-      </div>
-    </div>
-  );
+            <div className="flex justify-center pt-6">
+                <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={processing}
+                    className="h-14 px-12 rounded-2xl bg-slate-900 hover:bg-black text-white shadow-xl hover:shadow-2xl transition-all gap-3 font-black text-base active:scale-95"
+                >
+                    {processing ? "Sincronizando..." : <><Save size={20} /> GUARDAR CONFIGURACIÓN</>}
+                </Button>
+            </div>
+        </div>
+    );
 }

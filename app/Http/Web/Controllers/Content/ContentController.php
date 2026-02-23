@@ -7,6 +7,7 @@ use App\Http\Web\Services\Content\ContentService;
 use App\Http\Web\Requests\Content\ContentRequest;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 
 class ContentController extends Controller
@@ -20,15 +21,15 @@ class ContentController extends Controller
         ]);
     }
 
-    public function edit(string $slug, string $type, int $id): Response
+    public function edit(Request $request, string $slug, string $type, int $id): Response
 {
     $section = $this->contentService->getValidatedSection($slug, $type, $id);
 
-    $extra = $this->contentService->getExtraDataForSection($type);
+    $searchResults = $this->contentService->searchProductsByName($request->input('q', ''));
 
     return Inertia::render('content/EditSection', [
         'section' => $section,
-        ...$extra
+        ...$searchResults
     ]);
 }
 

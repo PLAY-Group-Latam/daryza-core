@@ -28,7 +28,6 @@ class ContentRule implements ValidationRule
             new MediaFieldResolver(),
             new TimeFieldResolver(),
             new DateFieldResolver(),
-            new BlogProductsItemsResolver(),
             new ItemsFieldResolver(),
             new BannerFieldResolver(),
             new BanksFieldResolver(),

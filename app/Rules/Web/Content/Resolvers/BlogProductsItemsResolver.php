@@ -6,6 +6,7 @@ class BlogProductsItemsResolver
 {
     public function matches(string $key): bool
     {
+ 
         return $key === 'items';
     }
 
@@ -18,7 +19,14 @@ class BlogProductsItemsResolver
         }
 
         foreach ($val as $i => $item) {
-            $rules["{$key}.{$i}.id"] = 'required|string';
+            
+            $rules["{$key}.{$i}.product_id"] = 'required|string';
+            $rules["{$key}.{$i}.product_name"] = 'required|string';
+            $rules["{$key}.{$i}.sku"] = 'required|string';
+            
+        
+            $rules["{$key}.{$i}.active_price"] = 'nullable';
+            $rules["{$key}.{$i}.image"] = 'nullable';
         }
 
         return $rules;

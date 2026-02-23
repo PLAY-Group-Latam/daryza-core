@@ -53,7 +53,7 @@ interface Props {
             slug: string;
         };
     };
-      products?: any[]; 
+      searchResults?: any[]; 
 }
 
 /**
@@ -119,7 +119,7 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
 
 };
 
-export default function EditSection({ section , products}: Props) {
+export default function EditSection({ section , searchResults = []}: Props) {
     const EditorComponent = EDITOR_COMPONENTS[section.type];
 
     return (
@@ -183,7 +183,7 @@ export default function EditSection({ section , products}: Props) {
                     {/* Editor o estado vacío */}
                     <div className="mx-auto w-full max-w-5xl">
                         {EditorComponent ? (
-                            <EditorComponent section={section} products={products} />
+                            <EditorComponent section={section} searchResults={searchResults} />
                         ) : (
                             <NotConfigured type={section.type} />
                         )}

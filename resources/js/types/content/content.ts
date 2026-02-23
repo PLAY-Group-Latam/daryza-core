@@ -67,6 +67,19 @@ export interface GenericContent {
   [key: string]: any;
 }
 
+export interface ProductLite {
+    product_id: string;
+    variant_id?: string;
+    product_name: string;
+    sku: string;
+    image?: string | null;
+    price: number | string;
+    promo_price?: number | string;
+    active_price: number | string;
+    has_valid_promo: boolean;
+}
+
+
 export interface ContentSectionProps {
   section: {
     id: number;
@@ -84,7 +97,9 @@ export interface ContentSectionProps {
         | ImagenesPromocionalesContent
         | SectionTitlesContent
         | BanksFooterContent
-        | GenericContent;
+        | ProductLite[]
+        | GenericContent
+        ;
     };
   };
 }
