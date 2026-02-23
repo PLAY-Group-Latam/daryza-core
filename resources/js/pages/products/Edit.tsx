@@ -1,9 +1,9 @@
-import FormProduct from '@/components/custom-ui/products/items-table/create-form/FormProduct';
+import FormProduct from '@/components/custom-ui/products/product/FormProduct';
 import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
-import { ProductEdit } from '@/types/products/product';
+import { ProductEdit } from '@/types/products/productEdit';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Edit() {

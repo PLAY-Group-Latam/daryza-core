@@ -83,4 +83,105 @@ class ProductController extends Controller
 
         return $this->success('Productos para Home listados correctamente', $products);
     }
+
+    /**
+     * Detalle de un producto por slug (Para la página de producto)
+     */
+    public function show(Request $request, string $slug)
+    {
+        $product = Product::query()
+            ->select('id', 'name', 'slug', 'brief_description', 'description')
+            ->with([
+                'technicalSheets' => function ($q) {
+                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'type', 'order')
+                        ->orderBy('order', 'asc');
+                }
+            ])
+            ->active()
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+
+
+        // Determinar qué variante cargar:
+        // - Si llega ?variant=id → esa variante (debe pertenecer al producto)
+        // - Si no → la variante principal
+        $variantQuery = $product->variants()
+            ->where('is_active', true)
+            ->select(
+                'id',
+                'product_id',
+                'sku',
+                'price',
+                'promo_price',
+                'is_on_promo',
+                'promo_start_at',
+                'promo_end_at',
+                'stock',
+                'is_main'
+            );
+
+        if ($request->filled('variant')) {
+            $variant = (clone $variantQuery)
+                ->where('id', $request->variant)
+                ->first();
+
+            // Si el id no corresponde a este producto, caemos al principal
+            if (!$variant) {
+                $variant = (clone $variantQuery)->where('is_main', true)->first();
+            }
+        } else {
+            $variant = $variantQuery->where('is_main', true)->first();
+        }
+
+        // Cargar relaciones de la variante activa
+        $variant?->load([
+            'media' => function ($q) {
+                $q->select('id', 'mediable_id', 'file_path', 'type', 'order')
+                    ->orderBy('order', 'asc');
+            },
+            'selections.attributeValue' => function ($q) {
+                $q->select('id', 'attribute_id', 'value');
+            },
+            'selections.attributeValue.attribute' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'specifications' => function ($q) {
+                $q->select('id', 'product_variant_id', 'attribute_id', 'value');
+            },
+            'specifications.attribute' => function ($q) {
+                $q->select('id', 'name');
+            },
+        ]);
+
+        // Cargar los selectores de todas las variantes (solo lo mínimo para los botones)
+        // El frontend necesita saber qué opciones mostrar aunque no cargue su data completa
+        // Reemplaza variantSelectors por variants con un with anidado
+        $product->load([
+            'variants' => function ($q) {
+                $q->where('is_active', true)
+                    ->orderBy('is_main', 'desc')
+                    ->orderBy('created_at', 'asc')
+                    ->orderBy('id', 'asc')
+                    ->select('id', 'product_id', 'is_main');
+            },
+            'variants.selections.attributeValue' => function ($q) {
+                $q->select('id', 'attribute_id', 'value');
+            },
+            'variants.selections.attributeValue.attribute' => function ($q) {
+                $q->select('id', 'name');
+            },
+        ]);
+
+        return $this->success('Producto obtenido correctamente', [
+            'id'                => $product->id,
+            'name'              => $product->name,
+            'slug'              => $product->slug,
+            'brief_description' => $product->brief_description,
+            'description'       => $product->description,
+            'technical_sheets'  => $product->technicalSheets, // 👈 FALTABA ESTO
+            'active_variant'    => $variant,          // variante activa con toda su data
+            'variant_selectors' => $product->variants, // ← usa la relación que ya existe
+        ]);
+    }
 }

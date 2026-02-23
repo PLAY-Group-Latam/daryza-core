@@ -39,14 +39,17 @@ class ProductController extends Controller
 
     $products = Product::with([
       'variants' => function ($q) {
-        $q->with([
-          'attributes.attribute',
-          'media',
-        ]);
+        $q->orderBy('created_at', 'asc')
+          ->orderBy('id', 'asc') // ← desempate estable
+          ->with([
+            'attributes.attribute',
+            'media' => fn($q) => $q->orderBy('order', 'asc'),
+          ]);
       },
 
     ])
-      ->latest()
+      ->orderBy('created_at', 'desc')  // ← explícito y estable
+      ->orderBy('id', 'desc') // ← desempate estable
       ->paginate($perPage);
 
 
@@ -62,9 +65,15 @@ class ProductController extends Controller
       'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
-      'variants.selections.attributeValue', // ← Usamos selections
-      'variants.media',
-      'variants.specifications.attribute',
+      'variants' => function ($q) {
+        $q->orderBy('created_at', 'asc')
+          ->orderBy('id', 'asc') // ← desempate estable
+          ->with([
+            'selections.attributeValue',
+            'media'          => fn($q) => $q->orderBy('order', 'asc'),
+            'specifications.attribute',
+          ]);
+      },
 
     ]);
     // Log::info('[Product EDIT] Loaded product', [
@@ -189,6 +198,12 @@ class ProductController extends Controller
 
   public function update(UpdateProductRequest $request, Product $product)
   {
+    // dd([
+    //   'all'      => $request->all(),
+    //   'files'    => $request->allFiles(),
+    //   'method'   => $request->method(),
+    //   'content'  => $request->header('Content-Type'),
+    // ]);
     $this->productService->update(
       $product,
       $request->validated()
