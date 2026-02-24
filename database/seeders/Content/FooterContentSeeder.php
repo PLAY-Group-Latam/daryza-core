@@ -5,19 +5,19 @@ namespace Database\Seeders\Content;
 use Illuminate\Database\Seeder;
 use App\Models\Content\Page;
 
-class HomeContentSeeder extends Seeder
+class FooterContentSeeder extends Seeder
 {
     public function run(): void
     {
-        $home = Page::where('slug', 'home')->first();
+        $footer = Page::where('slug', 'footer')->first();
 
-        if (!$home) return;
+        if (!$footer) return;
 
-        $defaults = require database_path('data/content/home/home.php');
+        $defaults = require database_path('data/content/footer/footer.php');
 
         foreach ($defaults as $type => $content) {
 
-            $section = $home->sections()->where('type', $type)->first();
+            $section = $footer->sections()->where('type', $type)->first();
 
             if (!$section) continue;
 
