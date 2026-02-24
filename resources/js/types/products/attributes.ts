@@ -17,6 +17,7 @@ export interface Attribute {
 }
 
 export interface AttributeValue {
+    label?: string;
     id: string;
     attribute_id: string;
     value: string;
