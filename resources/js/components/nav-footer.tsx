@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/sidebar';
 import { resolveUrl } from '@/lib/utils';
 import { type NavItem } from '@/types';
+import { type InertiaLinkProps } from '@inertiajs/react';
 import { type ComponentPropsWithoutRef } from 'react';
 
 export function NavFooter({
@@ -17,6 +18,14 @@ export function NavFooter({
 }: ComponentPropsWithoutRef<typeof SidebarGroup> & {
     items: NavItem[];
 }) {
+    const linkItems = items.filter(
+        (
+            item,
+        ): item is NavItem & {
+            href: NonNullable<InertiaLinkProps['href']>;
+        } => typeof (item as { href?: unknown }).href !== 'undefined',
+    );
+
     return (
         <SidebarGroup
             {...props}
@@ -24,7 +33,7 @@ export function NavFooter({
         >
             <SidebarGroupContent>
                 <SidebarMenu>
-                    {items.map((item) => (
+                    {linkItems.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild

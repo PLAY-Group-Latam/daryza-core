@@ -16,6 +16,11 @@ return new class extends Migration
             $table->foreignUlid('attribute_id')->constrained('attributes')->cascadeOnDelete();
             $table->string('value'); // Rojo, Azul, 1L, S, M...
             $table->timestamps();
+
+            $table->unique(
+                ['attribute_id', 'value'],
+                'attributes_values_attribute_id_value_unique'
+            );
         });
     }
 

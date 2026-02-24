@@ -3,11 +3,16 @@
 namespace App\Http\Api\v1\Controllers\Products;
 
 use App\Http\Api\v1\Controllers\Controller;
+use App\Http\Api\v1\Services\Products\ProductVariantResolver;
 use App\Models\Products\Product;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected ProductVariantResolver $variantResolver
+    ) {}
+
     /**
      * Listado de productos para la API (Soporta Infinite Scroll)
      */
@@ -104,38 +109,13 @@ class ProductController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-
-
-        // Determinar qué variante cargar:
-        // - Si llega ?variant=id → esa variante (debe pertenecer al producto)
-        // - Si no → la variante principal
-        $variantQuery = $product->variants()
-            ->where('is_active', true)
-            ->select(
-                'id',
-                'product_id',
-                'sku',
-                'price',
-                'promo_price',
-                'is_on_promo',
-                'promo_start_at',
-                'promo_end_at',
-                'stock',
-                'is_main'
-            );
-
-        if ($request->filled('variant')) {
-            $variant = (clone $variantQuery)
-                ->where('id', $request->variant)
-                ->first();
-
-            // Si el id no corresponde a este producto, caemos al principal
-            if (!$variant) {
-                $variant = (clone $variantQuery)->where('is_main', true)->first();
-            }
-        } else {
-            $variant = $variantQuery->where('is_main', true)->first();
-        }
+        $selectedValueIds = $this->variantResolver
+            ->parseSelectedAttributeValueIds($request);
+        $variant = $this->variantResolver->resolveActiveVariant(
+            $product,
+            $request->query('variant'),
+            $selectedValueIds
+        );
 
         // Cargar relaciones de la variante activa
         $variant?->load([
@@ -176,6 +156,16 @@ class ProductController extends Controller
             },
         ]);
 
+        $selectedByAttribute = $this->variantResolver->buildSelectedByAttribute(
+            $product->variants,
+            $selectedValueIds,
+            $variant
+        );
+        $availabilityMatrix = $this->variantResolver->buildAvailabilityMatrix(
+            $product->variants,
+            $selectedByAttribute
+        );
+
         return $this->success('Producto obtenido correctamente', [
             'id'                => $product->id,
             'name'              => $product->name,
@@ -185,6 +175,8 @@ class ProductController extends Controller
             'technical_sheets'  => $product->technicalSheets, // 👈 FALTABA ESTO
             'active_variant'    => $variant,          // variante activa con toda su data
             'variant_selectors' => $product->variants, // ← usa la relación que ya existe
+            'selected_attribute_values' => $selectedByAttribute,
+            'variant_availability_matrix' => $availabilityMatrix,
         ]);
     }
 }

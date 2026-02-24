@@ -2,8 +2,10 @@
 
 namespace App\Http\Web\Requests\Products;
 
+use App\Http\Web\Support\Products\VariantPayloadValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -26,10 +28,14 @@ class UpdateProductRequest extends FormRequest
       ],
       'categories'        => ['required', 'array', 'min:1'],
       'categories.*'      => ['required', 'string', 'exists:product_categories,id'],
+      'business_lines'    => ['nullable', 'array'],
+      'business_lines.*'  => ['exists:business_lines,id'],
       'brief_description' => ['nullable', 'string'],
       'description'       => ['nullable', 'string'],
       'is_active'         => ['required', 'boolean'],
       'is_home'           => ['required', 'boolean'],
+      'variant_attribute_ids'   => ['nullable', 'array'],
+      'variant_attribute_ids.*' => ['exists:attributes,id'],
 
       // ======================
       // METADATA
@@ -45,10 +51,10 @@ class UpdateProductRequest extends FormRequest
       // ======================
       // VARIANTS
       // ======================
-      'variants'                   => ['array'],
+      'variants'                   => ['required', 'array', 'min:1'],
       'variants.*.id'              => ['nullable', 'exists:product_variants,id'],
-      'variants.*.sku'             => ['required', 'string'],
-      'variants.*.sku_supplier'    => ['nullable', 'string'],
+      'variants.*.sku'             => ['required', 'string', 'max:100'],
+      'variants.*.sku_supplier'    => ['nullable', 'string', 'max:100'],
       'variants.*.price'           => ['required', 'numeric', 'min:0'],
       'variants.*.promo_price'     => ['nullable', 'numeric', 'min:0'],
       'variants.*.stock'           => ['required', 'integer', 'min:0'],
@@ -112,5 +118,23 @@ class UpdateProductRequest extends FormRequest
       'variants.*.stock.required'   => 'El stock es obligatorio.',
       'variants.*.specifications.*.attribute_id.required' => 'Atributo técnico obligatorio.',
     ];
+  }
+
+  public function withValidator(Validator $validator): void
+  {
+    $validator->after(function (Validator $validator) {
+      $variants = $this->input('variants', []);
+      $selectedVariantAttributeIds = collect($this->input('variant_attribute_ids', []))
+        ->filter()
+        ->values()
+        ->all();
+      app(VariantPayloadValidator::class)->validate(
+        $validator,
+        $variants,
+        $selectedVariantAttributeIds,
+        $this->route('product'),
+        true
+      );
+    });
   }
 }

@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/incompatible-library */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,11 +24,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import products from '@/routes/products';
-import { SearchResult } from '@/types/products/packs';
+import { VariantSearchResult } from '@/types/products/search';
 import { Layers, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
 import { SlugInput } from '../../slug-text';
 import { PackProductSearch } from '../packs/SearchProduct'; // Reutilizamos el buscador de packs
+import type { Resolver } from 'react-hook-form';
 
 // Esquema alineado al controlador DynamicCategoryController
 const dynamicCategorySchema = z
@@ -64,8 +64,16 @@ const dynamicCategorySchema = z
 type FormValues = z.infer<typeof dynamicCategorySchema>;
 
 interface Props {
-    category?: any; // Para el modo edición
-    searchResults?: SearchResult[];
+    category?: {
+        id: string;
+        name: string;
+        slug: string;
+        is_active: boolean;
+        starts_at?: string;
+        ends_at?: string;
+        items?: FormValues['items'];
+    };
+    searchResults?: VariantSearchResult[];
     filters?: { q?: string };
 }
 
@@ -74,11 +82,12 @@ export default function CreateDynamicCategoryForm({
     searchResults = [],
 }: Props) {
     const isEditing = !!category;
-
-    console.log(category);
+    const searchUrl = isEditing
+        ? products.dynamicCategories.edit.url(category!.id)
+        : products.dynamicCategories.create.url();
 
     const methods = useForm<FormValues>({
-        resolver: zodResolver(dynamicCategorySchema) as any,
+        resolver: zodResolver(dynamicCategorySchema) as Resolver<FormValues>,
         defaultValues: {
             name: category?.name || '',
             slug: category?.slug || '',
@@ -105,7 +114,7 @@ export default function CreateDynamicCategoryForm({
 
     const categoryName = watch('name');
 
-    const addProduct = (variant: SearchResult) => {
+    const addProduct = (variant: VariantSearchResult) => {
         if (
             fields.some(
                 (f) => String(f.variant_id) === String(variant.variant_id),
@@ -196,7 +205,7 @@ export default function CreateDynamicCategoryForm({
                                 <Label>Productos Vinculados</Label>
                                 <PackProductSearch
                                     searchResults={searchResults}
-                                    searchUrl={window.location.pathname}
+                                    searchUrl={searchUrl}
                                     onSelect={(variant) => addProduct(variant)}
                                 />
                             </div>

@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import EditPackForm from '@/components/custom-ui/products/packs/EditPackForm';
 import AppLayout from '@/layouts/app-layout';
-import { SearchResult } from '@/types/products/packs';
+import { VariantSearchResult } from '@/types/products/search';
 import { PageProps } from '@inertiajs/core';
 import { Head, usePage } from '@inertiajs/react';
 
 interface EditProps extends PageProps {
     pack: any; // El modelo del Pack con sus datos básicos
-    searchResults?: SearchResult[]; // Resultados de búsqueda formateados como items
+    searchResults?: VariantSearchResult[]; // Resultados de búsqueda formateados como items
     filters?: { q?: string };
 }
 

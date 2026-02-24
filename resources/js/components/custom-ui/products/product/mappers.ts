@@ -14,6 +14,7 @@ export function mapProductToForm(product: ProductEdit): ProductFormValues {
         variant_attribute_ids: product.variant_attribute_ids ?? [],
 
         variants: product.variants.map((v) => ({
+            id: v.id,
             sku: v.sku,
             sku_supplier: v.sku_supplier ?? '',
             price: v.price,

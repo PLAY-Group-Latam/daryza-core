@@ -16,9 +16,9 @@ class ProductService
   // CRUD
   // =========================================================================
 
-  public function create(array $data): Product
+  public function create(array $data, array $variantFiles = []): Product
   {
-    return DB::transaction(function () use ($data) {
+    return DB::transaction(function () use ($data, $variantFiles) {
 
       $hasVariants = !empty($data['variants']);
 
@@ -38,16 +38,16 @@ class ProductService
       $this->mediaService->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
 
       if ($hasVariants) {
-        $this->createVariants($product, $data['variants']);
+        $this->createVariants($product, $data['variants'], $variantFiles);
       }
 
       return $product;
     });
   }
 
-  public function update(Product $product, array $data): Product
+  public function update(Product $product, array $data, array $variantFiles = []): Product
   {
-    return DB::transaction(function () use ($product, $data) {
+    return DB::transaction(function () use ($product, $data, $variantFiles) {
 
       $product->update(collect($data)->only([
         'name',
@@ -73,7 +73,12 @@ class ProductService
       $this->mediaService->syncTechnicalSheets($product, $data['technicalSheets'] ?? []);
 
       if (isset($data['variants'])) {
-        $this->updateVariants($product, $data['variants']);
+        $this->updateVariants($product, $data['variants'], $variantFiles);
+
+        // Coherencia de catálogo: un producto sin variantes no debe quedar activo.
+        if (!$product->variants()->exists() && $product->is_active) {
+          $product->update(['is_active' => false]);
+        }
       }
 
       return $product;
@@ -119,16 +124,21 @@ class ProductService
   // Variantes
   // =========================================================================
 
-  protected function createVariants(Product $product, array $variants): void
+  protected function createVariants(Product $product, array $variantsData, array $variantFiles = []): void
   {
-    $hasMain = collect($variants)->contains('is_main', true);
+    $hasMain = collect($variantsData)->contains(fn($v) => (bool) ($v['is_main'] ?? false));
+    $createdVariantIds = [];
 
-    foreach ($variants as $index => $vData) {
-      $cleanData = collect($vData)->except([
+    foreach ($variantsData as $index => $variantData) {
+      $variantData = $this->mergeVariantMediaFiles($variantData, $variantFiles[$index] ?? null);
+
+      $cleanData = collect($variantData)->except([
+        'id',
         'attributes',
         'media',
         'specifications',
         'specification_selector',
+        'new_media',
       ])->toArray();
 
       if (!$hasMain && $index === 0) {
@@ -136,41 +146,50 @@ class ProductService
       }
 
       $variant = $product->variants()->create($cleanData);
+      $createdVariantIds[] = $variant->id;
 
-      $this->syncAttributes($variant, $vData['attributes'] ?? []);
-      $this->syncSpecifications($variant, $vData['specifications'] ?? []);
+      $this->syncAttributes($variant, $variantData['attributes'] ?? []);
+      $this->syncSpecifications($variant, $variantData['specifications'] ?? []);
 
-      if (!empty($vData['media'])) {
-        $this->mediaService->createMany($variant, $vData['media']);
+      if (!empty($variantData['media'])) {
+        $this->mediaService->createMany($variant, $variantData['media']);
       }
     }
+
+    $this->normalizeMainVariant($product, $createdVariantIds);
   }
 
-  protected function updateVariants(Product $product, array $variantsData): void
+  protected function updateVariants(Product $product, array $variantsData, array $variantFiles = []): void
   {
-    // Los archivos llegan separados en allFiles() — los mergeamos manualmente
-    $variantFiles = request()->file('variants') ?? [];
+    $existingVariants = $product->variants()->get()->keyBy('id');
+    $keptVariantIds = [];
+    $hasMain = collect($variantsData)->contains(fn($v) => (bool) ($v['is_main'] ?? false));
 
     foreach ($variantsData as $index => $variantData) {
-
-      // Reinsertar UploadedFiles en el índice correcto de media
-      if (isset($variantFiles[$index]['media'])) {
-        foreach ($variantFiles[$index]['media'] as $mi => $file) {
-          $variantData['media'][$mi] = $file;
-        }
-      }
-
+      $variantData = $this->mergeVariantMediaFiles($variantData, $variantFiles[$index] ?? null);
       $cleanData = collect($variantData)->except([
+        'id',
         'attributes',
         'media',
         'specifications',
         'new_media',
       ])->toArray();
 
-      $variant = $product->variants()->updateOrCreate(
-        ['sku' => $variantData['sku']],
-        $cleanData
-      );
+      if (!$hasMain && $index === 0) {
+        $cleanData['is_main'] = true;
+      }
+
+      $variant = null;
+      $variantId = $variantData['id'] ?? null;
+
+      if ($variantId && $existingVariants->has($variantId)) {
+        $variant = $existingVariants->get($variantId);
+        $variant->update($cleanData);
+      } else {
+        $variant = $product->variants()->create($cleanData);
+      }
+
+      $keptVariantIds[] = $variant->id;
 
       $this->syncAttributes($variant, $variantData['attributes'] ?? []);
       $this->syncSpecifications($variant, $variantData['specifications'] ?? []);
@@ -179,6 +198,65 @@ class ProductService
         $this->mediaService->sync($variant, $variantData['media']);
       }
     }
+
+    if (empty($keptVariantIds)) {
+      $product->variants()->delete();
+      return;
+    }
+
+    $product->variants()->whereNotIn('id', $keptVariantIds)->delete();
+    $this->normalizeMainVariant($product, $keptVariantIds);
+  }
+
+  protected function mergeVariantMediaFiles(array $variantData, ?array $variantFileChunk = null): array
+  {
+    if (!isset($variantFileChunk['media']) || !is_array($variantFileChunk['media'])) {
+      return $variantData;
+    }
+
+    foreach ($variantFileChunk['media'] as $mediaIndex => $uploadedFile) {
+      $variantData['media'][$mediaIndex] = $uploadedFile;
+    }
+
+    return $variantData;
+  }
+
+  protected function normalizeMainVariant(Product $product, array $variantIds): void
+  {
+    if (empty($variantIds)) {
+      return;
+    }
+
+    $activeMainId = $product->variants()
+      ->whereIn('id', $variantIds)
+      ->where('is_active', true)
+      ->where('is_main', true)
+      ->value('id');
+
+    $mainId = $activeMainId
+      ?? $product->variants()
+      ->whereIn('id', $variantIds)
+      ->where('is_active', true)
+      ->orderBy('created_at', 'asc')
+      ->orderBy('id', 'asc')
+      ->value('id');
+
+    if (!$mainId) {
+      // Si no hay variantes activas, no dejamos principal marcada.
+      $product->variants()
+        ->whereIn('id', $variantIds)
+        ->update(['is_main' => false]);
+      return;
+    }
+
+    $product->variants()
+      ->whereIn('id', $variantIds)
+      ->where('id', '!=', $mainId)
+      ->update(['is_main' => false]);
+
+    $product->variants()
+      ->where('id', $mainId)
+      ->update(['is_main' => true]);
   }
 
   protected function syncAttributes(ProductVariant $variant, array $attributes): void

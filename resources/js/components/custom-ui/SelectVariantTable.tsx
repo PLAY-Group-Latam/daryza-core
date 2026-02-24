@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 interface Props {
     variants: SelectableVariant[];
-    onRemove: (id: string | number) => void;
+    onRemove: (variantId: string) => void;
     pageSize?: number;
 }
 
@@ -49,7 +49,7 @@ export function SelectedVariantsTable({
                     {currentItems.length > 0 ? (
                         currentItems.map((variant) => (
                             <tr
-                                key={variant.id}
+                                key={variant.variant_id}
                                 className="hover:bg-slate-50/50"
                             >
                                 <td className="p-3">
@@ -75,7 +75,9 @@ export function SelectedVariantsTable({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => onRemove(variant.id)}
+                                        onClick={() =>
+                                            onRemove(variant.variant_id)
+                                        }
                                         className="hover:text-red-600"
                                     >
                                         <Trash2 className="h-4 w-4" />

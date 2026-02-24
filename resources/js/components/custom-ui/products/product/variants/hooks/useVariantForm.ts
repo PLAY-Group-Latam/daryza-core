@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { Attribute } from '@/types/products/attributes';
@@ -6,7 +6,7 @@ import { ProductFormValues, VariantFormValues } from '../../schema';
 import { buildAttributeDefault } from '../utils/buildAttributeDefault';
 
 export function useVariantForm(variantAttributes: Attribute[]) {
-    const { control } = useFormContext<ProductFormValues>();
+    const { control, getValues, setValue } = useFormContext<ProductFormValues>();
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -23,6 +23,36 @@ export function useVariantForm(variantAttributes: Attribute[]) {
     const activeAttributes = variantAttributes.filter((a) =>
         selectedIds.includes(a.id),
     );
+
+    // Re-sincroniza atributos de TODAS las variantes cuando cambia
+    // la lista de atributos de variante seleccionados en el encabezado.
+    useEffect(() => {
+        const currentVariants = getValues('variants') ?? [];
+        if (!currentVariants.length) return;
+
+        currentVariants.forEach((variant, variantIndex) => {
+            const byAttributeId = new Map(
+                (variant.attributes ?? []).map((attr) => [attr.attribute_id, attr]),
+            );
+
+            const normalized = activeAttributes.map((attr) => {
+                const existing = byAttributeId.get(attr.id);
+                if (existing) {
+                    return {
+                        ...existing,
+                        attribute_id: attr.id,
+                    };
+                }
+                return buildAttributeDefault(attr);
+            });
+
+            setValue(`variants.${variantIndex}.attributes`, normalized, {
+                shouldDirty: false,
+                shouldTouch: false,
+                shouldValidate: false,
+            });
+        });
+    }, [activeAttributes, getValues, setValue]);
 
     const buildEmptyVariant = useCallback(
         (isFirst = false): VariantFormValues => ({

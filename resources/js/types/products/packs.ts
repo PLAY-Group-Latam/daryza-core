@@ -1,3 +1,5 @@
+import { VariantSearchResult } from './search';
+
 export interface PackItem {
     variant_id: string;
     product_id: string;
@@ -29,12 +31,5 @@ export interface ProductPack {
     items: PackItem[];
 }
 
-export interface SearchResult {
-    variant_id: string; // Antes era 'id', ahora coincide con el PHP
-    product_id: string; // Ya no es opcional, el PHP siempre lo envía
-    sku: string;
-    is_on_promo: boolean;
-    product_name: string;
-    variant_name: string;
-}
+export type SearchResult = VariantSearchResult;
 export type PaginatedPacks = Paginated<ProductPack>;

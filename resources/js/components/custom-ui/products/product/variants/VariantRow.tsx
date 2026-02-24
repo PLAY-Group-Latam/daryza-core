@@ -29,8 +29,14 @@ export function VariantRow({
     variantAttributes,
     specificationAttributes,
 }: Props) {
-    const { control, setValue, getValues } =
+    const {
+        control,
+        setValue,
+        getValues,
+        formState: { errors },
+    } =
         useFormContext<ProductFormValues>();
+    const attributesRootError = errors.variants?.[index]?.attributes?.root;
 
     // Estado UI local — no pertenece al schema del form
     const [specSelector, setSpecSelector] = useState('');
@@ -39,6 +45,11 @@ export function VariantRow({
         control,
         name: `variants.${index}.is_on_promo`,
         defaultValue: false,
+    });
+    const isActive = useWatch({
+        control,
+        name: `variants.${index}.is_active`,
+        defaultValue: true,
     });
     const isMain = useWatch({
         control,
@@ -55,6 +66,38 @@ export function VariantRow({
                 shouldValidate: false,
             });
         });
+    };
+
+    const handleSetActive = (checked: boolean) => {
+        setValue(`variants.${index}.is_active`, checked, {
+            shouldDirty: true,
+            shouldTouch: false,
+            shouldValidate: true,
+        });
+
+        if (!checked && isMain) {
+            // Una variante inactiva no puede ser principal.
+            setValue(`variants.${index}.is_main`, false, {
+                shouldDirty: true,
+                shouldTouch: false,
+                shouldValidate: true,
+            });
+
+            const variants = getValues('variants');
+            const fallbackIndex = variants.findIndex(
+                (variant, i) => i !== index && variant.is_active,
+            );
+
+            if (fallbackIndex >= 0) {
+                variants.forEach((_, i) => {
+                    setValue(`variants.${i}.is_main`, i === fallbackIndex, {
+                        shouldDirty: true,
+                        shouldTouch: false,
+                        shouldValidate: false,
+                    });
+                });
+            }
+        }
     };
 
     return (
@@ -166,7 +209,7 @@ export function VariantRow({
                         <div className="flex items-center gap-2">
                             <Switch
                                 checked={field.value}
-                                onCheckedChange={field.onChange}
+                                onCheckedChange={handleSetActive}
                             />
                             <span className="text-xs">
                                 {field.value ? 'Activo' : 'Inactivo'}
@@ -178,6 +221,7 @@ export function VariantRow({
                 <div className="flex items-center gap-2">
                     <Switch
                         checked={!!isMain}
+                        disabled={!isActive}
                         onCheckedChange={handleSetMain}
                     />
                     <span className="text-xs">Principal</span>
@@ -206,7 +250,7 @@ export function VariantRow({
                     <Controller
                         name={`variants.${index}.promo_price`}
                         control={control}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">
                                     Precio Promocional
@@ -218,6 +262,11 @@ export function VariantRow({
                                     step="0.01"
                                     placeholder="0.00"
                                 />
+                                {fieldState.error && (
+                                    <p className="text-xs text-red-500">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
                             </div>
                         )}
                     />
@@ -225,7 +274,7 @@ export function VariantRow({
                     <Controller
                         name={`variants.${index}.promo_start_at`}
                         control={control}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">
                                     Inicio Promoción
@@ -235,6 +284,11 @@ export function VariantRow({
                                     onChange={field.onChange}
                                     placeholder="Seleccionar fecha"
                                 />
+                                {fieldState.error && (
+                                    <p className="text-xs text-red-500">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
                             </div>
                         )}
                     />
@@ -242,7 +296,7 @@ export function VariantRow({
                     <Controller
                         name={`variants.${index}.promo_end_at`}
                         control={control}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">Fin Promoción</Label>
                                 <DatePicker
@@ -250,6 +304,11 @@ export function VariantRow({
                                     onChange={field.onChange}
                                     placeholder="Seleccionar fecha"
                                 />
+                                {fieldState.error && (
+                                    <p className="text-xs text-red-500">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
                             </div>
                         )}
                     />
@@ -257,6 +316,11 @@ export function VariantRow({
             )}
 
             {/* Atributos de variante */}
+            {attributesRootError?.message && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                    {attributesRootError.message}
+                </p>
+            )}
             <VariantAttributes
                 control={control}
                 variantIndex={index}

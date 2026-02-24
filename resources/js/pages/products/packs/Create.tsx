@@ -1,12 +1,12 @@
 import CreatePackForm from '@/components/custom-ui/products/packs/CreatePackForm';
 import AppLayout from '@/layouts/app-layout';
-import { SearchResult } from '@/types/products/packs';
+import { VariantSearchResult } from '@/types/products/search';
 import { Head, usePage } from '@inertiajs/react';
 
 import { PageProps } from '@inertiajs/core';
 
 interface CreateProps extends PageProps {
-    searchResults?: SearchResult[];
+    searchResults?: VariantSearchResult[];
     filters?: { q?: string };
 }
 export default function Create() {

@@ -41,6 +41,7 @@ export function buildFormData(
     data.variants.forEach((variant, vi) => {
         const p = `variants[${vi}]`;
 
+        if (variant.id) fd.append(`${p}[id]`, variant.id);
         fd.append(`${p}[sku]`, variant.sku);
         fd.append(`${p}[sku_supplier]`, variant.sku_supplier ?? '');
         fd.append(`${p}[price]`, String(variant.price));
@@ -69,7 +70,7 @@ export function buildFormData(
             } else {
                 // Imagen/video ya existente: se envía como objeto con metadatos
                 const media = item as Media;
-                fd.append(`${p}[media][${mi}][id]`, media.id);
+                if (media.id) fd.append(`${p}[media][${mi}][id]`, media.id);
                 fd.append(`${p}[media][${mi}][file_path]`, media.file_path);
                 fd.append(`${p}[media][${mi}][type]`, media.type);
                 fd.append(`${p}[media][${mi}][position]`, String(mi)); // ← posición drag & drop
@@ -107,7 +108,7 @@ export function buildFormData(
             fd.append(`technicalSheets[${i}]`, sheet);
         } else {
             const media = sheet as Media;
-            fd.append(`technicalSheets[${i}][id]`, media.id);
+            if (media.id) fd.append(`technicalSheets[${i}][id]`, media.id);
             fd.append(`technicalSheets[${i}][file_path]`, media.file_path);
         }
     });
