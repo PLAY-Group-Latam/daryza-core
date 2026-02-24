@@ -6,6 +6,15 @@ export interface DynamicCategoryItem {
     variant_name?: string;
 }
 
+export interface SelectableVariant {
+    variant_id: string;
+    product_id: string;
+    sku: string;
+    product_name: string;
+    variant_name: string;
+    is_on_promo: boolean;
+}
+
 /**
  * Representa la Categoría Dinámica completa
  */

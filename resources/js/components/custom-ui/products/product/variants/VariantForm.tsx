@@ -19,7 +19,13 @@ export function VariantForm({
     variantAttributes,
     specificationAttributes,
 }: Props) {
-    const { control } = useFormContext<ProductFormValues>();
+    const {
+        control,
+        formState: { errors },
+    } = useFormContext<ProductFormValues>();
+    const variantsErrorMessage = Array.isArray(errors.variants)
+        ? undefined
+        : errors.variants?.message;
     const {
         fields,
         remove,
@@ -34,6 +40,9 @@ export function VariantForm({
             <p className="text-xs font-bold tracking-widest text-slate-600 uppercase">
                 ● Variantes
             </p>
+            {variantsErrorMessage && (
+                <p className="text-sm text-red-500">{variantsErrorMessage}</p>
+            )}
 
             {/* Toggles — un solo Controller para el campo completo */}
             {variantAttributes.length > 0 && (

@@ -22,6 +22,7 @@ class ProductVariant extends Model
         'price',
         'promo_price',
         'is_on_promo',
+        'is_active',
         'stock',
         'promo_start_at', // nuevo
         'promo_end_at',   // nuevo
@@ -32,6 +33,7 @@ class ProductVariant extends Model
 
     protected $casts = [
         'is_on_promo' => 'boolean',
+        'is_active' => 'boolean',
         'is_main' => 'boolean', // ← agregar aquí
         'price' => 'decimal:2',
         'promo_price' => 'decimal:2',

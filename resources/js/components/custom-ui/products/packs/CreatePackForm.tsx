@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/incompatible-library */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +9,7 @@ import {
     useForm,
 } from 'react-hook-form';
 import { z } from 'zod';
+import type { FieldErrors, Resolver } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import products from '@/routes/products';
-import { SearchResult } from '@/types/products/packs';
+import { VariantSearchResult } from '@/types/products/search';
 import { PackagePlus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
 import { SlugInput } from '../../slug-text';
@@ -85,13 +84,13 @@ const packSchema = z
 
 type PackFormValues = z.infer<typeof packSchema>;
 interface Props {
-    searchResults?: SearchResult[];
+    searchResults?: VariantSearchResult[];
     filters?: { q?: string };
 }
 
 export default function CreatePackForm({ searchResults = [] }: Props) {
     const methods = useForm<PackFormValues>({
-        resolver: zodResolver(packSchema) as any,
+        resolver: zodResolver(packSchema) as Resolver<PackFormValues>,
         defaultValues: {
             name: '',
             slug: '',
@@ -123,7 +122,7 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
     const isOnPromotion = watch('is_on_promotion');
     const packName = watch('name');
 
-    const addProduct = (variant: SearchResult) => {
+    const addProduct = (variant: VariantSearchResult) => {
         if (
             fields.some(
                 (f) => String(f.variant_id) === String(variant.variant_id),
@@ -145,7 +144,7 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
         });
     };
 
-    const onError = (errors: any) => {
+    const onError = (errors: FieldErrors<PackFormValues>) => {
         console.log('ERRORES:', errors);
     };
 

@@ -4,7 +4,9 @@ import { Media } from '@/types/products/media';
 import { FileVideoIcon, Trash2Icon, UploadIcon } from 'lucide-react';
 import { useRef } from 'react';
 
-type UploadItem = File | Media;
+type ExistingUploadMedia = Pick<Media, 'file_path'> &
+    Partial<Omit<Media, 'file_path'>>;
+type UploadItem = File | ExistingUploadMedia;
 
 interface UploadMultipleProps {
     value?: UploadItem[];
@@ -63,7 +65,9 @@ export function UploadMultiple({
                 const src = getPreview(item);
                 const video = isVideo(item);
                 const key =
-                    item instanceof File ? `file-${item.name}-${i}` : item.id;
+                    item instanceof File
+                        ? `file-${item.name}-${i}`
+                        : item.id ?? `media-${item.file_path}-${i}`;
 
                 return (
                     <div

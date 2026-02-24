@@ -2,7 +2,9 @@
 
 namespace App\Http\Web\Requests\Products;
 
+use App\Http\Web\Support\Products\VariantPayloadValidator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreProductRequest extends FormRequest
 {
@@ -137,5 +139,23 @@ class StoreProductRequest extends FormRequest
             'metadata.noindex.required'     => 'Debes indicar el valor de noindex.',
             'metadata.nofollow.required'    => 'Debes indicar el valor de nofollow.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $variants = $this->input('variants', []);
+            $selectedVariantAttributeIds = collect($this->input('variant_attribute_ids', []))
+                ->filter()
+                ->values()
+                ->all();
+            app(VariantPayloadValidator::class)->validate(
+                $validator,
+                $variants,
+                $selectedVariantAttributeIds,
+                null,
+                false
+            );
+        });
     }
 }

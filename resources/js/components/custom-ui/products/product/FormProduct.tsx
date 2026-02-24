@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FieldErrors, FormProvider, useForm } from 'react-hook-form';
 
 import products from '@/routes/products';
 import { Attribute } from '@/types/products/attributes';
@@ -41,40 +39,32 @@ export default function FormProduct({
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
         defaultValues,
+        mode: 'onBlur',
+        reValidateMode: 'onChange',
+        criteriaMode: 'all',
+        shouldFocusError: true,
     });
+    const { reset } = methods;
 
     // Solo corre en modo edición — mapea el producto del backend al shape del form
     useEffect(() => {
-        if (product) methods.reset(mapProductToForm(product));
-    }, [product]);
+        if (product) reset(mapProductToForm(product));
+    }, [product, reset]);
 
     const onSubmit = (data: ProductFormValues) => {
         const url = isEdit
             ? products.items.update(product!.id).url
             : products.items.store().url;
         const formData = buildFormData(data, isEdit);
-        // Debug — verificar que el FormData tiene los archivos
-        data.variants.forEach((v, i) => {
-            console.log(
-                `variant[${i}] media:`,
-                v.media.length,
-                v.media.map((m) =>
-                    m instanceof File
-                        ? `FILE:${(m as File).name}`
-                        : `MEDIA:${(m as any).file_path}`,
-                ),
-            );
-        });
         router.post(url, formData, {
             preserveScroll: true,
             forceFormData: true,
         });
-        console.log('productoenviado', data);
     };
 
     const variantAttributes = attributes.filter((a) => a.is_variant);
     const specificationAttributes = attributes.filter((a) => !a.is_variant);
-    const onError = (errors: any) => {
+    const onError = (errors: FieldErrors<ProductFormValues>) => {
         console.log('ERRORES:', errors);
     };
 

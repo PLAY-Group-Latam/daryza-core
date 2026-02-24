@@ -1,8 +1,8 @@
 'use client';
 
 import { router } from '@inertiajs/react';
-import debounce from 'lodash/debounce';
 import * as React from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 import {
     Command,
@@ -12,12 +12,12 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
-import { SearchResult } from '@/types/products/packs';
+import { VariantSearchResult } from '@/types/products/search';
 
 interface PackProductSearchProps {
-    searchResults: SearchResult[];
+    searchResults: VariantSearchResult[];
     searchUrl: string;
-    onSelect: (variant: SearchResult) => void;
+    onSelect: (variant: VariantSearchResult) => void;
     placeholder?: string;
 }
 
@@ -28,7 +28,9 @@ export function PackProductSearch({
     placeholder = 'Buscar por Sku daryza...',
 }: PackProductSearchProps) {
     const [showResults, setShowResults] = React.useState(false);
+    const [query, setQuery] = React.useState('');
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const debouncedQuery = useDebounce(query, 300);
 
     // console.log(searchResults);
     // Función para parsear la variante (Separa Hex del Texto)
@@ -60,23 +62,20 @@ export function PackProductSearch({
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleSearch = React.useMemo(
-        () =>
-            debounce((value: string) => {
-                if (value.length > 0) setShowResults(true);
-                router.get(
-                    searchUrl,
-                    { q: value },
-                    {
-                        preserveState: true,
-                        preserveScroll: true,
-                        replace: true,
-                        only: ['searchResults', 'filters'],
-                    },
-                );
-            }, 300),
-        [searchUrl],
-    );
+    React.useEffect(() => {
+        if (debouncedQuery.length < 3) return;
+
+        router.get(
+            searchUrl,
+            { q: debouncedQuery },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ['searchResults', 'filters'],
+            },
+        );
+    }, [debouncedQuery, searchUrl]);
 
     return (
         <div className="relative w-full" ref={containerRef}>
@@ -86,8 +85,12 @@ export function PackProductSearch({
             >
                 <CommandInput
                     placeholder={placeholder}
-                    onValueChange={handleSearch}
-                    onFocus={() => setShowResults(true)}
+                    value={query}
+                    onValueChange={(value) => {
+                        setQuery(value);
+                        setShowResults(value.length > 0);
+                    }}
+                    onFocus={() => setShowResults(query.length > 0)}
                     className="flex w-full py-3 text-sm"
                 />
 

@@ -97,6 +97,7 @@ class ProductController extends Controller
 
       'variants' => $product->variants->map(function ($variant) {
         return [
+          'id' => $variant->id,
           'sku' => $variant->sku,
           'sku_supplier' => $variant->sku_supplier,
           'price'          => $variant->price,
@@ -189,7 +190,10 @@ class ProductController extends Controller
   {
     // Log::info('Creando producto con los datos:', $request->validated());
 
-    $this->productService->create($request->validated());
+    $this->productService->create(
+      $request->validated(),
+      $request->file('variants', [])
+    );
 
     return redirect()
       ->route('products.items.index')
@@ -206,7 +210,8 @@ class ProductController extends Controller
     // ]);
     $this->productService->update(
       $product,
-      $request->validated()
+      $request->validated(),
+      $request->file('variants', [])
     );
 
     return redirect()
