@@ -8,12 +8,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
-
-interface BannerContent {
-  src_desktop: File | string | null;
-  src_mobile: File | string | null;
-  link_url: string;
-}
+import { BannerContentAll } from '@/types/content/content-types';
 
 function UploadFixed({
   value,
@@ -40,9 +35,9 @@ function UploadFixed({
 
 export default function CartEditor({ section }: Props) {
 
-  const rawContent = section.content?.content as BannerContent;
+  const rawContent = section.content?.content as BannerContentAll;
 
-  const { data, setData, put, processing } = useForm<{ content: BannerContent }>({
+  const { data, setData, put, processing } = useForm<{ content: BannerContentAll }>({
     content: {
       src_desktop: rawContent?.src_desktop ?? null,
       src_mobile:  rawContent?.src_mobile  ?? null,

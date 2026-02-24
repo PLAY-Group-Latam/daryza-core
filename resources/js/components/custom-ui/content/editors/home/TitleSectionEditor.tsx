@@ -6,16 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ContentSectionProps as Props } from '../../../../../types/content/content';
+import { ContentSectionProps as Props } from '@/types/content/content';
+import { SectionTitlesContent, TitleItem } from '@/types/content/content-types';
 
-interface TitleItem {
-  key: 'brands' | 'best_sellers' | 'pack' | 'blog';
-  label: string;
-}
 
-interface SectionTitlesContent {
-  titles: TitleItem[];
-}
 
 const DEFAULT_TITLES: TitleItem[] = [
   { key: 'brands',       label: 'Marcas Aliadas' },

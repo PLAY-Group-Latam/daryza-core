@@ -13,21 +13,8 @@ import {
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ContentSectionProps } from '@/types/content/content';
+import { BannerContentSlides ,SlideType, Slide} from '@/types/content/content-types';
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
-type SlideType = 'image' | 'video' | 'url';
-
-interface Slide {
-    id:          number;
-    type:        SlideType;
-    is_active:   boolean;
-    src_desktop: File | string | null;  // upload real
-    src_mobile:  File | string | null;  // upload real
-    src_video:   File | string | null;  // upload real
-    link_url:    string;                // solo en tab "url"
-}
-
-interface BannerContent { slides: Slide[] }
 
 function newSlide(): Slide {
     return {
@@ -36,8 +23,8 @@ function newSlide(): Slide {
     };
 }
 
-function normalize(raw: any): BannerContent {
-    if (raw?.slides && Array.isArray(raw.slides)) return raw as BannerContent;
+function normalize(raw: any): BannerContentSlides {
+    if (raw?.slides && Array.isArray(raw.slides)) return raw as BannerContentSlides;
     return { slides: [newSlide()] };
 }
 
@@ -222,7 +209,7 @@ function SlideCard({
 // ── Editor principal ──────────────────────────────────────────────────────────
 export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
     const raw = section.content?.content;
-    const { data, setData, put, processing } = useForm<{ content: BannerContent }>({
+    const { data, setData, put, processing } = useForm<{ content: BannerContentSlides }>({
         content: normalize(raw),
     });
 
@@ -257,7 +244,7 @@ export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitting banner with content:', data.content);
+    
         put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
             forceFormData: true,
             preserveScroll: true,
@@ -303,12 +290,7 @@ export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
                         />
                     ))}
 
-                    <button type="button" onClick={addSlide}
-                        className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-400
-                                   hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all
-                                   flex items-center justify-center gap-2 text-sm font-medium">
-                        <Plus size={16} /> Agregar Slide
-                    </button>
+                   
                 </div>
             </div>
 

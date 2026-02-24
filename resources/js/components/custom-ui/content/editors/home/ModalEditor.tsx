@@ -10,7 +10,7 @@ import { Upload } from '@/components/custom-ui/upload';
 import { ModalContent, ContentSectionProps as Props } from '../../../../../types/content/content';
 
 export default function ModalEditor({ section }: Props) {
-    // ✅ Type guard para verificar que es ModalContent
+    
     const isModalContent = (content: any): content is ModalContent => {
         return content && ('image' in content || 'start_date' in content || 'end_date' in content);
     };
@@ -58,7 +58,6 @@ export default function ModalEditor({ section }: Props) {
             toast.success('¡Configuración guardada!');
         },
         onError: (errors) => {
-            console.error('❌ Errores:', errors);
             toast.error('Error de validación.');
         },
     });
@@ -92,7 +91,6 @@ export default function ModalEditor({ section }: Props) {
                         <Upload
                             value={data.content.image}
                             onFileChange={(file) => {
-                                console.log('🖼️ Imagen seleccionada:', file);
                                 updateField('image', file);
                             }}
                             previewClassName="!w-full !aspect-video !rounded-xl !object-cover !border-0 !bg-transparent"

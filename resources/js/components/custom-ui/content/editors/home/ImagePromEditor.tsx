@@ -7,12 +7,8 @@ import { toast } from 'sonner';
 import { Upload } from '@/components/custom-ui/upload';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { FormDataConvertible } from '@inertiajs/core';
+import { ImagenPromocionalContent } from '@/types/content/content';
 
-interface ImagenPromocionalContent {
-    image_desktop: File | string | null;
-    image_mobile: File | string | null;
-    link_url: string;
-}
 
 export default function ImagenPromocionalEditor({ section }: Props) {
 
@@ -164,7 +160,7 @@ export default function ImagenPromocionalEditor({ section }: Props) {
                             </label>
                             <input
                                 type="text"
-                                value={data.content.link_url}
+                                value={data.content.link_url ?? ''}
                                 onChange={(e) => updateLink(e.target.value)}
                                 placeholder="https://ejemplo.com/promocion"
                                 className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"

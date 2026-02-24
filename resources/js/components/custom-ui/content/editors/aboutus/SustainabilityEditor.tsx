@@ -8,19 +8,9 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+import { SustainabilityContent,SustainabilityCard } from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
 
-interface SustainabilityCard {
-  imagen: File | string | null;
-  nombre: string;
-}
-
-interface SustainabilityContent {
-  titulo:      string;
-  descripcion: string;
-  cards:       SustainabilityCard[];
-}
 
 const DEFAULT_CARD = (): SustainabilityCard => ({ imagen: null, nombre: '' });
 

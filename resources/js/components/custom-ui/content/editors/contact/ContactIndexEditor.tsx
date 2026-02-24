@@ -8,33 +8,10 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
-
+import { ContactContent ,ConsultaCard,BannerType,BannerContent} from '@/types/content/content-types';
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
-type BannerType = 'image' | 'url';
 
-interface BannerContent {
-    type: BannerType;
-    src_desktop: File | string | null;
-    src_mobile: File | string | null;
-    link_url: string;
-}
-
-interface ConsultaItem {
-    texto: string;
-}
-
-interface ConsultaCard {
-    titulo_normal: string;
-    titulo_bold: string;
-    imagen: File | string | null;
-    items: ConsultaItem[];
-}
-
-interface ContactContent {
-    banner: BannerContent;
-    cards: [ConsultaCard, ConsultaCard, ConsultaCard, ConsultaCard];
-}
 
 const DEFAULT_CARD: ConsultaCard = {
     titulo_normal: '',
@@ -193,7 +170,6 @@ export default function ContactIndexEditor({ section }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitting content:', data.content);
         put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
             forceFormData: true,
             preserveScroll: true,
@@ -249,7 +225,6 @@ export default function ContactIndexEditor({ section }: Props) {
                             <UploadFixed
                                 value={banner.src_desktop}
                                 onChange={(file) => {
-                                    console.log('src_desktop changed:', file); // 👈 agrega esto
                                     setBanner({ src_desktop: file });
                                 }}
                                 className="w-full aspect-[3/1]"

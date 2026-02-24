@@ -1,105 +1,25 @@
-export interface BrandItem {
-image: File | string | null; // 👈
-  name: string;
-}
+import type { SectionBase } from './section';
+import type { AnyContent, SectionContentMap, SectionType } from './content-map';
 
-export interface BrandsContent {
-  brands: BrandItem[];
-}
+export * from './content-types';
+export * from './section';
+export * from './content-map';
 
-export interface ImagenPromocionalContent {
-  image: File | string | null;
-}
-
-export interface PromoGridItem {
-  id: number;
-  src: File | string | null;
-  alt?: string;
-  link?: string;
-}
-
-export interface ImagenesPromocionalesContent {
-  items: PromoGridItem[];
-}
-
-
-export interface TitleItem {
-  key: 'brands' | 'best_sellers' | 'pack' | 'blog';
-  label: string;
-}
-
-export interface SectionTitlesContent {
-  titles: TitleItem[];
-}
-
-
-export interface BankItem {
-  id: number;
-  image: File | string | null;
-}
-
-export interface BanksFooterContent {
-  banks: BankItem[];
-}
-
-
-export interface ModalContent {
-  image: File | string | null;
-  start_date: string;
-  end_date: string;
-  is_visible: boolean;
-}
-
-export interface MediaItem {
-  src: File | string | null;
-  device?: 'desktop' | 'mobile' | 'both';
-  type: 'image' | 'video';
-  link_url?: string;
-}
-
-export interface BannerContent {
-  media: MediaItem[];
-  is_visible: boolean;
-  link_url?: string;
-}
-
-export interface GenericContent {
-  [key: string]: any;
-}
-
-export interface ProductLite {
-    product_id: string;
-    variant_id?: string;
-    product_name: string;
-    sku: string;
-    image?: string | null;
-    price: number | string;
-    promo_price?: number | string;
-    active_price: number | string;
-    has_valid_promo: boolean;
-}
-
-
+// ─── Props genérico (cuando no sabes el tipo exacto) ─────────
 export interface ContentSectionProps {
-  section: {
-    id: number;
-    name: string;
-    type: string;
-    page: {
-      slug: string;
-      title?: string;
-    };
+  section: SectionBase & {
     content: {
-      content:
-        | ModalContent
-        | BannerContent
-        | BrandsContent
-        | ImagenesPromocionalesContent
-        | SectionTitlesContent
-        | BanksFooterContent
-        | ProductLite[]
-        | GenericContent
-        ;
+      content: AnyContent;
     };
   };
 }
+
+// ─── Props tipado fuerte por sección (usa esto en cada editor) ─
+export type TypedSectionProps<T extends SectionType> = {
+  section: SectionBase & {
+    type: T;
+    content: {
+      content: SectionContentMap[T];
+    };
+  };
+};

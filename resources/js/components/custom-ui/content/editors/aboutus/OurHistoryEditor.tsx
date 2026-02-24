@@ -9,20 +9,11 @@ import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
 import { useState } from 'react';
+import { HistoryYear,OurHistoryContent } from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
 
-interface HistoryYear {
-  anio:   string;
-  imagen: File | string | null;
-  texto:  string;
-}
 
-interface OurHistoryContent {
-  titulo:      string;
-  descripcion: string;
-  years:       HistoryYear[];
-}
+
 
 const DEFAULT_YEAR = (): HistoryYear => ({
   anio:   String(new Date().getFullYear()),

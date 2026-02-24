@@ -8,22 +8,10 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+import { ContactWorkContent,BannerType,BannerContent} from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
 
-type BannerType = 'image' | 'url';
 
-interface BannerContent {
-  type:         BannerType;
-  src_desktop: File | string | null;
-  src_mobile:  File | string | null;
-  link_url:    string;
-}
-
-interface ContactWorkContent {
-  banner:     BannerContent;
-  form_image: File | string | null;
-}
 
 const TYPE_TABS: { key: BannerType; label: string; Icon: React.ElementType }[] = [
   { key: 'image', label: 'Imagen',         Icon: Image },

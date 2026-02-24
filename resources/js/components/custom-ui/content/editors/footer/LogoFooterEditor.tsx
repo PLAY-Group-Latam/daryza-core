@@ -7,10 +7,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { useRef } from 'react';
+import { LogoContent } from '@/types/content/content-types';
 
-interface LogoContent {
-  image: File | string | null;
-}
+
 
 function LogoUpload({ value, onChange }: { value: File | string | null; onChange: (file: File) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,8 +24,19 @@ function LogoUpload({ value, onChange }: { value: File | string | null; onChange
                    hover:border-primary/60 hover:bg-primary/5 transition-all overflow-hidden flex items-center justify-center">
         {preview ? (
           <>
-            <div className="absolute inset-0 bg-darysa-gris-800 opacity-80 rounded-xl" />
-            <img src={preview} alt="logo preview" className="relative z-10 max-h-32 max-w-[280px] object-contain p-4" />
+            <div
+              className="absolute inset-0 rounded-xl bg-slate-200"
+              style={{
+                backgroundImage: `url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACpJREFUGFdjZEACJv///z9mYGBgYGRkZAASMMHEEIKMIIXoAnABRAnIBQCmshAL7Y+67wAAAABJRU5ErkJggg==')`,
+                backgroundRepeat: 'repeat'
+              }}
+            />
+            <img
+              src={preview}
+              alt="logo preview"
+              className="relative z-10 max-h-32 max-w-[280px] object-contain p-4 drop-shadow-md"
+            />
+
             <div className="absolute inset-0 z-20 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 rounded-xl">
               <ImagePlus size={22} className="text-white" />
               <span className="text-white text-xs font-semibold">Cambiar logo</span>
@@ -84,8 +94,8 @@ export default function LogoFooterEditor({ section }: Props) {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'Ancho máximo', value: '180px' },
-                { label: 'Alto máximo',  value: '40px'  },
-                { label: 'Formato',      value: 'PNG · SVG · WEBP' },
+                { label: 'Alto máximo', value: '40px' },
+                { label: 'Formato', value: 'PNG · SVG · WEBP' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-0.5">
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">{label}</span>

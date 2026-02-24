@@ -6,12 +6,14 @@ import * as React from 'react';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
 
+// Define aquí la URL de tu imagen por defecto
+const DEFAULT_IMAGE = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
+
 export function BlogProductSearch({ searchResults = [], onSelect }: any) {
     const [open, setOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false);
 
-    // Filtramos localmente los resultados que ya llegaron del servidor
     const filteredResults = React.useMemo(() => {
         if (!searchTerm || searchTerm.length < 1) return searchResults;
         const lower = searchTerm.toLowerCase();
@@ -42,7 +44,6 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
         handleSearch(val);
     };
 
-    // Cerrar al hacer click fuera
     const containerRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -97,16 +98,20 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                             }}
                                             className="flex items-center gap-4 p-3 cursor-pointer hover:bg-slate-50 border-b last:border-0 border-slate-100 rounded-xl mb-1 group"
                                         >
+                                            {/* CONTENEDOR DE IMAGEN MODIFICADO */}
                                             <div className="relative h-12 w-12 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                {res.image ? (
-                                                    <img src={res.image} alt="" className="h-full w-full object-cover" />
-                                                ) : (
-                                                    <ImageIcon className="text-slate-300" size={20} />
-                                                )}
+                                                <img 
+                                                    src={res.image || DEFAULT_IMAGE} 
+                                                    alt={res.product_name} 
+                                                    className="h-full w-full object-cover"
+                                                    // Manejo de error por si la URL de la imagen está rota
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                                                    }}
+                                                />
                                             </div>
 
                                             <div className="flex flex-col flex-1 text-left min-w-0">
-                                                {/* Highlight del término buscado */}
                                                 <span className="font-bold text-slate-900 truncate text-sm">
                                                     <Highlight text={res.product_name} query={searchTerm} />
                                                 </span>
@@ -131,7 +136,6 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
     );
 }
 
-// Resalta la parte del texto que coincide con la búsqueda
 function Highlight({ text = '', query = '' }: { text: string; query: string }) {
     if (!query) return <>{text}</>;
     const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));

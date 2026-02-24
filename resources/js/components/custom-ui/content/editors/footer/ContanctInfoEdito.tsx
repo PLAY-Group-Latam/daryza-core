@@ -8,25 +8,8 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { useRef, useState } from 'react';
+import {ContactInfoContent, BankItem} from '@/types/content/content-types';
 
-// ── Tipos ───────────────────────────────────────────────────────────────────
-interface BankItem {
-    id: number;
-    image: File | string | null;
-}
-
-interface ContactInfoContent {
-    phone:          string;
-    mobile:         string;
-    email:          string;
-    address_line1:  string;
-    address_line2:  string;
-    weekday_from:   string;
-    weekday_to:     string;
-    saturday_from:  string;
-    saturday_to:    string;
-    banks:          BankItem[];
-}
 
 // ── Utils ───────────────────────────────────────────────────────────────────
 function formatTime(time: string): string {
@@ -152,8 +135,11 @@ export default function ContactInfoEditor({ section }: Props) {
     const dragIndex = useRef<number | null>(null);
     const [dragOver, setDragOver] = useState<number | null>(null);
 
-    const addBank = () =>
-        setData('content', { ...data.content, banks: [...data.content.banks, { id: Date.now(), image: null }] });
+   const addBank = () =>
+    setData('content', { 
+        ...data.content, 
+        banks: [...data.content.banks, { id: String(Date.now()), image: null }]
+    });
 
     const removeBank = (i: number) =>
         setData('content', { ...data.content, banks: data.content.banks.filter((_, idx) => idx !== i) });

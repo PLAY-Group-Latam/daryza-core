@@ -6,12 +6,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+import { ImageFormContent } from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
-
-interface ImageFormContent {
-  imagen: File | string | null;
-}
 
 // ─── Editor principal ─────────────────────────────────────────────────────────
 

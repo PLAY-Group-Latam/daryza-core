@@ -7,10 +7,8 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { useRef } from 'react';
+import { LogoContent } from '@/types/content/content-types';
 
-interface LogoContent {
-  image: File | string | null;
-}
 
 function LogoUpload({ value, onChange }: { value: File | string | null; onChange: (file: File) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);

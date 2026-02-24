@@ -1,0 +1,35 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | TYC EDITOR - Términos y Condiciones
+    |--------------------------------------------------------------------------
+    */
+    'tyc_editor' => [
+        'text' => '',
+        'body' => '<p>El acceso y uso de este sitio web <a target="_blank" rel="noopener noreferrer nofollow" href="http://www.daryza.com">www.daryza.com</a> se rige por los términos y condiciones descritos a continuación, así como por la legislación peruana vigente. El sitio web es de titularidad de la empresa DARYZA SAC (en adelante, Daryza), quien se reserva la facultad de modificar en cualquier momento y sin previo aviso la presentación, los contenidos, la funcionalidad, los productos, los servicios y la configuración que pudiera estar contenida en este sitio web.</p><h2 style="text-align: justify;">1. OBJETO</h2><p style="text-align: justify;">El objeto de los presentes Términos y Condiciones (en adelante, T&C) es regular el acceso a nuestro sitio web <a target="_blank" rel="noopener noreferrer nofollow" href="http://www.daryza.com">www.daryza.com</a> (en adelante, el "sitio web"), entendiéndose por éste cualquier tipo de contenido, producto y/o servicio que se encuentre a disposición del público dentro del dominio mencionado.</p><h2 style="text-align: justify;">2. VIGENCIA</h2><p style="text-align: justify;">Estos Términos y Condiciones entran en vigencia a partir del momento en que el usuario marca el casillero correspondiente indicando que ha leído, comprendido y aceptado expresamente el contenido íntegro de este documento. Daryza podrá actualizar y/o modificar los presentes T&C sin previo aviso, pero siempre dentro del marco de lo establecido por el Código de Protección y Defensa del Consumidor. Por este motivo recomendamos revisar los T&C cada vez que utilice la página web, ya que la versión aplicable será la versión que se encuentre colgada al momento de la consulta. Es preciso señalar que todo cambio o modificación a estos T&C operará para las compras que se efectúen bajo su vigencia y no para compras anteriores que se encuentren en etapa de ejecución (por ejemplo, con entrega de productos pendiente).</p><h2 style="text-align: justify;">3. REGISTRO DE CLIENTE</h2><p style="text-align: justify;">El registro del cliente en este sitio es obligatorio para comprar a través de la Tienda Virtual. Para el registro en el sitio web, el cliente debe crear un usuario y contraseña o clave secreta, además debe proporcionar sus datos de identificación fidedignos y necesarios que el formulario solicite y proveer información adicional los cuales podrán ser validados posteriormente. Es responsabilidad del cliente mantener sus datos actualizados. En caso la Tienda Virtual detecte alguna inconsistencia en la información brindada por el cliente al momento del registro o durante el proceso de compra, podrá anular la compra y realizar la devolución o liberación del monto cobrado al medio de pago utilizado.</p>',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | ANTICORRUPCION EDITOR - Políticas Anticorrupción
+    |--------------------------------------------------------------------------
+    */
+    'anticorrupcion_editor' => [
+        'text' => '',
+        'body' => '<p>En DARYZA estamos comprometidos a llevar nuestro negocio de acuerdo a los más altos estándares de Buen Gobierno Corporativo y éticos, y entendemos que nuestra conducta de negocio debe estar alineada a una conducta transparente y ética.</p><p style="text-align: justify;">Comprender los principios de nuestra organización y esta Política Anti-Corrupción es esencial para salvaguardar nuestra reputación y nuestro bienestar económico a lo largo del tiempo, por lo que cumplir con nuestras políticas y procedimientos es nuestra responsabilidad individual y no hacerlo puede traer como resultado consecuencias negativas para DARYZA y todos los involucrados.</p><p style="text-align: justify;">La postura de DARYZA con respecto a los sobornos y la corrupción es clara: la Empresa no tolerará ningún tipo de ofrecimiento, pago, autorización, solicitud o aceptación de sobornos en cualquiera de sus formas, por lo que expresamos que DARYZA maneja una tolerancia cero con respecto a sobornos y corrupción.</p><p style="text-align: justify;">El éxito de DARYZA se basa en su reputación y la confianza que depositan en nosotros nuestros clientes, lograda a partir de la honestidad y seriedad comercial con la que trabajamos, por lo que no podemos exponer por beneficios provenientes de un negocio obtenido por medios indebidos a nuestra Empresa.</p><p style="text-align: justify;">Si bien esta Política aborda una serie de situaciones que puede enfrentar cualquiera de nosotros en algún momento dado, no es posible que se cubran todas las situaciones que pueden presentarse. Si no está seguro sobre la forma correcta de actuar, es nuestro deber consultar o reportar tales situaciones a través de los mecanismos establecidos para tal fin.</p><h2 style="text-align: justify;">MARCO GENERAL</h2><h3 style="text-align: justify;">2.1 OBJETO</h3><p style="text-align: justify;">El objeto de esta Política Anticorrupción y Antisoborno es establecer las directrices y lineamientos generales, orientar a las normas y reglamentos que deben seguir todos los empleados, directores, funcionarios, proveedores y terceros relacionados con DARYZA para prevenir y detectar, de manera oportuna, actos de corrupción y soborno, dando así cumplimiento a la normativa y estándares internacionales anticorrupción definidos.</p>',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | LIBRO EDITOR - Libro de Reclamaciones
+    |--------------------------------------------------------------------------
+    */
+    'libro_editor' => [
+        'text' => '',
+        'body' => '<p><strong>OBSERVACIONES Y ACCIONES ADOPTADAS POR EL PROVEEDOR:</strong></p><p>* El plazo máximo de atención es de 30 días calendario desde su presentación, el cual podrá extenderse excepcionalmente de acuerdo a la complejidad del reclamo o queja lo cual será informado oportunamente mediante un previo aviso al USUARIO.</p><p>* Con el envío del presente documento EL USUARIO valida la información consignada y declara haber sido debidamente informado por Daryza SAC (administrador de la Tienda Rubbermaid), sobre el procedimiento, plazo de atención y medio de respuesta a su reclamo o queja.</p><p>* En caso el reclamo resulte procedente o improcedente, será notificado a través del correo electrónico por el cual nos está enviando la presente comunicación.</p><p>* Su HOJA DE RECLAMO / QUEJA así como el seguimiento, le será enviado a su correo electrónico por el cual nos está enviando la presente comunicación.</p><p>* La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.</p><p><br></p>',
+    ],
+
+];

@@ -8,19 +8,9 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+import { OurPurposeContent,PurposeCard } from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
 
-interface PurposeCard {
-  imagen: File | string | null;
-  nombre: string;
-}
-
-interface OurPurposeContent {
-  titulo:      string;
-  descripcion: string;
-  cards:       PurposeCard[];
-}
 
 const DEFAULT_CARD = (): PurposeCard => ({ imagen: null, nombre: '' });
 

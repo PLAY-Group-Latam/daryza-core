@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
+import { ComplaintsContent } from '@/types/content/content-types';
 
-interface ComplaintsContent {
-  body: string;
-}
 
 export default function ComplaintsBookEditor({ section }: Props) {
   const rawContent = section.content?.content as ComplaintsContent;

@@ -8,15 +8,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+import { IntroAboutusContent } from '@/types/content/content-types';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
-
-interface IntroAboutusContent {
-  video:       File | string | null;
-  subtitulo:   string;
-  titulo_bold: string;
-  descripcion: string;
-}
 
 // ─── Editor principal ─────────────────────────────────────────────────────────
 

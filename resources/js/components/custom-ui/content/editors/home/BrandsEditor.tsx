@@ -40,16 +40,9 @@ export default function BrandsEditor({ section }: Props) {
  const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
 
-  console.log('📤 data.content antes de enviar:', JSON.stringify(data.content, null, 2));
-  console.log('🔗 URL:', `/content/update/${section.page.slug}/${section.type}/${section.id}`);
 
   data.content.brands.forEach((brand, i) => {
-    console.log(`Brand ${i}:`, {
-      image: brand.image,
-      isFile: brand.image instanceof File,
-      isString: typeof brand.image === 'string',
-      name: brand.name,
-    });
+    
   });
 
   put(
@@ -58,11 +51,9 @@ export default function BrandsEditor({ section }: Props) {
       forceFormData: true,
       preserveScroll: true,
       onSuccess: (page) => {
-        console.log('✅ Success, brands guardadas:', page.props.section);
         toast.success('¡Marcas guardadas!');
       },
       onError: (errors) => {
-        console.error('❌ Errores:', errors);
         toast.error('Error de validación.');
       },
     }

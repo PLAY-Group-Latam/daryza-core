@@ -8,16 +8,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { useRef, useState } from 'react';
+import { SocialItem, SocialsContent } from '@/types/content/content';
 
-interface SocialItem {
-  id: number;
-  image: File | string | null;
-  url: string;
-}
 
-interface SocialsContent {
-  socials: SocialItem[];
-}
 
 function SocialImageUpload({
   value,
@@ -49,9 +42,15 @@ function SocialImageUpload({
       >
         {preview ? (
           <>
-            <img src={preview} alt="social icon" className="w-full h-full object-contain p-1" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
-                            flex items-center justify-center rounded-xl">
+            <img
+              src={preview}
+              alt="social icon"
+              className="relative z-10 w-full h-full object-contain p-2 drop-shadow-sm"
+            />
+
+            {/* Overlay de hover */}
+            <div className="absolute inset-0 z-20 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
+                    flex items-center justify-center rounded-xl">
               <ImagePlus size={14} className="text-white" />
             </div>
           </>
@@ -109,20 +108,14 @@ export default function SocialsEditor({ section }: Props) {
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  console.log('SocialsEditor content a enviar:', data.content);
-  console.log('Socials con imágenes:', data.content.socials.map(s => ({
-    id: s.id,
-    image: s.image instanceof File ? `FILE: ${s.image.name}` : s.image,
-    url: s.url,
-  })));
-  put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-    forceFormData: true,
-    preserveScroll: true,
-    onSuccess: () => toast.success('¡Redes sociales actualizadas!'),
-    onError: () => toast.error('Error al guardar'),
-  });
-};
+    e.preventDefault();
+    put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => toast.success('¡Redes sociales actualizadas!'),
+      onError: () => toast.error('Error al guardar'),
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
@@ -152,10 +145,21 @@ export default function SocialsEditor({ section }: Props) {
                 const preview = social.image instanceof File
                   ? URL.createObjectURL(social.image)
                   : social.image ?? null;
+
                 return (
-                  <div key={social.id} className="w-9 h-9 rounded-lg overflow-hidden bg-white/10 flex items-center justify-center">
+                  <div
+                    key={social.id}
+                    className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center border border-white/10"
+                    style={{
+                      // Patrón de transparencia CSS
+                      backgroundColor: '#1e293b',
+                      backgroundImage: `linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%)`,
+                      backgroundSize: '8px 8px',
+                      backgroundPosition: '0 0, 0 4px, 4px 4px, 4px 0'
+                    }}
+                  >
                     {preview
-                      ? <img src={preview} alt="" className="w-full h-full object-contain p-1" />
+                      ? <img src={preview} alt="" className="w-full h-full object-contain p-1.5" />
                       : <div className="w-4 h-4 bg-white/20 rounded" />
                     }
                   </div>

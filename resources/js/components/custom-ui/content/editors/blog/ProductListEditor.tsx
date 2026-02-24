@@ -6,9 +6,12 @@ import { toast } from "sonner";
 import { BlogProductSearch } from "./BlogProductSearch";
 import { Save, Trash2, Package, LayoutList, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductLite } from  "@/types/content/content";
-interface Props {
-    section: any;
+import { ProductLite, TypedSectionProps } from  "@/types/content/content";
+
+// URL indestructible de respaldo
+const DEFAULT_IMAGE = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Producto';
+
+type Props = TypedSectionProps<'blog_products'> & {
     searchResults?: ProductLite[];
 }
 
@@ -20,42 +23,33 @@ export default function ProductListEditor({ section, searchResults = [] }: Props
         items: initialItems, 
     });
 
-
     useEffect(() => {
-        if (section.content?.items) {
+        if (section.content.content.items) {
             setData("items", section.content.content.items);
         }
     }, [section.content]);
 
     const addProduct = (product: ProductLite) => {
-
         const exists = data.items.some((item: any) => item.product_id === product.product_id);
         if (exists) return toast.warning("Este producto ya está en la lista");
         
-  
         const newItems = [...data.items, product] as any;
         setData("items", newItems);
-      
     };
 
     const removeProduct = (id: string) => {
-       
         setData("items", data.items.filter((item: any) => item.product_id !== id) as any);
         toast.info("Producto removido de la lista");
     };
 
-   
     transform((values) => ({
         content: { items: values.items },
     }));
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-
         put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
             preserveScroll: true,
-          
         });
     };
 
@@ -103,11 +97,18 @@ export default function ProductListEditor({ section, searchResults = [] }: Props
                                     <GripVertical size={18} />
                                 </div>
                                 
+                                {/* CONTENEDOR DE IMAGEN CON CONDICIONAL Y ONERROR */}
                                 <div className="h-12 w-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 flex-shrink-0">
                                     <img 
-                                        src={product.image || '/images/placeholder.png'} 
+                                        src={(product.image && product.image.trim() !== '') ? product.image : DEFAULT_IMAGE} 
                                         className="h-full w-full object-cover" 
-                                        alt=""
+                                        alt={product.product_name}
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            if (target.src !== DEFAULT_IMAGE) {
+                                                target.src = DEFAULT_IMAGE;
+                                            }
+                                        }}
                                     />
                                 </div>
 

@@ -6,18 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ContentSectionProps as Props } from '../../../../../types/content/content';
+import { ContentSectionProps as Props } from '@/types/content/content';
+import { AtributoItem,AtributosContent } from '@/types/content/content';
 import { useRef } from 'react';
 
-interface AtributoItem {
-  id: number;
-  icon: File | string | null;
-  text: string;
-}
 
-interface AtributosContent {
-  items: AtributoItem[];
-}
 
 const DEFAULT_ITEMS: AtributoItem[] = [
   { id: 1, icon: null, text: 'Productos certificados con respaldo técnico garantizado' },
@@ -64,6 +57,7 @@ function IconUpload({
               src={preview}
               alt="icon"
               className="w-full h-full object-contain p-1"
+              style={{ filter: 'drop-shadow(0px 0px 1px rgba(0,0,0,0.5))' }}
             />
             {/* Overlay sutil solo al hacer hover */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
