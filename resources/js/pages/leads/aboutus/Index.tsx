@@ -16,8 +16,8 @@ export default function Index() {
 
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-lg lg:text-2xl text-gray-800">
-                        Lista de <span className="font-black">Nosotros</span>
+                    <h1 className="text-lg font-bold lg:text-2xl">
+                        Lista de Nosotros
                     </h1>
                 </div>
 

@@ -4,7 +4,6 @@ namespace App\Models\Products;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,6 +25,7 @@ class ProductPack extends Model
         'is_on_promotion',
         'promo_start_at',
         'promo_end_at',
+        'stock'
     ];
 
     protected $casts = [
@@ -38,13 +38,6 @@ class ProductPack extends Model
         'promo_end_at' => 'datetime',
     ];
 
-    /**
-     * Relación con la Categoría (Línea de negocio)
-     */
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(ProductCategory::class, 'category_id');
-    }
 
     /**
      * Relación con los items/componentes del pack
@@ -60,15 +53,15 @@ class ProductPack extends Model
     public function scopeActiveOnHome(Builder $query): void
     {
         $query->where('is_active', true)
-              ->where('show_on_home', true)
-              ->where(function ($q) {
-                  $q->where('is_on_promotion', false)
+            ->where('show_on_home', true)
+            ->where(function ($q) {
+                $q->where('is_on_promotion', false)
                     ->orWhere(function ($sub) {
                         $sub->where('is_on_promotion', true)
                             ->where('promo_start_at', '<=', now())
                             ->where('promo_end_at', '>=', now());
                     });
-              });
+            });
     }
 
     /**

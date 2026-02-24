@@ -42,13 +42,4 @@ class ProductPackItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
-    
-    /**
-     * Accesor para obtener datos rápidos del JSON
-     * Ejemplo: $item->sku_rubbermaid
-     */
-    public function getSkuRubbermaidAttribute()
-    {
-        return $this->dynamic_attributes['sku_rubbermaid'] ?? null;
-    }
 }

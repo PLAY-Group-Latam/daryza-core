@@ -21,6 +21,7 @@ import {
     FileCode,
     Headset,
     LayoutGrid,
+    LayoutTemplate,
     Newspaper,
     SearchCheck,
     Store,
@@ -112,6 +113,11 @@ const mainNavItems: NavItem[] = [
                 href: '/jobs/items',
             },
         ],
+    },
+    {
+        title: 'Contenido General',
+        href: '/content/items',
+        icon: LayoutTemplate,
     },
 
     {

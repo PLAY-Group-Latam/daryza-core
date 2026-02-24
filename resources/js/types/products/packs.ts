@@ -1,32 +1,35 @@
-import { Product } from '@/types/products';
+import { VariantSearchResult } from './search';
 
-export interface Pack {
-    id: number;
+export interface PackItem {
+    variant_id: string;
+    product_id: string;
+    sku: string;
+    product_name: string;
+    variant_name: string;
+    quantity: number;
+}
+
+export interface ProductPack {
+    id: string;
+    code: string;
     name: string;
-    slug?: string;
-
-    description?: string | null;
-
-    price: number;
-    original_price?: number | null;
-
+    slug: string;
+    brief_description: string | null;
+    description: string | null;
+    stock: number;
+    price: string; // Viene como "123.00"
+    promo_price: string | null;
     is_active: boolean;
-
-    // Relación con productos
-    products?: PackProduct[];
-
-    // Fechas
+    show_on_home: boolean;
+    is_on_promotion: boolean;
+    promo_start_at: string | null; // Formato ISO o Y-m-d\TH:i
+    promo_end_at: string | null;
     created_at: string;
     updated_at: string;
+    deleted_at: string | null;
+
+    items: PackItem[];
 }
 
-export interface PackProduct {
-    id: number;
-    product_id: number;
-    pack_id: number;
-
-    quantity: number;
-
-    product: Product;
-}
-export type PaginatedPacks = Paginated<Pack>;
+export type SearchResult = VariantSearchResult;
+export type PaginatedPacks = Paginated<ProductPack>;

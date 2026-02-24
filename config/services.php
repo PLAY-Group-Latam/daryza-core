@@ -43,5 +43,11 @@ return [
         'bucket' => env('GCS_BUCKET'),
         'key_file' => env('GCS_KEY_FILE'),
     ],
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+        'scheme' => 'https',
+    ],
 
 ];

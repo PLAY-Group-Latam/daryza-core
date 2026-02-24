@@ -1,4 +1,4 @@
-import TableList from '@/components/custom-ui/products/items-table/TableList';
+import TableList from '@/components/custom-ui/products/product/TableList';
 import AppLayout from '@/layouts/app-layout';
 import productRoutes from '@/routes/products';
 import { Product } from '@/types/products/product';

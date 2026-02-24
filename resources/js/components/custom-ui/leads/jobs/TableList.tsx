@@ -127,8 +127,8 @@ export default function JobTableList({ data, filters }: JobTableListProps) {
     if (!data?.data) return null;
 
     return (
-        <div className="w-full space-y-4">
-            <div className="rounded-xl bg-white shadow-sm overflow-hidden border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="w-full ">
+            <div>
                 <DataTable
                     columns={columns}
                     data={data}

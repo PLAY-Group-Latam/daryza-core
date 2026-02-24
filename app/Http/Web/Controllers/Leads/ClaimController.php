@@ -37,13 +37,6 @@ class ClaimController extends Controller
             ->with('success', 'Reclamación enviada correctamente.');
     }
 
-    public function show(Lead $claim)
-    {
-        return Inertia::render('leads/claims/Show', [
-            'claim' => $this->service->getDetails($claim)
-        ]);
-    }
-
     public function update(ClaimRequest $request, Lead $claim)
     {
        

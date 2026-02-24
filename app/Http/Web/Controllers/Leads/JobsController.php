@@ -38,14 +38,6 @@ class JobsController extends Controller
             ->with('success', 'Postulación enviada correctamente.');
     }
 
-    public function update(WebJobsRequest $request, Lead $job)
-    {
-        $this->service->update($job, $request->validated());
-
-        return redirect()->route('jobs.items.index')
-            ->with('success', 'Postulación actualizada exitosamente.');
-    }
-
     public function destroy(Lead $job)
     {
         $this->service->delete($job);

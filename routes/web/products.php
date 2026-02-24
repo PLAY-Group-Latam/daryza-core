@@ -36,7 +36,7 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
     ]);
 
   Route::resource('packs', ProductPackController::class)->parameters([
-    'packs' => 'Pack', // Coincide con el Type-hinting del controlador
+    'packs' => 'pack', // Coincide con el Type-hinting del controlador
   ]);
 
   Route::resource('categorias-dinamicas', DynamicCategoryController::class)

@@ -9,7 +9,8 @@ import {
 } from '@/types/products/dynamicCategories';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Edit } from 'lucide-react';
+import { Calendar, Edit, Trash } from 'lucide-react';
+import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
 import { DataTable } from '../../tables/DataTable';
 
 interface TableListProps {
@@ -112,12 +113,12 @@ const columns: ColumnDef<DynamicCategory>[] = [
                             <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
-                    {/* 
+
                     <ConfirmDeleteAlert
                         resourceId={category.id}
                         resourceName={category.name}
                         // Usamos el namespace de rutas para categorías dinámicas
-                        routes={productsNamespace.dynamicCategories}
+                        routes={products.dynamicCategories}
                         trigger={
                             <Button
                                 variant="destructive"
@@ -129,7 +130,7 @@ const columns: ColumnDef<DynamicCategory>[] = [
                                 <Trash className="h-4 w-4" />
                             </Button>
                         }
-                    /> */}
+                    />
                 </div>
             );
         },
@@ -140,7 +141,7 @@ export default function TableList({ data }: TableListProps) {
     if (!data || !data.data) {
         return (
             <div className="p-4 text-center text-gray-500">
-                No hay categorías especiales disponibles.
+                No hay dinámicas de negocio disponibles.
             </div>
         );
     }

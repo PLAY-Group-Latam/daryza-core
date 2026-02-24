@@ -130,7 +130,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeProps>(
                 />
                 <div
                     className='w-full h-[48px]'
-                    onDrop={(e) => { handleDrop({id: '', name: 'parent_div'})}}>
+                    onDrop={(e) => { handleDrop({id: '', name: 'parent_div', isSelected: false})}}>
 
                 </div>
             </div>
@@ -488,4 +488,3 @@ const TreeActions = ({
 }
 
 export { TreeView, type TreeDataItem }
-
