@@ -65,7 +65,9 @@ class Product extends Model
     public function mainVariant()
     {
         // En E-commerce, esto es sagrado para el rendimiento
-        return $this->hasOne(ProductVariant::class)->where('is_main', true);
+        return $this->hasOne(ProductVariant::class)
+            ->where('is_main', true)
+            ->where('is_active', true);
     }
 
     // SEO (polimórfico)
