@@ -33,6 +33,7 @@ class ProductService
 
       $product->categories()->sync($data['categories'] ?? []);
       $product->businessLines()->sync($data['business_lines'] ?? []);
+      $this->syncRecommendedProducts($product, $data['recommended_product_ids'] ?? []);
 
       $this->createMetadata($product, $data['metadata'] ?? []);
       $this->mediaService->createTechnicalSheets($product, $data['technicalSheets'] ?? []);
@@ -64,6 +65,10 @@ class ProductService
 
       if (isset($data['business_lines'])) {
         $product->businessLines()->sync($data['business_lines']);
+      }
+
+      if (array_key_exists('recommended_product_ids', $data)) {
+        $this->syncRecommendedProducts($product, $data['recommended_product_ids'] ?? []);
       }
 
       if (isset($data['metadata'])) {
@@ -286,5 +291,20 @@ class ProductService
         'value'              => $spec['value'] ?? null,
       ])->toArray()
     );
+  }
+
+  protected function syncRecommendedProducts(Product $product, array $recommendedIds): void
+  {
+    $syncPayload = collect($recommendedIds)
+      ->filter(fn($id) => is_string($id) && $id !== '')
+      ->unique()
+      ->reject(fn($id) => $id === $product->id)
+      ->values()
+      ->mapWithKeys(fn($id, $index) => [
+        $id => ['position' => $index + 1],
+      ])
+      ->all();
+
+    $product->recommendedProducts()->sync($syncPayload);
   }
 }

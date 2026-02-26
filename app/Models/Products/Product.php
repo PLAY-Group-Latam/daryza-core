@@ -65,7 +65,9 @@ class Product extends Model
     public function mainVariant()
     {
         // En E-commerce, esto es sagrado para el rendimiento
-        return $this->hasOne(ProductVariant::class)->where('is_main', true);
+        return $this->hasOne(ProductVariant::class)
+            ->where('is_main', true)
+            ->where('is_active', true);
     }
 
     // SEO (polimórfico)
@@ -80,6 +82,32 @@ class Product extends Model
     {
         return $this->morphMany(ProductMedia::class, 'mediable')
             ->where('type', 'technical_sheet');
+    }
+
+    /**
+     * Productos recomendados para este producto (cross-sell / related products).
+     */
+    public function recommendedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_recommendations',
+            'product_id',
+            'recommended_product_id'
+        )->withPivot(['position'])->withTimestamps()->orderByPivot('position');
+    }
+
+    /**
+     * Productos que recomiendan a este producto.
+     */
+    public function recommendedByProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_recommendations',
+            'recommended_product_id',
+            'product_id'
+        )->withPivot(['position'])->withTimestamps();
     }
 
 

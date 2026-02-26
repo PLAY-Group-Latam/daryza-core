@@ -21,10 +21,19 @@ export interface ProductVariant extends ProductVariantBase {
     specifications: ProductSpecification[];
 }
 
+export interface ProductRecommendable {
+    id: string;
+    code?: string | null;
+    name: string;
+    slug: string;
+}
+
 export interface ProductEdit extends ProductBase {
     is_home: boolean;
     categories: string[];
     business_lines: string[];
+    recommended_product_ids: string[];
+    recommended_products?: ProductRecommendable[];
     variant_attribute_ids: string[];
     variants: ProductVariant[];
     technicalSheets: Media[];

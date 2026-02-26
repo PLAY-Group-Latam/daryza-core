@@ -19,6 +19,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
     return ProductVariant::with([
       'product.categories',
       'product.businessLines',
+      'product.recommendedProducts',
       'attributes.attribute',
       'specifications.attribute'
     ])
@@ -55,6 +56,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       'Categorias',
       'Sub Categorias',
       'Linea de Negocio',
+      'Productos Recomendados',
     ];
   }
 
@@ -73,8 +75,12 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       $parentCategory = $product->categories->where('parent_id', null)->first();
       $subCategories = $product->categories->where('parent_id', '!=', null)->pluck('name')->implode(', ');
       $businessLines = $product->businessLines->pluck('name')->implode(', ');
+      $recommendedCodes = $product->recommendedProducts
+        ->pluck('code')
+        ->filter()
+        ->implode(', ');
 
-      $code = $product->id;
+      $code = $product->code;
       $name = $product->name;
       $brief = $product->brief_description;
       $desc = $product->description;
@@ -88,6 +94,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       $catName = '';
       $subCategories = '';
       $businessLines = '';
+      $recommendedCodes = '';
     }
 
     $attributes = $variant->attributes->pluck('value', 'attribute.name');
@@ -118,6 +125,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       $catName,
       $subCategories,
       $businessLines,
+      $recommendedCodes,
     ];
   }
 }

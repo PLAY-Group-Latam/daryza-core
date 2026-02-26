@@ -37,6 +37,7 @@ export function VariantRow({
     } =
         useFormContext<ProductFormValues>();
     const attributesRootError = errors.variants?.[index]?.attributes?.root;
+    const isMainError = errors.variants?.[index]?.is_main;
 
     // Estado UI local — no pertenece al schema del form
     const [specSelector, setSpecSelector] = useState('');
@@ -243,6 +244,11 @@ export function VariantRow({
                     )}
                 />
             </div>
+            {isMainError?.message && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                    {isMainError.message}
+                </p>
+            )}
 
             {/* Campos de promoción — render condicional */}
             {isOnPromo && (
