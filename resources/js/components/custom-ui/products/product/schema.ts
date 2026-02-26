@@ -81,6 +81,7 @@ export const ProductSchema = z.object({
     is_home: z.boolean(),
     categories: z.array(z.string()).min(1, 'Selecciona al menos una categoría'),
     business_lines: z.array(z.string()).optional(),
+    recommended_product_ids: z.array(z.string()).optional(),
     variant_attribute_ids: z.array(z.string()),
     variants: z
         .array(VariantSchema)
@@ -233,6 +234,7 @@ export const defaultValues: ProductFormValues = {
     is_home: false,
     categories: [],
     business_lines: [],
+    recommended_product_ids: [],
     variant_attribute_ids: [],
     variants: [],
     technicalSheets: [],

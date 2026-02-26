@@ -5,13 +5,20 @@ namespace App\Http\Web\Imports;
 use App\Http\Web\Services\Products\ProductImportService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Events\AfterImport;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Carbon\Carbon;
 
-class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow
+class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, WithEvents
 {
+    /**
+     * @var array<string, array<int, string>>
+     */
+    private array $pendingRecommendationsByProductCode = [];
+
     public function collection(Collection $rows)
     {
         $service = app(ProductImportService::class);
@@ -62,9 +69,23 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow
             $lineas_negocio = trim($row['linea_de_negocio'] ?? '');
             $categoria      = trim($row['categorias'] ?? '');
             $subcategorias   = trim($row['sub_categorias'] ?? '');
+            $recommendedCodes = $this->parseRecommendedCodes($row);
             // Si hay código/nombre, actualizar último código válido
             if ($code && $name) {
                 $lastCode = $code;
+
+                if (!array_key_exists($code, $this->pendingRecommendationsByProductCode)) {
+                    // Permite limpiar recomendaciones cuando la celda viene vacía.
+                    $this->pendingRecommendationsByProductCode[$code] = $recommendedCodes;
+                } elseif (!empty($recommendedCodes)) {
+                    // Si vuelve a aparecer el mismo producto con nuevos códigos, consolidamos.
+                    $this->pendingRecommendationsByProductCode[$code] = array_values(
+                        array_unique(array_merge(
+                            $this->pendingRecommendationsByProductCode[$code],
+                            $recommendedCodes
+                        ))
+                    );
+                }
 
                 // Crear producto solo si no existe en cache
                 if (!isset($productsCache[$code])) {
@@ -142,6 +163,19 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow
         }
     }
 
+    public function registerEvents(): array
+    {
+        return [
+            AfterImport::class => function () {
+                $service = app(ProductImportService::class);
+
+                foreach ($this->pendingRecommendationsByProductCode as $productCode => $recommendedCodes) {
+                    $service->syncProductRecommendationsByCodes($productCode, $recommendedCodes);
+                }
+            },
+        ];
+    }
+
     public function chunkSize(): int
     {
         return 300;
@@ -162,5 +196,39 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>|Collection<string, mixed>  $row
+     * @return array<int, string>
+     */
+    private function parseRecommendedCodes($row): array
+    {
+        $raw = '';
+
+        $candidates = [
+            'productos_recomendados',
+            'productos recomendados',
+            'recomendados',
+        ];
+
+        foreach ($candidates as $key) {
+            $value = $row[$key] ?? null;
+            if (is_string($value) && trim($value) !== '') {
+                $raw = $value;
+                break;
+            }
+        }
+
+        if ($raw === '') {
+            return [];
+        }
+
+        return collect(explode(',', $raw))
+            ->map(fn($item) => trim($item))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

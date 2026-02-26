@@ -24,6 +24,8 @@ class StoreProductRequest extends FormRequest
             'categories.*'     => ['exists:product_categories,id'],
             'business_lines'   => ['nullable', 'array'],
             'business_lines.*' => ['exists:business_lines,id'],
+            'recommended_product_ids'   => ['nullable', 'array'],
+            'recommended_product_ids.*' => ['distinct', 'exists:products,id'],
 
             // — Atributos de variante —
             'variant_attribute_ids'   => ['nullable', 'array'],

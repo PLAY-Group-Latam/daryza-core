@@ -3,13 +3,16 @@ import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
+import { ProductRecommendable } from '@/types/products/productEdit';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Create() {
-    const { categories, attributes, businessLines } = usePage<{
+    const { categories, attributes, businessLines, recommendableSearchResults } =
+        usePage<{
         categories: CategorySelect[];
         attributes: Attribute[];
         businessLines: BusinessLine[]; // <--- Agregado
+        recommendableSearchResults: ProductRecommendable[];
     }>().props;
     // console.log('atributossss:', attributes);
     console.log('categories', categories);
@@ -34,6 +37,7 @@ export default function Create() {
                     categories={categories}
                     attributes={attributes}
                     businessLines={businessLines}
+                    recommendableSearchResults={recommendableSearchResults}
                 />
             </div>
         </AppLayout>

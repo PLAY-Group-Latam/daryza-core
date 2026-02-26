@@ -97,13 +97,47 @@ class ProductController extends Controller
      */
     public function show(Request $request, string $slug)
     {
+        $recommendedLimit = max(0, min((int) $request->input('recommended_limit', 8), 12));
+
         $product = Product::query()
             ->select('id', 'name', 'slug', 'brief_description', 'description')
             ->with([
                 'technicalSheets' => function ($q) {
                     $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'type', 'order')
                         ->orderBy('order', 'asc');
-                }
+                },
+                'recommendedProducts' => function ($q) use ($recommendedLimit, $slug) {
+                    $q->select('products.id', 'products.name', 'products.slug')
+                        ->where('products.is_active', true)
+                        ->where('products.slug', '!=', $slug)
+                        ->has('mainVariant')
+                        ->with([
+                            'mainVariant' => function ($variantQuery) {
+                                $variantQuery->select(
+                                    'id',
+                                    'product_id',
+                                    'sku',
+                                    'price',
+                                    'promo_price',
+                                    'is_on_promo',
+                                    'promo_start_at',
+                                    'promo_end_at'
+                                );
+                            },
+                            'mainVariant.mainImage' => function ($imageQuery) {
+                                $imageQuery->select(
+                                    'id',
+                                    'mediable_id',
+                                    'mediable_type',
+                                    'file_path'
+                                );
+                            },
+                        ]);
+
+                    if ($recommendedLimit > 0) {
+                        $q->limit($recommendedLimit);
+                    }
+                },
             ])
             ->active()
             ->where('slug', $slug)
@@ -169,6 +203,7 @@ class ProductController extends Controller
                 'brief_description' => $product->brief_description,
                 'description' => $product->description,
                 'technical_sheets' => $product->technicalSheets,
+                'recommended_products' => $product->recommendedProducts,
             ],
             'active_variant' => $activeVariant,
             'selection_state' => $showState['selection_state'],

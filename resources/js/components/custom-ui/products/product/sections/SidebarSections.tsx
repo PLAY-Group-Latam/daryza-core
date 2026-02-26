@@ -3,19 +3,23 @@
 import { Controller, useFormContext } from 'react-hook-form';
 
 import { MultiSelect } from '@/components/custom-ui/MultiSelect';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 
+import { ProductRecommendable } from '@/types/products/productEdit';
 import { CategoryTreeSelect } from '../components/CategoryArrayTreeSelect';
 import { ProductFormValues } from '../schema';
+import { RecommendedProductsField } from './RecommendedProductsField';
 
 interface Props {
     categories: CategorySelect[];
     businessLines: BusinessLine[];
+    initialRecommendedProducts: ProductRecommendable[];
+    recommendableSearchResults: ProductRecommendable[];
+    recommendedSearchUrl: string;
     isSubmitting: boolean;
     isEdit: boolean;
 }
@@ -63,6 +67,9 @@ function ProductSwitch({
 export function SidebarSection({
     categories,
     businessLines,
+    initialRecommendedProducts,
+    recommendableSearchResults,
+    recommendedSearchUrl,
     isSubmitting,
     isEdit,
 }: Props) {
@@ -133,6 +140,12 @@ export function SidebarSection({
                 )}
             />
 
+            <RecommendedProductsField
+                initialSelected={initialRecommendedProducts}
+                searchResults={recommendableSearchResults}
+                searchUrl={recommendedSearchUrl}
+            />
+
             {/* SEO */}
             <div className="space-y-4">
                 <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
@@ -196,25 +209,6 @@ export function SidebarSection({
                         </div>
                     )}
                 />
-
-                <div className="flex gap-4">
-                    {(['noindex', 'nofollow'] as const).map((f) => (
-                        <Controller
-                            key={f}
-                            name={`metadata.${f}`}
-                            control={control}
-                            render={({ field }) => (
-                                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                    {f === 'noindex' ? 'No index' : 'No follow'}
-                                </label>
-                            )}
-                        />
-                    ))}
-                </div>
             </div>
 
             <button

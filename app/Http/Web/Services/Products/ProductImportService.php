@@ -440,4 +440,56 @@ class ProductImportService
       $product->businessLines()->sync($lineIds);
     }
   }
+
+  /**
+   * Sincroniza recomendaciones por código de producto.
+   *
+   * @param array<int, string> $recommendedCodes
+   */
+  public function syncProductRecommendationsByCodes(string $productCode, array $recommendedCodes): void
+  {
+    $productCode = trim($productCode);
+    if ($productCode === '') {
+      return;
+    }
+
+    $product = Product::query()
+      ->where('code', $productCode)
+      ->first();
+
+    if (!$product) {
+      return;
+    }
+
+    $codes = collect($recommendedCodes)
+      ->map(fn($code) => trim((string) $code))
+      ->filter()
+      ->unique()
+      ->reject(fn($code) => $code === $productCode)
+      ->values();
+
+    if ($codes->isEmpty()) {
+      $product->recommendedProducts()->sync([]);
+      return;
+    }
+
+    $recommendableByCode = Product::query()
+      ->whereIn('code', $codes->all())
+      ->get(['id', 'code'])
+      ->unique('code')
+      ->keyBy('code');
+
+    $syncPayload = [];
+    foreach ($codes as $index => $code) {
+      $recommendedProduct = $recommendableByCode->get($code);
+      if (!$recommendedProduct) {
+        continue;
+      }
+      $syncPayload[$recommendedProduct->id] = [
+        'position' => $index + 1,
+      ];
+    }
+
+    $product->recommendedProducts()->sync($syncPayload);
+  }
 }

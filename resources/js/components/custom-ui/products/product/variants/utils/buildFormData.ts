@@ -21,6 +21,9 @@ export function buildFormData(
     // — Arrays simples —
     data.categories.forEach((id) => fd.append('categories[]', id));
     data.business_lines?.forEach((id) => fd.append('business_lines[]', id));
+    data.recommended_product_ids?.forEach((id) =>
+        fd.append('recommended_product_ids[]', id),
+    );
     data.variant_attribute_ids.forEach((id) =>
         fd.append('variant_attribute_ids[]', id),
     );

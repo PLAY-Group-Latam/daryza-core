@@ -14,6 +14,7 @@ import { mapProductToForm } from './mappers';
 import { defaultValues, ProductFormValues, ProductSchema } from './schema';
 
 import { ProductEdit } from '@/types/products/productEdit';
+import { ProductRecommendable } from '@/types/products/productEdit';
 import type { Resolver } from 'react-hook-form';
 import { GeneralSection } from './sections/GeneralSections';
 import { SidebarSection } from './sections/SidebarSections';
@@ -25,6 +26,7 @@ interface Props {
     categories: CategorySelect[];
     attributes: Attribute[];
     businessLines: BusinessLine[];
+    recommendableSearchResults: ProductRecommendable[];
     product?: ProductEdit; // undefined = crear, definido = editar
 }
 
@@ -32,6 +34,7 @@ export default function FormProduct({
     categories,
     attributes,
     businessLines,
+    recommendableSearchResults,
     product,
 }: Props) {
     const isEdit = Boolean(product);
@@ -91,6 +94,15 @@ export default function FormProduct({
                     <SidebarSection
                         categories={categories}
                         businessLines={businessLines}
+                        initialRecommendedProducts={
+                            product?.recommended_products ?? []
+                        }
+                        recommendableSearchResults={recommendableSearchResults}
+                        recommendedSearchUrl={
+                            isEdit
+                                ? products.items.edit(product!.id).url
+                                : products.items.create.url()
+                        }
                         isSubmitting={methods.formState.isSubmitting}
                         isEdit={isEdit}
                     />

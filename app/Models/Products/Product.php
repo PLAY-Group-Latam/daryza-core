@@ -84,6 +84,32 @@ class Product extends Model
             ->where('type', 'technical_sheet');
     }
 
+    /**
+     * Productos recomendados para este producto (cross-sell / related products).
+     */
+    public function recommendedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_recommendations',
+            'product_id',
+            'recommended_product_id'
+        )->withPivot(['position'])->withTimestamps()->orderByPivot('position');
+    }
+
+    /**
+     * Productos que recomiendan a este producto.
+     */
+    public function recommendedByProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_recommendations',
+            'recommended_product_id',
+            'product_id'
+        )->withPivot(['position'])->withTimestamps();
+    }
+
 
     // public function specifications()
     // {
