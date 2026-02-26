@@ -79,7 +79,7 @@ class ProductController extends Controller
             ->has('mainVariant')
             ->with([
                 'mainVariant' => function ($q) {
-                    $q->select('id', 'product_id', 'price', 'promo_price', 'is_on_promo');
+                    $q->select('id', 'product_id', 'price', 'promo_price','sku', 'is_on_promo');
                 },
                 'mainVariant.mainImage' => function ($q) {
                     $q->select('id', 'mediable_id', 'mediable_type', 'file_path');
