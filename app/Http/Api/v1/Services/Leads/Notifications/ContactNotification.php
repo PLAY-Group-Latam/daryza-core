@@ -5,28 +5,25 @@ namespace App\Http\Api\v1\Services\Leads\Notifications;
 use App\Models\Leads\Lead;
 use App\Mail\Contact\ContactToDaryza; 
 use App\Http\Api\v1\Services\Mail\MailService;
+use App\Jobs\SendEmailJob;
 
 class ContactNotification
 {
-    protected MailService $mailService;
-
-    public function __construct(MailService $mailService)
-    {
-        $this->mailService = $mailService;
-    }
+   
 
     public function notify(Lead $lead): void
-    {
-        $adminEmail = $this->resolveAdminEmail($lead->type);
+{
+    $adminEmail = $this->resolveAdminEmail($lead->type);
 
-        if (!$adminEmail) {
-            return;
-        }
-
-        $this->mailService
-            ::to($adminEmail)
-            ->send(new ContactToDaryza($lead->toArray()));
+    if (!$adminEmail) {
+        return;
     }
+
+    SendEmailJob::dispatch(
+        new ContactToDaryza($lead->toArray()),
+        $adminEmail
+    );
+}
 
     protected function resolveAdminEmail(string $type): ?string
     {

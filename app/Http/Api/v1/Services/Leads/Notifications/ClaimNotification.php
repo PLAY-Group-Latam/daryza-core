@@ -6,33 +6,24 @@ use App\Models\Leads\Lead;
 use App\Mail\ComplaintsBook\ComplaintToDaryza;
 use App\Mail\ComplaintsBook\ComplaintsBookRequest;
 use App\Http\Api\v1\Services\Mail\MailService;
-use Illuminate\Support\Facades\Log;
+use App\Jobs\SendEmailJob;
 
 class ClaimNotification
 {
-    protected MailService $mailService;
+   
 
-    public function __construct(MailService $mailService)
-    {
-        $this->mailService = $mailService;
-    }
+  public function notify(Lead $lead): void
+{
+    $adminEmail = config('leads.claim_admin_email');
 
-   public function notify(Lead $lead): void
-    {
-        $adminEmail = config('leads.claim_admin_email');
+    SendEmailJob::dispatch(
+        new ComplaintToDaryza($lead->toArray()),
+        $adminEmail
+    );
 
-        try {
-            $this->mailService
-                ::to($adminEmail)
-                ->send(new ComplaintToDaryza($lead->toArray()));
-        } catch (\Throwable $e) {
-        }
-
-        try {
-            $this->mailService
-                ::to($lead->email)
-                ->send(new ComplaintsBookRequest($lead->toArray()));
-        } catch (\Throwable $e) {
-        }
-    }
+    SendEmailJob::dispatch(
+        new ComplaintsBookRequest($lead->toArray()),
+        $lead->email
+    );
+}
 }
