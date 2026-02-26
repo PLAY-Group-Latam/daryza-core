@@ -56,48 +56,48 @@ return [
     | BLOG POST PROMOS & SOCIALS
     |--------------------------------------------------------------------------
     */
-    'blog_post_promos' => [
-        'items' => [
-            [
-                'id'          => 'b4ae424b-96a3-4cfb-9da5-738c08b29226',
-                'link_url'    => 'https://www.coolbox.pe/',
-                'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b6ea6dd7.webp',
-                'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b7078f25.webp',
-            ],
-            [
-                'id'          => '521fadf3-c278-44ce-9719-5a65fe717f7d',
-                'link_url'    => 'https://www.coolbox.pe/',
-                'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b70e40ce.webp',
-                'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b725ddda.webp',
-            ],
+   'blog_post_promos' => [
+    'items' => [
+        [
+            'id'          => 'b4ae424b-96a3-4cfb-9da5-738c08b29226',
+            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b6ea6dd7.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b7078f25.webp',
         ],
-        'socials' => [
-            [
-                'id'    => '1771955137502',
-                'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699de3f4116b8.png',
-                'url'   => '',
-            ],
-            [
-                'id'    => '1771919833333',
-                'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f6b2299.svg',
-                'url'   => 'https://www.coolbox.pe/',
-            ],
-            [
-                'id'    => '1771919832615',
-                'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f5bae38.svg',
-                'url'   => 'https://www.coolbox.pe/',
-            ],
-            [
-                'id'    => '1771919834241',
-                'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f73ff6e.svg',
-                'url'   => 'https://www.coolbox.pe/',
-            ],
-            [
-                'id'    => '1771919834835',
-                'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f7a4219.svg',
-                'url'   => 'https://www.coolbox.pe/',
-            ],
+        [
+            'id'          => '521fadf3-c278-44ce-9719-5a65fe717f7d',
+            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b70e40ce.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/30/images/699d6b725ddda.webp',
         ],
     ],
+    'socials' => [
+        [
+            'id'    => '1771955137502',
+            'image' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/69a08aa4e4e1c.svg',
+            'url'   => '',
+        ],
+        [
+            'id'    => '1771919833333',
+            'image' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/69a08aa878309.svg',
+            'url'   => 'https://www.coolbox.pe/',
+        ],
+        [
+            'id'    => '1771919832615',
+            'image' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/69a08aa8eb4c6.svg',
+            'url'   => 'https://www.coolbox.pe/',
+        ],
+        [
+            'id'    => '1771919834241',
+            'image' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/69a08aa9bf5f9.svg',
+            'url'   => 'https://www.coolbox.pe/',
+        ],
+        [
+            'id'    => '1771919834835',
+            'image' => 'https://storage.googleapis.com/daryza_dev/sections/30/images/69a08aaa499eb.svg',
+            'url'   => 'https://www.coolbox.pe/',
+        ],
+    ],
+],
 
 ];

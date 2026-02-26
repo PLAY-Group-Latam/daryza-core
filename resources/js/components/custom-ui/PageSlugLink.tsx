@@ -17,7 +17,7 @@ export function SectionFrontendLink({ type, productSlug }: SectionFrontendLinkPr
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs text-muted-foreground hover:underline"
+      className="block truncate max-w-full text-xs text-muted-foreground hover:underline"
     >
       {url}
     </a>

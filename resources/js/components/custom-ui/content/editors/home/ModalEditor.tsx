@@ -106,10 +106,10 @@ export default function ModalEditor({ section }: Props) {
                                 <Calendar size={16} className="text-primary" />
                                 Fecha de Inicio
                             </label>
-                            <DatePicker
-                                value={data.content.start_date ? new Date(data.content.start_date) : undefined}
-                                onChange={(date) => updateField('start_date', date ? format(date, 'yyyy-MM-dd') : '')}
-                            />
+                         <DatePicker
+  value={data.content.start_date ? new Date(data.content.start_date + 'T12:00:00') : undefined}
+  onChange={(date) => updateField('start_date', date ? format(date, 'yyyy-MM-dd') : '')}
+/>
                         </div>
 
                         <div className="space-y-2">
@@ -118,9 +118,9 @@ export default function ModalEditor({ section }: Props) {
                                 Fecha de Fin
                             </label>
                             <DatePicker
-                                value={data.content.end_date ? new Date(data.content.end_date) : undefined}
-                                onChange={(date) => updateField('end_date', date ? format(date, 'yyyy-MM-dd') : '')}
-                            />
+  value={data.content.end_date ? new Date(data.content.end_date + 'T12:00:00') : undefined}
+  onChange={(date) => updateField('end_date', date ? format(date, 'yyyy-MM-dd') : '')}
+/>
                         </div>
                     </div>
 

@@ -9,9 +9,9 @@ return [
     */
     'home_modal' => [
         'start_date'  => '2026-02-17',
-        'end_date'    => '2026-02-24',
+        'end_date'    => '2026-02-29',
         'is_visible'  => true,
-        'image'       => 'https://storage.googleapis.com/daryza_dev/sections/1/images/699d3d9faf4d3.webp',
+        'image'       => 'https://storage.googleapis.com/daryza_dev/sections/1/images/69a08e07e217f.webp',
     ],
 
     /*

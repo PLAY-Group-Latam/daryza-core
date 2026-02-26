@@ -18,13 +18,8 @@ class ContactService
         $this->leadNotificationService = $leadNotificationService;
     }
     
-      public function save(array $data): Lead
+    public function save(array $data): Lead
 {
-    Log::info('ContactService@save - Iniciando', [
-        'type' => $data['type'] ?? null,
-        'email' => $data['email'] ?? null,
-    ]);
-
     $type = $data['type'];
 
     $payload = [
@@ -36,34 +31,17 @@ class ContactService
         'data'       => $this->mapJsonFieldsByType($data),
     ];
 
-    Log::info('ContactService@save - Payload construido', [
-        'payload' => $payload,
-    ]);
-
     if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
-
-        Log::info('ContactService@save - Subiendo archivo');
-
         $folder = "leads/{$type}";
         $publicUrl = $this->gcsService->uploadFile($data['file_attached'], $folder);
 
         $payload['file_path'] = $publicUrl;
         $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
-
-        Log::info('ContactService@save - Archivo subido', [
-            'file_path' => $publicUrl,
-        ]);
     }
 
     $lead = Lead::create($payload);
 
-    Log::info('ContactService@save - Lead creado', [
-        'lead_id' => $lead->id,
-    ]);
-
     $this->leadNotificationService->notify($lead);
-
-    Log::info('ContactService@save - Notificación ejecutada');
 
     return $lead;
 }
