@@ -31,7 +31,7 @@ export const columns: ColumnDef<Blog>[] = [
                         target="_blank" // si quieres abrir en otra pestaña
                         rel="noopener noreferrer"
                     >
-                        {blog.title}
+                        {`${frontendUrl}/${blog.title}`}
                     </a>
                     <span className="text-sm text-muted-foreground">
                         por {blog.author}

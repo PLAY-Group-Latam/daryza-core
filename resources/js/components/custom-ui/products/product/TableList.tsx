@@ -35,7 +35,7 @@ export const columns: ColumnDef<Product>[] = [
                         rel="noopener noreferrer"
                         className="w-fit text-gray-500 hover:underline"
                     >
-                        {`/products/${product.slug}`}
+                        {`${frontendUrl}/products/${product.slug}`}
                     </a>
                     <div className="flex items-center gap-1">
                         <span className="font-medium text-black">
