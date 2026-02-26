@@ -26,7 +26,7 @@ export const columns: ColumnDef<Blog>[] = [
             return (
                 <div className="flex flex-col">
                     <a
-                        href={`${frontendUrl}/blogs/${blog.slug}`}
+                        href={`${frontendUrl}/blog/${blog.slug}`}
                         className="w-fit font-medium text-blue-600 hover:underline"
                         target="_blank" // si quieres abrir en otra pestaña
                         rel="noopener noreferrer"
