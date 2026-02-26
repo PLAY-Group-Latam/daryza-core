@@ -4,42 +4,69 @@ namespace App\Http\Api\v1\Services\Leads;
 
 use App\Models\Leads\Lead;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use App\Http\Api\v1\Services\GcsService;
 
 class ContactService
 {
     protected GcsService $gcsService;
+    protected LeadNotificationService $leadNotificationService;
 
-    public function __construct(GcsService $gcsService)
+    public function __construct(GcsService $gcsService,LeadNotificationService $leadNotificationService)
     {
         $this->gcsService = $gcsService;
+        $this->leadNotificationService = $leadNotificationService;
+    }
+    
+      public function save(array $data): Lead
+{
+    Log::info('ContactService@save - Iniciando', [
+        'type' => $data['type'] ?? null,
+        'email' => $data['email'] ?? null,
+    ]);
+
+    $type = $data['type'];
+
+    $payload = [
+        'type'       => $type,
+        'full_name'  => $data['full_name'],
+        'email'      => $data['email'],
+        'phone'      => $data['phone'] ?? null,
+        'status'     => Lead::STATUS_NEW,
+        'data'       => $this->mapJsonFieldsByType($data),
+    ];
+
+    Log::info('ContactService@save - Payload construido', [
+        'payload' => $payload,
+    ]);
+
+    if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
+
+        Log::info('ContactService@save - Subiendo archivo');
+
+        $folder = "leads/{$type}";
+        $publicUrl = $this->gcsService->uploadFile($data['file_attached'], $folder);
+
+        $payload['file_path'] = $publicUrl;
+        $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
+
+        Log::info('ContactService@save - Archivo subido', [
+            'file_path' => $publicUrl,
+        ]);
     }
 
-    public function save(array $data): Lead
-    {
-        $type = $data['type'];
-        
-        $payload = [
-            'type'       => $type,
-            'full_name'  => $data['full_name'],
-            'email'      => $data['email'],
-            'phone'      => $data['phone'] ?? null,
-            'status'     => Lead::STATUS_NEW,
-            'data'       => $this->mapJsonFieldsByType($data),
-        ];
+    $lead = Lead::create($payload);
 
-        
-        if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
-        
-            $folder = "leads/{$type}";
-            $publicUrl = $this->gcsService->uploadFile($data['file_attached'], $folder);
+    Log::info('ContactService@save - Lead creado', [
+        'lead_id' => $lead->id,
+    ]);
 
-            $payload['file_path'] = $publicUrl;
-            $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
-        }
+    $this->leadNotificationService->notify($lead);
 
-        return Lead::create($payload);
-    }
+    Log::info('ContactService@save - Notificación ejecutada');
+
+    return $lead;
+}
 
    protected function mapJsonFieldsByType(array $data): array
 {

@@ -62,7 +62,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
             <Command shouldFilter={false} className="rounded-2xl border-2 border-slate-200 shadow-sm bg-white overflow-visible">
                 <div className="relative">
                     <CommandInput
-                        placeholder="Buscar por nombre o SKU..."
+                        placeholder="Buscar por nombre"
                         value={searchTerm}
                         onValueChange={handleChange}
                         onFocus={() => setOpen(true)}
@@ -114,9 +114,6 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                             <div className="flex flex-col flex-1 text-left min-w-0">
                                                 <span className="font-bold text-slate-900 truncate text-sm">
                                                     <Highlight text={res.product_name} query={searchTerm} />
-                                                </span>
-                                                <span className="text-[10px] font-mono text-slate-400 uppercase">
-                                                    SKU: <Highlight text={res.sku} query={searchTerm} />
                                                 </span>
                                                 <span className="text-xs font-bold text-primary">${res.active_price}</span>
                                             </div>
