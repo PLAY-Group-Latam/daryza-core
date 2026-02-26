@@ -103,7 +103,11 @@ class ProductMediaService
             $folder = $this->technicalSheetsPath($product->id);
 
             $product->technicalSheets()->create([
-                'file_path' => $this->gcsService->uploadFile($sheet, $folder),
+                'file_path' => $this->gcsService->uploadFile(
+                    $sheet,
+                    $folder,
+                    $sheet->getClientOriginalName()
+                ),
                 'type'      => 'technical_sheet',
                 'folder'    => $folder,
             ]);
@@ -143,7 +147,11 @@ class ProductMediaService
             ->each(function (UploadedFile $file) use ($product) {
                 $folder = $this->technicalSheetsPath($product->id);
                 $product->technicalSheets()->create([
-                    'file_path' => $this->gcsService->uploadFile($file, $folder),
+                    'file_path' => $this->gcsService->uploadFile(
+                        $file,
+                        $folder,
+                        $file->getClientOriginalName()
+                    ),
                     'type'      => 'technical_sheet',
                     'folder'    => $folder,
                 ]);

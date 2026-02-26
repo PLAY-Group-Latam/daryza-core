@@ -17,15 +17,10 @@ import { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
     Apple,
-    CreditCard,
-    FileCode,
     Headset,
     LayoutGrid,
     LayoutTemplate,
     Newspaper,
-    SearchCheck,
-    Store,
-    Truck,
     User,
     Users,
 } from 'lucide-react';
@@ -120,32 +115,32 @@ const mainNavItems: NavItem[] = [
         icon: LayoutTemplate,
     },
 
-    {
-        title: 'Configuración',
-        icon: Store,
-        children: [
-            {
-                title: 'Delivery Zonas',
-                href: '/delivery-zones',
-                icon: Truck,
-            },
-            {
-                title: 'Cuentas Bancarias',
-                href: '/cuentas-bancarias',
-                icon: CreditCard,
-            },
-            {
-                title: 'Seo',
-                href: '/seo',
-                icon: SearchCheck,
-            },
-            {
-                title: 'Scripts',
-                href: '/scripts',
-                icon: FileCode,
-            },
-        ],
-    },
+    // {
+    //     title: 'Configuración',
+    //     icon: Store,
+    //     children: [
+    //         {
+    //             title: 'Delivery Zonas',
+    //             href: '/delivery-zones',
+    //             icon: Truck,
+    //         },
+    //         {
+    //             title: 'Cuentas Bancarias',
+    //             href: '/cuentas-bancarias',
+    //             icon: CreditCard,
+    //         },
+    //         {
+    //             title: 'Seo',
+    //             href: '/seo',
+    //             icon: SearchCheck,
+    //         },
+    //         {
+    //             title: 'Scripts',
+    //             href: '/scripts',
+    //             icon: FileCode,
+    //         },
+    //     ],
+    // },
 ];
 
 const footerNavItems: NavItem[] = [

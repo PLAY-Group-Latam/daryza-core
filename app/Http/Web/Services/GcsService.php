@@ -25,10 +25,17 @@ class GcsService
     /**
      * Subir un archivo desde un formulario (Request->file)
      */
-    public function uploadFile(UploadedFile $file, string $directory = 'uploads'): string
+    public function uploadFile(
+        UploadedFile $file,
+        string $directory = 'uploads',
+        ?string $filename = null
+    ): string
     {
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = trim($directory, '/') . '/' . $filename;
+        $resolvedFilename = $filename !== null
+            ? basename($filename)
+            : uniqid() . '.' . $file->getClientOriginalExtension();
+
+        $path = trim($directory, '/') . '/' . $resolvedFilename;
 
         $this->bucket->upload(
             fopen($file->getRealPath(), 'r'),

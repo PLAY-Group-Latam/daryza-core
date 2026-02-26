@@ -10,12 +10,13 @@ class ClaimService
 
 {
 
-
+    protected LeadNotificationService $leadNotificationService;
     protected GcsService $gcsService;
     
-    public function __construct(GcsService $gcsService)
+    public function __construct(GcsService $gcsService, LeadNotificationService $leadNotificationService)
     {
         $this->gcsService = $gcsService;
+        $this->leadNotificationService = $leadNotificationService;
     }
 
 
@@ -40,7 +41,10 @@ class ClaimService
             $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
         }
 
-        return Lead::create($payload);
+        $lead = Lead::create($payload);
+        $this->leadNotificationService->notify($lead);
+
+        return $lead;
     }
 
     protected function mapJsonFields(array $data): array

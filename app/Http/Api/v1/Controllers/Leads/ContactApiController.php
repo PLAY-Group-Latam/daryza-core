@@ -5,6 +5,7 @@ namespace App\Http\Api\v1\Controllers\Leads;
 use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Leads\ContactRequest;
 use App\Http\Api\v1\Services\Leads\ContactService;
+use Illuminate\Support\Facades\Log;
 use App\Http\Api\Traits\ApiTrait;
 use Illuminate\Http\JsonResponse;
 

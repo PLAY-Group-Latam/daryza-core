@@ -55,7 +55,7 @@ class PageSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $footer = Page::create([
-            'title'  => 'Footer',
+            'title'  => 'Globales',
             'slug'   => 'footer',
             'type'   => 'system',
             'status' => 'published',
@@ -190,10 +190,10 @@ class PageSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $sistema = Page::create([
-            'title'  => 'Sistema',
+            'title'  => 'Promocionales',
             'slug'   => 'sistema',
             'type'   => 'group',
-            'status' => 'published',
+            'status' => 'published', 
         ]);
 
         $this->createSections($sistema, [

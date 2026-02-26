@@ -11,6 +11,7 @@ export function mapProductToForm(product: ProductEdit): ProductFormValues {
         is_home: product.is_home ?? false,
         categories: product.categories ?? [],
         business_lines: product.business_lines ?? [],
+        recommended_product_ids: product.recommended_product_ids ?? [],
         variant_attribute_ids: product.variant_attribute_ids ?? [],
 
         variants: product.variants.map((v) => ({

@@ -150,7 +150,7 @@ export default function CombinedFooterEditor({ section }: Props) {
     put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
       forceFormData: true,
       preserveScroll: true,
-      onSuccess: () => toast.success('Footer actualizado'),
+      onSuccess: () => toast.success('Banner promocional actualizado'),
     });
   };
 
@@ -163,7 +163,7 @@ export default function CombinedFooterEditor({ section }: Props) {
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-900 rounded-xl text-white shadow-lg shadow-slate-200"><ImagePlus size={24} /></div>
             <div>
-              <h2 className="text-xl font-black text-slate-900 italic ">Banners Footer</h2>
+              <h2 className="text-xl font-black text-slate-900 italic ">Banner Promocional Blog</h2>
               <p className="text-sm text-slate-500 font-medium italic">Máximo 2 banners cuadrados.</p>
             </div>
           </div>

@@ -6,6 +6,13 @@ use App\Models\Leads\Lead;
 
 class AboutUsService
 {
+
+    protected $leadNotificationService;
+
+    public function __construct(LeadNotificationService $leadNotificationService)
+    {
+        $this->leadNotificationService = $leadNotificationService;
+    }
    
     public function save(array $data): Lead
     {
@@ -21,7 +28,10 @@ class AboutUsService
             'data'      => $this->mapJsonFields($data),
         ];
 
-        return Lead::create($payload);
+        $lead = Lead::create($payload);
+        $this->leadNotificationService->notify($lead);
+
+        return $lead;
     }
 
     protected function mapJsonFields(array $data): array

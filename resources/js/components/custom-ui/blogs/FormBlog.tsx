@@ -6,7 +6,6 @@ import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -386,36 +385,6 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                                     />
                                 )}
                             />
-
-                            <div className="flex gap-4">
-                                <Controller
-                                    name="metadata.noindex"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <label className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                            No index
-                                        </label>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="metadata.nofollow"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <label className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                            No follow
-                                        </label>
-                                    )}
-                                />
-                            </div>
                         </div>
                         <Button
                             type="submit"

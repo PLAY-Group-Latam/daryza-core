@@ -41,21 +41,7 @@ const columns: ColumnDef<Attribute>[] = [
             </span>
         ),
     },
-    {
-        accessorKey: 'is_filterable',
-        header: 'Filtrable',
-        cell: ({ row }) => (
-            <span
-                className={
-                    row.original.is_filterable
-                        ? 'font-medium text-green-600'
-                        : 'font-medium text-red-600'
-                }
-            >
-                {row.original.is_filterable ? 'Sí' : 'No'}
-            </span>
-        ),
-    },
+
     {
         id: 'values',
         header: 'Valores',

@@ -11,6 +11,7 @@ use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -58,13 +59,20 @@ class ProductController extends Controller
     ]);
   }
 
-  public function edit(Product $product)
+  public function edit(Request $request, Product $product)
   {
+    $recommendedSearch = trim((string) $request->input('recommended_q', ''));
+    $recommendableSearchResults = $this->searchRecommendableProducts(
+      $recommendedSearch,
+      $request->query('exclude'),
+      $product->id
+    );
 
     $product->load([
       'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
+      'recommendedProducts:id,code,name,slug',
       'variants' => function ($q) {
         $q->orderBy('created_at', 'asc')
           ->orderBy('id', 'asc') // ← desempate estable
@@ -86,6 +94,13 @@ class ProductController extends Controller
       'slug' => $product->slug,
       'categories' => $product->categories->pluck('id')->toArray(),
       'business_lines' => $product->businessLines->pluck('id')->toArray(),
+      'recommended_product_ids' => $product->recommendedProducts->pluck('id')->toArray(),
+      'recommended_products' => $product->recommendedProducts->map(fn($item) => [
+        'id' => $item->id,
+        'code' => $item->code,
+        'name' => $item->name,
+        'slug' => $item->slug,
+      ])->values(),
       'brief_description' => $product->brief_description,
       'description' => $product->description,
       'is_active' => $product->is_active,
@@ -159,6 +174,10 @@ class ProductController extends Controller
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
       'businessLines' => $businessLines, // <--- Pasar a la vista
+      'recommendableSearchResults' => $recommendableSearchResults,
+      'filters' => [
+        'recommended_q' => $recommendedSearch,
+      ],
     ]);
   }
 
@@ -166,8 +185,14 @@ class ProductController extends Controller
   /**
    * Mostrar formulario de creación
    */
-  public function create()
+  public function create(Request $request)
   {
+    $recommendedSearch = trim((string) $request->input('recommended_q', ''));
+    $recommendableSearchResults = $this->searchRecommendableProducts(
+      $recommendedSearch,
+      $request->query('exclude')
+    );
+
     // Necesitas categorías para el select
     $categoriesForSelect = $this->categoryService->getActiveParentsWithChildren();
 
@@ -181,6 +206,10 @@ class ProductController extends Controller
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
       'businessLines' => $businessLines, // Las pasamos a la vista
+      'recommendableSearchResults' => $recommendableSearchResults,
+      'filters' => [
+        'recommended_q' => $recommendedSearch,
+      ],
     ]);
   }
 
@@ -240,5 +269,35 @@ class ProductController extends Controller
         'message' => 'No se pudo eliminar el producto correctamente.'
       ]);
     }
+  }
+
+  private function searchRecommendableProducts(
+    string $q,
+    ?string $exclude = null,
+    ?string $exceptProductId = null
+  )
+  {
+    if (mb_strlen($q) < 2) {
+      return collect();
+    }
+
+    $excludeIds = collect(explode(',', (string) $exclude))
+      ->map(fn($id) => trim($id))
+      ->filter()
+      ->values();
+
+    return Product::query()
+      ->select('id', 'code', 'name', 'slug')
+      ->where('is_active', true)
+      ->when($exceptProductId, fn($query) => $query->where('id', '!=', $exceptProductId))
+      ->when($excludeIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $excludeIds))
+      ->where(function ($query) use ($q) {
+        $query->where('name', 'like', "%{$q}%")
+          ->orWhere('code', 'like', "%{$q}%")
+          ->orWhere('slug', 'like', "%{$q}%");
+      })
+      ->orderBy('name')
+      ->limit(15)
+      ->get();
   }
 }

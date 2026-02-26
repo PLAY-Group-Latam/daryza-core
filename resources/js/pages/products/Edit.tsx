@@ -3,15 +3,17 @@ import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
-import { ProductEdit } from '@/types/products/productEdit';
+import { ProductEdit, ProductRecommendable } from '@/types/products/productEdit';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Edit() {
-    const { categories, attributes, product, businessLines } = usePage<{
+    const { categories, attributes, product, businessLines, recommendableSearchResults } =
+        usePage<{
         product: ProductEdit;
         categories: CategorySelect[];
         attributes: Attribute[];
         businessLines: BusinessLine[];
+        recommendableSearchResults: ProductRecommendable[];
     }>().props;
     console.log('producto individual:', product);
     return (
@@ -36,6 +38,7 @@ export default function Edit() {
                     attributes={attributes}
                     product={product}
                     businessLines={businessLines}
+                    recommendableSearchResults={recommendableSearchResults}
                 />
             </div>
         </AppLayout>

@@ -23,9 +23,12 @@ export function VariantForm({
         control,
         formState: { errors },
     } = useFormContext<ProductFormValues>();
-    const variantsErrorMessage = Array.isArray(errors.variants)
-        ? undefined
-        : errors.variants?.message;
+    const variantsErrorMessage =
+        (errors.variants as { root?: { message?: string } } | undefined)?.root
+            ?.message ??
+        (!Array.isArray(errors.variants)
+            ? (errors.variants as { message?: string } | undefined)?.message
+            : undefined);
     const {
         fields,
         remove,
@@ -40,8 +43,13 @@ export function VariantForm({
             <p className="text-xs font-bold tracking-widest text-slate-600 uppercase">
                 ● Variantes
             </p>
+            <p className="text-xs text-slate-500">
+                Debe existir exactamente una variante principal activa.
+            </p>
             {variantsErrorMessage && (
-                <p className="text-sm text-red-500">{variantsErrorMessage}</p>
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                    {variantsErrorMessage}
+                </p>
             )}
 
             {/* Toggles — un solo Controller para el campo completo */}

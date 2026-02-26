@@ -30,6 +30,8 @@ class UpdateProductRequest extends FormRequest
       'categories.*'      => ['required', 'string', 'exists:product_categories,id'],
       'business_lines'    => ['nullable', 'array'],
       'business_lines.*'  => ['exists:business_lines,id'],
+      'recommended_product_ids'   => ['nullable', 'array'],
+      'recommended_product_ids.*' => ['distinct', 'exists:products,id'],
       'brief_description' => ['nullable', 'string'],
       'description'       => ['nullable', 'string'],
       'is_active'         => ['required', 'boolean'],
@@ -128,11 +130,23 @@ class UpdateProductRequest extends FormRequest
         ->filter()
         ->values()
         ->all();
+      $product = $this->route('product');
+      $recommendedIds = collect($this->input('recommended_product_ids', []))
+        ->filter()
+        ->values();
+
+      if ($product && $recommendedIds->contains($product->id)) {
+        $validator->errors()->add(
+          'recommended_product_ids',
+          'Un producto no puede recomendarse a sí mismo.'
+        );
+      }
+
       app(VariantPayloadValidator::class)->validate(
         $validator,
         $variants,
         $selectedVariantAttributeIds,
-        $this->route('product'),
+        $product,
         true
       );
     });
