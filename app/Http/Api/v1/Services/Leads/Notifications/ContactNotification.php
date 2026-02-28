@@ -27,6 +27,6 @@ class ContactNotification
 
     protected function resolveAdminEmail(string $type): ?string
     {
-        return config("leads.contact_recipients.$type");
+        return config("emails.contact_recipients.$type");
     }
 }

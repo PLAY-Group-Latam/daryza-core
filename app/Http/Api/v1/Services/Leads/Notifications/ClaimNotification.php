@@ -14,16 +14,22 @@ class ClaimNotification
 
   public function notify(Lead $lead): void
 {
-    $adminEmail = config('leads.claim_admin_email');
+    $adminEmail = config('emails.claim_admin_email');
+
+    if (!$adminEmail) {
+        return; 
+    }
 
     SendEmailJob::dispatch(
         new ComplaintToDaryza($lead->toArray()),
         $adminEmail
     );
 
-    SendEmailJob::dispatch(
-        new ComplaintsBookRequest($lead->toArray()),
-        $lead->email
-    );
+    if ($lead->email) {
+        SendEmailJob::dispatch(
+            new ComplaintsBookRequest($lead->toArray()),
+            $lead->email
+        );
+    }
 }
 }

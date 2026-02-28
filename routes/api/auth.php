@@ -11,6 +11,9 @@ Route::prefix('auth')->group(function () {
      // 🔥 LOGIN CON GOOGLE
     Route::post('google', [CustomerAuthController::class, 'loginWithGoogle']);
 
+    Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword']);
+    Route::post('/reset-password',  [CustomerAuthController::class, 'resetPassword']);
+
     // Rutas protegidas por JWT (auth:api)
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [CustomerAuthController::class, 'logout']);
