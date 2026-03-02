@@ -18,6 +18,7 @@ import {
 interface DataTablePaginationProps<TData> {
     table: Table<TData>;
     paginated: Paginated<TData>;
+    perPageOptions?: number[];
 }
 
 const maxPerPageOptions = 50;
@@ -26,14 +27,19 @@ const step = 10;
 export function DataTablePagination<TData>({
     table,
     paginated,
+    perPageOptions: customPerPageOptions,
 }: DataTablePaginationProps<TData>) {
     const { current_page, last_page, per_page, total } = paginated;
     const { goToPage } = useServerPagination();
 
-    const perPageOptions = Array.from(
+    const baseOptions = Array.from(
         { length: Math.ceil(Math.min(total, maxPerPageOptions) / step) },
         (_, i) => (i + 1) * step,
     );
+
+    const perPageOptions = customPerPageOptions ?? Array.from(
+        new Set([per_page, ...baseOptions].filter((value) => value > 0)),
+    ).sort((a, b) => a - b);
 
     return (
         <div className="flex items-center justify-between">

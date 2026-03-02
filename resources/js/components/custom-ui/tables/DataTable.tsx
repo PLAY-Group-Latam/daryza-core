@@ -24,6 +24,7 @@ interface DataTableProps<T> {
     data: Paginated<T>;
     onSearch?: (value: string) => void;
     initialSearch?: string;
+    perPageOptions?: number[];
 }
 
 export function DataTable<T>({
@@ -31,6 +32,7 @@ export function DataTable<T>({
     data,
     onSearch,
     initialSearch = '',
+    perPageOptions,
 }: DataTableProps<T>) {
    
     const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? "");
@@ -130,7 +132,7 @@ export function DataTable<T>({
                 </Table>
             </div>
 
-            <DataTablePagination table={table} paginated={data} />
+            <DataTablePagination table={table} paginated={data} perPageOptions={perPageOptions} />
         </div>
     );
 }
