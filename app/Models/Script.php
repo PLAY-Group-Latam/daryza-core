@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +9,9 @@ class Script extends Model
 {
     use HasUlids;
 
-    protected $table = 'scripts';
-    protected $primaryKey = 'id';
-    public $incrementing = false; // porque usas ULID
-    protected $keyType = 'string';
+    const PLACEMENT_HEAD = 'head';
+    const PLACEMENT_BODY = 'body';
+    const PLACEMENTS = [self::PLACEMENT_HEAD, self::PLACEMENT_BODY];
 
     protected $fillable = [
         'name',
@@ -31,7 +29,6 @@ class Script extends Model
     | Scopes
     |--------------------------------------------------------------------------
     */
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('active', true);
@@ -42,4 +39,3 @@ class Script extends Model
         return $query->where('placement', $placement);
     }
 }
-

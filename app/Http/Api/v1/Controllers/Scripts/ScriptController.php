@@ -3,29 +3,30 @@
 namespace App\Http\Api\v1\Controllers\Scripts;
 
 use App\Http\Api\v1\Controllers\Controller;
+use App\Http\Api\v1\Services\Scripts\ScriptService;
 use App\Http\Api\Traits\ApiTrait;
-use App\Models\Script;
-use App\Models\Scripts;
+use Illuminate\Http\JsonResponse;
 
 class ScriptController extends Controller
 {
-  use ApiTrait;
+    use ApiTrait;
 
-  /**
-   * Obtener scripts activos para el frontend
-   */
-  public function index()
-  {
-    $scripts = Script::where('active', true)
-      ->select('id', 'placement', 'content')
-      ->orderBy('created_at')
-      ->get()
-      ->groupBy('placement');
+    public function __construct(
+        protected ScriptService $service
+    ) {}
 
-    return response()->json([
-      'head' => $scripts->get('head', []),
-      'body' => $scripts->get('body', []),
-    ]);
-  }
+
+    public function index(): JsonResponse
+    {
+
+        $scripts = $this->service->getActiveScriptsGrouped();
+        $data = [
+            'head' => $scripts->get('head', []),
+            'body' => $scripts->get('body', []),
+        ];
+        return $this->success(
+            message: 'Scripts recuperados exitosamente',
+            data: $data
+        );
+    }
 }
-

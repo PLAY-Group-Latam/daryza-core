@@ -1,0 +1,181 @@
+import { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2 } from 'lucide-react';
+
+/* ------------------------------------------------------------------
+   BREADCRUMBS Y SCHEMA
+------------------------------------------------------------------- */
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Métodos de Pago', href: '/metodos-de-pago' },
+    { title: 'Nueva cuenta bancaria', href: '/metodos-de-pago/crear' },
+];
+
+const paymentMethodSchema = z.object({
+    company_type: z.string().min(1, 'Debes seleccionar una marca'),
+    bank_name: z.string().min(1, 'Ingresa el nombre del banco'),
+    account_number: z.string().min(5, 'El número de cuenta es demasiado corto'),
+    interbank_account_number: z.string().optional().or(z.literal('')),
+    is_active: z.boolean(),
+});
+
+type PaymentFormValues = z.infer<typeof paymentMethodSchema>;
+
+export default function Create() {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<PaymentFormValues>({
+        resolver: zodResolver(paymentMethodSchema),
+        defaultValues: {
+            company_type: '',
+            bank_name: '',
+            account_number: '',
+            interbank_account_number: '',
+            is_active: true,
+        },
+    });
+
+    function onSubmit(data: PaymentFormValues) {
+        router.post('/metodos-de-pago', data, {
+            onStart: () => setIsSubmitting(true),
+            onFinish: () => setIsSubmitting(false),
+            onError: (errors) => {
+                // Vincular errores de Laravel con React Hook Form
+                Object.keys(errors).forEach((key) => {
+                    form.setError(key as keyof PaymentFormValues, {
+                        type: 'server',
+                        message: errors[key],
+                    });
+                });
+            },
+        });
+    }
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Crear nueva cuenta bancaria" />
+            
+            <div className="flex justify-center p-4">
+                <div className="w-full max-w-xl space-y-6 rounded-xl border bg-card p-6 shadow-sm">
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-bold">Crear nueva cuenta bancaria</h2>
+                        <p className="text-sm text-muted-foreground">Completa los datos para registrar un nuevo método.</p>
+                    </div>
+
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            
+                            {/* Marca / company_type */}
+                            <FormField
+                                control={form.control}
+                                name="company_type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Marca</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecciona una Marca" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="daryza">Daryza</SelectItem>
+                                                <SelectItem value="itp">ITP</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Entidad Bancaria / bank_name */}
+                            <FormField
+                                control={form.control}
+                                name="bank_name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Entidad Bancaria</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Ej: BCP, BBVA, Interbank" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Número de cuenta / account_number */}
+                            <FormField
+                                control={form.control}
+                                name="account_number"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Número de cuenta</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Número de cuenta" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* CCI / interbank_account_number */}
+                            <FormField
+                                control={form.control}
+                                name="interbank_account_number"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>CCI (opcional)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Código de Cuenta Interbancario" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Cuenta activa / is_active */}
+                            <FormField
+                                control={form.control}
+                                name="is_active"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Cuenta activa</FormLabel>
+                                            <p className="text-xs text-muted-foreground">La cuenta será visible para operaciones.</p>
+                                        </div>
+                                        <FormControl>
+                                            <Switch 
+                                                checked={field.value} 
+                                                onCheckedChange={field.onChange} 
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <div className="flex items-center justify-end gap-3 pt-4">
+                                <Button type="button" variant="ghost" onClick={() => window.history.back()}>
+                                    Cancelar
+                                </Button>
+                                <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
+                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Guardar Cuenta
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </div>
+            </div>
+        </AppLayout>
+    );
+}

@@ -26,3 +26,4 @@ require __DIR__ . '/blogs.php';
 require __DIR__ . '/leads.php';
 require __DIR__ . '/content.php';
 require __DIR__ . '/jobs_portal.php';
+require __DIR__ . '/paymentmethods.php';

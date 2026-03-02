@@ -43,6 +43,8 @@ interface ConfirmDeleteAlertProps {
 
     /** Trigger visual que abre el modal */
     trigger: React.ReactNode;
+    onSuccess?: () => void;
+
 }
 
 export function ConfirmDeleteAlert({
@@ -51,6 +53,7 @@ export function ConfirmDeleteAlert({
     routes,
     trigger,
     confirmWord = 'ELIMINAR',
+    onSuccess,
 }: ConfirmDeleteAlertProps) {
     const [input, setInput] = useState('');
     const [open, setOpen] = useState(false);
@@ -69,6 +72,8 @@ export function ConfirmDeleteAlert({
                     onSuccess={() => {
                         setInput('');
                         setOpen(false);
+                        toast.success('Eliminado correctamente.');
+                        onSuccess?.();
                     }}
                     onError={() => toast.error('Ocurrió un error al eliminar.')}
                 >

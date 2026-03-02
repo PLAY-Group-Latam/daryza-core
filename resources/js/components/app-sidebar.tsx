@@ -23,7 +23,7 @@ import {
     LayoutTemplate,
     Newspaper,
     User,
-    Users,
+    Users,Store,Truck, CreditCard, SearchCheck, FileCode
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -138,32 +138,32 @@ const mainNavItems: NavItem[] = [
         icon: LayoutTemplate,
     },
 
-    // {
-    //     title: 'Configuración',
-    //     icon: Store,
-    //     children: [
-    //         {
-    //             title: 'Delivery Zonas',
-    //             href: '/delivery-zones',
-    //             icon: Truck,
-    //         },
-    //         {
-    //             title: 'Cuentas Bancarias',
-    //             href: '/cuentas-bancarias',
-    //             icon: CreditCard,
-    //         },
-    //         {
-    //             title: 'Seo',
-    //             href: '/seo',
-    //             icon: SearchCheck,
-    //         },
-    //         {
-    //             title: 'Scripts',
-    //             href: '/scripts',
-    //             icon: FileCode,
-    //         },
-    //     ],
-    // },
+    {
+        title: 'Configuración',
+        icon: Store,
+        children: [
+            {
+                title: 'Delivery Zonas',
+                href: '/delivery-zones',
+                icon: Truck,
+            },
+            {
+                title: 'Cuentas Bancarias',
+                href: '/metodos-de-pago',
+                icon: CreditCard,
+            },
+            {
+                title: 'Seo',
+                href: '/seo',
+                icon: SearchCheck,
+            },
+            {
+                title: 'Scripts',
+                href: '/scripts',
+                icon: FileCode,
+            },
+        ],
+    },
 ];
 
 const footerNavItems: NavItem[] = [

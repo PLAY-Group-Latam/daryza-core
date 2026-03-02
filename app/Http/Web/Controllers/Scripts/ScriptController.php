@@ -3,22 +3,18 @@
 namespace App\Http\Web\Controllers\Scripts;
 
 use App\Http\Web\Controllers\Controller;
-use App\Models\Script;
-use App\Models\Scripts;
+use App\Http\Web\Services\Scripts\ScriptService;
 use Illuminate\Http\Request;
+use App\Models\Script;
 use Inertia\Inertia;
 
 class ScriptController extends Controller
 {
-    /**
-     * Lista de scripts (vista Inertia)
-     */
+    public function __construct(protected ScriptService $service) {}
+
     public function index(Request $request)
     {
-        $perPage = $request->query('per_page', 10);
-
-        $scripts = Script::orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        $scripts = $this->service->paginate($request->query('per_page', 10));
 
         return Inertia::render('scripts/content-list', [
             'scripts' => $scripts->items(),
@@ -30,9 +26,12 @@ class ScriptController extends Controller
             ],
         ]);
     }
-    /**
-     * Guardar nuevo script
-     */
+
+    public function create()
+    {
+        return Inertia::render('scripts/createScript');
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -42,36 +41,38 @@ class ScriptController extends Controller
             'content'   => 'required|string',
         ]);
 
-        Script::create($data);
+        $this->service->store($data);
 
-        return back()->with('success', 'Script creado correctamente');
+        return redirect()->route('scripts.index')
+            ->with('success', 'Script creado correctamente');
     }
+    public function edit(Script $script)
+{
+    return inertia('scripts/editScript', [
+        'script' => $script
+    ]);
+}
 
-    /**
-     * Actualizar script existente
-     */
-    public function update(Request $request, Script $script)
-    {
-        $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'placement' => 'required|in:head,body',
-            'active'    => 'required|boolean',
-            'content'   => 'required|string',
-        ]);
+  public function update(Request $request, Script $script)
+{
+    $data = $request->validate([
+        'name'      => 'required|string|max:255',
+        'placement' => 'required|in:head,body',
+        'active'    => 'required|boolean',
+        'content'   => 'required|string',
+    ]);
 
-        $script->update($data);
+    $this->service->update($script, $data);
 
-        return back()->with('success', 'Script actualizado correctamente');
-    }
+  
+    return redirect()->route('scripts.index')
+        ->with('success', 'Script actualizado correctamente');
+}
 
-    /**
-     * Eliminar script
-     */
     public function destroy(Script $script)
     {
-        $script->delete();
+        $this->service->destroy($script);
 
         return back()->with('success', 'Script eliminado correctamente');
     }
 }
-
