@@ -3,13 +3,18 @@
 namespace App\Http\Api\v1\Controllers\Customers;
 
 use App\Http\Api\v1\Controllers\Controller;
+use App\Http\Api\v1\Requests\Customers\ForgotPasswordRequest;
 use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
+use App\Http\Api\v1\Requests\Customers\ResetPasswordRequest;
 use App\Http\Api\v1\Services\CustomerService;
 use App\Jobs\SendEmailJob;
 use App\Mail\Login\SuccessLogin;
+use App\Mail\ResetPassword\RecoveryPassword;
+use App\Mail\ResetPassword\SuccessReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Password;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -96,6 +101,51 @@ class CustomerAuthController extends Controller
       $token
     );
   }
+
+
+ // Funciones de Recuperar contraseña
+    public function forgotPassword(ForgotPasswordRequest $request)
+{
+    Password::broker('customers')->sendResetLink(
+        $request->only('email'),
+        function ($customer, $token) {
+            $url = config('app.frontend_url')
+                . '/recuperar-contrasena?token=' . $token
+                . '&email=' . urlencode($customer->email);
+
+            SendEmailJob::dispatch(
+                new RecoveryPassword($customer->email, $url),
+                $customer->email
+            );
+        }
+    );
+
+ 
+    return $this->success('Si este correo está registrado, recibirás un enlace en breve.');
+}
+
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        $status = Password::broker('customers')->reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($customer, $password) {
+                $customer->forceFill([
+                    'password' => bcrypt($password),
+                ])->save();
+
+                SendEmailJob::dispatch(
+                    new SuccessReset($customer->full_name ?? 'Usuario'),
+                    $customer->email
+                );
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return $this->error('Token inválido o expirado.', 400);
+        }
+
+        return $this->success('Contraseña actualizada correctamente.');
+    }
 
 
 
