@@ -17,6 +17,7 @@ import { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
     Apple,
+    Briefcase,
     Headset,
     LayoutGrid,
     LayoutTemplate,
@@ -106,6 +107,28 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Lista de Trabajos',
                 href: '/jobs/items',
+            },
+        ],
+    },
+    {
+        title: 'Portal de Empleos',
+        icon: Briefcase,
+        children: [
+            {
+                title: 'Sedes',
+                href: '/admin/jobs/places',
+            },
+            {
+                title: 'Áreas',
+                href: '/admin/jobs/departments',
+            },
+            {
+                title: 'Ofertas',
+                href: '/admin/jobs/offers',
+            },
+            {
+                title: 'Postulaciones',
+                href: '/admin/jobs/applications',
             },
         ],
     },
