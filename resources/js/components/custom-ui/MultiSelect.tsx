@@ -35,6 +35,7 @@ interface MultiSelectProps {
     searchPlaceholder?: string;
     emptyMessage?: string;
     className?: string;
+    disabled?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -49,6 +50,7 @@ export function MultiSelect({
     searchPlaceholder = 'Buscar...',
     emptyMessage = 'No se encontraron resultados',
     className,
+    disabled = false,
 }: MultiSelectProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -61,11 +63,12 @@ export function MultiSelect({
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     role="combobox"
+                    disabled={disabled}
                     className={cn(
                         'h-auto w-full justify-between rounded-xl',
                         className,

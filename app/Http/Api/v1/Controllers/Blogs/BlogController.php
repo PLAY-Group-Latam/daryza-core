@@ -69,4 +69,20 @@ class BlogController extends Controller
 
     return $this->success('Detalle del blog', $blog);
   }
+
+  public function latest()
+  {
+    $blogs = Blog::select(['id', 'title', 'slug', 'publication_date', 'author', 'miniature'])
+      ->with('categories:id,name')
+
+      ->where('visibility', true)
+      ->latest() // usa created_at por defecto
+      ->limit(10)
+      ->get();
+
+    $blogs->each(fn($blog) => $blog->categories->makeHidden('pivot'));
+
+
+    return $this->success('Últimos blogs', $blogs);
+  }
 }

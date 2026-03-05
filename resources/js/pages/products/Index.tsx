@@ -10,7 +10,6 @@ export default function Index() {
         products: Paginated<Product>;
     }>().props;
 
-    console.log('productos:', products);
     return (
         <AppLayout>
             <Head title="Lista de Productos" />

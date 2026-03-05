@@ -4,7 +4,7 @@ namespace App\Http\Web\Services\Products;
 
 use App\Enums\StorageFolder;
 use App\Http\Web\Services\GcsService;
-use App\Models\Products\{Product, ProductVariant};
+use App\Models\Products\{Product, ProductPack, ProductVariant};
 use Illuminate\Http\UploadedFile;
 
 class ProductMediaService
@@ -159,6 +159,60 @@ class ProductMediaService
     }
 
     // =========================================================================
+    // Media de packs
+    // =========================================================================
+
+    public function syncPackMedia(ProductPack $pack, array $media): void
+    {
+        $existingItems = collect($media)
+            ->filter(fn($item) => is_array($item) && isset($item['file_path']))
+            ->map(fn($item, $index) => [
+                'file_path' => $item['file_path'],
+                'order'     => isset($item['position']) ? (int) $item['position'] : $index,
+            ])
+            ->values()
+            ->toArray();
+
+        $existingPaths = collect($existingItems)->pluck('file_path')->toArray();
+
+        $newFiles = collect($media)
+            ->filter(fn($item) => $item instanceof UploadedFile);
+
+        $pack->media()->get()->each(function ($mediaItem) use ($existingPaths) {
+            if (!in_array($mediaItem->file_path, $existingPaths)) {
+                $this->gcsService->delete($mediaItem->file_path);
+                $mediaItem->delete();
+            }
+        });
+
+        foreach ($existingItems as $item) {
+            $pack->media()
+                ->where('file_path', $item['file_path'])
+                ->update(['order' => $item['order']]);
+        }
+
+        $nextOrder = count($existingItems);
+        foreach ($newFiles as $file) {
+            [$type, $folder] = $this->resolveTypeAndFolderForPack($file, $pack->id);
+
+            $pack->media()->create([
+                'file_path' => $this->gcsService->uploadFile($file, $folder),
+                'type'      => $type,
+                'folder'    => $folder,
+                'order'     => $nextOrder++,
+            ]);
+        }
+    }
+
+    public function clearPackMedia(ProductPack $pack): void
+    {
+        $pack->media()->get()->each(function ($mediaItem) {
+            $this->gcsService->delete($mediaItem->file_path);
+            $mediaItem->delete();
+        });
+    }
+
+    // =========================================================================
     // Helpers privados
     // =========================================================================
 
@@ -181,5 +235,17 @@ class ProductMediaService
     private function technicalSheetsPath(string $productId): string
     {
         return "products/{$productId}/" . StorageFolder::TECHNICAL_SHEETS->value;
+    }
+
+    private function resolveTypeAndFolderForPack(UploadedFile $file, string $packId): array
+    {
+        $mime  = $file->getMimeType();
+        $isImg = str_starts_with($mime, 'image/');
+        $isVid = str_starts_with($mime, 'video/');
+
+        $type       = $isImg ? 'image' : ($isVid ? 'video' : 'other');
+        $folderEnum = $isImg ? StorageFolder::PRODUCT_IMAGES : StorageFolder::PRODUCT_VIDEOS;
+
+        return [$type, "packs/{$packId}/{$folderEnum->value}"];
     }
 }

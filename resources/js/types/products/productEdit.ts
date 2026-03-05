@@ -30,6 +30,7 @@ export interface ProductRecommendable {
 
 export interface ProductEdit extends ProductBase {
     is_home: boolean;
+    parent_category_id?: string | null;
     categories: string[];
     business_lines: string[];
     recommended_product_ids: string[];

@@ -15,6 +15,7 @@ export function buildFormData(
     fd.append('description', data.description ?? '');
     fd.append('is_active', data.is_active ? '1' : '0');
     fd.append('is_home', data.is_home ? '1' : '0');
+    fd.append('parent_category_id', data.parent_category_id);
 
     if (isEdit) fd.append('_method', 'PUT');
 

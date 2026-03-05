@@ -31,7 +31,10 @@ const ImportSchema = z.object({
 type ImportFormValues = z.infer<typeof ImportSchema>;
 
 export default function FormImport() {
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [importFeedback, setImportFeedback] = useState<{
+        type: 'success' | 'error';
+        message: string;
+    } | null>(null);
 
     const methods = useForm<ImportFormValues>({
         resolver: zodResolver(ImportSchema),
@@ -48,6 +51,7 @@ export default function FormImport() {
     const file = watch('file');
 
     const onSubmit = async (data: ImportFormValues) => {
+        setImportFeedback(null);
         const formData = new FormData();
         formData.append('file', data.file);
 
@@ -56,18 +60,21 @@ export default function FormImport() {
             router.post(products.items.import().url, formData, {
                 forceFormData: true,
                 preserveScroll: true,
-                onProgress: (progressEvent) => {
-                    if (progressEvent?.lengthComputable) {
-                        const percent = Math.round(
-                            (progressEvent.loaded * 100) / progressEvent.total!,
-                        );
-                        setUploadProgress(percent);
-                    }
+                onSuccess: () => {
+                    setImportFeedback({
+                        type: 'success',
+                        message:
+                            'Importación completada. Revisa la lista de productos y mensajes del sistema.',
+                    });
                 },
-                onFinish: () => {
-                    setUploadProgress(0); // reset
-                    resolve();
+                onError: () => {
+                    setImportFeedback({
+                        type: 'error',
+                        message:
+                            'No se pudo completar la importación. Revisa el archivo y vuelve a intentarlo.',
+                    });
                 },
+                onFinish: () => resolve(),
             });
         });
     };
@@ -82,17 +89,8 @@ export default function FormImport() {
                 {isSubmitting && (
                     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
                         <Loader2 className="mb-4 h-12 w-12 animate-spin text-white" />
-                        <span className="mb-2 font-semibold text-white">
+                        <span className="font-semibold text-white">
                             Importando productos...
-                        </span>
-                        <div className="h-3 w-64 overflow-hidden rounded-full bg-white/20">
-                            <div
-                                className="h-3 rounded-full bg-green-500 transition-all duration-300"
-                                style={{ width: `${uploadProgress}%` }}
-                            />
-                        </div>
-                        <span className="mt-1 text-white">
-                            {uploadProgress}%
                         </span>
                     </div>
                 )}
@@ -147,6 +145,17 @@ export default function FormImport() {
                     />
                     {errors.file && (
                         <InputError message={errors.file.message} />
+                    )}
+                    {importFeedback && (
+                        <p
+                            className={`rounded-md border px-3 py-2 text-sm ${
+                                importFeedback.type === 'success'
+                                    ? 'border-green-200 bg-green-50 text-green-700'
+                                    : 'border-red-200 bg-red-50 text-red-700'
+                            }`}
+                        >
+                            {importFeedback.message}
+                        </p>
                     )}
 
                     {/* Botón de descargar plantilla */}

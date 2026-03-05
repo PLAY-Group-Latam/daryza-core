@@ -29,6 +29,7 @@ import { Layers, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
 import { SlugInput } from '../../slug-text';
 import { PackProductSearch } from '../packs/SearchProduct'; // Reutilizamos el buscador de packs
+import { VariantIdentity } from '../shared/VariantIdentity';
 import type { Resolver } from 'react-hook-form';
 
 // Esquema alineado al controlador DynamicCategoryController
@@ -46,6 +47,8 @@ const dynamicCategorySchema = z
                     product_id: z.string(),
                     sku: z.string(),
                     product_name: z.string(),
+                    variant_name: z.string().optional(),
+                    image: z.string().nullable().optional(),
                 }),
             )
             .min(1, 'Selecciona al menos un producto para la categoría'),
@@ -126,7 +129,9 @@ export default function CreateDynamicCategoryForm({
             variant_id: String(variant.variant_id),
             product_id: String(variant.product_id),
             sku: variant.sku,
-            product_name: `${variant.product_name} (${variant.variant_name})`,
+            product_name: variant.product_name,
+            variant_name: variant.variant_name,
+            image: variant.image ?? null,
         });
     };
 
@@ -233,73 +238,23 @@ export default function CreateDynamicCategoryForm({
                                             </TableRow>
                                         )}
                                         {fields.map((field, index) => {
-                                            const hexMatch =
-                                                field.product_name.match(
-                                                    /#([0-9A-F]{3,6})/i,
-                                                );
-                                            const hexColor = hexMatch
-                                                ? hexMatch[0]
-                                                : null;
-
-                                            // 2. Limpiamos el nombre: quitamos el HEX y lo que esté entre paréntesis
-                                            // Ejemplo: "Cesto ropa (#000000 - G)" -> "Cesto ropa"
-                                            const cleanName =
-                                                field.product_name.split(
-                                                    ' (',
-                                                )[0];
-
-                                            const variantLabel = hexColor
-                                                ? field.product_name
-                                                      .split('(')[1]
-                                                      ?.replace(hexColor, '')
-                                                      .replace('-', '')
-                                                      .replace(')', '')
-                                                      .trim()
-                                                : field.product_name
-                                                      .split('(')[1]
-                                                      ?.replace(')', '')
-                                                      .trim();
-
                                             return (
                                                 <TableRow
                                                     key={field.id}
                                                     className="hover:bg-slate-50/50"
                                                 >
                                                     <TableCell>
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-bold text-slate-900">
-                                                                    {cleanName}
-                                                                </span>
-                                                                {hexColor && (
-                                                                    <>
-                                                                        <div
-                                                                            className="h-3.5 w-3.5 rounded-full"
-                                                                            style={{
-                                                                                backgroundColor:
-                                                                                    hexColor,
-                                                                            }}
-                                                                        />{' '}
-                                                                        <span>
-                                                                            -
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                                {variantLabel && (
-                                                                    <span className="text-xs">
-                                                                        (
-                                                                        {
-                                                                            variantLabel
-                                                                        }
-                                                                        )
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="font-mono text-xs tracking-tighter">
-                                                                Sku daryza:{' '}
-                                                                {field.sku}
-                                                            </p>
-                                                        </div>
+                                                        <VariantIdentity
+                                                            productName={
+                                                                field.product_name
+                                                            }
+                                                            variantName={
+                                                                field.variant_name
+                                                            }
+                                                            sku={field.sku}
+                                                            image={field.image}
+                                                            skuClassName="font-mono text-xs tracking-tighter"
+                                                        />
                                                     </TableCell>
                                                     <TableCell>
                                                         <Button

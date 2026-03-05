@@ -28,6 +28,11 @@ return new class extends Migration
             $table->integer('stock')->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(
+                ['product_id', 'is_active', 'is_main'],
+                'product_variants_product_active_main_idx'
+            );
         });
     }
 

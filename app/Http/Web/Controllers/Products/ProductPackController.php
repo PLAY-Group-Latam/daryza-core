@@ -3,26 +3,22 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Requests\Products\StoreProductPackRequest;
+use App\Http\Web\Requests\Products\UpdateProductPackRequest;
+use App\Http\Web\Services\Products\ProductPackService;
 use App\Http\Web\Services\Products\ProductSearchService;
 use App\Models\Products\ProductPack;
-use App\Models\Products\Product; // Para cargar la lista de productos en el form
-use App\Models\Products\ProductVariant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProductPackController extends Controller
 {
-
-    protected $searchService;
-
-    // Inyectamos el servicio en el constructor
-    public function __construct(ProductSearchService $searchService)
-    {
-        $this->searchService = $searchService;
-    }
+    public function __construct(
+        protected ProductSearchService $searchService,
+        protected ProductPackService $packService,
+    ) {}
     /**
      * Listado de packs
      */
@@ -63,45 +59,13 @@ class ProductPackController extends Controller
     /**
      * Guardar el pack
      */
-    public function store(Request $request)
+    public function store(StoreProductPackRequest $request)
     {
-        // 1. Validamos todos los campos, incluyendo el array de items
-        $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'slug'              => 'required|string|max:255|unique:product_packs,slug',
-            'brief_description' => 'nullable|string',
-            'description'       => 'nullable|string',
-            'stock'             => 'required|integer|min:0',
-            'price'             => 'required|numeric|min:0',
-            'promo_price'       => 'nullable|numeric|lt:price',
-            'is_on_promotion'   => 'boolean',
-            'show_on_home'      => 'boolean',
-            'is_active'         => 'boolean',
-            'promo_start_at'    => 'nullable|date',
-            'promo_end_at'      => 'nullable|date|after_or_equal:promo_start_at',
-
-            // Validación de los productos (items) que vienen del formulario
-            'items'              => 'required|array|min:1',
-            'items.*.variant_id' => 'required|exists:product_variants,id',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-        ]);
-
-        // 2. Usamos una transacción para asegurar que se cree el pack Y sus productos
-        DB::transaction(function () use ($validated) {
-            // Creamos el Pack (filtramos 'items' para que no de error al insertar en la tabla de packs)
-            $pack = ProductPack::create(collect($validated)->except('items')->toArray());
-
-            // Creamos los productos asociados (items)
-            foreach ($validated['items'] as $item) {
-                $pack->items()->create([
-                    'product_id' => $item['product_id'],
-                    'variant_id' => $item['variant_id'],
-                    'quantity'   => $item['quantity'],
-                    // 'price'     => $item['price'] ?? 0, // Por si guardas el precio histórico
-                ]);
-            }
-        });
+        try {
+            $this->packService->create($request->validated());
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
         // 3. Redirección al listado con mensaje de éxito
         return redirect()->route('products.packs.index')
@@ -121,7 +85,12 @@ class ProductPackController extends Controller
         // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
         $searchResults = $this->searchService->searchVariantsBySku($search);
 
-        $pack->load(['items.variant.product', 'items.variant.attributes']);
+        $pack->load([
+            'items.variant.product',
+            'items.variant.attributes',
+            'items.variant.mainImage',
+            'media' => fn($q) => $q->orderBy('order', 'asc'),
+        ]);
 
         return Inertia::render('products/packs/Edit', [
             'pack' => [
@@ -138,7 +107,14 @@ class ProductPackController extends Controller
                     'quantity'     => $item->quantity,
                     'product_name' => $item->variant->product->name,
                     'variant_name'        => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
+                    'image'        => $item->variant->mainImage?->file_path,
                 ]),
+                'media' => $pack->media->map(fn($media) => [
+                    'id' => $media->id,
+                    'file_path' => $media->file_path,
+                    'type' => $media->type,
+                    'order' => $media->order,
+                ])->values(),
             ],
             'searchResults' => $searchResults,
             'filters' => ['q' => $search]
@@ -148,50 +124,13 @@ class ProductPackController extends Controller
     /**
      * Actualizar
      */
-    public function update(Request $request, ProductPack $pack) // El parámetro debe coincidir con la ruta o usar el objeto
+    public function update(UpdateProductPackRequest $request, ProductPack $pack) // El parámetro debe coincidir con la ruta o usar el objeto
     {
-        // 1. Validación exhaustiva coincidente con el Formulario
-        $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'slug'              => 'required|string|max:255|unique:product_packs,slug,' . $pack->id,
-            'brief_description' => 'nullable|string',
-            'description'       => 'nullable|string',
-            'stock'             => 'required|integer|min:0',
-            'price'             => 'required|numeric|min:0',
-            'promo_price'       => 'nullable|numeric|lt:price',
-            'is_on_promotion'   => 'boolean',
-            'show_on_home'      => 'boolean',
-            'is_active'         => 'boolean',
-            'promo_start_at'    => 'nullable|date',
-            'promo_end_at'      => 'nullable|date|after_or_equal:promo_start_at',
-
-            // Validación de los items (productos del pack)
-            'items'             => 'required|array|min:1',
-            'items.*.variant_id' => 'required|exists:product_variants,id',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-        ]);
-
-        // 2. Transacción para asegurar que no queden items huérfanos si falla algo
-        DB::transaction(function () use ($validated, $pack) {
-
-            // Actualizamos los datos generales del pack
-            // collect($validated)->except('items')->toArray() filtra para no intentar guardar 'items' en la tabla packs
-            $pack->update(collect($validated)->except('items')->toArray());
-
-            // Sincronizamos los productos (items)
-            // La forma más limpia en Packs es borrar y volver a crear
-            $pack->items()->delete();
-
-            foreach ($validated['items'] as $item) {
-                $pack->items()->create([
-                    'product_id' => $item['product_id'],
-                    'variant_id' => $item['variant_id'],
-                    'quantity'   => $item['quantity'],
-                    // 'price' => $item['price'], // Opcional si guardas el precio histórico
-                ]);
-            }
-        });
+        try {
+            $this->packService->update($pack, $request->validated());
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
         return redirect()->route('products.packs.index')
             ->with('success', "El pack '{$pack->name}' ha sido actualizado.");
@@ -204,14 +143,7 @@ class ProductPackController extends Controller
     public function destroy(ProductPack $pack)
     {
         try {
-            DB::transaction(function () use ($pack) {
-                // 1. Eliminamos primero los items relacionados
-                // (Si no tienes cascade delete a nivel BD)
-                $pack->items()->delete();
-
-                // 2. Eliminamos el pack
-                $pack->delete();
-            });
+            $this->packService->delete($pack);
 
             return redirect()->route('products.packs.index')
                 ->with('success', "El pack '{$pack->name}' ha sido eliminado correctamente.");

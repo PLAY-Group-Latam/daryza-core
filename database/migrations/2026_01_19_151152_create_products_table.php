@@ -25,6 +25,11 @@ return new class extends Migration
             $table->boolean('is_home')->default(false)->index();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(
+                ['is_active', 'is_home', 'deleted_at'],
+                'products_active_home_deleted_idx'
+            );
         });
     }
 

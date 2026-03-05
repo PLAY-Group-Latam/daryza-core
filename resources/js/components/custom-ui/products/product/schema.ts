@@ -63,7 +63,7 @@ const VariantSchema = z.object({
 const MetadataSchema = z.object({
     meta_title: z.string().max(160).optional(),
     meta_description: z.string().max(320).optional(),
-    canonical_url: z.string().optional(),
+    canonical_url: z.string().max(500).optional(),
     og_title: z.string().max(160).optional(),
     og_description: z.string().max(320).optional(),
     noindex: z.boolean(),
@@ -79,7 +79,8 @@ export const ProductSchema = z.object({
     description: z.string().optional(),
     is_active: z.boolean(),
     is_home: z.boolean(),
-    categories: z.array(z.string()).min(1, 'Selecciona al menos una categoría'),
+    parent_category_id: z.string().min(1, 'Selecciona una categoría padre'),
+    categories: z.array(z.string()).min(1, 'Selecciona al menos una subcategoría'),
     business_lines: z.array(z.string()).optional(),
     recommended_product_ids: z.array(z.string()).optional(),
     variant_attribute_ids: z.array(z.string()),
@@ -89,6 +90,26 @@ export const ProductSchema = z.object({
     technicalSheets: z.array(z.union([FileSchema, ExistingMediaSchema])),
     metadata: MetadataSchema,
 }).superRefine((data, ctx) => {
+    const canonicalUrl = data.metadata.canonical_url?.trim();
+    if (canonicalUrl) {
+        try {
+            const url = new URL(canonicalUrl);
+            if (!['http:', 'https:'].includes(url.protocol)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['metadata', 'canonical_url'],
+                    message: 'La URL canónica debe iniciar con http:// o https://',
+                });
+            }
+        } catch {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['metadata', 'canonical_url'],
+                message: 'La URL canónica no tiene un formato válido.',
+            });
+        }
+    }
+
     data.variants.forEach((variant, index) => {
         if (!variant.is_active && variant.is_main) {
             ctx.addIssue({
@@ -232,6 +253,7 @@ export const defaultValues: ProductFormValues = {
     description: '',
     is_active: true,
     is_home: false,
+    parent_category_id: '',
     categories: [],
     business_lines: [],
     recommended_product_ids: [],

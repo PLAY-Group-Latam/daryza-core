@@ -84,7 +84,7 @@ class ProductCategoryController extends Controller
         $result = $this->categoryService->updateCategory($category, $request->validated());
 
         if (!$result['success']) {
-            return back()->withErrors(['order' => $result['error']]);
+            return back()->withErrors(['parent_id' => $result['error']]);
         }
 
         return redirect()->route('products.categories.index')

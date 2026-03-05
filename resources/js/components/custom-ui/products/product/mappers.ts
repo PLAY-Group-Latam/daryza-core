@@ -9,6 +9,7 @@ export function mapProductToForm(product: ProductEdit): ProductFormValues {
         description: product.description ?? '',
         is_active: product.is_active,
         is_home: product.is_home ?? false,
+        parent_category_id: product.parent_category_id ?? '',
         categories: product.categories ?? [],
         business_lines: product.business_lines ?? [],
         recommended_product_ids: product.recommended_product_ids ?? [],
