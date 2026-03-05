@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Api\v1\Controllers\PayMethods\PayMethodApiController;
+use App\Http\Api\v1\Controllers\Settings\PayMethodApiController;
 
 
 Route::prefix('paymethods')->group(function () {

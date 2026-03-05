@@ -18,6 +18,7 @@ import { Link } from '@inertiajs/react';
 import {
     Apple,
     Briefcase,
+    ClipboardList,
     Headset,
     LayoutGrid,
     LayoutTemplate,
@@ -42,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Usuarios',
         href: users.index(),
         icon: Users,
+    },
+    {
+        title: 'Órdenes',
+        href: '/ordenes',
+        icon: ClipboardList,
     },
     {
         title: 'Productos',

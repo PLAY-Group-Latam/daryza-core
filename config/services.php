@@ -43,6 +43,14 @@ return [
         'bucket' => env('GCS_BUCKET'),
         'key_file' => env('GCS_KEY_FILE'),
     ],
+    'niubiz' => [
+        'enabled' => env('NIUBIZ_ENABLED', false),
+        'base_url' => env('NIUBIZ_BASE_URL', 'https://apiprod.vnforapps.com'),
+        'merchant_id' => env('NIUBIZ_MERCHANT_ID'),
+        'username' => env('NIUBIZ_USERNAME'),
+        'password' => env('NIUBIZ_PASSWORD'),
+        'timeout' => env('NIUBIZ_TIMEOUT', 15),
+    ],
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),
