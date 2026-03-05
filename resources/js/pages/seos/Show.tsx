@@ -5,7 +5,7 @@ import { BreadcrumbItem } from '@/types';
 import { buttonVariants } from '@/components/ui/button';
 import { Globe, Share2, Settings2, ArrowLeft, Edit3, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
+import { Button } from '@/components/ui/button';
 // ✅ Movido fuera del componente — evita que React lo recree en cada render
 function DataField({ label, value }: { label: string; value: string | null | undefined }) {
     return (
@@ -21,25 +21,19 @@ function DataField({ label, value }: { label: string; value: string | null | und
 }
 
 export default function SeoShow({ seo }: { seo: Seo }) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'SEO', href: '/seo' },
-        { title: 'Detalle de Metadatos', href: `/seo/${seo.id}` },
-    ];
+    
 
     const displayUrl = seo.canonical_url || '';
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title={`SEO - ${seo.metadatable?.title || 'Detalle'}`} />
 
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+            <div className=" p-4 space-y-6">
 
                 {/* HEADER */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+                <div className="rounded-xl border p-4 flex flex-col md:flex-row md:items-center justify-between gap-4  pb-6">
                     <div className="flex items-center gap-4">
-                        <Link href="/seo" className={buttonVariants({ variant: 'outline', size: 'icon' })}>
-                            <ArrowLeft className="w-4 h-4" />
-                        </Link>
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                                 {seo.metadatable?.title || 'Metadatos'}
@@ -52,12 +46,15 @@ export default function SeoShow({ seo }: { seo: Seo }) {
                             </p>
                         </div>
                     </div>
+                    <div className='flex gap-3'>
+                    <Button variant="outline" onClick={() => window.history.back()}>Volver</Button>
                     <Link
                         href={`/seo/${seo.id}/edit`}
                         className={buttonVariants({ variant: 'default', className: 'min-w-[140px]' })}
                     >
                         <Edit3 className="w-4 h-4 mr-2" /> Editar SEO
                     </Link>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

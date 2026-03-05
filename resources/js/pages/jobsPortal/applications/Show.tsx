@@ -42,6 +42,15 @@ export default function Show() {
                             </div>
                         </div>
                         <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
+                            <Link href="/admin/jobs/applications">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full sm:w-auto"
+                                >
+                                    Volver
+                                </Button>
+                            </Link>
                             <Button
                                 size="sm"
                                 className="flex-1 sm:flex-none"
@@ -67,15 +76,6 @@ export default function Show() {
                                     Enviar correo
                                 </a>
                             </Button>
-                            <Link href="/admin/jobs/applications">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full sm:w-auto"
-                                >
-                                    Volver al listado
-                                </Button>
-                            </Link>
                         </div>
                     </div>
                 </div>

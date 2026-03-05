@@ -12,15 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload } from '@/components/custom-ui/upload';
 import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
-import { Globe, Share2, Eye, Settings2 } from 'lucide-react'; // Iconos sutiles para secciones
+import { Globe, Share2, Eye, Settings2, Edit3 } from 'lucide-react'; // Iconos sutiles para secciones
 
 export default function SeoEdit({ seo }: { seo: Seo }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'SEO', href: '/seo' },
-        { title: 'Editar', href: `/seo/${seo.id}/edit` },
-    ];
+   
 
     const form = useForm({
         _method: 'POST',
@@ -51,20 +48,22 @@ export default function SeoEdit({ seo }: { seo: Seo }) {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Editar Metadatos SEO" />
 
-            <div className="max-w-7xl mx-16 p-0 space-y-6">
+            <div className="p-4 space-y-6">
                 {/* Header Profesional */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+                <div className=" rounded-xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Editor de Seo</h1>
                         <p className="text-muted-foreground text-sm">Configure cómo se visualiza este contenido en internet.</p>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => window.history.back()}>Descartar</Button>
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[140px]">
-                            {isSubmitting ? 'Guardando...' : 'Actualizar SEO'}
+                        <Button variant="outline" onClick={() => window.history.back()}>Volver</Button>
+                        
+                        <Button  onClick={handleSubmit} disabled={isSubmitting} className="min-w-[140px]">
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            {isSubmitting ? 'Guardando...' : 'Editar SEO'} 
                         </Button>
                     </div>
                 </div>
