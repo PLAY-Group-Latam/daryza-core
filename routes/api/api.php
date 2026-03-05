@@ -14,6 +14,7 @@ Route::prefix('v1')
     require __DIR__ . '/content.php';
     require __DIR__ . '/paymethods.php';
     require __DIR__ . '/seo.php';
+    require __DIR__ . '/wishlist.php';
   });
 
 Route::prefix('v1')
