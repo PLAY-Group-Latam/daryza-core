@@ -4,6 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import type { FieldErrors } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import blogs from '@/routes/blogs';
 import { Blog, BlogCategory } from '@/types/blogs';
 import { router } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { DatePicker } from '../DatePicker';
 import { MultiSelect } from '../MultiSelect';
 import { RichTextEditor } from '../rich-text-tiptap/RichTextEditor';
@@ -59,6 +61,8 @@ interface BlogFormProps {
 }
 
 export default function BlogForm({ categories, blog }: BlogFormProps) {
+    const [showSubmitHelp, setShowSubmitHelp] = useState(false);
+
     const methods = useForm<BlogFormValues>({
         resolver: zodResolver(BlogSchema),
         defaultValues: {
@@ -96,6 +100,7 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
     const titleValue = watch('title');
 
     const onSubmit = async (data: BlogFormValues) => {
+        setShowSubmitHelp(false);
         const isEdit = !!blog;
         const action = isEdit
             ? blogs.items.update(blog.id).url
@@ -118,9 +123,20 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
         });
     };
 
+    const onError = (errors: FieldErrors<BlogFormValues>) => {
+        void errors;
+        setShowSubmitHelp(true);
+    };
+
     return (
         <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="pb-10">
+            <form onSubmit={handleSubmit(onSubmit, onError)} className="pb-10">
+                {showSubmitHelp && (
+                    <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        No se pudo guardar. Revisa los campos marcados en rojo
+                        (por ejemplo categorías obligatorias).
+                    </p>
+                )}
                 <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_0.5fr]">
                     {/* ================= LEFT ================= */}
                     <div className="space-y-10">
@@ -299,6 +315,11 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                                     />
                                 )}
                             />
+                            {errors.categories && (
+                                <p className="text-sm text-red-500">
+                                    {errors.categories.message}
+                                </p>
+                            )}
                         </div>{' '}
                         {/* IMAGES */}
                         <div className="space-y-4">

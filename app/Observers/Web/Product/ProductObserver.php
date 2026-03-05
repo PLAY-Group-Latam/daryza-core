@@ -3,6 +3,8 @@
 namespace App\Observers\Web\Product;
 
 use App\Http\Web\Services\Products\ProductCodeGenerator;
+use App\Http\Web\Support\Products\ProductMainVariantNormalizer;
+use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\Product;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -22,12 +24,7 @@ class ProductObserver
 
     public function updated(Product $product): void
     {
-
-        // 2. Regla de Oro: Siempre debe haber una variante principal
-        // Si por algún error no hay ninguna marcada como principal, forzamos la primera.
-        if (!$product->variants()->where('is_main', true)->exists()) {
-            $product->variants()->first()?->update(['is_main' => true]);
-        }
+        app(ProductMainVariantNormalizer::class)->normalize($product);
     }
     /**
      * Se ejecuta cuando se llama al método ->delete()
@@ -48,7 +45,12 @@ class ProductObserver
         // 3. Tip Senior: Liberar el Slug (Opcional pero recomendado)
         // Al usar SoftDeletes, el slug 'guante-latex' sigue ocupado. 
         // Lo renombramos para que otro producto pueda usarlo.
-        $product->slug = $product->slug . '-deleted-' . now()->timestamp;
+        $product->slug = app(UniqueSlugResolver::class)->resolve(
+            Product::class,
+            $product->slug . '-deleted-' . now()->timestamp,
+            $product->id,
+            'producto'
+        );
         $product->save();
 
         Log::info("Producto movido a papelera: {$product->id}");
@@ -61,7 +63,12 @@ class ProductObserver
     {
         // Restauramos automáticamente todas las variantes vinculadas
         $product->variants()->restore();
-        $product->slug = Str::slug($product->name);
+        $product->slug = app(UniqueSlugResolver::class)->resolve(
+            Product::class,
+            Str::slug($product->name),
+            $product->id,
+            'producto'
+        );
 
         Log::info("Producto restaurado de papelera: {$product->id}");
     }

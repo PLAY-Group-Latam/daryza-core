@@ -83,9 +83,45 @@ export function useVariantForm(variantAttributes: Attribute[]) {
         [append, buildEmptyVariant],
     );
 
+    const removeVariant = useCallback(
+        (index: number) => {
+            const currentVariants = getValues('variants') ?? [];
+            if (!currentVariants[index]) return;
+
+            remove(index);
+
+            // Tras eliminar, garantiza una sola variante principal activa si quedan variantes activas.
+            setTimeout(() => {
+                const nextVariants = getValues('variants') ?? [];
+                if (!nextVariants.length) return;
+
+                const activeIndexes = nextVariants
+                    .map((variant, i) => (variant.is_active ? i : -1))
+                    .filter((i) => i >= 0);
+
+                if (!activeIndexes.length) return;
+
+                const currentMainIndex = nextVariants.findIndex(
+                    (variant) => variant.is_active && variant.is_main,
+                );
+                const nextMainIndex =
+                    currentMainIndex >= 0 ? currentMainIndex : activeIndexes[0];
+
+                nextVariants.forEach((_, i) => {
+                    setValue(`variants.${i}.is_main`, i === nextMainIndex, {
+                        shouldDirty: true,
+                        shouldTouch: false,
+                        shouldValidate: false,
+                    });
+                });
+            }, 0);
+        },
+        [getValues, remove, setValue],
+    );
+
     return {
         fields,
-        remove,
+        remove: removeVariant,
         appendFirst,
         appendNext,
         activeAttributes,

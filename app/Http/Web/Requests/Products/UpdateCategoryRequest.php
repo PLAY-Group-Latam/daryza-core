@@ -57,4 +57,31 @@ class UpdateCategoryRequest extends FormRequest
             'image.max'        => 'La imagen no debe superar los 2MB.',
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $category = $this->route('category');
+            $categoryModel = $category instanceof ProductCategory
+                ? $category
+                : ProductCategory::query()->find($category);
+
+            if (!$categoryModel) {
+                return;
+            }
+
+            $newParentId = $this->input('parent_id');
+            $isMovingUnderParent = !empty($newParentId)
+                && (string) $newParentId !== (string) $categoryModel->parent_id;
+
+            // Regla de negocio: solo se permiten 2 niveles.
+            // Si esta categoría tiene hijas, no se puede mover como subcategoría.
+            if ($isMovingUnderParent && $categoryModel->children()->exists()) {
+                $validator->errors()->add(
+                    'parent_id',
+                    'No puedes mover una categoría padre con subcategorías. Reubica o elimina sus subcategorías primero.'
+                );
+            }
+        });
+    }
 }

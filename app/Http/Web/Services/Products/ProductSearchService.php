@@ -3,6 +3,7 @@
 namespace App\Http\Web\Services\Products;
 
 use App\Models\Products\ProductVariant;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 class ProductSearchService
@@ -19,15 +20,26 @@ class ProductSearchService
         }
 
         $searchTerm = "%{$search}%";
+        $driver = DB::connection()->getDriverName();
 
-        return ProductVariant::query()
+        $query = ProductVariant::query()
             ->select('id', 'product_id', 'sku', 'promo_price', 'is_on_promo')
-            ->where('sku', 'ilike', $searchTerm)
+            ->where('is_active', true)
+            ->whereHas('product', fn($q) => $q->where('is_active', true))
             ->with([
                 'product:id,name',
-                'attributes:id,value'
+                'attributes:id,value',
+                'mainImage:id,mediable_id,mediable_type,file_path'
             ])
-            ->limit($limit)
+            ->limit($limit);
+
+        if ($driver === 'pgsql') {
+            $query->where('sku', 'ilike', $searchTerm);
+        } else {
+            $query->whereRaw('LOWER(sku) LIKE LOWER(?)', [$searchTerm]);
+        }
+
+        return $query
             ->get()
             ->map(fn($variant) => [
                 'variant_id'           => $variant->id,
@@ -36,6 +48,7 @@ class ProductSearchService
                 'is_on_promo'  => $variant->is_on_promo,
                 'product_name' => $variant->product?->name ?? 'Sin nombre',
                 'variant_name' => $variant->attributes->pluck('value')->implode(' - ') ?: "Variante única",
+                'image' => $variant->mainImage?->file_path,
             ]);
     }
 }

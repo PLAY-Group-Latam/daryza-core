@@ -3,6 +3,8 @@
 namespace App\Http\Web\Requests\Products;
 
 use App\Http\Web\Support\Products\VariantPayloadValidator;
+use App\Http\Web\Support\Products\PromotionPayloadValidator;
+use App\Models\Products\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -28,6 +30,7 @@ class UpdateProductRequest extends FormRequest
       ],
       'categories'        => ['required', 'array', 'min:1'],
       'categories.*'      => ['required', 'string', 'exists:product_categories,id'],
+      'parent_category_id' => ['required', 'exists:product_categories,id'],
       'business_lines'    => ['nullable', 'array'],
       'business_lines.*'  => ['exists:business_lines,id'],
       'recommended_product_ids'   => ['nullable', 'array'],
@@ -112,6 +115,8 @@ class UpdateProductRequest extends FormRequest
       'categories.required'         => 'Debes seleccionar al menos una categoría.',
       'categories.array'            => 'El formato de las categorías no es válido.',
       'categories.*.exists'         => 'Una de las categorías seleccionadas no es válida.',
+      'parent_category_id.required' => 'Debes seleccionar la categoría padre.',
+      'parent_category_id.exists'   => 'La categoría padre seleccionada no es válida.',
       'variants.*.sku.required'     => 'El SKU es obligatorio.',
       'variants.*.price.required'   => 'El precio es obligatorio.',
       'variants.*.price.min'        => 'El precio no puede ser negativo.',
@@ -149,6 +154,40 @@ class UpdateProductRequest extends FormRequest
         $product,
         true
       );
+
+      app(PromotionPayloadValidator::class)->validate(
+        $validator,
+        $variants,
+      );
+
+      $parentCategoryId = $this->input('parent_category_id');
+      $subcategoryIds = collect($this->input('categories', []))
+        ->filter()
+        ->values();
+
+      $parentCategory = ProductCategory::query()->find($parentCategoryId);
+      if (!$parentCategory || !is_null($parentCategory->parent_id) || !$parentCategory->is_active) {
+        $validator->errors()->add(
+          'parent_category_id',
+          'Debes seleccionar una categoría padre válida.'
+        );
+        return;
+      }
+
+      if ($subcategoryIds->isNotEmpty()) {
+        $validSubcategoryIds = ProductCategory::query()
+          ->where('parent_id', $parentCategoryId)
+          ->where('is_active', true)
+          ->whereIn('id', $subcategoryIds->all())
+          ->pluck('id');
+
+        if ($validSubcategoryIds->count() !== $subcategoryIds->count()) {
+          $validator->errors()->add(
+            'categories',
+            'Las subcategorías deben pertenecer a la categoría padre seleccionada.'
+          );
+        }
+      }
     });
   }
 }

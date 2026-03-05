@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
+import type { FieldErrors, Resolver } from 'react-hook-form';
 import {
     Controller,
     FormProvider,
@@ -9,8 +10,8 @@ import {
     useForm,
 } from 'react-hook-form';
 import { z } from 'zod';
-import type { FieldErrors, Resolver } from 'react-hook-form';
 
+import { UploadMultiple } from '@/components/custom-ui/UploadMultiple';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +30,9 @@ import { VariantSearchResult } from '@/types/products/search';
 import { PackagePlus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
 import { SlugInput } from '../../slug-text';
+import { VariantIdentity } from '../shared/VariantIdentity';
 import { PackProductSearch } from './SearchProduct';
+import { buildPackFormData } from './utils/buildPackFormData';
 
 const packSchema = z
     .object({
@@ -45,6 +48,7 @@ const packSchema = z
         brief_description: z.string().nullable().optional(),
         stock: z.coerce.number().min(0, 'El stock no puede ser negativo'),
         description: z.string().nullable().optional(),
+        media: z.array(z.any()).optional(),
         items: z
             .array(
                 z.object({
@@ -52,6 +56,8 @@ const packSchema = z
                     product_id: z.string(),
                     sku: z.string(),
                     product_name: z.string(),
+                    variant_name: z.string(),
+                    image: z.string().nullable().optional(),
                     quantity: z.coerce.number().min(1, 'Mínimo 1'),
                 }),
             )
@@ -104,6 +110,7 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
             promo_end_at: undefined,
             brief_description: '',
             description: '',
+            media: [],
             items: [],
         },
     });
@@ -133,19 +140,23 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
             variant_id: String(variant.variant_id),
             product_id: String(variant.product_id),
             sku: variant.sku,
-            product_name: `${variant.product_name} (${variant.variant_name})`,
+            product_name: variant.product_name,
+            variant_name: variant.variant_name,
+            image: variant.image ?? null,
             quantity: 1,
         });
     };
 
     const onSubmit = (values: PackFormValues) => {
-        router.post(products.packs.store.url(), values, {
+        const formData = buildPackFormData(values, false);
+        router.post(products.packs.store.url(), formData, {
             preserveScroll: true,
+            forceFormData: true,
         });
     };
 
     const onError = (errors: FieldErrors<PackFormValues>) => {
-        console.log('ERRORES:', errors);
+        void errors;
     };
 
     return (
@@ -260,81 +271,23 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
                                     </TableHeader>
                                     <TableBody>
                                         {fields.map((field, index) => {
-                                            // 1. Extraemos el HEX (si existe)
-                                            const hexMatch =
-                                                field.product_name.match(
-                                                    /#([0-9A-F]{3,6})/i,
-                                                );
-                                            const hexColor = hexMatch
-                                                ? hexMatch[0]
-                                                : null;
-
-                                            // 2. Limpiamos el nombre: quitamos el HEX y lo que esté entre paréntesis
-                                            // Ejemplo: "Cesto ropa (#000000 - G)" -> "Cesto ropa"
-                                            const cleanName =
-                                                field.product_name.split(
-                                                    ' (',
-                                                )[0];
-
-                                            // 3. Extraemos el texto de la variante (ej: "G")
-                                            // Quitamos el hex y el guion del contenido de los paréntesis
-                                            const variantLabel = hexColor
-                                                ? field.product_name
-                                                      .split('(')[1]
-                                                      ?.replace(hexColor, '')
-                                                      .replace('-', '')
-                                                      .replace(')', '')
-                                                      .trim()
-                                                : field.product_name
-                                                      .split('(')[1]
-                                                      ?.replace(')', '')
-                                                      .trim();
-
                                             return (
                                                 <TableRow
                                                     key={field.id}
                                                     className="bg-white"
                                                 >
                                                     <TableCell>
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <div className="flex items-center gap-2">
-                                                                {/* Nombre del Producto */}
-                                                                <span className="text-sm leading-none font-bold text-slate-900">
-                                                                    {cleanName}
-                                                                </span>
-                                                                {/* El Guion y el Color (Solo si hay Hex) */}
-                                                                {/* El texto extra (G, M, etc) */}
-                                                                {hexColor && (
-                                                                    <>
-                                                                        <div
-                                                                            className="h-3.5 w-3.5 rounded-full"
-                                                                            style={{
-                                                                                backgroundColor:
-                                                                                    hexColor,
-                                                                            }}
-                                                                        />{' '}
-                                                                        <span>
-                                                                            -
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                                {variantLabel && (
-                                                                    <span className="text-sm">
-                                                                        (
-                                                                        {
-                                                                            variantLabel
-                                                                        }
-                                                                        )
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            {/* SKU abajo siempre limpio */}
-                                                            <p className="font-mono text-xs">
-                                                                Sku daryza:
-                                                                {field.sku}
-                                                            </p>
-                                                        </div>
+                                                        <VariantIdentity
+                                                            productName={
+                                                                field.product_name
+                                                            }
+                                                            variantName={
+                                                                field.variant_name
+                                                            }
+                                                            sku={field.sku}
+                                                            image={field.image}
+                                                            nameClassName="text-sm leading-none font-bold text-slate-900"
+                                                        />
                                                     </TableCell>
 
                                                     <TableCell>
@@ -378,6 +331,24 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
                     {/* SIDEBAR */}
                     <aside className="space-y-6">
                         <div className="sticky top-6 space-y-4">
+                            <Controller
+                                name="media"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex flex-col gap-2">
+                                        <Label>Galería del Pack</Label>
+                                        <UploadMultiple
+                                            value={field.value ?? []}
+                                            onFilesChange={field.onChange}
+                                            accept="both"
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            Puedes ordenar arrastrando los
+                                            archivos.
+                                        </p>
+                                    </div>
+                                )}
+                            />
                             <Controller
                                 name="stock"
                                 control={control}

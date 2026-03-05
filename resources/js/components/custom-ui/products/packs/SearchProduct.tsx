@@ -13,6 +13,7 @@ import {
     CommandList,
 } from '@/components/ui/command';
 import { VariantSearchResult } from '@/types/products/search';
+import { VariantIdentity } from '../shared/VariantIdentity';
 
 interface PackProductSearchProps {
     searchResults: VariantSearchResult[];
@@ -32,21 +33,6 @@ export function PackProductSearch({
     const containerRef = React.useRef<HTMLDivElement>(null);
     const debouncedQuery = useDebounce(query, 300);
 
-    // console.log(searchResults);
-    // Función para parsear la variante (Separa Hex del Texto)
-    const parseVariant = (variantName: string) => {
-        const hexRegex = /(#[0-9A-F]{3,6})/i;
-        const match = variantName.match(hexRegex);
-
-        if (match) {
-            const hex = match[0];
-            // Quitamos el hex y el guion para que solo quede el texto (ej: "G")
-            const label = variantName.replace(hex, '-').replace('-', '').trim();
-            return { hex, label };
-        }
-
-        return { hex: null, label: variantName };
-    };
     // Cerrar resultados al hacer clic fuera
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -104,10 +90,6 @@ export function PackProductSearch({
                             ) : (
                                 <CommandGroup heading="Productos disponibles">
                                     {searchResults.map((res) => {
-                                        const { hex, label } = parseVariant(
-                                            res.variant_name,
-                                        );
-
                                         return (
                                             <CommandItem
                                                 key={res.variant_id}
@@ -116,32 +98,21 @@ export function PackProductSearch({
                                                     onSelect(res);
                                                     setShowResults(false);
                                                 }}
-                                                className="flex cursor-pointer flex-col items-start gap-3 border-b p-4 last:border-0 hover:bg-slate-50 aria-selected:bg-slate-100"
+                                                className="flex cursor-pointer items-start gap-3 border-b p-4 last:border-0 hover:bg-slate-50 aria-selected:bg-slate-100"
                                             >
-                                                <span className="leading-none font-bold text-slate-900">
-                                                    {res.product_name}
-                                                </span>
-
-                                                <div className="flex items-center gap-2">
-                                                    {/* Círculo de color si existe HEX */}
-                                                    {hex && (
-                                                        <div
-                                                            className="h-3.5 w-3.5 rounded-full"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    hex,
-                                                            }}
-                                                        />
-                                                    )}
-
-                                                    <span className="font-mono text-xs tracking-tight">
-                                                        {label}{' '}
-                                                        <span className="mx-1">
-                                                            |
-                                                        </span>{' '}
-                                                        Sku daryza: {res.sku}
-                                                    </span>
-
+                                                <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                                    <VariantIdentity
+                                                        productName={
+                                                            res.product_name
+                                                        }
+                                                        variantName={
+                                                            res.variant_name
+                                                        }
+                                                        sku={res.sku}
+                                                        image={res.image}
+                                                        nameClassName="leading-none font-bold text-slate-900"
+                                                        skuClassName="font-mono text-xs tracking-tight"
+                                                    />
                                                     {res.is_on_promo && (
                                                         <span className="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[8px] font-bold text-green-700">
                                                             PROMO

@@ -3,6 +3,7 @@
 namespace App\Http\Web\Services\Products;
 
 use App\Enums\AttributeType;
+use App\Enums\OgType;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
@@ -35,11 +36,13 @@ class ProductImportService
         'description' => $data['description'] ?? $product->description,
         // 'slug' => Str::slug($data['name']), // Aseguramos que se limpie
       ]);
+
+      $this->syncImportedProductMetadata($product);
       return $product;
     }
 
     // Si realmente no existe, lo creamos
-    return Product::create([
+    $product = Product::create([
       'id' => Str::ulid(),
       'code' => $data['code'],
       'name' => $data['name'],
@@ -49,6 +52,35 @@ class ProductImportService
       'is_active' => $data['is_active'] ?? true,
       'is_home' => $data['is_home'] ?? false,
     ]);
+
+    $this->syncImportedProductMetadata($product);
+
+    return $product;
+  }
+
+  protected function syncImportedProductMetadata(Product $product): void
+  {
+    $frontendUrl = rtrim((string) (config('app.frontend_url') ?: config('app.url')), '/');
+
+    $product->metadata()->updateOrCreate(
+      [
+        'metadatable_id' => $product->id,
+        'metadatable_type' => Product::class,
+      ],
+      [
+        'meta_title' => $product->name,
+        'meta_description' => $product->brief_description,
+        'og_title' => $product->name,
+        // Requisito solicitado: OG description igual al título.
+        'og_description' => $product->name,
+        'canonical_url' => $frontendUrl !== ''
+          ? "{$frontendUrl}/productos/{$product->slug}"
+          : null,
+        'og_type' => OgType::PRODUCT,
+        'noindex' => false,
+        'nofollow' => false,
+      ]
+    );
   }
 
 
@@ -141,6 +173,21 @@ class ProductImportService
    */
   public function associateVariantAttributes(ProductVariant $variant, array $attributes): void
   {
+    $managedAttributeIds = collect(array_keys($attributes))
+      ->map(fn($name) => $this->findOrCreateAttribute($name)->id)
+      ->values();
+
+    if ($managedAttributeIds->isNotEmpty()) {
+      $existingManagedValueIds = AttributesValue::query()
+        ->whereIn('attribute_id', $managedAttributeIds->all())
+        ->pluck('id')
+        ->all();
+
+      if (!empty($existingManagedValueIds)) {
+        $variant->attributes()->detach($existingManagedValueIds);
+      }
+    }
+
     foreach ($attributes as $name => $value) {
       if (!$value) continue;
 

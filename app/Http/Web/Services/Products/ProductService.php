@@ -3,6 +3,7 @@
 namespace App\Http\Web\Services\Products;
 
 use App\Enums\OgType;
+use App\Http\Web\Support\Products\ProductMainVariantNormalizer;
 use App\Models\Products\{Product, ProductVariant};
 use Illuminate\Support\Facades\DB;
 
@@ -10,6 +11,7 @@ class ProductService
 {
   public function __construct(
     protected ProductMediaService $mediaService,
+    protected ProductMainVariantNormalizer $mainVariantNormalizer,
   ) {}
 
   // =========================================================================
@@ -31,7 +33,7 @@ class ProductService
         'is_home'           => $data['is_home'] ?? false,
       ]);
 
-      $product->categories()->sync($data['categories'] ?? []);
+      $this->syncProductCategories($product, $data);
       $product->businessLines()->sync($data['business_lines'] ?? []);
       $this->syncRecommendedProducts($product, $data['recommended_product_ids'] ?? []);
 
@@ -59,8 +61,8 @@ class ProductService
         'is_home',
       ])->toArray());
 
-      if (isset($data['categories'])) {
-        $product->categories()->sync($data['categories']);
+      if (isset($data['categories']) || isset($data['parent_category_id'])) {
+        $this->syncProductCategories($product, $data);
       }
 
       if (isset($data['business_lines'])) {
@@ -228,40 +230,7 @@ class ProductService
 
   protected function normalizeMainVariant(Product $product, array $variantIds): void
   {
-    if (empty($variantIds)) {
-      return;
-    }
-
-    $activeMainId = $product->variants()
-      ->whereIn('id', $variantIds)
-      ->where('is_active', true)
-      ->where('is_main', true)
-      ->value('id');
-
-    $mainId = $activeMainId
-      ?? $product->variants()
-      ->whereIn('id', $variantIds)
-      ->where('is_active', true)
-      ->orderBy('created_at', 'asc')
-      ->orderBy('id', 'asc')
-      ->value('id');
-
-    if (!$mainId) {
-      // Si no hay variantes activas, no dejamos principal marcada.
-      $product->variants()
-        ->whereIn('id', $variantIds)
-        ->update(['is_main' => false]);
-      return;
-    }
-
-    $product->variants()
-      ->whereIn('id', $variantIds)
-      ->where('id', '!=', $mainId)
-      ->update(['is_main' => false]);
-
-    $product->variants()
-      ->where('id', $mainId)
-      ->update(['is_main' => true]);
+    $this->mainVariantNormalizer->normalize($product, $variantIds);
   }
 
   protected function syncAttributes(ProductVariant $variant, array $attributes): void
@@ -306,5 +275,21 @@ class ProductService
       ->all();
 
     $product->recommendedProducts()->sync($syncPayload);
+  }
+
+  protected function syncProductCategories(Product $product, array $data): void
+  {
+    $parentId = $data['parent_category_id'] ?? null;
+    $subcategoryIds = collect($data['categories'] ?? [])
+      ->filter(fn($id) => is_string($id) && $id !== '')
+      ->unique()
+      ->values();
+
+    $syncIds = $subcategoryIds;
+    if (is_string($parentId) && $parentId !== '') {
+      $syncIds = $syncIds->prepend($parentId)->unique()->values();
+    }
+
+    $product->categories()->sync($syncIds->all());
   }
 }

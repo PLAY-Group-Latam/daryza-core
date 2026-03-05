@@ -52,7 +52,7 @@ export default function FormCategory({
         },
     });
 
-    const onSubmit = async (data: FormValues) => {
+    const onSubmit = (data: FormValues) => {
         const routeOptions = isEdit
             ? categories.update(category!.id)
             : categories.store();
@@ -70,7 +70,7 @@ export default function FormCategory({
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-8">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_auto]">
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -99,6 +99,9 @@ export default function FormCategory({
                                         categories={parentCategories || []}
                                         value={field.value}
                                         onChange={field.onChange}
+                                    />
+                                    <InputError
+                                        message={errors.parent_id?.message}
                                     />
                                 </div>
                             )}
@@ -173,11 +176,11 @@ export default function FormCategory({
                 </div>
             </div>
 
-            <div className="mt-8 flex justify-start">
+            <div className="flex justify-start">
                 <Button
                     type="submit"
                     disabled={isSubmitting || !isDirty}
-                    className="h-11 px-8"
+                    className="min-w-[180px]"
                 >
                     {isSubmitting && (
                         <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

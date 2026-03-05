@@ -2,6 +2,7 @@
 
 namespace App\Observers\Web\Product;
 
+use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\ProductPack;
 use Illuminate\Support\Str;
 
@@ -17,7 +18,12 @@ class ProductPackObserver
 
         // Asegurar que tenga slug si el frontend no lo envió (fallback)
         if (empty($pack->slug)) {
-            $pack->slug = Str::slug($pack->name);
+            $pack->slug = app(UniqueSlugResolver::class)->resolve(
+                ProductPack::class,
+                Str::slug($pack->name),
+                $pack->id,
+                'pack'
+            );
         }
     }
 
@@ -25,7 +31,12 @@ class ProductPackObserver
     {
         // Si es Soft Delete, renombramos el slug para liberar el original
         if (!$pack->isForceDeleting()) {
-            $pack->slug = $pack->slug . '-deleted-' . now()->timestamp;
+            $pack->slug = app(UniqueSlugResolver::class)->resolve(
+                ProductPack::class,
+                $pack->slug . '-deleted-' . now()->timestamp,
+                $pack->id,
+                'pack'
+            );
             $pack->save();
         }
     }
@@ -33,6 +44,11 @@ class ProductPackObserver
     public function restoring(ProductPack $pack): void
     {
         // Al restaurar, limpiamos el slug de borrado
-        $pack->slug = Str::slug($pack->name);
+        $pack->slug = app(UniqueSlugResolver::class)->resolve(
+            ProductPack::class,
+            Str::slug($pack->name),
+            $pack->id,
+            'pack'
+        );
     }
 }

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import productsNamespace from '@/routes/products';
 import { BusinessLine } from '@/types/products/businessLines';
-import { router, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { SlugInput } from '../../slug-text';
 
 interface Props {
@@ -14,37 +14,24 @@ interface Props {
 }
 
 export default function BusinessLineForm({ businessLine }: Props) {
-    const { data, setData, processing, errors } = useForm({
+    const { data, setData, processing, errors, post, put } = useForm({
         name: businessLine?.name || '',
         slug: businessLine?.slug || '',
         is_active: businessLine?.is_active ?? true,
-        _method: businessLine ? 'PUT' : 'POST',
     });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // Importante porque no usas react-hook-form aquí, sino el submit nativo del form
-
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         const isEdit = !!businessLine;
         const action = isEdit
             ? productsNamespace.businessLines.update(businessLine.id).url
             : productsNamespace.businessLines.store().url;
 
-        // Usamos el 'data' que viene del useForm de Inertia
-        await new Promise<void>((resolve) => {
-            if (isEdit) {
-                // Laravel necesita PUT para actualizar, pero si no hay archivos
-                // router.put funciona perfecto.
-                router.put(action, data, {
-                    preserveScroll: true,
-                    onFinish: () => resolve(),
-                });
-            } else {
-                router.post(action, data, {
-                    preserveScroll: true,
-                    onFinish: () => resolve(),
-                });
-            }
-        });
+        if (isEdit) {
+            put(action, { preserveScroll: true });
+            return;
+        }
+        post(action, { preserveScroll: true });
     };
 
     return (

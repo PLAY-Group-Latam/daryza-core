@@ -15,7 +15,6 @@ export default function Edit() {
         businessLines: BusinessLine[];
         recommendableSearchResults: ProductRecommendable[];
     }>().props;
-    console.log('producto individual:', product);
     return (
         <AppLayout>
             <Head title="Editar Producto" />
