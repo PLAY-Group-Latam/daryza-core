@@ -94,7 +94,7 @@ export default function Edit({ paymentMethod }: { paymentMethod: PaymentMethod }
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="daryza">Daryza</SelectItem>
-                                                <SelectItem value="itp">ITP</SelectItem>
+                                           
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />

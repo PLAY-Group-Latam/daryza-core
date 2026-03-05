@@ -21,7 +21,7 @@ export default function ScriptsList({ scripts, meta }: ScriptsListProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lista de Scripts" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-0">
                 <div className="flex justify-between">
                     <div className="text-lg font-bold lg:text-2xl">Lista de Scripts</div>
                     <Button onClick={() => router.visit('/scripts/create')}>

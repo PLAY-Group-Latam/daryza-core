@@ -4,34 +4,31 @@ namespace App\Http\Web\Controllers\Delivery;
 
 use App\Http\Web\Controllers\Controller;
 use App\Models\DeliverySetting;
+use App\Http\Web\Services\Delivery\DeliveryService;
 use Illuminate\Http\Request;
 
 class DeliverySettingController extends Controller
 {
-    /**
-     * Store a newly created resource in storage.
-     */
+    private $deliveryService;
+
+    public function __construct(DeliveryService $deliveryService)
+    {
+        $this->deliveryService = $deliveryService;
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
-            'minimum_order_amount' => 'required|numeric|min:0',
+            'minimum_order_amount'   => 'required|numeric|min:0',
             'order_amount_threshold' => 'required|numeric|min:0',
         ]);
 
-        if ($data['minimum_order_amount'] < $data['order_amount_threshold']) {
-            return back()->withErrors([
-                'minimum_order_amount' => 'El monto mínimo del pedido no puede ser mayor que el umbral del monto del pedido.',
-            ])->withInput();
+        try {
+            $this->deliveryService->updateSettings($data);
+            return redirect()->route("delivery-zones.index")->with('success', 'Configuración guardada correctamente');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['minimum_order_amount' => $e->getMessage()])->withInput();
         }
-
-        DeliverySetting::updateOrCreate(
-            [],
-            $data
-        );
-
-        return redirect()->route("delivery-zones.index")->
-            with('success', 'Configuración guardada correctamente');
     }
-
 }
 

@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             BlogSeeder::class,
             SystemAllContentSeeder::class,
             JobsPortalSeeder::class,
+            SeoPageSeeder::class,
         ]);
     }
 }

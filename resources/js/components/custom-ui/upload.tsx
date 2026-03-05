@@ -2,57 +2,54 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Trash2Icon, UploadIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface UploadProps {
     onFileChange?: (file: File | null) => void;
     value?: File | string | null;
     previewClassName?: string;
-    accept?: string; 
-    placeholder?: string; 
-    type?: 'image' | 'video'; 
+    accept?: string;
+    placeholder?: string;
+    type?: 'image' | 'video';
 }
 
-export function Upload({ 
-    onFileChange, 
-    value, 
+function getInitialPreview(value: File | string | null | undefined): string | null {
+    if (typeof value === 'string') return value;
+    if (value instanceof File) return URL.createObjectURL(value);
+    return null;
+}
+
+export function Upload({
+    onFileChange,
+    value,
     previewClassName,
     accept = 'image/*',
     placeholder,
     type = 'image'
 }: UploadProps) {
-    const [preview, setPreview] = useState<string | null>(
-        typeof value === 'string'
-            ? value
-            : value instanceof File
-              ? URL.createObjectURL(value)
-              : null,
-    );
+    const [localPreview, setLocalPreview] = useState<string | null>(() => getInitialPreview(value));
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    useEffect(() => {
-        if (typeof value === 'string') setPreview(value);
-        if (value instanceof File) setPreview(URL.createObjectURL(value));
-        if (!value) setPreview(null);
-    }, [value]);
+    // Preview final: archivo local elegido por el usuario, o el value externo
+    const preview = localPreview ?? getInitialPreview(value);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
         if (file) {
-            setPreview(URL.createObjectURL(file));
+            setLocalPreview(URL.createObjectURL(file));
             onFileChange?.(file);
         }
     };
 
     const handleRemove = () => {
-        setPreview(null);
+        setLocalPreview(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         onFileChange?.(null);
     };
 
     const isVideo = type === 'video' || accept.includes('video');
-    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen'); 
+    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
 
     return (
         <div className="flex flex-col gap-3">
@@ -60,17 +57,9 @@ export function Upload({
                 <>
                     <div className={cn('relative overflow-hidden rounded-xl bg-slate-50 border border-slate-200', previewClassName)}>
                         {isVideo ? (
-                            <video
-                                src={preview}
-                                controls
-                                className="w-full h-full object-contain"
-                            />
+                            <video src={preview} controls className="w-full h-full object-contain" />
                         ) : (
-                            <img
-                                src={preview}
-                                alt="Preview"
-                                className="w-full h-full object-contain"
-                            />
+                            <img src={preview} alt="Preview" className="w-full h-full object-contain" />
                         )}
                         {onFileChange && (
                             <button
@@ -106,9 +95,7 @@ export function Upload({
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
-                    <span className="text-sm text-slate-500">
-                         {resolvedPlaceholder}
-                    </span>
+                    <span className="text-sm text-slate-500">{resolvedPlaceholder}</span>
                 </div>
             )}
 

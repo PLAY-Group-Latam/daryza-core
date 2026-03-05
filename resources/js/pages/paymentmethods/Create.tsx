@@ -90,7 +90,7 @@ export default function Create() {
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="daryza">Daryza</SelectItem>
-                                                <SelectItem value="itp">ITP</SelectItem>
+                                               
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
