@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Web\Controllers\PaymentMethods\PaymentMethodController;
+use App\Http\Web\Controllers\Settings\PaymentMethodController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Api\v1\Controllers\Scripts\ScriptController;
+use App\Http\Api\v1\Controllers\Settings\ScriptController;
 use Illuminate\Support\Facades\Route;
 
 
