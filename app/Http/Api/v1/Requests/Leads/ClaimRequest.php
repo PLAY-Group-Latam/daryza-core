@@ -27,7 +27,7 @@ class ClaimRequest extends FormRequest
             'well_hired_id'      => 'required|string', 
             'type_of_service_id' => 'required|string', 
             'type_of_claim_id'   => 'required|string', 
-            'description'        => 'required|string|min:10',
+            'description'        => 'required|string',
             'terms_conditions'   => 'required|accepted', 
             'file_attached'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', 
         ];

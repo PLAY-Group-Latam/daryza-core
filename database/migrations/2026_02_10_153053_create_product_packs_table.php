@@ -62,6 +62,15 @@ return new class extends Migration
                 ->constrained('product_variants')
                 ->cascadeOnDelete();
 
+            $table->unique(
+                ['product_pack_id', 'variant_id'],
+                'product_pack_items_pack_variant_unique'
+            );
+            $table->index(
+                ['product_pack_id', 'product_id'],
+                'product_pack_items_pack_product_idx'
+            );
+
             $table->integer('quantity')->default(1);
 
             $table->timestamps();

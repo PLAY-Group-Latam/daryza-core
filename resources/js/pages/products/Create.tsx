@@ -14,8 +14,6 @@ export default function Create() {
         businessLines: BusinessLine[]; // <--- Agregado
         recommendableSearchResults: ProductRecommendable[];
     }>().props;
-    // console.log('atributossss:', attributes);
-    console.log('categories', categories);
     return (
         <AppLayout>
             <Head title="Crear Producto" />

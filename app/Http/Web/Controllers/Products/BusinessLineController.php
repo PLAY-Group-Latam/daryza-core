@@ -3,14 +3,19 @@
 namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Requests\Products\StoreBusinessLineRequest;
+use App\Http\Web\Requests\Products\UpdateBusinessLineRequest;
+use App\Http\Web\Services\Products\BusinessLineService;
 use App\Models\Products\BusinessLine;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BusinessLineController extends Controller
 {
+    public function __construct(
+        protected BusinessLineService $businessLineService,
+    ) {}
+
     public function index()
     {
         // Seguimos tu lógica: capturar per_page del request (por defecto 10)
@@ -28,15 +33,9 @@ class BusinessLineController extends Controller
     {
         return Inertia::render('products/businessLines/Create');
     }
-    public function store(Request $request)
+    public function store(StoreBusinessLineRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:business_lines,name',
-            'slug' => 'required|string|max:255|unique:business_lines,slug', // Validar slug
-            'is_active' => 'boolean'
-        ]);
-
-        BusinessLine::create($validated);
+        $this->businessLineService->create($request->validated());
 
         // REDIRECCIÓN PARA INERTIA
         return redirect()->route('products.business-lines.index')
@@ -51,31 +50,20 @@ class BusinessLineController extends Controller
         ]);
     }
 
-    public function update(Request $request, BusinessLine $businessLine)
+    public function update(UpdateBusinessLineRequest $request, BusinessLine $businessLine)
     {
-        $validated = $request->validate([
-            'name'      => 'required|string|max:255|unique:business_lines,name,' . $businessLine->id,
-            'slug'      => 'required|string|max:255|unique:business_lines,slug,' . $businessLine->id,
-            'is_active' => 'boolean'
-        ]);
-
-        // Nota: Como quitamos el campo image del formulario, 
-        // ya no procesamos archivos aquí para mantenerlo limpio.
-
-        $businessLine->update($validated);
+        $this->businessLineService->update($businessLine, $request->validated());
 
         return redirect()->route('products.business-lines.index')
             ->with('message', 'Línea de negocio actualizada con éxito');
     }
     public function destroy(BusinessLine $businessLine)
     {
-        // Opcional: Evitar borrar si tiene productos asociados
-        if ($businessLine->products()->exists()) {
-            return response()->json(['message' => 'No se puede eliminar una línea con productos'], 422);
+        try {
+            $this->businessLineService->delete($businessLine);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
         }
-
-
-        $businessLine->delete();
 
         return redirect()->route('products.business-lines.index')
             ->with('message', 'Línea de negocio eliminada correctamente');

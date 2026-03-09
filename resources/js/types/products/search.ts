@@ -5,5 +5,5 @@ export interface VariantSearchResult {
     is_on_promo: boolean;
     product_name: string;
     variant_name: string;
+    image?: string | null;
 }
-

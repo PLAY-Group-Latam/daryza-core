@@ -17,12 +17,14 @@ import { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
     Apple,
+    Briefcase,
+    ClipboardList,
     Headset,
     LayoutGrid,
     LayoutTemplate,
     Newspaper,
     User,
-    Users,
+    Users,Store,Truck, CreditCard, SearchCheck, FileCode
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -41,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Usuarios',
         href: users.index(),
         icon: Users,
+    },
+    {
+        title: 'Órdenes',
+        href: '/ordenes',
+        icon: ClipboardList,
     },
     {
         title: 'Productos',
@@ -110,37 +117,59 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
+        title: 'Portal de Empleos',
+        icon: Briefcase,
+        children: [
+            {
+                title: 'Sedes',
+                href: '/admin/jobs/places',
+            },
+            {
+                title: 'Áreas',
+                href: '/admin/jobs/departments',
+            },
+            {
+                title: 'Ofertas',
+                href: '/admin/jobs/offers',
+            },
+            {
+                title: 'Postulaciones',
+                href: '/admin/jobs/applications',
+            },
+        ],
+    },
+    {
         title: 'Contenido General',
         href: '/content/items',
         icon: LayoutTemplate,
     },
 
-    // {
-    //     title: 'Configuración',
-    //     icon: Store,
-    //     children: [
-    //         {
-    //             title: 'Delivery Zonas',
-    //             href: '/delivery-zones',
-    //             icon: Truck,
-    //         },
-    //         {
-    //             title: 'Cuentas Bancarias',
-    //             href: '/cuentas-bancarias',
-    //             icon: CreditCard,
-    //         },
-    //         {
-    //             title: 'Seo',
-    //             href: '/seo',
-    //             icon: SearchCheck,
-    //         },
-    //         {
-    //             title: 'Scripts',
-    //             href: '/scripts',
-    //             icon: FileCode,
-    //         },
-    //     ],
-    // },
+    {
+        title: 'Configuración',
+        icon: Store,
+        children: [
+            {
+                title: 'Delivery Zonas',
+                href: '/delivery-zones',
+                icon: Truck,
+            },
+            {
+                title: 'Cuentas Bancarias',
+                href: '/metodos-de-pago',
+                icon: CreditCard,
+            },
+            {
+                title: 'Seo',
+                href: '/seo',
+                icon: SearchCheck,
+            },
+            {
+                title: 'Scripts',
+                href: '/scripts',
+                icon: FileCode,
+            },
+        ],
+    },
 ];
 
 const footerNavItems: NavItem[] = [

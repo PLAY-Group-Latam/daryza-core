@@ -69,7 +69,7 @@ class ProductController extends Controller
     );
 
     $product->load([
-      'categories', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
+      'categories.parent', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
       'recommendedProducts:id,code,name,slug',
@@ -88,11 +88,17 @@ class ProductController extends Controller
     //   'product' => $product->toArray(),
     // ]);
 
+    $rootCategory = $product->categories->firstWhere('parent_id', null);
+    $subcategories = $product->categories->filter(fn($category) => !is_null($category->parent_id));
+    $inferredParentId = $rootCategory?->id
+      ?? $subcategories->first()?->parent_id;
+
     $productForForm = [
       'id' => $product->id,
       'name' => $product->name,
       'slug' => $product->slug,
-      'categories' => $product->categories->pluck('id')->toArray(),
+      'parent_category_id' => $inferredParentId,
+      'categories' => $subcategories->pluck('id')->values()->toArray(),
       'business_lines' => $product->businessLines->pluck('id')->toArray(),
       'recommended_product_ids' => $product->recommendedProducts->pluck('id')->toArray(),
       'recommended_products' => $product->recommendedProducts->map(fn($item) => [

@@ -83,6 +83,10 @@ class ProductCategoryService
         // 2. Validación de nivel (Igual que antes)
         $newParentId = $data['parent_id'] ?? $category->parent_id;
         if ($newParentId !== $category->parent_id && !empty($newParentId)) {
+            if ($category->children()->exists()) {
+                return ['success' => false, 'error' => "No puedes mover una categoría padre con subcategorías. Reubica o elimina sus subcategorías primero."];
+            }
+
             $parent = ProductCategory::findOrFail($newParentId);
             if (!$parent->canCreateChild()) {
                 return ['success' => false, 'error' => "Esto es una subcategoría, elige una categoria."];

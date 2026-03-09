@@ -2,17 +2,20 @@
 
 namespace App\Models\Customers;
 
+use App\Models\Orders\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\CanResetPassword;                          
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 
-class Customer extends Authenticatable implements JWTSubject
+class Customer extends Authenticatable implements JWTSubject, CanResetPassword
 {
-    use HasFactory, HasUlids, SoftDeletes, Notifiable;
+    use HasFactory, HasUlids, SoftDeletes, Notifiable, CanResetPasswordTrait;
 
     protected $fillable = [
         'full_name',
@@ -42,6 +45,11 @@ class Customer extends Authenticatable implements JWTSubject
     public function addresses()
     {
         return $this->hasMany(Address::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 
     /**

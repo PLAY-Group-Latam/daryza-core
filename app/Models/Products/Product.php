@@ -4,13 +4,14 @@ namespace App\Models\Products;
 
 use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Model;
+use App\Http\Api\Traits\HasSeo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
-    use SoftDeletes, HasUlids;
+    use SoftDeletes, HasUlids, HasSeo;
 
     protected $table = 'products';
     protected $keyType = 'string';

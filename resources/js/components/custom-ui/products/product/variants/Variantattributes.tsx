@@ -122,7 +122,7 @@ export function VariantAttributes({
                         key={attr.id}
                         name={`variants.${variantIndex}.attributes.${attrIndex}.attribute_value_id`}
                         control={control}
-                        render={({ field }) => {
+                        render={({ field, fieldState }) => {
                             if (attr.type === 'select') {
                                 return (
                                     <div className="flex flex-col gap-1">
@@ -162,6 +162,11 @@ export function VariantAttributes({
                                                 );
                                             })}
                                         </div>
+                                        {fieldState.error?.message && (
+                                            <p className="text-xs text-red-500">
+                                                {fieldState.error.message}
+                                            </p>
+                                        )}
                                     </div>
                                 );
                             }

@@ -2,6 +2,7 @@
 
 namespace App\Models\Products;
 
+use App\Models\Orders\OrderItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -97,6 +98,11 @@ class ProductVariant extends Model
     {
         // 🔥 Apuntamos a la nueva llave foránea en la tabla de especificaciones
         return $this->hasMany(ProductSpecificationValue::class, 'product_variant_id');
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'variant_id');
     }
 
     /**

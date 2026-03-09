@@ -47,7 +47,14 @@ return new class extends Migration
                 ->constrained('product_variants')
                 ->cascadeOnDelete();
 
-            // Opcional: Si necesitas un orden específico de productos en la web
+            $table->unique(
+                ['dynamic_category_id', 'variant_id'],
+                'dynamic_category_items_category_variant_unique'
+            );
+            $table->index(
+                ['dynamic_category_id', 'product_id'],
+                'dynamic_category_items_category_product_idx'
+            );
 
             $table->timestamps();
         });

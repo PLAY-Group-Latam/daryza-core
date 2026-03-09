@@ -1,4 +1,5 @@
 import { VariantSearchResult } from './search';
+import { Media } from './media';
 
 export interface PackItem {
     variant_id: string;
@@ -6,6 +7,7 @@ export interface PackItem {
     sku: string;
     product_name: string;
     variant_name: string;
+    image?: string | null;
     quantity: number;
 }
 
@@ -29,6 +31,7 @@ export interface ProductPack {
     deleted_at: string | null;
 
     items: PackItem[];
+    media?: Media[];
 }
 
 export type SearchResult = VariantSearchResult;

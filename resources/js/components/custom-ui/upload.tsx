@@ -2,88 +2,95 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Trash2Icon, UploadIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface UploadProps {
     onFileChange?: (file: File | null) => void;
     value?: File | string | null;
     previewClassName?: string;
-    accept?: string; 
-    placeholder?: string; 
-    type?: 'image' | 'video'; 
+    accept?: string;
+    placeholder?: string;
+    type?: 'image' | 'video';
 }
 
-export function Upload({ 
-    onFileChange, 
-    value, 
+function getInitialPreview(
+    value: File | string | null | undefined,
+): string | null {
+    if (typeof value === 'string') return value;
+    if (value instanceof File) return URL.createObjectURL(value);
+    return null;
+}
+
+export function Upload({
+    onFileChange,
+    value,
     previewClassName,
     accept = 'image/*',
     placeholder,
-    type = 'image'
+    type = 'image',
 }: UploadProps) {
-    const [preview, setPreview] = useState<string | null>(
-        typeof value === 'string'
-            ? value
-            : value instanceof File
-              ? URL.createObjectURL(value)
-              : null,
+    const [localPreview, setLocalPreview] = useState<string | null>(() =>
+        getInitialPreview(value),
     );
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    useEffect(() => {
-        if (typeof value === 'string') setPreview(value);
-        if (value instanceof File) setPreview(URL.createObjectURL(value));
-        if (!value) setPreview(null);
-    }, [value]);
+    // Preview final: archivo local elegido por el usuario, o el value externo
+    const preview = localPreview ?? getInitialPreview(value);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
         if (file) {
-            setPreview(URL.createObjectURL(file));
+            setLocalPreview(URL.createObjectURL(file));
             onFileChange?.(file);
         }
     };
 
     const handleRemove = () => {
-        setPreview(null);
+        setLocalPreview(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         onFileChange?.(null);
     };
 
     const isVideo = type === 'video' || accept.includes('video');
-    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen'); 
+    const resolvedPlaceholder =
+        placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
 
     return (
         <div className="flex flex-col gap-3">
             {preview ? (
                 <>
-                    <div className={cn('relative overflow-hidden rounded-xl bg-slate-50 border border-slate-200', previewClassName)}>
+                    <div
+                        className={cn(
+                            'relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50',
+                            previewClassName,
+                        )}
+                    >
                         {isVideo ? (
                             <video
                                 src={preview}
                                 controls
-                                className="w-full h-full object-contain"
+                                className="h-full w-full object-contain"
                             />
                         ) : (
                             <img
                                 src={preview}
                                 alt="Preview"
-                                className="w-full h-full object-contain"
+                                className="h-full w-full object-contain"
                             />
                         )}
                         {onFileChange && (
                             <button
                                 type="button"
                                 onClick={handleRemove}
-                                className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-md hover:bg-black/80 transition-colors"
+                                className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-md transition-colors hover:bg-black/80"
                             >
                                 <Trash2Icon className="h-4 w-4" />
                             </button>
                         )}
                     </div>
                     {onFileChange && (
-                        <div className="flex justify-center">
+                        <div className="flex w-full justify-center">
                             <Button
                                 type="button"
                                 variant="secondary"
@@ -107,7 +114,7 @@ export function Upload({
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
                     <span className="text-sm text-slate-500">
-                         {resolvedPlaceholder}
+                        {resolvedPlaceholder}
                     </span>
                 </div>
             )}

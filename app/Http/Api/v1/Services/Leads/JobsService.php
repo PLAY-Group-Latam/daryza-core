@@ -10,11 +10,14 @@ use Illuminate\Support\Facades\DB;
 class JobsService
 {
     protected GcsService $gcsService;
+    protected LeadNotificationService $leadNotificationService;
 
-    public function __construct(GcsService $gcsService)
+    public function __construct(GcsService $gcsService, LeadNotificationService $leadNotificationService)
     {
         $this->gcsService = $gcsService;
+        $this->leadNotificationService = $leadNotificationService;
     }
+    
 
     public function save(array $data): Lead
     {
@@ -38,7 +41,9 @@ class JobsService
                 $payload['file_original_name'] = $data['cv']->getClientOriginalName();
             }
 
-            return Lead::create($payload);
+            $lead = Lead::create($payload);
+            $this->leadNotificationService->notify($lead);
+            return $lead;
         });
     }
 

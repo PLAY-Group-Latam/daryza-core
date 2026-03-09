@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Web\Controllers\Delivery\DeliverySettingController;
-use App\Http\Web\Controllers\Delivery\DeliveryZoneController;
+use App\Http\Web\Controllers\Settings\DeliverySettingController;
+use App\Http\Web\Controllers\Settings\DeliveryZoneController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -19,6 +19,5 @@ Route::middleware('auth')->group(function () {
     Route::post('delivery-settings', [DeliverySettingController::class, 'store'])
         ->name('delivery-settings.store');
 });
-
 
 

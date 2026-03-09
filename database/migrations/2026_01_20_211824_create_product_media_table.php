@@ -21,6 +21,11 @@ return new class extends Migration
             $table->boolean('is_main')->default(false); // solo aplica a imágenes
             $table->integer('order')->default(0); // ordenar en galerías
 
+            $table->index(
+                ['mediable_type', 'mediable_id', 'type', 'order'],
+                'product_media_mediable_type_id_type_order_idx'
+            );
+
             $table->timestamps();
         });
     }

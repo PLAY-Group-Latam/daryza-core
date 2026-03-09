@@ -3,15 +3,11 @@
 // import { Button } from '@/components/ui/button';
 import FormCreate from '@/components/custom-ui/products/attributes/FormCreate';
 import AppLayout from '@/layouts/app-layout';
-import { AttributeTypeOption } from '@/types/products/attributes';
 // import { CategorySelect, PaginatedProductCategories } from '@/types/products';
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 // import { Plus } from 'lucide-react';
 
 export default function Create() {
-    const { types } = usePage<{
-        types: AttributeTypeOption[];
-    }>().props;
     return (
         <AppLayout>
             <Head title="Lista de CLientes" />
@@ -31,7 +27,7 @@ export default function Create() {
                     /> */}
                 </div>
 
-                <FormCreate types={types} />
+                <FormCreate />
             </div>
         </AppLayout>
     );

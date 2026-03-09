@@ -1,6 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +11,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import attributes from '@/routes/products/attributes';
-import { Attribute, AttributeTypeOption } from '@/types/products/attributes';
+import { Attribute } from '@/types/products/attributes';
 import { useForm } from '@inertiajs/react';
 import { Info, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -28,7 +25,6 @@ interface FormData {
 }
 
 interface Props {
-    types: AttributeTypeOption[]; // Se mantiene por compatibilidad de interfaz, aunque ya no se usa el select
     attribute?: Attribute;
 }
 
@@ -235,7 +231,7 @@ export default function FormCreate({ attribute }: Props) {
                 </section>
             )}
 
-            {!isEdit && (
+            {!isEdit && !data.is_variant && (
                 <section className="rounded-xl border border-dashed border-gray-700 p-8 text-center">
                     <p className="text-sm text-muted-foreground">
                         Este atributo se guardará como{' '}

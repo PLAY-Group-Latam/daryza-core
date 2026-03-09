@@ -1,17 +1,16 @@
 'use client';
 
 import React, { ReactNode, useMemo } from 'react';
-import { 
-    Mail, Phone, User, AlertCircle, Hash, 
-    Download, MessageSquare, CreditCard, Tag, FileText, 
-    Calendar, Building2, MapPin, Briefcase, Store 
+import {
+    Mail, Phone, User, AlertCircle, Hash,
+    Download, MessageSquare, CreditCard, Tag, FileText,
+    Calendar, Building2, MapPin, Briefcase, Store
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Contact, ContactConfigMap } from '@/types/leads/contacts';
 
-// 1. Definimos qué puede hacer cada tipo de lead para ocultar elementos innecesarios
 const TYPE_CAPABILITIES: Record<Contact['type'], { hasFiles: boolean }> = {
     help_center: { hasFiles: true },
     distributor_network: { hasFiles: false },
@@ -45,7 +44,7 @@ export const CONTACT_CONFIG: ContactConfigMap = {
         { label: "Empresa", keys: ['company_name'], icon: <Building2 size={18} /> },
         { label: "DNI / RUC", keys: ['ruc_or_dni'], icon: <CreditCard size={18} /> },
         { label: "N° Vendedores", keys: ['number_of_sellers'], icon: <Briefcase size={18} /> },
-       { label: "Ubicación", keys: ['department', 'province', 'district'], icon: <MapPin size={18} />, isLocation: true },
+        { label: "Ubicación", keys: ['department', 'province', 'district'], icon: <MapPin size={18} />, isLocation: true },
         { label: "Dirección", keys: ['address'], icon: <Store size={18} /> },
         { label: "Otros Productos", keys: ['other_products'], isFullWidth: true },
     ],
@@ -62,17 +61,21 @@ export const CONTACT_CONFIG: ContactConfigMap = {
     ],
 };
 
-const getSafeValue = (claim: any, keys: string[]): string => {
+// ✅ Usamos unknown para acceder por índice de forma segura sin forzar un cast incompatible
+const getSafeValue = (claim: Contact, keys: string[]): string => {
     if (!claim) return '---';
-    
+
+    const record = claim as unknown as Record<string, unknown> & { data?: Record<string, unknown> };
+
     for (const key of keys) {
-        const val = claim[key] ?? claim.data?.[key];
+        const val = record[key] ?? record.data?.[key];
         if (val !== undefined && val !== null && val !== '' && typeof val !== 'object') {
             return String(val);
         }
     }
     return '---';
 };
+
 const formatLocation = (parts: string[]): string => {
     const validParts = parts.filter(p => p && p !== '---');
     return validParts.length > 0 ? validParts.join(', ') : '---';
@@ -85,9 +88,14 @@ interface ModalListProps {
 }
 
 export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => {
+    // ✅ Hooks SIEMPRE antes del early return — regla de hooks de React
+    const currentConfig = useMemo(
+        () => (claim ? CONTACT_CONFIG[claim.type] ?? [] : []),
+        [claim]
+    );
+
     if (!claim) return null;
 
-    const currentConfig = useMemo(() => CONTACT_CONFIG[claim.type] || [], [claim.type]);
     const statusInfo = STATUS_CONFIG[claim.status] || { label: claim.status, className: 'bg-slate-900' };
     const capabilities = TYPE_CAPABILITIES[claim.type];
 
@@ -95,7 +103,7 @@ export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => 
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-h-[90vh] w-full max-w-[95vw] overflow-y-auto border-none bg-white p-0 shadow-2xl lg:max-w-6xl dark:bg-zinc-950">
                 <div className="flex h-full flex-col lg:flex-row">
-                    
+
                     {/* ASIDE IZQUIERDO */}
                     <aside className="w-full border-b border-slate-100 bg-slate-50/50 p-6 lg:w-[35%] lg:border-r lg:border-b-0 dark:border-zinc-800 dark:bg-zinc-900/30">
                         <div className="mb-8">
@@ -106,7 +114,7 @@ export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => 
                             <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">
                                 {claim.full_name}
                             </DialogTitle>
-                            
+
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-[10px] font-bold text-white uppercase dark:bg-white dark:text-slate-900">
                                     <AlertCircle size={12} />
@@ -139,35 +147,31 @@ export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => 
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          {currentConfig.map((field, idx) => {
-    let rawValue = '---';
+                            {currentConfig.map((field, idx) => {
+                                let rawValue = '---';
 
-    if (field.isLocation) {
-        // ✅ Forzamos a que busque cada llave por separado y luego las una
-        const locationParts = field.keys.map(key => getSafeValue(claim, [key]));
-        rawValue = formatLocation(locationParts);
-    } else {
-        rawValue = getSafeValue(claim, field.keys);
-    }
+                                if (field.isLocation) {
+                                    const locationParts = field.keys.map(key => getSafeValue(claim, [key]));
+                                    rawValue = formatLocation(locationParts);
+                                } else {
+                                    rawValue = getSafeValue(claim, field.keys);
+                                }
 
-    if (field.isFullWidth) {
-        return <CommentBox key={idx} label={field.label} value={rawValue} />;
-    }
+                                if (field.isFullWidth) {
+                                    return <CommentBox key={idx} label={field.label} value={rawValue} />;
+                                }
 
-    return (
-        <InfoCard 
-            key={idx}
-            label={field.label} 
-            value={rawValue} 
-            icon={field.icon} 
-        />
-    );
-})}
+                                return (
+                                    <InfoCard
+                                        key={idx}
+                                        label={field.label}
+                                        value={rawValue}
+                                        icon={field.icon}
+                                    />
+                                );
+                            })}
                         </div>
 
-                        {/* RENDERIZADO CONDICIONAL DE ADJUNTOS: 
-                            Solo se muestra si el tipo de contacto lo soporta O si mágicamente hay un archivo 
-                        */}
                         {(capabilities.hasFiles || claim.file_path) && (
                             <footer className="mt-auto pt-12 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800">
                                 <div className="flex flex-col gap-1">
@@ -176,7 +180,7 @@ export const ModalContactList = ({ claim, isOpen, onClose }: ModalListProps) => 
                                         {claim.file_path ? claim.file_original_name || "Documentación disponible" : "Sin archivos adjuntos"}
                                     </span>
                                 </div>
-                                
+
                                 {claim.file_path && (
                                     <Button asChild size="sm" className="bg-slate-900 text-white hover:scale-105 transition-transform dark:bg-white dark:text-slate-900">
                                         <a href={claim.file_path} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
@@ -212,10 +216,10 @@ const CommentBox = ({ label, value }: { label: string; value: string }) => (
             <span className="text-[10px] font-bold uppercase tracking-tight">{label}</span>
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60 max-w-full overflow-hidden">
-            <p 
+            <p
                 className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400 break-words overflow-wrap-anywhere"
-                style={{ 
-                    wordWrap: 'break-word', 
+                style={{
+                    wordWrap: 'break-word',
                     overflowWrap: 'anywhere',
                     whiteSpace: 'pre-wrap'
                 }}

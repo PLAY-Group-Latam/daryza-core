@@ -35,6 +35,7 @@ interface MultiSelectProps {
     searchPlaceholder?: string;
     emptyMessage?: string;
     className?: string;
+    disabled?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -49,6 +50,7 @@ export function MultiSelect({
     searchPlaceholder = 'Buscar...',
     emptyMessage = 'No se encontraron resultados',
     className,
+    disabled = false,
 }: MultiSelectProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -61,11 +63,12 @@ export function MultiSelect({
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     role="combobox"
+                    disabled={disabled}
                     className={cn(
                         'h-auto w-full justify-between rounded-xl',
                         className,
@@ -73,7 +76,8 @@ export function MultiSelect({
                 >
                     {value.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                            {value.map((v) => {
+                            {/* Mostramos solo las primeras 3 etiquetas */}
+                            {value.slice(0, 3).map((v) => {
                                 const option = options.find(
                                     (o) => o.value === v,
                                 );
@@ -83,6 +87,13 @@ export function MultiSelect({
                                     </Badge>
                                 );
                             })}
+
+                            {/* Si hay más de 3, mostramos el contador */}
+                            {value.length > 3 && (
+                                <Badge variant="secondary">
+                                    +{value.length - 3}
+                                </Badge>
+                            )}
                         </div>
                     ) : (
                         <span className="text-muted-foreground">
@@ -93,7 +104,7 @@ export function MultiSelect({
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                 <Command>
                     <CommandInput placeholder={searchPlaceholder} />
                     <CommandList>

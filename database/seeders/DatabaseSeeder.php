@@ -31,7 +31,11 @@ class DatabaseSeeder extends Seeder
             ContactContentSeeder::class,
             AboutUsContentSeeder::class,
             BlogContentSeeder::class,
+            BlogSeeder::class,
             SystemAllContentSeeder::class,
+            JobsPortalSeeder::class,
+            SeoPageSeeder::class,
+            OrderDemoSeeder::class,
         ]);
     }
 }

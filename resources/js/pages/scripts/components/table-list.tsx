@@ -7,37 +7,34 @@ import { useEffect, useState } from 'react';
 import { columns } from './columns';
 import { Script } from './ScriptForm';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function TableList({ data: defaultData, meta }: { data: Script[]; meta: any }) {
     const [data, setData] = useState(() => [...defaultData]);
     const [globalFilter, setGlobalFilter] = useState('');
-    // const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    //   []
-    // )
 
     useEffect(() => {
         setData(defaultData);
     }, [defaultData]);
 
+    const handleDelete = (id: string) => {
+        setData(prev => prev.filter(s => s.id !== id));
+    };
+
     const table = useReactTable({
         data,
-        columns,
+        columns: columns(handleDelete), // ← único cambio
         state: {
             globalFilter,
             pagination: {
-                pageIndex: meta.current_page - 1, // tanstack usa base 0
+                pageIndex: meta.current_page - 1,
                 pageSize: meta.per_page,
             },
         },
         manualPagination: true,
         pageCount: meta.last_page,
-
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        // onColumnFiltersChange: setColumnFilters,
-        // getFilteredRowModel: getFilteredRowModel(),
     });
 
     return (
@@ -50,7 +47,7 @@ export function TableList({ data: defaultData, meta }: { data: Script[]; meta: a
                     className="max-w-sm"
                 />
             </div>
-            <DataTable table={table} />
+            <DataTable key={data.length} table={table} />
             <DataTablePagination table={table} meta={meta} />
         </div>
     );

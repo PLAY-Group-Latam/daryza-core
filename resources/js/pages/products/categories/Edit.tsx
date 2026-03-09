@@ -9,7 +9,6 @@ export default function Edit() {
         category: Category;
         categoriesForSelect: CategorySelect[];
     }>().props;
-    console.log(category);
     return (
         <AppLayout>
             <Head title={`Editar Categoría: ${category.name}`} />

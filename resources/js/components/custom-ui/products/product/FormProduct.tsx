@@ -2,8 +2,8 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { useEffect } from 'react';
-import { FieldErrors, FormProvider, useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
 import products from '@/routes/products';
 import { Attribute } from '@/types/products/attributes';
@@ -13,9 +13,11 @@ import { CategorySelect } from '@/types/products/categories';
 import { mapProductToForm } from './mappers';
 import { defaultValues, ProductFormValues, ProductSchema } from './schema';
 
-import { ProductEdit } from '@/types/products/productEdit';
-import { ProductRecommendable } from '@/types/products/productEdit';
-import type { Resolver } from 'react-hook-form';
+import {
+    ProductEdit,
+    ProductRecommendable,
+} from '@/types/products/productEdit';
+import type { FieldErrors, Resolver } from 'react-hook-form';
 import { GeneralSection } from './sections/GeneralSections';
 import { SidebarSection } from './sections/SidebarSections';
 import { TechnicalSheetsForm } from './Technicalsheetsform';
@@ -38,6 +40,7 @@ export default function FormProduct({
     product,
 }: Props) {
     const isEdit = Boolean(product);
+    const [showSubmitHelp, setShowSubmitHelp] = useState(false);
 
     const methods = useForm<ProductFormValues>({
         resolver: zodResolver(ProductSchema) as Resolver<ProductFormValues>,
@@ -55,6 +58,7 @@ export default function FormProduct({
     }, [product, reset]);
 
     const onSubmit = (data: ProductFormValues) => {
+        setShowSubmitHelp(false);
         const url = isEdit
             ? products.items.update(product!.id).url
             : products.items.store().url;
@@ -67,16 +71,23 @@ export default function FormProduct({
 
     const variantAttributes = attributes.filter((a) => a.is_variant);
     const specificationAttributes = attributes.filter((a) => !a.is_variant);
-    const onError = (errors: FieldErrors<ProductFormValues>) => {
-        console.log('ERRORES:', errors);
-    };
 
+    const onError = (errors: FieldErrors<ProductFormValues>) => {
+        void errors;
+        setShowSubmitHelp(true);
+    };
     return (
         <FormProvider {...methods}>
             <form
                 onSubmit={methods.handleSubmit(onSubmit, onError)}
                 className="pb-10"
             >
+                {showSubmitHelp && (
+                    <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        No se pudo guardar. Revisa los campos marcados en rojo
+                        (variantes, categorías y SEO).
+                    </p>
+                )}
                 <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_0.5fr]">
                     {/* Columna principal */}
                     <div className="space-y-10">
