@@ -16,6 +16,9 @@ class JobFactory extends Factory
     public function definition(): array
     {
         $title = fake()->sentence(4);
+        $area = Area::factory()->create();
+        $place = Place::factory()->create();
+        $place->areas()->syncWithoutDetaching([$area->id]);
 
         return [
             'title' => $title,
@@ -26,8 +29,8 @@ class JobFactory extends Factory
             'modality' => fake()->randomElement(JobModality::cases()),
             'vacancies' => fake()->numberBetween(1, 10),
             'is_active' => fake()->boolean(85),
-            'area_id' => Area::factory(),
-            'place_id' => Place::factory(),
+            'area_id' => $area->id,
+            'place_id' => $place->id,
         ];
     }
 }

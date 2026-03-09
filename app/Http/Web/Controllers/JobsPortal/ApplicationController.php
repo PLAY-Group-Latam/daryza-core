@@ -12,9 +12,7 @@ use Inertia\Response;
 
 class ApplicationController extends Controller
 {
-    public function __construct(private readonly ApplicationService $service)
-    {
-    }
+    public function __construct(private readonly ApplicationService $service) {}
 
     public function index(Request $request): Response
     {
@@ -29,7 +27,7 @@ class ApplicationController extends Controller
     public function show(Application $application): Response
     {
         return Inertia::render('jobsPortal/applications/Show', [
-            'application' => $application->load('job'),
+            'application' => $application->load('job.area', 'job.place'),
         ]);
     }
 

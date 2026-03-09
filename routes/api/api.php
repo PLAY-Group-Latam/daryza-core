@@ -12,6 +12,7 @@ Route::prefix('v1')
     require __DIR__ . '/products.php';
     require __DIR__ . '/leads.php';
     require __DIR__ . '/blogs.php';
+    require __DIR__ . '/jobs_portal.php';
     require __DIR__ . '/content.php';
     require __DIR__ . '/paymethods.php';
     require __DIR__ . '/seo.php';

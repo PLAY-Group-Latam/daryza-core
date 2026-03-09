@@ -31,6 +31,26 @@ class JobsPortalSeeder extends Seeder
             ['name' => 'Trujillo Office', 'address' => 'Av. España 200', 'city' => 'Trujillo', 'is_active' => false],
         ])->map(fn (array $payload) => Place::firstOrCreate(['name' => $payload['name']], $payload));
 
+        $placeAreaMap = [
+            'Lima HQ' => ['Technology', 'Marketing', 'Sales', 'Operations', 'Finance', 'Human Resources'],
+            'Arequipa Office' => ['Technology', 'Marketing', 'Operations'],
+            'Trujillo Office' => ['Sales', 'Operations'],
+        ];
+
+        foreach ($placeAreaMap as $placeName => $areaNames) {
+            $place = $places->firstWhere('name', $placeName);
+            if (! $place) {
+                continue;
+            }
+
+            $place->areas()->sync(
+                collect($areaNames)
+                    ->map(fn (string $areaName) => $areas[$areaName]->id)
+                    ->values()
+                    ->all()
+            );
+        }
+
         $offers = [
             [
                 'title' => 'Backend Developer Laravel',

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('title')->index();
             $table->string('slug')->unique();
+            $table->string('image_url')->nullable();
             $table->longText('description');
             $table->json('requirements');
             $table->json('benefits');

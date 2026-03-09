@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { MultiSelect } from '@/components/custom-ui/MultiSelect';
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -23,19 +24,23 @@ type Place = {
     address: string;
     city: string;
     is_active: boolean;
+    area_ids: string[];
 };
+type AreaOption = { id: string; name: string };
 
 const schema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio.'),
     address: z.string().min(1, 'La dirección es obligatoria.'),
     city: z.string().min(1, 'La ciudad es obligatoria.'),
     is_active: z.boolean(),
+    area_ids: z.array(z.string()).min(1, 'Selecciona al menos un área.'),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export default function Edit() {
-    const { place } = usePage<{ place: Place }>().props;
+    const { place, areas } = usePage<{ place: Place; areas: AreaOption[] }>()
+        .props;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -44,6 +49,7 @@ export default function Edit() {
             address: place.address,
             city: place.city,
             is_active: place.is_active,
+            area_ids: place.area_ids ?? [],
         },
     });
 
@@ -106,6 +112,29 @@ export default function Edit() {
 
                         <FormField
                             control={form.control}
+                            name="area_ids"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Áreas relacionadas</FormLabel>
+                                    <FormControl>
+                                        <MultiSelect
+                                            options={areas.map((area) => ({
+                                                label: area.name,
+                                                value: area.id,
+                                            }))}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Seleccionar áreas"
+                                            searchPlaceholder="Buscar área..."
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
                             name="is_active"
                             render={({ field }) => (
                                 <FormItem>
@@ -123,9 +152,14 @@ export default function Edit() {
                             )}
                         />
 
-                        <div className="md:col-span-2"><Button type="submit" disabled={form.formState.isSubmitting}>
-                            Actualizar
-                        </Button></div>
+                        <div className="md:col-span-2">
+                            <Button
+                                type="submit"
+                                disabled={form.formState.isSubmitting}
+                            >
+                                Actualizar
+                            </Button>
+                        </div>
                     </form>
                 </Form>
             </div>

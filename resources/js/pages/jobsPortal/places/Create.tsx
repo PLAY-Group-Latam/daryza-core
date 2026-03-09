@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { MultiSelect } from '@/components/custom-ui/MultiSelect';
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -17,16 +18,21 @@ import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 
+type AreaOption = { id: string; name: string };
+
 const schema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio.'),
     address: z.string().min(1, 'La dirección es obligatoria.'),
     city: z.string().min(1, 'La ciudad es obligatoria.'),
     is_active: z.boolean(),
+    area_ids: z.array(z.string()).min(1, 'Selecciona al menos un área.'),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export default function Create() {
+    const { areas } = usePage<{ areas: AreaOption[] }>().props;
+
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
         defaultValues: {
@@ -34,6 +40,7 @@ export default function Create() {
             address: '',
             city: '',
             is_active: true,
+            area_ids: [],
         },
     });
 
@@ -59,7 +66,10 @@ export default function Create() {
                                 <FormItem>
                                     <FormLabel>Nombre</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Ej: Sede Lima" {...field} />
+                                        <Input
+                                            placeholder="Ej: Sede Lima"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -90,7 +100,33 @@ export default function Create() {
                                 <FormItem>
                                     <FormLabel>Ciudad</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Ej: Lima" {...field} />
+                                        <Input
+                                            placeholder="Ej: Lima"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="area_ids"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Áreas relacionadas</FormLabel>
+                                    <FormControl>
+                                        <MultiSelect
+                                            options={areas.map((area) => ({
+                                                label: area.name,
+                                                value: area.id,
+                                            }))}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Seleccionar áreas"
+                                            searchPlaceholder="Buscar área..."
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -116,9 +152,14 @@ export default function Create() {
                             )}
                         />
 
-                        <div className="md:col-span-2"><Button type="submit" disabled={form.formState.isSubmitting}>
-                            Guardar
-                        </Button></div>
+                        <div className="md:col-span-2">
+                            <Button
+                                type="submit"
+                                disabled={form.formState.isSubmitting}
+                            >
+                                Guardar
+                            </Button>
+                        </div>
                     </form>
                 </Form>
             </div>

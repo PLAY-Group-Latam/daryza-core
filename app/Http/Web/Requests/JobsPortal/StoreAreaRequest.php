@@ -19,4 +19,14 @@ class StoreAreaRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre del área es obligatorio.',
+            'name.max' => 'El nombre del área no puede superar 120 caracteres.',
+            'name.unique' => 'Ya existe un área con ese nombre.',
+            'is_active.boolean' => 'El estado activo debe ser verdadero o falso.',
+        ];
+    }
 }

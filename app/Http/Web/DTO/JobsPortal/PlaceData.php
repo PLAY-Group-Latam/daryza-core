@@ -9,6 +9,7 @@ readonly class PlaceData
         public string $address,
         public string $city,
         public bool $isActive,
+        public array $areaIds,
     ) {
     }
 
@@ -19,6 +20,7 @@ readonly class PlaceData
             address: $data['address'],
             city: $data['city'],
             isActive: (bool) ($data['is_active'] ?? true),
+            areaIds: $data['area_ids'] ?? [],
         );
     }
 

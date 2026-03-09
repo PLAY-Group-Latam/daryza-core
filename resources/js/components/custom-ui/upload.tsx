@@ -13,7 +13,9 @@ interface UploadProps {
     type?: 'image' | 'video';
 }
 
-function getInitialPreview(value: File | string | null | undefined): string | null {
+function getInitialPreview(
+    value: File | string | null | undefined,
+): string | null {
     if (typeof value === 'string') return value;
     if (value instanceof File) return URL.createObjectURL(value);
     return null;
@@ -25,9 +27,11 @@ export function Upload({
     previewClassName,
     accept = 'image/*',
     placeholder,
-    type = 'image'
+    type = 'image',
 }: UploadProps) {
-    const [localPreview, setLocalPreview] = useState<string | null>(() => getInitialPreview(value));
+    const [localPreview, setLocalPreview] = useState<string | null>(() =>
+        getInitialPreview(value),
+    );
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -49,30 +53,44 @@ export function Upload({
     };
 
     const isVideo = type === 'video' || accept.includes('video');
-    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
+    const resolvedPlaceholder =
+        placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
 
     return (
         <div className="flex flex-col gap-3">
             {preview ? (
                 <>
-                    <div className={cn('relative overflow-hidden rounded-xl bg-slate-50 border border-slate-200', previewClassName)}>
+                    <div
+                        className={cn(
+                            'relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50',
+                            previewClassName,
+                        )}
+                    >
                         {isVideo ? (
-                            <video src={preview} controls className="w-full h-full object-contain" />
+                            <video
+                                src={preview}
+                                controls
+                                className="h-full w-full object-contain"
+                            />
                         ) : (
-                            <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                            <img
+                                src={preview}
+                                alt="Preview"
+                                className="h-full w-full object-contain"
+                            />
                         )}
                         {onFileChange && (
                             <button
                                 type="button"
                                 onClick={handleRemove}
-                                className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-md hover:bg-black/80 transition-colors"
+                                className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-md transition-colors hover:bg-black/80"
                             >
                                 <Trash2Icon className="h-4 w-4" />
                             </button>
                         )}
                     </div>
                     {onFileChange && (
-                        <div className="flex justify-center">
+                        <div className="flex w-full justify-center">
                             <Button
                                 type="button"
                                 variant="secondary"
@@ -95,7 +113,9 @@ export function Upload({
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
-                    <span className="text-sm text-slate-500">{resolvedPlaceholder}</span>
+                    <span className="text-sm text-slate-500">
+                        {resolvedPlaceholder}
+                    </span>
                 </div>
             )}
 
