@@ -36,7 +36,16 @@ class JobController extends Controller
     {
         return Inertia::render('jobsPortal/offers/Create', [
             'departments' => Area::query()->orderBy('name')->get(['id', 'name']),
-            'places' => Place::query()->orderBy('name')->get(['id', 'name', 'city']),
+            'places' => Place::query()
+                ->with('areas:id')
+                ->orderBy('name')
+                ->get(['id', 'name', 'city'])
+                ->map(fn (Place $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'city' => $place->city,
+                    'area_ids' => $place->areas->pluck('id')->values(),
+                ]),
             'modalities' => array_map(fn (JobModality $modality) => $modality->value, JobModality::cases()),
         ]);
     }
@@ -51,9 +60,18 @@ class JobController extends Controller
     public function edit(Job $job): Response
     {
         return Inertia::render('jobsPortal/offers/Edit', [
-            'offer' => $job,
+            'offer' => $job->load('metadata'),
             'departments' => Area::query()->orderBy('name')->get(['id', 'name']),
-            'places' => Place::query()->orderBy('name')->get(['id', 'name', 'city']),
+            'places' => Place::query()
+                ->with('areas:id')
+                ->orderBy('name')
+                ->get(['id', 'name', 'city'])
+                ->map(fn (Place $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'city' => $place->city,
+                    'area_ids' => $place->areas->pluck('id')->values(),
+                ]),
             'modalities' => array_map(fn (JobModality $modality) => $modality->value, JobModality::cases()),
         ]);
     }

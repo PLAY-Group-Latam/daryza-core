@@ -30,7 +30,7 @@ class ApplicationService
         return DB::transaction(function () use ($data) {
             Job::query()->findOrFail($data->jobId);
 
-            $cvPath = $this->cvStorageService->store($data->cv);
+            $cvPath = $this->cvStorageService->store($data->cv, $data->jobId);
 
             return Application::create([
                 'first_name' => $data->firstName,
@@ -39,7 +39,7 @@ class ApplicationService
                 'phone' => $data->phone,
                 'cv_path' => $cvPath,
                 'job_id' => $data->jobId,
-            ])->load('job');
+            ])->load('job.area', 'job.place');
         });
     }
 

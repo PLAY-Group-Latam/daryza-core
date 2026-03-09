@@ -2,9 +2,9 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { FieldErrors } from 'react-hook-form';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import type { FieldErrors } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -273,26 +273,31 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                     {/* ================= RIGHT ================= */}
                     <aside className="sticky top-24 space-y-8">
                         {/* VISIBILITY */}
-                        <Controller
-                            name="visibility"
-                            control={control}
-                            render={({ field }) => (
-                                <div className="flex items-center justify-between rounded-2xl border p-4">
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Visibilidad
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Blog visible al público
-                                        </p>
+                        <div className="space-y-2">
+                            <p className="mb-4 text-xs font-bold tracking-widest uppercase">
+                                ● Estado
+                            </p>
+                            <Controller
+                                name="visibility"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex items-center justify-between rounded-2xl border p-4">
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Visibilidad
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Blog visible al público
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
                                     </div>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </div>
-                            )}
-                        />
+                                )}
+                            />
+                        </div>
                         {/* CATEGORIES */}
                         <div className="space-y-2">
                             <p className="text-xs font-bold tracking-widest uppercase">

@@ -5,6 +5,7 @@ namespace App\Models\JobsPortal;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Place extends Model
@@ -32,6 +33,11 @@ class Place extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class, 'place_id');
+    }
+
+    public function areas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'area_place', 'place_id', 'area_id')->withTimestamps();
     }
 
     public function scopeSearch($query, ?string $search)

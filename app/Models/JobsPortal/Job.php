@@ -3,11 +3,13 @@
 namespace App\Models\JobsPortal;
 
 use App\Enums\JobModality;
+use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Job extends Model
 {
@@ -23,6 +25,7 @@ class Job extends Model
     protected $fillable = [
         'title',
         'slug',
+        'image_url',
         'description',
         'requirements',
         'benefits',
@@ -56,6 +59,11 @@ class Job extends Model
         return $this->hasMany(Application::class, 'job_id');
     }
 
+    public function metadata(): MorphOne
+    {
+        return $this->morphOne(Metadata::class, 'metadatable');
+    }
+
     public function scopeSearch($query, ?string $search)
     {
         if (! $search) {
@@ -66,7 +74,8 @@ class Job extends Model
 
         return $query->where(function ($q) use ($term) {
             $q->where('title', 'like', $term)
-                ->orWhere('description', 'like', $term);
+                ->orWhere('description', 'like', $term)
+                ->orWhere('slug', 'like', $term);
         });
     }
 
@@ -80,6 +89,20 @@ class Job extends Model
         return $placeId ? $query->where('place_id', $placeId) : $query;
     }
 
+    public function scopeByLocation($query, ?string $location)
+    {
+        if (! $location) {
+            return $query;
+        }
+
+        $term = '%' . trim($location) . '%';
+
+        return $query->whereHas('place', function ($q) use ($term) {
+            $q->where('city', 'like', $term)
+                ->orWhere('name', 'like', $term);
+        });
+    }
+
     public function scopeByModality($query, ?string $modality)
     {
         return $modality ? $query->where('modality', $modality) : $query;
@@ -88,6 +111,14 @@ class Job extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopePublicVisible($query)
+    {
+        return $query
+            ->where('is_active', true)
+            ->whereHas('area', fn ($q) => $q->where('is_active', true))
+            ->whereHas('place', fn ($q) => $q->where('is_active', true));
     }
 
     public function scopeByIsActive($query, bool|int|string|null $isActive)

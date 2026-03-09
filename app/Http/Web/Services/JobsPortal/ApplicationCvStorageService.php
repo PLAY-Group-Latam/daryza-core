@@ -2,15 +2,22 @@
 
 namespace App\Http\Web\Services\JobsPortal;
 
+use App\Http\Web\Services\GcsService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class ApplicationCvStorageService
 {
-    public function store(UploadedFile $file): string
+    public function __construct(private readonly GcsService $gcsService)
+    {
+    }
+
+    public function store(UploadedFile $file, ?string $jobId = null): string
     {
         $originalName = basename($file->getClientOriginalName());
+        $directory = $jobId
+            ? "jobs-portal/applications/cv/{$jobId}"
+            : 'jobs-portal/applications/cv';
 
-        return Storage::disk('public')->putFileAs('applications/cv', $file, $originalName);
+        return $this->gcsService->uploadFile($file, $directory, $originalName);
     }
 }

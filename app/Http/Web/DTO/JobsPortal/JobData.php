@@ -3,12 +3,14 @@
 namespace App\Http\Web\DTO\JobsPortal;
 
 use App\Enums\JobModality;
+use Illuminate\Http\UploadedFile;
 
 readonly class JobData
 {
     public function __construct(
         public string $title,
         public string $slug,
+        public ?UploadedFile $image,
         public string $description,
         public array $requirements,
         public array $benefits,
@@ -17,6 +19,7 @@ readonly class JobData
         public bool $isActive,
         public string $areaId,
         public string $placeId,
+        public array $metadata,
     ) {
     }
 
@@ -25,6 +28,7 @@ readonly class JobData
         return new self(
             title: $data['title'],
             slug: $data['slug'],
+            image: $data['image'] ?? null,
             description: $data['description'],
             requirements: $data['requirements'],
             benefits: $data['benefits'],
@@ -33,6 +37,7 @@ readonly class JobData
             isActive: (bool) ($data['is_active'] ?? true),
             areaId: $data['area_id'],
             placeId: $data['place_id'],
+            metadata: $data['metadata'] ?? [],
         );
     }
 
@@ -49,6 +54,7 @@ readonly class JobData
             'is_active' => $this->isActive,
             'area_id' => $this->areaId,
             'place_id' => $this->placeId,
+            'metadata' => $this->metadata,
         ];
     }
 }

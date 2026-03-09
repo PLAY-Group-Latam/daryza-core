@@ -22,7 +22,7 @@ class PublicJobController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['search', 'area_id', 'place_id', 'modality']);
+        $filters = $request->only(['search', 'q', 'location', 'area_id', 'place_id', 'modality']);
         $jobs = $this->jobService->paginate($filters, (int) $request->input('per_page', 15), true);
 
         return response()->json([

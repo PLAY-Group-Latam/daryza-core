@@ -23,4 +23,9 @@ class UpdateAreaRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
         ];
     }
+
+    public function messages(): array
+    {
+        return (new StoreAreaRequest())->messages();
+    }
 }

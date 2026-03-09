@@ -13,7 +13,7 @@ class AreaService
         return Area::query()
             ->search($filters['search'] ?? null)
             ->byIsActive($filters['is_active'] ?? null)
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->paginate($perPage)
             ->withQueryString();
     }

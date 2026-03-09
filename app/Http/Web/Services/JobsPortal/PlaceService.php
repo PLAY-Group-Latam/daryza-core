@@ -20,14 +20,18 @@ class PlaceService
 
     public function create(PlaceData $data): Place
     {
-        return Place::create($data->toArray());
+        $place = Place::create($data->toArray());
+        $place->areas()->sync($data->areaIds);
+
+        return $place->load('areas');
     }
 
     public function update(Place $place, PlaceData $data): Place
     {
         $place->update($data->toArray());
+        $place->areas()->sync($data->areaIds);
 
-        return $place->refresh();
+        return $place->refresh()->load('areas');
     }
 
     public function delete(Place $place): void

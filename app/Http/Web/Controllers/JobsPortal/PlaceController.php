@@ -7,6 +7,7 @@ use App\Http\Web\DTO\JobsPortal\PlaceData;
 use App\Http\Web\Requests\JobsPortal\StorePlaceRequest;
 use App\Http\Web\Requests\JobsPortal\UpdatePlaceRequest;
 use App\Http\Web\Services\JobsPortal\PlaceService;
+use App\Models\JobsPortal\Area;
 use App\Models\JobsPortal\Place;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,9 @@ class PlaceController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('jobsPortal/places/Create');
+        return Inertia::render('jobsPortal/places/Create', [
+            'areas' => Area::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function store(StorePlaceRequest $request): RedirectResponse
@@ -44,7 +47,11 @@ class PlaceController extends Controller
     public function edit(Place $place): Response
     {
         return Inertia::render('jobsPortal/places/Edit', [
-            'place' => $place,
+            'place' => [
+                ...$place->toArray(),
+                'area_ids' => $place->areas()->pluck('areas.id')->values(),
+            ],
+            'areas' => Area::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

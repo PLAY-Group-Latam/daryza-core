@@ -11,7 +11,15 @@ type Application = {
     email: string;
     phone: string;
     cv_path: string;
-    job?: { id: string; title: string; slug: string };
+    job?: {
+        id: string;
+        title: string;
+        slug: string;
+        modality?: string | null;
+        vacancies?: number | null;
+        area?: { id: string; name: string } | null;
+        place?: { id: string; name: string; city: string; address?: string | null } | null;
+    };
 };
 
 export default function Show() {
@@ -19,6 +27,14 @@ export default function Show() {
     const fullName = `${application.first_name} ${application.last_name}`;
     const initials =
         `${application.first_name?.[0] ?? ''}${application.last_name?.[0] ?? ''}`.toUpperCase();
+    const cvUrl = application.cv_path.startsWith('http')
+        ? application.cv_path
+        : `/storage/${application.cv_path}`;
+    const modalityLabel: Record<string, string> = {
+        on_site: 'Presencial',
+        remote: 'Remoto',
+        hybrid: 'Híbrido',
+    };
 
     return (
         <AppLayout>
@@ -57,7 +73,7 @@ export default function Show() {
                                 asChild
                             >
                                 <a
-                                    href={`/storage/${application.cv_path}`}
+                                    href={cvUrl}
                                     target="_blank"
                                     rel="noreferrer"
                                 >
@@ -122,6 +138,25 @@ export default function Show() {
                                     {application.job?.title ?? 'No disponible'}
                                 </p>
                             </div>
+                            <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Área
+                                </p>
+                                <p className="mt-1 text-sm">
+                                    {application.job?.area?.name ?? 'No disponible'}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Sede
+                                </p>
+                                <p className="mt-1 text-sm">
+                                    {application.job?.place?.name ?? 'No disponible'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {application.job?.place?.city ?? '-'}
+                                </p>
+                            </div>
                         </div>
                     </section>
 
@@ -155,6 +190,18 @@ export default function Show() {
                                 </p>
                                 <p className="mt-1 font-mono text-sm">
                                     {application.job?.slug ?? '-'}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Modalidad y vacantes
+                                </p>
+                                <p className="mt-1 text-sm">
+                                    {application.job?.modality
+                                        ? modalityLabel[application.job.modality] ?? application.job.modality
+                                        : 'No disponible'}
+                                    {' · '}
+                                    {application.job?.vacancies ?? '-'} vacante(s)
                                 </p>
                             </div>
                         </div>
