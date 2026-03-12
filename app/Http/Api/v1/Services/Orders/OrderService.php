@@ -3,13 +3,12 @@
 namespace App\Http\Api\v1\Services\Orders;
 
 use App\Http\Api\v1\Services\GcsService;
-use App\Http\Api\v1\Services\Payments\NiubizService;
 use App\Models\Orders\Order;
+use App\Models\Orders\OrderPaymentAttempt;
 use App\Models\Products\ProductVariant;
 use App\Models\Customers\Customer;
 use App\Models\Settings\DeliverySetting;
 use App\Models\Settings\DeliveryZone;
-use App\Models\Settings\PaymentMethod;
 use App\Models\Ubigeos\Department;
 use App\Models\Ubigeos\District;
 use App\Models\Ubigeos\Province;
@@ -22,11 +21,10 @@ use Illuminate\Support\Str;
 class OrderService
 {
     public function __construct(
-        protected GcsService $gcsService,
-        protected NiubizService $niubizService
+        protected GcsService $gcsService
     ) {}
 
-    public function preview(array $payload): array
+    public function validateOrder(array $payload): array
     {
         $items = $this->normalizeItems($payload['items']);
         $variants = $this->resolveVariants($items);
@@ -66,7 +64,6 @@ class OrderService
             );
 
             $paymentInfo = $payload['payment_info'];
-            $selectedPaymentMethod = $this->resolvePaymentMethod($paymentInfo);
             // Niubiz debe confirmarse por validacion server-to-server, no por payload del cliente.
             $isNiubizApproved = false;
 
@@ -106,7 +103,7 @@ class OrderService
                 'discount_total' => 0,
                 'total' => $subtotal + $shipping['delivery_cost'],
 
-                'payment_method_id' => $selectedPaymentMethod?->id,
+                'payment_method_id' => null,
                 'payment_method_type' => $paymentInfo['method'],
                 'status' => 'pending',
                 'payment_status' => $isNiubizApproved ? 'approved' : 'pending',
@@ -145,15 +142,15 @@ class OrderService
             }
 
             $payment = $order->payments()->create([
-                'payment_method_id' => $selectedPaymentMethod?->id,
+                'payment_method_id' => null,
                 'method' => $paymentInfo['method'],
                 'status' => $isNiubizApproved ? 'approved' : 'pending',
                 'amount' => $order->total,
-                'gateway_transaction_id' => data_get($paymentInfo, 'niubiz.transaction_id'),
-                'gateway_authorization_code' => data_get($paymentInfo, 'niubiz.authorization_code'),
-                'gateway_brand' => data_get($paymentInfo, 'niubiz.brand'),
-                'gateway_masked_card' => data_get($paymentInfo, 'niubiz.masked_card'),
-                'gateway_payload' => data_get($paymentInfo, 'niubiz.payload'),
+                'gateway_transaction_id' => null,
+                'gateway_authorization_code' => null,
+                'gateway_brand' => null,
+                'gateway_masked_card' => null,
+                'gateway_payload' => null,
                 'paid_at' => $isNiubizApproved ? now() : null,
             ]);
 
@@ -262,78 +259,88 @@ class OrderService
             throw new \InvalidArgumentException('La orden no usa método de pago Niubiz.');
         }
 
-        $confirmation = $this->niubizService->confirmAuthorization($purchaseNumber);
+        if ($purchaseNumber !== $order->code) {
+            throw new \InvalidArgumentException('El purchase_number no corresponde a la orden.');
+        }
 
-        return DB::transaction(function () use ($order, $customerId, $confirmation) {
-            $order = Order::query()->with(['payments'])->lockForUpdate()->findOrFail($order->id);
-            $this->ensureOwnership($order, $customerId);
-
-            $payment = $order->payments()->latest()->first();
-
-            if (!$payment) {
-                throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
-            }
-
-            if ($confirmation['is_approved']) {
-                $alreadyApproved = $order->payment_status === 'approved';
-
-                $orderPayload = [
-                    'payment_status' => 'approved',
-                    'paid_at' => $order->paid_at ?? now(),
-                ];
-
-                if ($order->status === 'pending') {
-                    $orderPayload['status'] = 'confirmed';
-                    $orderPayload['confirmed_at'] = $order->confirmed_at ?? now();
-                }
-
-                $order->update($orderPayload);
-
-                $payment->update([
-                    'status' => 'approved',
-                    'paid_at' => $payment->paid_at ?? now(),
-                    'gateway_transaction_id' => $confirmation['transaction_id'],
-                    'gateway_authorization_code' => $confirmation['authorization_code'],
-                    'gateway_brand' => $confirmation['brand'],
-                    'gateway_masked_card' => $confirmation['masked_card'],
-                    'gateway_payload' => $confirmation['raw'],
-                ]);
-
-                if (!$alreadyApproved) {
-                    $this->registerStatusHistory(
-                        $order,
-                        null,
-                        'payment:approved',
-                        'customer',
-                        $customerId,
-                        'Pago confirmado por Niubiz'
-                    );
-                }
-            } else {
-                $order->update(['payment_status' => 'rejected']);
-
-                $payment->update([
-                    'status' => 'rejected',
-                    'rejected_at' => now(),
-                    'gateway_transaction_id' => $confirmation['transaction_id'],
-                    'gateway_authorization_code' => $confirmation['authorization_code'],
-                    'gateway_brand' => $confirmation['brand'],
-                    'gateway_masked_card' => $confirmation['masked_card'],
-                    'gateway_payload' => $confirmation['raw'],
-                ]);
-
-                $this->registerStatusHistory(
-                    $order,
-                    null,
-                    'payment:rejected',
-                    'customer',
-                    $customerId,
-                    $confirmation['response_message'] ?: 'Pago rechazado por Niubiz'
-                );
-            }
-
+        if ($order->payment_status === 'approved') {
             return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
-        });
+        }
+
+        $latestAttempt = OrderPaymentAttempt::query()
+            ->where('purchase_number', $purchaseNumber)
+            ->where(function ($query) use ($order) {
+                $query->where('order_id', $order->id)->orWhereNull('order_id');
+            })
+            ->latest()
+            ->first();
+
+        if ($latestAttempt && in_array($latestAttempt->status, ['processing', 'completed'], true)) {
+            return DB::transaction(function () use ($order, $customerId, $latestAttempt) {
+                $order = Order::query()->with(['payments'])->lockForUpdate()->findOrFail($order->id);
+                $this->ensureOwnership($order, $customerId);
+
+                if ($latestAttempt->status === 'processing') {
+                    return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
+                }
+
+                $payment = $order->payments()->latest()->first();
+                if (!$payment) {
+                    throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
+                }
+
+                if ((bool) $latestAttempt->is_approved) {
+                    $alreadyApproved = $order->payment_status === 'approved';
+                    $orderPayload = [
+                        'payment_status' => 'approved',
+                        'paid_at' => $order->paid_at ?? $latestAttempt->processed_at ?? now(),
+                    ];
+
+                    if ($order->status === 'pending') {
+                        $orderPayload['status'] = 'confirmed';
+                        $orderPayload['confirmed_at'] = $order->confirmed_at ?? $latestAttempt->processed_at ?? now();
+                    }
+
+                    $order->update($orderPayload);
+
+                    $payment->update([
+                        'status' => 'approved',
+                        'paid_at' => $payment->paid_at ?? $latestAttempt->processed_at ?? now(),
+                        'gateway_transaction_id' => $latestAttempt->transaction_id,
+                        'gateway_authorization_code' => $latestAttempt->authorization_code,
+                        'gateway_brand' => $latestAttempt->brand,
+                        'gateway_masked_card' => $latestAttempt->masked_card,
+                        'gateway_payload' => $latestAttempt->niubiz_payload,
+                    ]);
+
+                    if (!$alreadyApproved) {
+                        $this->registerStatusHistory(
+                            $order,
+                            null,
+                            'payment:approved',
+                            'customer',
+                            $customerId,
+                            'Pago confirmado por intento idempotente Niubiz'
+                        );
+                    }
+                } else {
+                    $order->update(['payment_status' => 'rejected']);
+                    $payment->update([
+                        'status' => 'rejected',
+                        'rejected_at' => $payment->rejected_at ?? $latestAttempt->processed_at ?? now(),
+                        'gateway_transaction_id' => $latestAttempt->transaction_id,
+                        'gateway_authorization_code' => $latestAttempt->authorization_code,
+                        'gateway_brand' => $latestAttempt->brand,
+                        'gateway_masked_card' => $latestAttempt->masked_card,
+                        'gateway_payload' => $latestAttempt->niubiz_payload,
+                    ]);
+                }
+
+                return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
+            });
+        }
+
+        return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
     }
 
     public function updateOrderStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
@@ -588,35 +595,6 @@ class OrderService
         }
     }
 
-    private function resolvePaymentMethod(array $paymentInfo): ?PaymentMethod
-    {
-        $method = $paymentInfo['method'];
-        $paymentMethodId = data_get($paymentInfo, 'payment_method_id');
-
-        if ($method === 'niubiz') {
-            if ($paymentMethodId) {
-                throw new \InvalidArgumentException('Niubiz no debe enviar payment_method_id.');
-            }
-
-            return null;
-        }
-
-        if (!$paymentMethodId) {
-            return null;
-        }
-
-        $paymentMethod = PaymentMethod::query()
-            ->where('id', $paymentMethodId)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$paymentMethod) {
-            throw new \InvalidArgumentException('La cuenta bancaria seleccionada no existe o está inactiva.');
-        }
-
-        return $paymentMethod;
-    }
-
     private function restoreStockForOrder(Order $order): void
     {
         foreach ($order->items as $item) {
@@ -739,10 +717,9 @@ class OrderService
 
     private function generateOrderCode(): string
     {
-        $date = now()->format('Ymd');
-
         for ($i = 0; $i < 5; $i++) {
-            $code = 'ORD-' . $date . '-' . strtoupper(Str::random(4));
+            $numericPart = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
+            $code = 'DAR-' . $numericPart;
 
             if (!Order::query()->where('code', $code)->exists()) {
                 return $code;

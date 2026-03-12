@@ -4,7 +4,7 @@ namespace App\Http\Api\v1\Requests\Orders;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class PreviewOrderRequest extends FormRequest
+class ValidateOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
