@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Web\Controllers\Dashboard\DashBoardController;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
@@ -11,11 +12,9 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    // Cambiamos la función por el controlador
+    Route::get('dashboard', [DashBoardController::class, 'index'])->name('dashboard');
 });
-
 require __DIR__ . '/settings.php';
 require __DIR__ . '/users.php';
 require __DIR__ . '/customers.php';
