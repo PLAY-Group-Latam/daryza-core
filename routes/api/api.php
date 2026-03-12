@@ -23,4 +23,5 @@ Route::prefix('v1')
 Route::prefix('v1')
   ->group(function () {
     require __DIR__ . '/script.php';
+    require __DIR__ . '/niubiz.php';
   });

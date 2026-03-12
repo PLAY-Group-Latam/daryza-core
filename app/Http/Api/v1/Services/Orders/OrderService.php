@@ -167,18 +167,6 @@ class OrderService
 
             $this->registerStatusHistory($order, null, 'pending', 'customer', $customer->id, 'Orden creada');
 
-            $customerUpdates = [
-                'full_name' => trim($customerInfo['first_name'] . ' ' . $customerInfo['last_name']),
-                'email' => strtolower(trim($customerInfo['email'])),
-                'phone' => trim($customerInfo['mobile_phone']),
-            ];
-
-            if ($customerInfo['document_type'] === 'dni') {
-                $customerUpdates['dni'] = trim($customerInfo['document_number']);
-            }
-
-            $customer->update($customerUpdates);
-
             return $order->load([
                 'items',
                 'payments',
@@ -254,6 +242,13 @@ class OrderService
             'voucher_url' => $url,
             'voucher_uploaded_at' => now(),
             'status' => 'pending',
+            'paid_at' => null,
+            'rejected_at' => null,
+        ]);
+
+        $order->update([
+            'payment_status' => 'pending',
+            'paid_at' => null,
         ]);
 
         return $order->fresh(['payments', 'items', 'statusHistory']);
@@ -607,7 +602,7 @@ class OrderService
         }
 
         if (!$paymentMethodId) {
-            throw new \InvalidArgumentException('Debe seleccionar una cuenta bancaria activa para transferencia.');
+            return null;
         }
 
         $paymentMethod = PaymentMethod::query()
