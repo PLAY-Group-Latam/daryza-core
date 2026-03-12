@@ -105,19 +105,25 @@ class ProductService
   // Metadata SEO
   // =========================================================================
 
-  protected function createMetadata(Product $product, array $metadata): void
-  {
-    $product->metadata()->create([
-      'meta_title'       => $metadata['meta_title'] ?? $product->name,
-      'meta_description' => $metadata['meta_description'] ?? $product->brief_description,
-      'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
-      'og_title'         => $metadata['og_title'] ?? $product->name,
-      'og_description'   => $metadata['og_description'] ?? $product->brief_description,
-      'og_type'          => OgType::PRODUCT,
-      'noindex'          => $metadata['noindex'] ?? false,
-      'nofollow'         => $metadata['nofollow'] ?? false,
-    ]);
-  }
+ protected function createMetadata(Product $product, array $metadata): void
+{
+    $product->metadata()->updateOrCreate(
+        [
+            'metadatable_id'   => $product->id,
+            'metadatable_type' => Product::class,
+        ],
+        [
+            'meta_title'       => $metadata['meta_title'] ?? $product->name,
+            'meta_description' => $metadata['meta_description'] ?? $product->brief_description,
+            'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
+            'og_title'         => $metadata['og_title'] ?? $product->name,
+            'og_description'   => $metadata['og_description'] ?? $product->brief_description,
+            'og_type'          => OgType::PRODUCT,
+            'noindex'          => $metadata['noindex'] ?? false,
+            'nofollow'         => $metadata['nofollow'] ?? false,
+        ]
+    );
+}
 
   protected function syncMetadata(Product $product, array $metadata): void
   {
