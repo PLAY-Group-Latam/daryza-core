@@ -17,6 +17,11 @@ class Order extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = [
+        'has_voucher',
+        'payment_status_detail',
+    ];
+
     protected $fillable = [
         'code',
         'customer_id',
@@ -106,5 +111,27 @@ class Order extends Model
     public function canBeCancelledByCustomer(): bool
     {
         return in_array($this->status, ['pending', 'confirmed'], true);
+    }
+
+    public function getHasVoucherAttribute(): bool
+    {
+        $payment = $this->relationLoaded('payments')
+            ? $this->payments->sortByDesc('created_at')->first()
+            : $this->payments()->latest()->first();
+
+        return (string) ($payment?->voucher_url ?? '') !== '';
+    }
+
+    public function getPaymentStatusDetailAttribute(): ?string
+    {
+        if ($this->payment_method_type !== 'bank_transfer') {
+            return null;
+        }
+
+        if ($this->payment_status !== 'pending') {
+            return null;
+        }
+
+        return $this->has_voucher ? 'voucher_uploaded_pending_review' : 'no_voucher_uploaded';
     }
 }
