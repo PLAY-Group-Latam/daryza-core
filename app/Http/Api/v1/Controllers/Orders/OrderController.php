@@ -4,9 +4,9 @@ namespace App\Http\Api\v1\Controllers\Orders;
 
 use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Orders\CancelOrderRequest;
-use App\Http\Api\v1\Requests\Orders\PreviewOrderRequest;
 use App\Http\Api\v1\Requests\Orders\StoreOrderRequest;
 use App\Http\Api\v1\Requests\Orders\UploadPaymentProofRequest;
+use App\Http\Api\v1\Requests\Orders\ValidateOrderRequest;
 use App\Http\Api\v1\Requests\Payments\ConfirmNiubizPaymentRequest;
 use App\Http\Api\v1\Services\Orders\OrderService;
 use App\Models\Orders\Order;
@@ -16,12 +16,12 @@ class OrderController extends Controller
 {
     public function __construct(protected OrderService $orderService) {}
 
-    public function preview(PreviewOrderRequest $request)
+    public function validateOrder(ValidateOrderRequest $request)
     {
         try {
-            $quote = $this->orderService->preview($request->validated());
+            $quote = $this->orderService->validateOrder($request->validated());
 
-            return $this->success('Preview de orden generado correctamente.', $quote);
+            return $this->success('Validación de orden generada correctamente.', $quote);
         } catch (\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), null, 422);
         }

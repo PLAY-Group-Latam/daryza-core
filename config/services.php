@@ -48,6 +48,7 @@ return [
         'api_url' => env('NIUBIZ_API_URL', env('NIUBIZ_BASE_URL', 'https://apiprod.vnforapps.com')),
         'base_url' => env('NIUBIZ_API_URL', env('NIUBIZ_BASE_URL', 'https://apiprod.vnforapps.com')),
         'resolve_ip' => env('NIUBIZ_RESOLVE_IP'),
+        'debug' => env('NIUBIZ_DEBUG', false),
         'merchant_id' => env('NIUBIZ_MERCHANT_ID'),
         'user' => env('NIUBIZ_USER', env('NIUBIZ_USERNAME')),
         'username' => env('NIUBIZ_USERNAME'),
