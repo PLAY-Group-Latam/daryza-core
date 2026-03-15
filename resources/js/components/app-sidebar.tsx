@@ -24,6 +24,7 @@ import {
     LayoutTemplate,
     Newspaper,
     User,
+    MapPin,
     Users,Store,Truck, CreditCard, SearchCheck, FileCode
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -142,6 +143,11 @@ const mainNavItems: NavItem[] = [
         title: 'Contenido General',
         href: '/content/items',
         icon: LayoutTemplate,
+    },
+    {
+        title:'Distribuidores Autorizados',
+        href:'/distributors',
+        icon: MapPin ,
     },
 
     {

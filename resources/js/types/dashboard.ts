@@ -6,6 +6,7 @@ export interface KPIData {
     salesGrowth: number; // Nuevo campo para crecimiento de ventas
     ordersGrowth: number; // Nuevo campo para crecimiento de órdenes
     ticketGrowth: number; // Nuevo campo para crecimiento del ticket promedio
+    conversionGrowth:number;
 }
 
 export interface SalesData {

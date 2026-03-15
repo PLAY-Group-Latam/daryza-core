@@ -195,18 +195,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                   locale={es}
                 />
               </div>
-              {showCompare && (
-                <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-                   <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="compare" 
-                      checked={!!rangeCompare} 
-                      onCheckedChange={(checked) => setRangeCompare(checked ? { from: new Date(), to: new Date() } : undefined)} 
-                    />
-                    <Label htmlFor="compare">Comparar con periodo anterior</Label>
-                   </div>
-                </div>
-              )}
+              
               <div className="p-4 border-t border-border flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancelar</Button>
                 <Button onClick={() => {

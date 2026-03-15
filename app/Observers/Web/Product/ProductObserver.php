@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
 
 class ProductObserver
 {
+    public static bool $muteNotifications = false;
+
+
     public function creating(Product $product): void
     {
         if (empty($product->code)) {
@@ -25,7 +28,9 @@ class ProductObserver
     }
 
    public function created(Product $product): void
+
 {
+     if (static::$muteNotifications) return;
     DB::afterCommit(function () use ($product) {
         app(NotificationService::class)->notifyNewProduct($product->fresh());
     });
