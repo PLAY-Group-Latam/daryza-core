@@ -12,4 +12,7 @@ export interface Distributor {
         lat: number
         lng: number
     }
+
+    created_at:string;
+    updated_at:string;
 }
