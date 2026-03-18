@@ -3,14 +3,12 @@
 namespace App\Http\Api\v1\Controllers\Payments;
 
 use App\Http\Api\v1\Controllers\Controller;
-use App\Models\Orders\OrderPaymentAttempt;
 use App\Http\Api\v1\Services\Payments\NiubizService;
 use App\Models\Orders\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
 
 class PaymentController extends Controller
 {
@@ -19,24 +17,45 @@ class PaymentController extends Controller
     public function createSession(Request $request): JsonResponse
     {
         $payload = $request->validate([
-            'purchaseNumber' => ['required', 'string', 'max:40'],
+            'purchaseNumber' => ['nullable', 'string', 'max:40'],
+            'purchase_number' => ['nullable', 'string', 'max:40'],
+            'antifraud' => ['required', 'array'],
+            'antifraud.clientIp' => ['nullable', 'ip'],
+            'antifraud.merchantDefineData' => ['required', 'array'],
+            'dataMap' => ['required', 'array'],
         ]);
 
         try {
             $customerId = (string) auth('api')->id();
-            $purchaseNumber = (string) $payload['purchaseNumber'];
+            $purchaseNumber = (string) ($payload['purchaseNumber'] ?? $payload['purchase_number'] ?? '');
+            if ($purchaseNumber === '') {
+                return $this->error('purchaseNumber o purchase_number es requerido.', null, 422);
+            }
             $order = $this->findNiubizOrderOrFail($customerId, $purchaseNumber);
             $this->assertOrderCanStartNiubiz($order);
+            $purchaseNumberForNiubiz = (string) ($order->niubiz_purchase_number ?? '');
+            if ($purchaseNumberForNiubiz === '') {
+                $purchaseNumberForNiubiz = preg_replace('/\D/', '', $order->code);
+            }
+            if ($purchaseNumberForNiubiz === '' || strlen($purchaseNumberForNiubiz) > 12) {
+                return $this->error('El purchaseNumber para Niubiz debe ser numérico y máximo 12 dígitos.', null, 422);
+            }
+            if ($order->niubiz_purchase_number !== $purchaseNumberForNiubiz) {
+                $order->update(['niubiz_purchase_number' => $purchaseNumberForNiubiz]);
+            }
 
             $session = $this->niubizService->createSession(
-                $purchaseNumber,
+                $purchaseNumberForNiubiz,
                 (float) $order->total,
-                strtoupper((string) ($order->currency ?: 'PEN'))
+                strtoupper((string) ($order->currency ?: 'PEN')),
+                (array) ($payload['antifraud'] ?? []),
+                (array) ($payload['dataMap'] ?? [])
             );
 
             return $this->success('Sesión de Niubiz creada correctamente.', [
                 'sessionKey' => $session['session_key'],
-                'purchaseNumber' => $purchaseNumber,
+                'purchaseNumber' => $purchaseNumberForNiubiz,
+                'orderCode' => $order->code,
                 'amount' => (float) $order->total,
                 'currency' => strtoupper((string) ($order->currency ?: 'PEN')),
             ]);
@@ -53,20 +72,32 @@ class PaymentController extends Controller
     public function confirmPayment(Request $request): JsonResponse
     {
         $payload = $request->validate([
-            'transactionToken' => ['required', 'string', 'max:255'],
-            'purchaseNumber' => ['required', 'string', 'max:40'],
+            'transactionToken' => ['nullable', 'string', 'max:255'],
+            'transaction_token' => ['nullable', 'string', 'max:255'],
+            'purchaseNumber' => ['nullable', 'string', 'max:40'],
+            'purchase_number' => ['nullable', 'string', 'max:40'],
+            'dataMap' => ['sometimes', 'array'],
         ]);
 
         $customerId = (string) auth('api')->id();
-        $transactionToken = (string) $payload['transactionToken'];
-        $purchaseNumber = (string) $payload['purchaseNumber'];
+        $transactionToken = (string) ($payload['transactionToken'] ?? $payload['transaction_token'] ?? '');
+        $purchaseNumber = (string) ($payload['purchaseNumber'] ?? $payload['purchase_number'] ?? '');
+        if ($transactionToken === '' || $purchaseNumber === '') {
+            return $this->error('transactionToken/transaction_token y purchaseNumber/purchase_number son requeridos.', null, 422);
+        }
         $order = $this->findNiubizOrderOrFail($customerId, $purchaseNumber);
         $this->assertOrderCanConfirmNiubiz($order);
+        $purchaseNumberForNiubiz = (string) ($order->niubiz_purchase_number ?? '');
+        if ($purchaseNumberForNiubiz === '') {
+            $purchaseNumberForNiubiz = preg_replace('/\D/', '', $order->code);
+            $order->update(['niubiz_purchase_number' => $purchaseNumberForNiubiz]);
+        }
+        if ($purchaseNumberForNiubiz === '' || strlen($purchaseNumberForNiubiz) > 12) {
+            return $this->error('El purchaseNumber para Niubiz debe ser numérico y máximo 12 dígitos.', null, 422);
+        }
 
         if ($order->payment_status === 'approved') {
             return $this->success('La orden ya tiene pago aprobado.', [
-                'payment_attempt_id' => null,
-                'attempt_status' => 'completed',
                 'is_approved' => true,
                 'authorization_code' => null,
                 'transaction_id' => null,
@@ -79,47 +110,21 @@ class PaymentController extends Controller
             ]);
         }
 
-        $attemptData = $this->getOrCreatePaymentAttempt(
-            $order,
-            $purchaseNumber,
-            $transactionToken
-        );
-
-        /** @var OrderPaymentAttempt $attempt */
-        $attempt = $attemptData['attempt'];
-
-        if (!$attemptData['is_new']) {
-            Log::info('niubiz.idempotency_blocked', [
-                'order_id' => $attempt->order_id,
-                'payment_attempt_id' => $attempt->id,
-                'transaction_token' => $attempt->transaction_token,
-                'status' => $attempt->status,
-                'already_authorized' => $attempt->status === 'completed' && (bool) $attempt->is_approved,
-                'timestamp' => now()->toDateTimeString(),
-            ]);
-
-            return $this->success(
-                'Confirmación ya procesada para este intento de pago.',
-                $this->buildAttemptResult($attempt)
-            );
-        }
-
         try {
             Log::info('niubiz.authorization_start', [
-                'order_id' => $attempt->order_id,
-                'payment_attempt_id' => $attempt->id,
-                'purchase_number' => $purchaseNumber,
+                'order_id' => $order->id,
+                'purchase_number' => $purchaseNumberForNiubiz,
                 'transaction_token' => $transactionToken,
-                'already_authorized' => false,
                 'timestamp' => now()->toDateTimeString(),
             ]);
 
             $confirmation = $this->niubizService->confirmWithTransactionToken(
                 $transactionToken,
-                $purchaseNumber,
+                $purchaseNumberForNiubiz,
                 (float) $order->total,
                 strtoupper((string) ($order->currency ?: 'PEN')),
-                $attempt->order_id
+                $order->id,
+                (array) ($payload['dataMap'] ?? [])
             );
 
             $order = $this->syncOrderAfterNiubizConfirmation(
@@ -127,133 +132,35 @@ class PaymentController extends Controller
                 $confirmation
             );
 
-            $attempt->update([
-                'order_id' => $order?->id ?? $attempt->order_id,
-                'status' => 'completed',
-                'is_approved' => $confirmation['is_approved'],
+            Log::info('niubiz.authorization_result', [
+                'order_id' => $order?->id,
+                'purchase_number' => $purchaseNumberForNiubiz,
+                'response_code' => $confirmation['response_code'],
+                'response_message' => $confirmation['response_message'],
+                'is_approved' => (bool) $confirmation['is_approved'],
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+
+            return $this->success('Confirmación de Niubiz procesada correctamente.', [
+                'is_approved' => (bool) $confirmation['is_approved'],
                 'authorization_code' => $confirmation['authorization_code'],
                 'transaction_id' => $confirmation['transaction_id'],
                 'brand' => $confirmation['brand'],
                 'masked_card' => $confirmation['masked_card'],
                 'response_code' => $confirmation['response_code'],
                 'response_message' => $confirmation['response_message'],
-                'niubiz_payload' => $confirmation['raw'],
-                'error_message' => null,
-                'processed_at' => now(),
-            ]);
-
-            Log::info('niubiz.authorization_result', [
-                'order_id' => $attempt->order_id,
-                'payment_attempt_id' => $attempt->id,
-                'purchase_number' => $purchaseNumber,
-                'response_code' => $attempt->response_code,
-                'response_message' => $attempt->response_message,
-                'is_approved' => (bool) $attempt->is_approved,
-                'timestamp' => now()->toDateTimeString(),
-            ]);
-
-            return $this->success('Confirmación de Niubiz procesada correctamente.', [
-                'payment_attempt_id' => $attempt->id,
-                'attempt_status' => $attempt->status,
-                'is_approved' => (bool) $attempt->is_approved,
-                'authorization_code' => $attempt->authorization_code,
-                'transaction_id' => $attempt->transaction_id,
-                'brand' => $attempt->brand,
-                'masked_card' => $attempt->masked_card,
-                'response_code' => $attempt->response_code,
-                'response_message' => $attempt->response_message,
                 'order' => $order,
-                'raw' => $attempt->niubiz_payload,
+                'raw' => $confirmation['raw'],
             ]);
         } catch (\InvalidArgumentException $exception) {
-            $attempt->update([
-                'status' => 'failed',
-                'error_message' => $exception->getMessage(),
-                'processed_at' => now(),
-            ]);
-
             return $this->error($exception->getMessage(), null, 422);
         } catch (\RuntimeException $exception) {
-            $attempt->update([
-                'status' => 'failed',
-                'error_message' => $exception->getMessage(),
-                'processed_at' => now(),
-            ]);
-
             return $this->error($exception->getMessage(), null, 502);
         } catch (\Throwable $exception) {
             report($exception);
 
-            $attempt->update([
-                'status' => 'failed',
-                'error_message' => $exception->getMessage(),
-                'processed_at' => now(),
-            ]);
-
             return $this->error('No se pudo confirmar el pago.', null, 500);
         }
-    }
-
-    private function getOrCreatePaymentAttempt(Order $order, string $purchaseNumber, string $transactionToken): array
-    {
-        try {
-            return DB::transaction(function () use ($order, $purchaseNumber, $transactionToken) {
-                $attempt = OrderPaymentAttempt::query()
-                    ->where('transaction_token', $transactionToken)
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($attempt) {
-                    return ['attempt' => $attempt, 'is_new' => false];
-                }
-
-                $newAttempt = OrderPaymentAttempt::query()->create([
-                    'order_id' => $order->id,
-                    'purchase_number' => $purchaseNumber,
-                    'transaction_token' => $transactionToken,
-                    'status' => 'processing',
-                ]);
-
-                Log::info('niubiz.idempotency_attempt_created', [
-                    'order_id' => $order->id,
-                    'payment_attempt_id' => $newAttempt->id,
-                    'transaction_token' => $transactionToken,
-                    'timestamp' => now()->toDateTimeString(),
-                ]);
-
-                return ['attempt' => $newAttempt, 'is_new' => true];
-            });
-        } catch (QueryException $exception) {
-            // Carrera por llave única de transaction_token: devolvemos el intento ya existente.
-            $existing = OrderPaymentAttempt::query()
-                ->where('transaction_token', $transactionToken)
-                ->firstOrFail();
-
-            return ['attempt' => $existing, 'is_new' => false];
-        }
-    }
-
-    private function buildAttemptResult(OrderPaymentAttempt $attempt): array
-    {
-        $order = null;
-
-        if ($attempt->order_id) {
-            $order = Order::query()->with(['payments', 'statusHistory'])->find($attempt->order_id);
-        }
-
-        return [
-            'payment_attempt_id' => $attempt->id,
-            'attempt_status' => $attempt->status,
-            'is_approved' => (bool) $attempt->is_approved,
-            'authorization_code' => $attempt->authorization_code,
-            'transaction_id' => $attempt->transaction_id,
-            'brand' => $attempt->brand,
-            'masked_card' => $attempt->masked_card,
-            'response_code' => $attempt->response_code,
-            'response_message' => $attempt->response_message,
-            'order' => $order,
-            'raw' => $attempt->niubiz_payload,
-        ];
     }
 
     private function syncOrderAfterNiubizConfirmation(Order $order, array $confirmation): ?Order
@@ -318,9 +225,14 @@ class PaymentController extends Controller
             throw new \InvalidArgumentException('Cliente no autenticado para confirmar el pago.');
         }
 
+        $normalizedPurchaseNumber = preg_replace('/\D/', '', $purchaseNumber);
+        if ($normalizedPurchaseNumber === '' || strlen($normalizedPurchaseNumber) > 12) {
+            throw new \InvalidArgumentException('purchaseNumber inválido para Niubiz.');
+        }
+
         $order = Order::query()
             ->where('customer_id', $customerId)
-            ->where('code', $purchaseNumber)
+            ->where('niubiz_purchase_number', $normalizedPurchaseNumber)
             ->where('payment_method_type', 'niubiz')
             ->first();
 

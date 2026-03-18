@@ -17,7 +17,7 @@ class OrderController extends Controller
         $perPage = max(1, min((int) $request->input('per_page', 15), 100));
 
         $query = Order::query()
-            ->with(['items', 'payments', 'paymentMethod:id,name'])
+            ->with(['items', 'payments'])
             ->orderByDesc('created_at');
 
         if ($request->filled('status')) {
@@ -51,7 +51,6 @@ class OrderController extends Controller
             'items',
             'payments',
             'statusHistory',
-            'paymentMethod:id,name,company_type',
             'customer:id,full_name,email,phone',
         ]);
 

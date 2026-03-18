@@ -24,6 +24,7 @@ class Order extends Model
 
     protected $fillable = [
         'code',
+        'niubiz_purchase_number',
         'customer_id',
         'customer_email',
         'customer_first_name',
@@ -96,11 +97,6 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(OrderPayment::class);
-    }
-
-    public function paymentAttempts(): HasMany
-    {
-        return $this->hasMany(OrderPaymentAttempt::class);
     }
 
     public function statusHistory(): HasMany

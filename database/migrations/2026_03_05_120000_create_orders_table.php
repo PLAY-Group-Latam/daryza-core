@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('code')->unique();
+            $table->string('niubiz_purchase_number', 12)->nullable();
 
             $table->foreignUlid('customer_id')
                 ->constrained('customers')
@@ -95,6 +96,7 @@ return new class extends Migration
 
             $table->index(['customer_id', 'created_at'], 'orders_customer_created_idx');
             $table->index(['status', 'payment_status', 'shipping_status'], 'orders_state_idx');
+            $table->index('niubiz_purchase_number', 'orders_niubiz_purchase_number_idx');
         });
     }
 

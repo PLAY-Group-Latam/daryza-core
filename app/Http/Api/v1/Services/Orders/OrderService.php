@@ -4,7 +4,6 @@ namespace App\Http\Api\v1\Services\Orders;
 
 use App\Http\Api\v1\Services\GcsService;
 use App\Models\Orders\Order;
-use App\Models\Orders\OrderPaymentAttempt;
 use App\Models\Products\ProductVariant;
 use App\Models\Customers\Customer;
 use App\Models\Settings\DeliverySetting;
@@ -66,12 +65,16 @@ class OrderService
             $paymentInfo = $payload['payment_info'];
             // Niubiz debe confirmarse por validacion server-to-server, no por payload del cliente.
             $isNiubizApproved = false;
+            $orderCode = $this->generateOrderCode();
 
             $customerInfo = $payload['customer_info'];
             $billingInfo = $payload['billing_info'] ?? [];
 
             $order = Order::create([
-                'code' => $this->generateOrderCode(),
+                'code' => $orderCode,
+                'niubiz_purchase_number' => $paymentInfo['method'] === 'niubiz'
+                    ? preg_replace('/\D/', '', $orderCode)
+                    : null,
                 'customer_id' => $customer->id,
 
                 'customer_email' => strtolower(trim($customerInfo['email'])),
@@ -168,7 +171,6 @@ class OrderService
                 'items',
                 'payments',
                 'statusHistory',
-                'paymentMethod:id,name,company_type',
             ]);
         });
     }
@@ -190,7 +192,6 @@ class OrderService
             'items',
             'payments',
             'statusHistory',
-            'paymentMethod:id,name,company_type',
         ]);
     }
 
@@ -249,98 +250,6 @@ class OrderService
         ]);
 
         return $order->fresh(['payments', 'items', 'statusHistory']);
-    }
-
-    public function confirmNiubizPayment(Order $order, string $customerId, string $purchaseNumber): Order
-    {
-        $this->ensureOwnership($order, $customerId);
-
-        if ($order->payment_method_type !== 'niubiz') {
-            throw new \InvalidArgumentException('La orden no usa método de pago Niubiz.');
-        }
-
-        if ($purchaseNumber !== $order->code) {
-            throw new \InvalidArgumentException('El purchase_number no corresponde a la orden.');
-        }
-
-        if ($order->payment_status === 'approved') {
-            return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
-        }
-
-        $latestAttempt = OrderPaymentAttempt::query()
-            ->where('purchase_number', $purchaseNumber)
-            ->where(function ($query) use ($order) {
-                $query->where('order_id', $order->id)->orWhereNull('order_id');
-            })
-            ->latest()
-            ->first();
-
-        if ($latestAttempt && in_array($latestAttempt->status, ['processing', 'completed'], true)) {
-            return DB::transaction(function () use ($order, $customerId, $latestAttempt) {
-                $order = Order::query()->with(['payments'])->lockForUpdate()->findOrFail($order->id);
-                $this->ensureOwnership($order, $customerId);
-
-                if ($latestAttempt->status === 'processing') {
-                    return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
-                }
-
-                $payment = $order->payments()->latest()->first();
-                if (!$payment) {
-                    throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
-                }
-
-                if ((bool) $latestAttempt->is_approved) {
-                    $alreadyApproved = $order->payment_status === 'approved';
-                    $orderPayload = [
-                        'payment_status' => 'approved',
-                        'paid_at' => $order->paid_at ?? $latestAttempt->processed_at ?? now(),
-                    ];
-
-                    if ($order->status === 'pending') {
-                        $orderPayload['status'] = 'confirmed';
-                        $orderPayload['confirmed_at'] = $order->confirmed_at ?? $latestAttempt->processed_at ?? now();
-                    }
-
-                    $order->update($orderPayload);
-
-                    $payment->update([
-                        'status' => 'approved',
-                        'paid_at' => $payment->paid_at ?? $latestAttempt->processed_at ?? now(),
-                        'gateway_transaction_id' => $latestAttempt->transaction_id,
-                        'gateway_authorization_code' => $latestAttempt->authorization_code,
-                        'gateway_brand' => $latestAttempt->brand,
-                        'gateway_masked_card' => $latestAttempt->masked_card,
-                        'gateway_payload' => $latestAttempt->niubiz_payload,
-                    ]);
-
-                    if (!$alreadyApproved) {
-                        $this->registerStatusHistory(
-                            $order,
-                            null,
-                            'payment:approved',
-                            'customer',
-                            $customerId,
-                            'Pago confirmado por intento idempotente Niubiz'
-                        );
-                    }
-                } else {
-                    $order->update(['payment_status' => 'rejected']);
-                    $payment->update([
-                        'status' => 'rejected',
-                        'rejected_at' => $payment->rejected_at ?? $latestAttempt->processed_at ?? now(),
-                        'gateway_transaction_id' => $latestAttempt->transaction_id,
-                        'gateway_authorization_code' => $latestAttempt->authorization_code,
-                        'gateway_brand' => $latestAttempt->brand,
-                        'gateway_masked_card' => $latestAttempt->masked_card,
-                        'gateway_payload' => $latestAttempt->niubiz_payload,
-                    ]);
-                }
-
-                return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
-            });
-        }
-
-        return $order->fresh(['items', 'payments', 'statusHistory', 'paymentMethod:id,name,company_type']);
     }
 
     public function updateOrderStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
