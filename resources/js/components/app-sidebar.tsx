@@ -25,7 +25,9 @@ import {
     Newspaper,
     User,
     MapPin,
-    Users,Store,Truck, CreditCard, SearchCheck, FileCode
+    Users, Store, Truck, CreditCard, SearchCheck, FileCode,
+    Tags,
+
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -93,6 +95,13 @@ const mainNavItems: NavItem[] = [
                 href: '/blogs/categorias',
             },
         ],
+    }, 
+    
+    {
+        title: 'Cupones ',
+        href: '/coupon',
+        icon: Tags,
+
     },
 
     {
@@ -145,9 +154,9 @@ const mainNavItems: NavItem[] = [
         icon: LayoutTemplate,
     },
     {
-        title:'Distribuidores Autorizados',
-        href:'/distributors',
-        icon: MapPin ,
+        title: 'Distribuidores Autorizados',
+        href: '/distributors',
+        icon: MapPin,
     },
 
     {
