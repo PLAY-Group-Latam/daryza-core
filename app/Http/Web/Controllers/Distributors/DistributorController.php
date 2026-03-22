@@ -4,7 +4,7 @@ namespace App\Http\Web\Controllers\Distributors;
 
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Services\Distributors\DistributorsService;
-use App\Http\Web\Resources\Distributors\DistributorsResource; // Importante
+use App\Http\Web\Resources\Distributors\DistributorsResource; 
 use App\Http\Web\Requests\Distributors\DistributorRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,7 +65,7 @@ class DistributorController extends Controller
 
     public function update(DistributorRequest $request, $id): RedirectResponse
     {
-        // El servicio se encarga de buscar y actualizar por ID
+       
         $this->service->update((int) $id, $request->validated());
 
         return redirect()->route('distributors.index')
@@ -74,7 +74,7 @@ class DistributorController extends Controller
 
     public function destroy($id): RedirectResponse
     {
-        // El servicio se encarga de buscar y eliminar por ID
+     
         $this->service->delete((int) $id);
 
         return redirect()->back()

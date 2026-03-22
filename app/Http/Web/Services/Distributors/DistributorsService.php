@@ -6,6 +6,7 @@ use App\Models\Distributors\Distributor;
 use App\Http\Web\Services\GcsService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 
 class DistributorsService {
 
@@ -16,74 +17,84 @@ class DistributorsService {
         $this->gcs = $gcs;
     }
 
-    // Buscar uno solo (Para el Show o Edit)
     public function findById(int $id): Distributor
     {
-        $distrubtor=Distributor::findOrFail($id);
-        return $distrubtor;
-
+        return Distributor::findOrFail($id);
     }
 
     public function getPaginated(array $filters): LengthAwarePaginator
-{
-   
-    $perPage = $filters['per_page'] ?? 10;
+    {
+        $perPage = $filters['per_page'] ?? 10;
 
-    return Distributor::query()
-        ->when($filters['search'] ?? null, function ($query, $search) {
-           
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('ruc', 'like', "%{$search}%")
-                  ->orWhere('region', 'like', "%{$search}%");
-            });
-        })
-        ->latest()
-        ->paginate($perPage)
-        ->withQueryString();
-}
+        return Distributor::query()
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('ruc', 'like', "%{$search}%")
+                      ->orWhere('region', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+    }
 
     public function store(array $data): Distributor
     {
         return DB::transaction(function () use ($data) {
-            if (isset($data['img_info']) && $data['img_info'] instanceof \Illuminate\Http\UploadedFile) {
-                $data['img_info'] = $this->gcs->uploadFile($data['img_info'], 'distributors');
+     
+            if (isset($data['logo_pin']) && $data['logo_pin'] instanceof UploadedFile) {
+                $data['logo_pin'] = $this->gcs->uploadFile($data['logo_pin'], 'distributors/logos');
             }
+
+            if (isset($data['establishment_img']) && $data['establishment_img'] instanceof UploadedFile) {
+                $data['establishment_img'] = $this->gcs->uploadFile($data['establishment_img'], 'distributors/establishments');
+            }
+
             return Distributor::create($data);
         });
     }
 
- public function update(int $id, array $data): Distributor
-{
-    $distributor = $this->findById($id);
+    public function update(int $id, array $data): Distributor
+    {
+        $distributor = $this->findById($id);
 
-    return DB::transaction(function () use ($distributor, $data) {
-
-        if (isset($data['img_info']) && $data['img_info'] instanceof \Illuminate\Http\UploadedFile) {
+        return DB::transaction(function () use ($distributor, $data) {
             
-            if ($distributor->img_info) {
-                $this->gcs->delete($distributor->img_info);
+            if (isset($data['logo_pin']) && $data['logo_pin'] instanceof UploadedFile) {
+                if ($distributor->logo_pin) {
+                    $this->gcs->delete($distributor->logo_pin);
+                }
+                $data['logo_pin'] = $this->gcs->uploadFile($data['logo_pin'], 'distributors/logos');
+            } else {
+                unset($data['logo_pin']); 
             }
 
-            $data['img_info'] = $this->gcs->uploadFile($data['img_info'], 'distributors');
-            
-        } else {
-            unset($data['img_info']);
-        }
+            if (isset($data['establishment_img']) && $data['establishment_img'] instanceof UploadedFile) {
+                if ($distributor->establishment_img) {
+                    $this->gcs->delete($distributor->establishment_img);
+                }
+                $data['establishment_img'] = $this->gcs->uploadFile($data['establishment_img'], 'distributors/establishments');
+            } else {
+                unset($data['establishment_img']);
+            }
 
-        $distributor->update($data);
-        
-        return $distributor;
-    });
-}
+            $distributor->update($data);
+            return $distributor;
+        });
+    }
 
     public function delete(int $id): bool
     {
         $distributor = $this->findById($id);
-
-        if ($distributor->img_info) {
-            $this->gcs->delete($distributor->img_info);
+        if ($distributor->logo_pin) {
+            $this->gcs->delete($distributor->logo_pin);
         }
+        
+        if ($distributor->establishment_img) {
+            $this->gcs->delete($distributor->establishment_img);
+        }
+
         return $distributor->delete();
     }
 }

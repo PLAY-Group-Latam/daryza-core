@@ -15,19 +15,15 @@ class Distributor extends Model
         'email',
         'phone',
         'note',
-        'img_info', 
+        'logo_pin',         
+        'establishment_img', 
         'lat',
         'lng'
     ];
 
-
     protected $appends = ['coords']; 
 
-    protected $hidden = [
-        'lat', 
-        'lng', 
-       
-    ];
+    protected $hidden = ['lat', 'lng'];
 
     protected function coords(): Attribute
     {
@@ -38,6 +34,4 @@ class Distributor extends Model
             ],
         );
     }
-
-  
 }

@@ -1,16 +1,15 @@
 'use client'
 
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents,useMap } from 'react-leaflet'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import DistributorForm from './DistributorForm'
-import { Distributor } from '@/types/distributors/distributors'
 
 interface DistributorsMapProps {
     initialCoords?: { lat: number; lng: number };
     readOnly?: boolean;
-    distributor?: Distributor;
+    onPositionChange?: (coords: { lat: number; lng: number }) => void;
+    logoPreviewUrl?: string | null;
 }
 
 interface NominatimResult {
@@ -18,22 +17,52 @@ interface NominatimResult {
     display_name: string;
     lat: string;
     lon: string;
-    type: string;
-    class: string;
 }
 
-const customIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-})
+const createDynamicIcon = (logoUrl: string | null | undefined) => {
+    const pinShapeUrl = '/images/distributors/marker-icon.svg';
+
+    if (!logoUrl) {
+        return L.icon({
+            iconUrl: pinShapeUrl,
+            iconSize: [38, 50],
+            iconAnchor: [19, 50],
+            popupAnchor: [0, -45],
+        });
+    }
+
+    return L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+            <div style="position: relative; width: 38px; height: 50px;">
+                <div style="
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    background-image: url('${logoUrl}');
+                    background-size: cover;
+                    background-position: center;
+                    -webkit-mask-image: url('${pinShapeUrl}');
+                    mask-image: url('${pinShapeUrl}');
+                    -webkit-mask-size: contain;
+                    mask-size: contain;
+                    -webkit-mask-repeat: no-repeat;
+                    mask-repeat: no-repeat;
+                ">
+                </div>
+            </div>
+        `,
+        iconSize: [38, 50],
+        iconAnchor: [19, 50],
+        popupAnchor: [0, -45],
+    });
+};
 
 function MapController({ targetPosition }: { targetPosition: L.LatLng | null }) {
     const map = useMap()
     useEffect(() => {
         if (targetPosition) {
-            map.setView(targetPosition, 16, { animate: true })
+            map.flyTo(targetPosition, 16, { animate: true, duration: 1.5 })
         }
     }, [targetPosition, map])
     return null
@@ -49,13 +78,9 @@ function MapEvents({ readOnly, onMapClick }: { readOnly: boolean; onMapClick: (l
     return null
 }
 
-export default function DistributorsMap({ initialCoords, readOnly = false, distributor }: DistributorsMapProps) {
-    const initialPos = initialCoords ? new L.LatLng(initialCoords.lat, initialCoords.lng) : null
-
-    const [mode, setMode] = useState<'create' | 'edit'>(distributor ? 'edit' : 'create')
-    const [position, setPosition] = useState<L.LatLng | null>(initialPos)
-    const [openForm, setOpenForm] = useState(false)
-
+export default function DistributorsMap({ initialCoords, readOnly = false, onPositionChange, logoPreviewUrl }: DistributorsMapProps) {
+    // Estado de la posición del marcador
+    const [position, setPosition] = useState<L.LatLng | null>(null)
     const [search, setSearch] = useState('')
     const [results, setResults] = useState<NominatimResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -65,6 +90,26 @@ export default function DistributorsMap({ initialCoords, readOnly = false, distr
     const searchRef = useRef<HTMLDivElement>(null)
     const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
+    // REACCIÓN A CAMBIOS EXTERNOS (Botón Restablecer)
+    // Este useEffect asegura que si el padre cambia initialCoords, el pin se mueva.
+    useEffect(() => {
+        if (initialCoords) {
+            const newPos = new L.LatLng(initialCoords.lat, initialCoords.lng);
+            setPosition(newPos);
+            setFlyTarget(newPos); // Mueve la cámara también
+        }
+    }, [initialCoords?.lat, initialCoords?.lng]);
+
+    const markerIcon = useMemo(() => createDynamicIcon(logoPreviewUrl || null), [logoPreviewUrl]);
+
+    const updatePosition = (latlng: L.LatLng) => {
+        setPosition(latlng)
+        if (onPositionChange) {
+            onPositionChange({ lat: latlng.lat, lng: latlng.lng });
+        }
+    }
+
+    // Cerrar dropdown de búsqueda al clickear fuera
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -77,22 +122,18 @@ export default function DistributorsMap({ initialCoords, readOnly = false, distr
 
     const handleSearchInput = useCallback((value: string) => {
         setSearch(value)
-        setShowDropdown(false)
-
         if (debounceRef.current) clearTimeout(debounceRef.current)
-
         if (value.trim().length < 3) {
-            setResults([])
-            return
+            setResults([]); return
         }
 
         debounceRef.current = setTimeout(async () => {
             setIsSearching(true)
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=6&addressdetails=1&countrycodes=pe&viewbox=-81.3,-18.4,-68.7,-0.0&bounded=1`
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=5&countrycodes=pe`
                 )
-                const data: NominatimResult[] = await res.json()
+                const data = await res.json()
                 setResults(data)
                 setShowDropdown(data.length > 0)
             } catch {
@@ -105,47 +146,21 @@ export default function DistributorsMap({ initialCoords, readOnly = false, distr
 
     const handleSelectResult = (result: NominatimResult) => {
         const newPos = new L.LatLng(parseFloat(result.lat), parseFloat(result.lon))
-        setPosition(newPos)
+        updatePosition(newPos)
         setFlyTarget(newPos)
-        setMode('create')
-        setOpenForm(false)
         setSearch(result.display_name.split(',').slice(0, 2).join(','))
         setShowDropdown(false)
-        setResults([])
-    }
-
-    const handleMapClick = (latlng: L.LatLng) => {
-        setPosition(latlng)
-        setOpenForm(false)
-        setMode('create')
-    }
-
-    const formatName = (name: string) => {
-        const parts = name.split(',').map(p => p.trim())
-        return {
-            main: parts.slice(0, 2).join(', '),
-            secondary: parts.slice(2, 4).join(', '),
-        }
     }
 
     return (
-        <div className="relative h-[700px] w-full overflow-hidden rounded-2xl border-8 border-white bg-slate-100 shadow-2xl">
-
-            {/* Search bar */}
+        <div className="relative h-full w-full">
             {!readOnly && (
-                <div
-                    ref={searchRef}
-                    className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-[340px] max-w-[calc(100%-2rem)]"
-                >
-                    {/* Input */}
-                    <div className="flex items-center gap-2 bg-white rounded-xl shadow-lg px-3 py-2 border border-slate-200">
+                <div ref={searchRef} className="absolute top-4 left-4 z-[1000] w-72 lg:w-96">
+                    <div className="flex items-center gap-2 bg-white rounded-xl shadow-xl px-3 py-2 border border-slate-200">
                         {isSearching ? (
-                            <svg className="w-4 h-4 text-slate-400 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                            </svg>
+                            <div className="w-4 h-4 border-2 border-slate-300 border-t-[#44AC34] animate-spin rounded-full" />
                         ) : (
-                            <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                             </svg>
                         )}
@@ -153,91 +168,39 @@ export default function DistributorsMap({ initialCoords, readOnly = false, distr
                             value={search}
                             onChange={(e) => handleSearchInput(e.target.value)}
                             onFocus={() => results.length > 0 && setShowDropdown(true)}
-                            placeholder="Buscar ubicación..."
-                            className="flex-1 text-sm text-slate-700 placeholder-slate-400 bg-transparent outline-none"
+                            placeholder="Buscar en el mapa..."
+                            className="flex-1 text-sm outline-none bg-transparent"
                         />
-                        {search && (
-                            <button
-                                onClick={() => { setSearch(''); setResults([]); setShowDropdown(false) }}
-                                className="text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        )}
                     </div>
-
-                    {/* Dropdown results */}
                     {showDropdown && results.length > 0 && (
-                        <div className="mt-1.5 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
-                            {results.map((result, i) => {
-                                const { main, secondary } = formatName(result.display_name)
-                                return (
-                                    <button
-                                        key={result.place_id}
-                                        onClick={() => handleSelectResult(result)}
-                                        className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-start gap-3 ${i !== results.length - 1 ? 'border-b border-slate-50' : ''}`}
-                                    >
-                                        <svg className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                                        </svg>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-semibold text-slate-700 truncate">{main}</p>
-                                            {secondary && (
-                                                <p className="text-[11px] text-slate-400 truncate">{secondary}</p>
-                                            )}
-                                        </div>
-                                    </button>
-                                )
-                            })}
+                        <div className="mt-1 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden">
+                            {results.map((result) => (
+                                <button
+                                    key={result.place_id}
+                                    type="button"
+                                    onClick={() => handleSelectResult(result)}
+                                    className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 border-b last:border-0"
+                                >
+                                    {result.display_name}
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>
             )}
 
             <MapContainer
-                center={initialPos || [-12.0464, -77.0428]}
+                center={initialCoords ? [initialCoords.lat, initialCoords.lng] : [-12.0464, -77.0428]}
                 zoom={15}
                 className="h-full w-full"
+                zoomControl={false}
             >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <MapEvents readOnly={readOnly} onMapClick={handleMapClick} />
+                <MapEvents readOnly={readOnly} onMapClick={updatePosition} />
                 <MapController targetPosition={flyTarget} />
 
-                {position && (
-                    <Marker position={position} icon={customIcon}>
-                        {!readOnly && (
-                            <Popup minWidth={200} closeButton={false} className="custom-popup">
-                                <div className="p-2 text-center">
-                                    <p className="mb-2 text-xs font-bold text-slate-700">
-                                        {mode === 'edit'
-                                            ? "Ubicación del distribuidor"
-                                            : "Nueva ubicación seleccionada"}
-                                    </p>
-                                    <button
-                                        onClick={() => setOpenForm(true)}
-                                        className="w-full rounded-lg bg-[#44AC34] px-3 py-2 text-xs font-bold text-white shadow-md hover:bg-[#388e2a] transition-colors"
-                                    >
-                                        {mode === 'edit'
-                                            ? "Confirmar y editar cambios"
-                                            : "Confirmar y elegir Distribuidor"}
-                                    </button>
-                                </div>
-                            </Popup>
-                        )}
-                    </Marker>
-                )}
+                {position && <Marker position={position} icon={markerIcon} />}
             </MapContainer>
-
-            {openForm && position && (
-                <DistributorForm
-                    coords={position}
-                    distributor={distributor}
-                    mode={mode}
-                    onClose={() => setOpenForm(false)}
-                />
-            )}
         </div>
     )
 }

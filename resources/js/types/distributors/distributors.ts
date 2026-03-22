@@ -1,18 +1,20 @@
 export interface Distributor {
-    id: number
-    region: string
-    name: string
-    ruc?: string
-    address?: string
-    email?: string
-    phone?: string
-    note?: string
-    img_info?: string
-    coords: {
-        lat: number
-        lng: number
-    }
+    id: number;
+    name: string;   
+    ruc?: string;
+    region: string;
+    address?: string; 
+    email?: string;
+    phone?: string;
+    note?: string;
+    logo_pin?: string; 
+    establishment_img?: string; 
 
-    created_at:string;
-    updated_at:string;
+    coords: {
+        lat: number;
+        lng: number;
+    };
+
+    created_at: string;
+    updated_at: string;
 }

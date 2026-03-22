@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             SeoPageSeeder::class,
             OrderDemoSeeder::class,
             DashboardDemoSeeder::class,
+            DistributorSeeder::class
             
         ]);
     }
