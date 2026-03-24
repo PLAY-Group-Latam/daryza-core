@@ -36,8 +36,8 @@ export default function OrderStateGuideDialog() {
                         <p><b>delivered:</b> entrega finalizada.</p>
                         <p><b>cancelled:</b> orden cancelada.</p>
                         <p className="text-muted-foreground">
-                            Reglas: pending → confirmed/cancelled, confirmed → preparing/cancelled, preparing → shipped/cancelled,
-                            shipped → delivered, cancelled → pending (solo para correccion administrativa).
+                            Reglas: hay avance y retroceso controlado. Ejemplos de correccion: delivered → shipped/preparing/confirmed,
+                            shipped → preparing/confirmed y cancelled → pending.
                         </p>
                     </div>
 
@@ -49,8 +49,8 @@ export default function OrderStateGuideDialog() {
                         <p><b>failed:</b> fallo tecnico.</p>
                         <p><b>refunded:</b> pago devuelto.</p>
                         <p className="text-muted-foreground">
-                            Reglas: pending → approved/rejected/failed, approved → refunded,
-                            rejected/failed → pending.
+                            Reglas: pending → approved/rejected/failed, approved → pending/refunded,
+                            rejected/failed → pending, refunded → pending/approved.
                         </p>
                     </div>
 
@@ -62,8 +62,8 @@ export default function OrderStateGuideDialog() {
                         <p><b>delivered:</b> entregado.</p>
                         <p><b>failed:</b> intento fallido.</p>
                         <p className="text-muted-foreground">
-                            Reglas: pending → assigned/in_transit/failed, assigned → in_transit/failed,
-                            in_transit → delivered/failed, failed → assigned/in_transit.
+                            Reglas: hay avance y retroceso controlado. Ejemplos de correccion: delivered → assigned/in_transit,
+                            in_transit → pending/assigned y failed → pending/assigned/in_transit.
                         </p>
                     </div>
                 </div>

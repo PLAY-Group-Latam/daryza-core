@@ -304,60 +304,66 @@ class OrderService
 
     public function updatePaymentStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
     {
-        $this->assertPaymentStatusTransition($order->payment_status, $newStatus);
+        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $this->assertPaymentStatusTransition($order->payment_status, $newStatus);
 
-        $order->update([
-            'payment_status' => $newStatus,
-            'paid_at' => $newStatus === 'approved' ? now() : $order->paid_at,
-        ]);
-
-        $payment = $order->payments()->latest()->first();
-        if ($payment) {
-            $payment->update([
-                'status' => $newStatus,
-                'paid_at' => $newStatus === 'approved' ? now() : $payment->paid_at,
-                'rejected_at' => in_array($newStatus, ['rejected', 'failed'], true) ? now() : $payment->rejected_at,
+            $order->update([
+                'payment_status' => $newStatus,
+                'paid_at' => $newStatus === 'approved' ? now() : $order->paid_at,
             ]);
-        }
 
-        $this->registerStatusHistory(
-            $order,
-            null,
-            'payment:' . $newStatus,
-            'admin',
-            $adminId,
-            $note
-        );
+            $payment = $order->payments()->latest()->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => $newStatus,
+                    'paid_at' => $newStatus === 'approved' ? now() : $payment->paid_at,
+                    'rejected_at' => in_array($newStatus, ['rejected', 'failed'], true) ? now() : $payment->rejected_at,
+                ]);
+            }
 
-        return $order->fresh(['items', 'payments', 'statusHistory']);
+            $this->registerStatusHistory(
+                $order,
+                null,
+                'payment:' . $newStatus,
+                'admin',
+                $adminId,
+                $note
+            );
+
+            return $order->fresh(['items', 'payments', 'statusHistory']);
+        });
     }
 
     public function updateShippingStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
     {
-        $this->assertShippingStatusTransition($order->shipping_status, $newStatus);
+        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $this->assertShippingStatusTransition($order->shipping_status, $newStatus);
 
-        $order->update([
-            'shipping_status' => $newStatus,
-            'shipped_at' => $newStatus === 'in_transit' ? now() : $order->shipped_at,
-            'delivered_at' => $newStatus === 'delivered' ? now() : $order->delivered_at,
-        ]);
+            $order->update([
+                'shipping_status' => $newStatus,
+                'shipped_at' => $newStatus === 'in_transit' ? now() : $order->shipped_at,
+                'delivered_at' => $newStatus === 'delivered' ? now() : $order->delivered_at,
+            ]);
 
-        if ($newStatus === 'delivered' && $order->status !== 'delivered') {
-            $previousStatus = $order->status;
-            $order->update(['status' => 'delivered']);
-            $this->registerStatusHistory($order, $previousStatus, 'delivered', 'admin', $adminId, 'Marcada como entregada desde shipping');
-        }
+            if ($newStatus === 'delivered' && $order->status !== 'delivered') {
+                $previousStatus = $order->status;
+                $order->update(['status' => 'delivered']);
+                $this->registerStatusHistory($order, $previousStatus, 'delivered', 'admin', $adminId, 'Marcada como entregada desde shipping');
+            }
 
-        $this->registerStatusHistory(
-            $order,
-            null,
-            'shipping:' . $newStatus,
-            'admin',
-            $adminId,
-            $note
-        );
+            $this->registerStatusHistory(
+                $order,
+                null,
+                'shipping:' . $newStatus,
+                'admin',
+                $adminId,
+                $note
+            );
 
-        return $order->fresh(['items', 'payments', 'statusHistory']);
+            return $order->fresh(['items', 'payments', 'statusHistory']);
+        });
     }
 
     private function resolveShippingQuote(string $departmentId, string $provinceId, string $districtId, float $subtotal): array
@@ -557,10 +563,10 @@ class OrderService
 
         $map = [
             'pending' => ['confirmed', 'cancelled'],
-            'confirmed' => ['preparing', 'cancelled'],
-            'preparing' => ['shipped', 'cancelled'],
-            'shipped' => ['delivered'],
-            'delivered' => [],
+            'confirmed' => ['pending', 'preparing', 'cancelled'],
+            'preparing' => ['confirmed', 'shipped', 'cancelled'],
+            'shipped' => ['confirmed', 'preparing', 'delivered'],
+            'delivered' => ['confirmed', 'preparing', 'shipped'],
             'cancelled' => ['pending'],
         ];
 
@@ -577,10 +583,10 @@ class OrderService
 
         $map = [
             'pending' => ['approved', 'rejected', 'failed'],
-            'approved' => ['refunded'],
+            'approved' => ['pending', 'refunded'],
             'rejected' => ['pending'],
             'failed' => ['pending'],
-            'refunded' => [],
+            'refunded' => ['pending', 'approved'],
         ];
 
         if (!in_array($to, $map[$from] ?? [], true)) {
@@ -596,10 +602,10 @@ class OrderService
 
         $map = [
             'pending' => ['assigned', 'in_transit', 'failed'],
-            'assigned' => ['in_transit', 'failed'],
-            'in_transit' => ['delivered', 'failed'],
-            'delivered' => [],
-            'failed' => ['assigned', 'in_transit'],
+            'assigned' => ['pending', 'in_transit', 'failed'],
+            'in_transit' => ['pending', 'assigned', 'delivered', 'failed'],
+            'delivered' => ['assigned', 'in_transit'],
+            'failed' => ['pending', 'assigned', 'in_transit'],
         ];
 
         if (!in_array($to, $map[$from] ?? [], true)) {

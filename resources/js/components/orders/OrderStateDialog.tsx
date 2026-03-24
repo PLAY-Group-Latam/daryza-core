@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
     getAllowedOptions,
+    isRollbackTransition,
     getStatusLabel,
     orderStatusOptions,
     orderTransitionMap,
@@ -70,6 +71,20 @@ export default function OrderStateDialog({ order, trigger }: OrderStateDialogPro
     );
 
     const patchStatus = (type: UpdateType, value: string) => {
+        const isRollback =
+            (type === 'order' && isRollbackTransition('order', order.status, value)) ||
+            (type === 'payment' && isRollbackTransition('payment', order.payment_status, value)) ||
+            (type === 'shipping' && isRollbackTransition('shipping', order.shipping_status, value));
+
+        if (isRollback && note.trim() === '') {
+            const errorKey = type === 'order' ? 'status' : type === 'payment' ? 'payment_status' : 'shipping_status';
+            setErrors((prev) => ({
+                ...prev,
+                [errorKey]: 'Para un retroceso, ingresa una nota explicando la correccion.',
+            }));
+            return;
+        }
+
         const routes: Record<UpdateType, string> = {
             order: `/ordenes/${order.id}/status`,
             payment: `/ordenes/${order.id}/payment-status`,
@@ -141,6 +156,9 @@ export default function OrderStateDialog({ order, trigger }: OrderStateDialogPro
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {isRollbackTransition('order', order.status, orderStatus) ? (
+                                <p className="mt-2 text-xs text-amber-600">Cambio en modo correccion (retroceso).</p>
+                            ) : null}
                             {errors.status ? <p className="mt-2 text-xs text-red-600">{errors.status}</p> : null}
                             <Button
                                 type="button"
@@ -169,6 +187,9 @@ export default function OrderStateDialog({ order, trigger }: OrderStateDialogPro
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {isRollbackTransition('payment', order.payment_status, paymentStatus) ? (
+                                <p className="mt-2 text-xs text-amber-600">Cambio en modo correccion (retroceso).</p>
+                            ) : null}
                             {errors.payment_status ? <p className="mt-2 text-xs text-red-600">{errors.payment_status}</p> : null}
                             <Button
                                 type="button"
@@ -197,6 +218,9 @@ export default function OrderStateDialog({ order, trigger }: OrderStateDialogPro
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {isRollbackTransition('shipping', order.shipping_status, shippingStatus) ? (
+                                <p className="mt-2 text-xs text-amber-600">Cambio en modo correccion (retroceso).</p>
+                            ) : null}
                             {errors.shipping_status ? <p className="mt-2 text-xs text-red-600">{errors.shipping_status}</p> : null}
                             <Button
                                 type="button"

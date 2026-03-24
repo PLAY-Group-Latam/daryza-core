@@ -1,5 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 
+export type TransitionKind = 'order' | 'payment' | 'shipping';
+
 export const orderStatusOptions = [
     { value: 'pending', label: 'Pendiente' },
     { value: 'confirmed', label: 'Confirmada' },
@@ -27,27 +29,27 @@ export const shippingStatusOptions = [
 
 export const orderTransitionMap: Record<string, string[]> = {
     pending: ['confirmed', 'cancelled'],
-    confirmed: ['preparing', 'cancelled'],
-    preparing: ['shipped', 'cancelled'],
-    shipped: ['delivered'],
-    delivered: [],
+    confirmed: ['pending', 'preparing', 'cancelled'],
+    preparing: ['confirmed', 'shipped', 'cancelled'],
+    shipped: ['confirmed', 'preparing', 'delivered'],
+    delivered: ['confirmed', 'preparing', 'shipped'],
     cancelled: ['pending'],
 };
 
 export const paymentTransitionMap: Record<string, string[]> = {
     pending: ['approved', 'rejected', 'failed'],
-    approved: ['refunded'],
+    approved: ['pending', 'refunded'],
     rejected: ['pending'],
     failed: ['pending'],
-    refunded: [],
+    refunded: ['pending', 'approved'],
 };
 
 export const shippingTransitionMap: Record<string, string[]> = {
     pending: ['assigned', 'in_transit', 'failed'],
-    assigned: ['in_transit', 'failed'],
-    in_transit: ['delivered', 'failed'],
-    delivered: [],
-    failed: ['assigned', 'in_transit'],
+    assigned: ['pending', 'in_transit', 'failed'],
+    in_transit: ['pending', 'assigned', 'delivered', 'failed'],
+    delivered: ['assigned', 'in_transit'],
+    failed: ['pending', 'assigned', 'in_transit'],
 };
 
 const statusMeta: Record<string, { label: string; className: string }> = {
@@ -79,6 +81,46 @@ export const hasAvailableTransition = (currentStatus: string, transitionMap: Rec
 
 export const canTransitionTo = (currentStatus: string, target: string, transitionMap: Record<string, string[]>) =>
     (transitionMap[currentStatus] ?? []).includes(target);
+
+const orderRank: Record<string, number> = {
+    pending: 0,
+    confirmed: 1,
+    preparing: 2,
+    shipped: 3,
+    delivered: 4,
+    cancelled: -1,
+};
+
+const paymentRank: Record<string, number> = {
+    pending: 0,
+    approved: 1,
+    rejected: -1,
+    failed: -1,
+    refunded: -2,
+};
+
+const shippingRank: Record<string, number> = {
+    pending: 0,
+    assigned: 1,
+    in_transit: 2,
+    delivered: 3,
+    failed: -1,
+};
+
+export const isRollbackTransition = (kind: TransitionKind, from: string, to: string): boolean => {
+    if (from === to) return false;
+
+    const ranksByKind: Record<TransitionKind, Record<string, number>> = {
+        order: orderRank,
+        payment: paymentRank,
+        shipping: shippingRank,
+    };
+
+    const ranks = ranksByKind[kind];
+    if (!(from in ranks) || !(to in ranks)) return false;
+
+    return ranks[to] < ranks[from];
+};
 
 export const getStatusLabel = (
     value: string,
