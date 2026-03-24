@@ -14,6 +14,7 @@ use App\Models\Ubigeos\Province;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -108,9 +109,7 @@ class OrderService
 
                 'payment_method_id' => null,
                 'payment_method_type' => $paymentInfo['method'],
-                'status' => 'pending',
-                'payment_status' => $isNiubizApproved ? 'approved' : 'pending',
-                'shipping_status' => 'pending',
+                'state' => $isNiubizApproved ? 'payment_received' : 'pending_payment',
                 'placed_at' => now(),
                 'paid_at' => $isNiubizApproved ? now() : null,
                 'notes' => data_get($payload, 'notes'),
@@ -144,7 +143,7 @@ class OrderService
                 $variant->decrement('stock', $quantity);
             }
 
-            $payment = $order->payments()->create([
+            $order->payments()->create([
                 'payment_method_id' => null,
                 'method' => $paymentInfo['method'],
                 'status' => $isNiubizApproved ? 'approved' : 'pending',
@@ -165,7 +164,7 @@ class OrderService
                 ]);
             }
 
-            $this->registerStatusHistory($order, null, 'pending', 'customer', $customer->id, 'Orden creada');
+            $this->registerStatusHistory($order, null, $order->state, 'customer', $customer->id, 'Orden creada');
 
             return $order->load([
                 'items',
@@ -205,10 +204,10 @@ class OrderService
                 throw new \InvalidArgumentException('La orden no puede ser cancelada en su estado actual.');
             }
 
-            $previousStatus = $order->status;
+            $previousStatus = $order->state;
 
             $order->update([
-                'status' => 'cancelled',
+                'state' => 'cancelled',
                 'cancelled_at' => now(),
                 'notes' => $reason ? trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada por cliente: ' . $reason) : $order->notes,
             ]);
@@ -245,125 +244,230 @@ class OrderService
         ]);
 
         $order->update([
-            'payment_status' => 'pending',
+            'state' => 'pending_payment',
             'paid_at' => null,
         ]);
 
         return $order->fresh(['payments', 'items', 'statusHistory']);
     }
 
-    public function updateOrderStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
+    public function updateStateByAdmin(Order $order, string $newState, ?string $note = null, ?string $adminId = null): Order
     {
-        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
+        return DB::transaction(function () use ($order, $newState, $note, $adminId) {
             $order = Order::query()->with('items')->lockForUpdate()->findOrFail($order->id);
 
-            $previousStatus = $order->status;
-            $this->assertOrderStatusTransition($previousStatus, $newStatus);
+            $previousState = $order->state;
 
-            if ($previousStatus === $newStatus) {
+            // Regla de negocio: si Niubiz ya confirmó pago, no se permite volver a pendiente.
+            if (
+                $newState === 'pending_payment'
+                && $order->payment_method_type === 'niubiz'
+                && in_array($previousState, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true)
+            ) {
+                throw new \InvalidArgumentException(
+                    'No se puede volver a pendiente en una orden Niubiz con pago confirmado. Usa reembolso/correccion operativa.'
+                );
+            }
+
+            if (
+                $newState === 'payment_failed'
+                && $order->payment_method_type === 'niubiz'
+                && in_array($previousState, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true)
+            ) {
+                throw new \InvalidArgumentException(
+                    'El pago Niubiz ya fue aprobado y no puede marcarse como rechazado/fallido.'
+                );
+            }
+
+            $this->assertStateTransition($previousState, $newState);
+
+            if ($previousState === $newState) {
                 return $order->fresh(['items', 'payments', 'statusHistory']);
             }
 
-            $payload = ['status' => $newStatus];
+            $payload = ['state' => $newState];
 
-            if ($newStatus === 'confirmed') {
+            if ($newState === 'payment_received') {
                 $payload['confirmed_at'] = now();
             }
-            if ($newStatus === 'shipped') {
+            if ($newState === 'in_delivery') {
                 $payload['shipped_at'] = now();
-                $payload['shipping_status'] = 'in_transit';
             }
-            if ($newStatus === 'delivered') {
+            if ($newState === 'delivered') {
                 $payload['delivered_at'] = now();
-                $payload['shipping_status'] = 'delivered';
             }
-            if ($newStatus === 'cancelled') {
+            if ($newState === 'cancelled') {
                 $payload['cancelled_at'] = now();
             }
-            if ($previousStatus === 'cancelled' && $newStatus === 'pending') {
+            if ($previousState === 'cancelled' && $newState !== 'cancelled') {
                 $payload['cancelled_at'] = null;
-                $payload['shipping_status'] = 'pending';
                 $payload['shipped_at'] = null;
                 $payload['delivered_at'] = null;
             }
 
             $order->update($payload);
 
-            if ($newStatus === 'cancelled') {
+            $payment = $order->payments()->latest()->first();
+            if ($payment) {
+                if ($newState === 'payment_received') {
+                    $payment->update([
+                        'status' => 'approved',
+                        'paid_at' => $payment->paid_at ?? now(),
+                        'rejected_at' => null,
+                    ]);
+                } elseif ($newState === 'payment_failed') {
+                    $payment->update([
+                        'status' => 'failed',
+                        'rejected_at' => now(),
+                    ]);
+                } elseif ($newState === 'refunded') {
+                    $payment->update([
+                        'status' => 'refunded',
+                    ]);
+                } elseif ($newState === 'pending_payment') {
+                    $payment->update([
+                        'status' => 'pending',
+                        'paid_at' => null,
+                        'rejected_at' => null,
+                    ]);
+                }
+            }
+
+            if ($newState === 'cancelled') {
                 $this->restoreStockForOrder($order);
             }
-            if ($previousStatus === 'cancelled' && $newStatus === 'pending') {
+            if ($previousState === 'cancelled' && $newState !== 'cancelled') {
                 $this->reserveStockForOrder($order);
             }
 
-            $this->registerStatusHistory($order, $previousStatus, $newStatus, 'admin', $adminId, $note);
+            $this->registerStatusHistory($order, $previousState, $newState, 'admin', $adminId, $note);
 
             return $order->fresh(['items', 'payments', 'statusHistory']);
         });
+    }
+
+    // Legacy wrappers kept for compatibility while frontend migrates.
+    public function updateOrderStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
+    {
+        return $this->updateStateByAdmin($order, $this->mapLegacyOrderStatusToState($newStatus), $note, $adminId);
     }
 
     public function updatePaymentStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
     {
-        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
-            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
-            $this->assertPaymentStatusTransition($order->payment_status, $newStatus);
-
-            $order->update([
-                'payment_status' => $newStatus,
-                'paid_at' => $newStatus === 'approved' ? now() : $order->paid_at,
-            ]);
-
-            $payment = $order->payments()->latest()->first();
-            if ($payment) {
-                $payment->update([
-                    'status' => $newStatus,
-                    'paid_at' => $newStatus === 'approved' ? now() : $payment->paid_at,
-                    'rejected_at' => in_array($newStatus, ['rejected', 'failed'], true) ? now() : $payment->rejected_at,
-                ]);
-            }
-
-            $this->registerStatusHistory(
-                $order,
-                null,
-                'payment:' . $newStatus,
-                'admin',
-                $adminId,
-                $note
-            );
-
-            return $order->fresh(['items', 'payments', 'statusHistory']);
-        });
+        return $this->updateStateByAdmin($order, $this->mapLegacyPaymentStatusToState($newStatus), $note, $adminId);
     }
 
     public function updateShippingStatusByAdmin(Order $order, string $newStatus, ?string $note = null, ?string $adminId = null): Order
     {
-        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
-            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
-            $this->assertShippingStatusTransition($order->shipping_status, $newStatus);
+        return $this->updateStateByAdmin($order, $this->mapLegacyShippingStatusToState($newStatus), $note, $adminId);
+    }
 
-            $order->update([
-                'shipping_status' => $newStatus,
-                'shipped_at' => $newStatus === 'in_transit' ? now() : $order->shipped_at,
-                'delivered_at' => $newStatus === 'delivered' ? now() : $order->delivered_at,
-            ]);
+    public function applyAdminAction(Order $order, string $action, ?string $note = null, ?string $adminId = null): Order
+    {
+        return match ($action) {
+            'accept_payment' => $this->updateStateByAdmin($order, 'payment_received', $note, $adminId),
+            'reject_payment' => $this->updateStateByAdmin($order, 'payment_failed', $note, $adminId),
+            'reset_to_pending_payment' => $this->updateStateByAdmin($order, 'pending_payment', $note, $adminId),
+            'start_preparing' => $this->updateStateByAdmin($order, 'preparing', $note, $adminId),
+            'schedule_shipping' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+            'start_transit' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+            'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
+            'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
+            'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
+            default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
+        };
+    }
 
-            if ($newStatus === 'delivered' && $order->status !== 'delivered') {
-                $previousStatus = $order->status;
-                $order->update(['status' => 'delivered']);
-                $this->registerStatusHistory($order, $previousStatus, 'delivered', 'admin', $adminId, 'Marcada como entregada desde shipping');
+    public function applyAdminActionBulk(array $orderIds, string $action, ?string $note = null, ?string $adminId = null): array
+    {
+        $updatedIds = [];
+        $failed = [];
+
+        DB::transaction(function () use ($orderIds, $action, $note, $adminId, &$updatedIds, &$failed) {
+            /** @var Collection<int, Order> $orders */
+            $orders = Order::query()
+                ->whereIn('id', $orderIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($orderIds as $orderId) {
+                /** @var Order|null $order */
+                $order = $orders->get($orderId);
+                if (!$order) {
+                    $failed[] = [
+                        'id' => $orderId,
+                        'reason' => 'Orden no encontrada.',
+                    ];
+                    continue;
+                }
+
+                try {
+                    $this->applyAdminAction($order, $action, $note, $adminId);
+                    $updatedIds[] = $orderId;
+                } catch (\InvalidArgumentException $exception) {
+                    $failed[] = [
+                        'id' => $orderId,
+                        'reason' => $exception->getMessage(),
+                    ];
+                }
             }
-
-            $this->registerStatusHistory(
-                $order,
-                null,
-                'shipping:' . $newStatus,
-                'admin',
-                $adminId,
-                $note
-            );
-
-            return $order->fresh(['items', 'payments', 'statusHistory']);
         });
+
+        return [
+            'updated_ids' => $updatedIds,
+            'failed' => $failed,
+        ];
+    }
+
+    public function buildAdminStateMeta(Order $order): array
+    {
+        $actionsOrder = [
+            'accept_payment',
+            'reject_payment',
+            'reset_to_pending_payment',
+            'start_preparing',
+            'start_transit',
+            'mark_delivered_full',
+            'mark_delivery_failed',
+            'cancel_order',
+        ];
+
+        $allowedActions = collect($actionsOrder)
+            ->filter(fn(string $action) => $this->canApplyAdminAction($order, $action))
+            ->values()
+            ->all();
+
+        $rollbackState = $this->getPreviousStateForRollback($order->state, $order->payment_method_type);
+        $rollbackAction = null;
+        $rollbackLabel = null;
+
+        if ($rollbackState) {
+            $rollbackCandidates = [
+                'start_transit',
+                'start_preparing',
+                'accept_payment',
+                'reset_to_pending_payment',
+            ];
+
+            foreach ($rollbackCandidates as $candidate) {
+                if ($this->targetStateFromAction($candidate) !== $rollbackState) {
+                    continue;
+                }
+                if (!$this->canApplyAdminAction($order, $candidate)) {
+                    continue;
+                }
+                $rollbackAction = $candidate;
+                $rollbackLabel = 'Regresar a ' . $this->stateLabel($rollbackState);
+                break;
+            }
+        }
+
+        return [
+            'allowed_actions' => $allowedActions,
+            'rollback_action' => $rollbackAction,
+            'rollback_label' => $rollbackLabel,
+        ];
     }
 
     private function resolveShippingQuote(string $departmentId, string $provinceId, string $districtId, float $subtotal): array
@@ -555,19 +659,22 @@ class OrderService
         }
     }
 
-    private function assertOrderStatusTransition(string $from, string $to): void
+    private function assertStateTransition(string $from, string $to): void
     {
         if ($from === $to) {
             return;
         }
 
         $map = [
-            'pending' => ['confirmed', 'cancelled'],
-            'confirmed' => ['pending', 'preparing', 'cancelled'],
-            'preparing' => ['confirmed', 'shipped', 'cancelled'],
-            'shipped' => ['confirmed', 'preparing', 'delivered'],
-            'delivered' => ['confirmed', 'preparing', 'shipped'],
-            'cancelled' => ['pending'],
+            'pending_payment' => ['payment_received', 'payment_failed', 'cancelled'],
+            'payment_received' => ['preparing', 'pending_payment', 'cancelled', 'refunded'],
+            'preparing' => ['in_delivery', 'payment_received', 'cancelled'],
+            'in_delivery' => ['delivered', 'delivery_failed', 'preparing', 'cancelled'],
+            'delivery_failed' => ['in_delivery', 'preparing', 'cancelled'],
+            'delivered' => ['in_delivery', 'preparing'],
+            'payment_failed' => ['pending_payment', 'payment_received', 'cancelled'],
+            'cancelled' => ['pending_payment', 'payment_received', 'preparing'],
+            'refunded' => ['pending_payment', 'payment_received'],
         ];
 
         if (!in_array($to, $map[$from] ?? [], true)) {
@@ -575,42 +682,124 @@ class OrderService
         }
     }
 
-    private function assertPaymentStatusTransition(string $from, string $to): void
+    private function isStateTransitionAllowed(string $from, string $to): bool
     {
         if ($from === $to) {
-            return;
+            return false;
         }
 
         $map = [
-            'pending' => ['approved', 'rejected', 'failed'],
-            'approved' => ['pending', 'refunded'],
-            'rejected' => ['pending'],
-            'failed' => ['pending'],
-            'refunded' => ['pending', 'approved'],
+            'pending_payment' => ['payment_received', 'payment_failed', 'cancelled'],
+            'payment_received' => ['preparing', 'pending_payment', 'cancelled', 'refunded'],
+            'preparing' => ['in_delivery', 'payment_received', 'cancelled'],
+            'in_delivery' => ['delivered', 'delivery_failed', 'preparing', 'cancelled'],
+            'delivery_failed' => ['in_delivery', 'preparing', 'cancelled'],
+            'delivered' => ['in_delivery', 'preparing'],
+            'payment_failed' => ['pending_payment', 'payment_received', 'cancelled'],
+            'cancelled' => ['pending_payment', 'payment_received', 'preparing'],
+            'refunded' => ['pending_payment', 'payment_received'],
         ];
 
-        if (!in_array($to, $map[$from] ?? [], true)) {
-            throw new \InvalidArgumentException("Transición de pago no permitida: {$from} -> {$to}.");
-        }
+        return in_array($to, $map[$from] ?? [], true);
     }
 
-    private function assertShippingStatusTransition(string $from, string $to): void
+    private function targetStateFromAction(string $action): ?string
     {
-        if ($from === $to) {
-            return;
+        return match ($action) {
+            'accept_payment' => 'payment_received',
+            'reject_payment' => 'payment_failed',
+            'reset_to_pending_payment' => 'pending_payment',
+            'start_preparing' => 'preparing',
+            'schedule_shipping', 'start_transit' => 'in_delivery',
+            'mark_delivered_full' => 'delivered',
+            'mark_delivery_failed' => 'delivery_failed',
+            'cancel_order' => 'cancelled',
+            default => null,
+        };
+    }
+
+    private function canApplyAdminAction(Order $order, string $action): bool
+    {
+        $targetState = $this->targetStateFromAction($action);
+        if (!$targetState) {
+            return false;
         }
 
-        $map = [
-            'pending' => ['assigned', 'in_transit', 'failed'],
-            'assigned' => ['pending', 'in_transit', 'failed'],
-            'in_transit' => ['pending', 'assigned', 'delivered', 'failed'],
-            'delivered' => ['assigned', 'in_transit'],
-            'failed' => ['pending', 'assigned', 'in_transit'],
-        ];
+        $from = $order->state;
+        $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
+            && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
 
-        if (!in_array($to, $map[$from] ?? [], true)) {
-            throw new \InvalidArgumentException("Transición de envío no permitida: {$from} -> {$to}.");
+        if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
+            return false;
         }
+
+        return $this->isStateTransitionAllowed($from, $targetState);
+    }
+
+    private function getPreviousStateForRollback(string $state, ?string $paymentMethodType): ?string
+    {
+        return match ($state) {
+            'pending_payment' => null,
+            'payment_received' => $paymentMethodType === 'bank_transfer' ? 'pending_payment' : null,
+            'preparing' => 'payment_received',
+            'in_delivery' => 'preparing',
+            'delivered' => 'in_delivery',
+            'delivery_failed' => 'in_delivery',
+            'payment_failed' => 'pending_payment',
+            'cancelled' => 'preparing',
+            'refunded' => 'payment_received',
+            default => null,
+        };
+    }
+
+    private function stateLabel(string $state): string
+    {
+        return match ($state) {
+            'pending_payment' => 'Pendiente de pago',
+            'payment_received' => 'Pago recibido',
+            'preparing' => 'En preparacion',
+            'in_delivery' => 'En envio',
+            'delivered' => 'Entregado',
+            'delivery_failed' => 'Entrega fallida',
+            'payment_failed' => 'Pago no exitoso',
+            'cancelled' => 'Cancelado',
+            'refunded' => 'Reembolsado',
+            default => $state,
+        };
+    }
+
+    private function mapLegacyOrderStatusToState(string $status): string
+    {
+        return match ($status) {
+            'pending', 'confirmed' => 'pending_payment',
+            'preparing' => 'preparing',
+            'shipped' => 'in_delivery',
+            'delivered' => 'delivered',
+            'cancelled' => 'cancelled',
+            default => 'pending_payment',
+        };
+    }
+
+    private function mapLegacyPaymentStatusToState(string $status): string
+    {
+        return match ($status) {
+            'approved' => 'payment_received',
+            'rejected', 'failed' => 'payment_failed',
+            'refunded' => 'refunded',
+            'pending' => 'pending_payment',
+            default => 'pending_payment',
+        };
+    }
+
+    private function mapLegacyShippingStatusToState(string $status): string
+    {
+        return match ($status) {
+            'assigned', 'in_transit' => 'in_delivery',
+            'delivered' => 'delivered',
+            'failed' => 'delivery_failed',
+            'pending' => 'preparing',
+            default => 'preparing',
+        };
     }
 
     private function registerStatusHistory(

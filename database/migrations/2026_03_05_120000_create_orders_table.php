@@ -59,28 +59,17 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->enum('payment_method_type', ['bank_transfer', 'niubiz']);
-            $table->enum('status', [
-                'pending',
-                'confirmed',
+            $table->enum('state', [
+                'pending_payment',
+                'payment_received',
                 'preparing',
-                'shipped',
+                'in_delivery',
                 'delivered',
+                'delivery_failed',
                 'cancelled',
-            ])->default('pending');
-            $table->enum('payment_status', [
-                'pending',
-                'approved',
-                'rejected',
-                'failed',
+                'payment_failed',
                 'refunded',
-            ])->default('pending');
-            $table->enum('shipping_status', [
-                'pending',
-                'assigned',
-                'in_transit',
-                'delivered',
-                'failed',
-            ])->default('pending');
+            ])->default('pending_payment');
 
             $table->timestamp('placed_at')->nullable();
             $table->timestamp('confirmed_at')->nullable();
@@ -95,7 +84,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['customer_id', 'created_at'], 'orders_customer_created_idx');
-            $table->index(['status', 'payment_status', 'shipping_status'], 'orders_state_idx');
+            $table->index('state', 'orders_state_idx');
             $table->index('niubiz_purchase_number', 'orders_niubiz_purchase_number_idx');
         });
     }

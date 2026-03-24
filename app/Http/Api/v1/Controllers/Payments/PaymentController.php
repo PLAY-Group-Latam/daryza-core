@@ -96,7 +96,7 @@ class PaymentController extends Controller
             return $this->error('El purchaseNumber para Niubiz debe ser numérico y máximo 12 dígitos.', null, 422);
         }
 
-        if ($order->payment_status === 'approved') {
+        if ($order->state === 'payment_received' || $order->state === 'delivered') {
             return $this->success('La orden ya tiene pago aprobado.', [
                 'is_approved' => true,
                 'authorization_code' => null,
@@ -179,10 +179,9 @@ class PaymentController extends Controller
 
             if ($confirmation['is_approved']) {
                 $order->update([
-                    'payment_status' => 'approved',
+                    'state' => 'payment_received',
                     'paid_at' => $order->paid_at ?? now(),
-                    'status' => $order->status === 'pending' ? 'confirmed' : $order->status,
-                    'confirmed_at' => $order->status === 'pending' ? ($order->confirmed_at ?? now()) : $order->confirmed_at,
+                    'confirmed_at' => $order->confirmed_at ?? now(),
                 ]);
 
                 if ($payment) {
@@ -199,7 +198,7 @@ class PaymentController extends Controller
                 }
             } else {
                 $order->update([
-                    'payment_status' => 'rejected',
+                    'state' => 'payment_failed',
                 ]);
 
                 if ($payment) {
@@ -245,18 +244,18 @@ class PaymentController extends Controller
 
     private function assertOrderCanStartNiubiz(Order $order): void
     {
-        if ($order->status === 'cancelled') {
+        if ($order->state === 'cancelled') {
             throw new \InvalidArgumentException('La orden está cancelada y no puede iniciar pago Niubiz.');
         }
 
-        if ($order->payment_status === 'approved') {
+        if ($order->state === 'payment_received' || $order->state === 'delivered') {
             throw new \InvalidArgumentException('La orden ya tiene pago aprobado.');
         }
     }
 
     private function assertOrderCanConfirmNiubiz(Order $order): void
     {
-        if ($order->status === 'cancelled') {
+        if ($order->state === 'cancelled') {
             throw new \InvalidArgumentException('La orden está cancelada y no puede confirmar pago Niubiz.');
         }
     }
