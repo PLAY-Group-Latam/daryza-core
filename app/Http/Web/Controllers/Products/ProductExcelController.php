@@ -5,7 +5,7 @@ namespace App\Http\Web\Controllers\Products;
 use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Web\Exports\ProductsExport;
 use App\Http\Web\Imports\ProductsImport;
-
+use App\Observers\Web\Product\ProductObserver;
 use App\Http\Web\Requests\Products\StoreProductImportRequest;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -20,24 +20,28 @@ class ProductExcelController extends Controller
     }
 
     public function import(StoreProductImportRequest $request)
-    {
-        $file = $request->file('file');
-        try {
-            Excel::import(new ProductsImport(), $file);
+{
+    $file = $request->file('file');
+    try {
+    
+        ProductObserver::$muteNotifications = true;
+        Excel::import(new ProductsImport(), $file);
+        ProductObserver::$muteNotifications = false;
 
-
-            return redirect()->route('products.items.index')->with('success', 'Productos importados correctamente.');
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            $failures = $e->failures();
-            foreach ($failures as $failure) {
-                Log::error("Fila {$failure->row()}: " . implode(', ', $failure->errors()));
-            }
-            return back()->withErrors(['file' => 'Algunas filas no pasaron la validación.']);
-        } catch (\Exception $e) {
-            Log::error('Error al importar productos: ' . $e->getMessage());
-            return back()->withErrors(['file' => 'Error al procesar el archivo.']);
+        return redirect()->route('products.items.index')->with('success', 'Productos importados correctamente.');
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        ProductObserver::$muteNotifications = false; 
+        $failures = $e->failures();
+        foreach ($failures as $failure) {
+            Log::error("Fila {$failure->row()}: " . implode(', ', $failure->errors()));
         }
+        return back()->withErrors(['file' => 'Algunas filas no pasaron la validación.']);
+    } catch (\Exception $e) {
+        ProductObserver::$muteNotifications = false; 
+        Log::error('Error al importar productos: ' . $e->getMessage());
+        return back()->withErrors(['file' => 'Error al procesar el archivo.']);
     }
+}
 
     public function export()
     {

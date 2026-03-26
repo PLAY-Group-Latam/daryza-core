@@ -4,7 +4,7 @@ namespace App\Http\Web\Services\Products;
 
 use App\Enums\OgType;
 use App\Http\Web\Support\Products\ProductMainVariantNormalizer;
-use App\Models\Products\{Product, ProductVariant};
+use App\Models\Products\{Product, ProductVariant, AttributesValue};
 use Illuminate\Support\Facades\DB;
 
 class ProductService
@@ -107,16 +107,22 @@ class ProductService
 
   protected function createMetadata(Product $product, array $metadata): void
   {
-    $product->metadata()->create([
-      'meta_title'       => $metadata['meta_title'] ?? $product->name,
-      'meta_description' => $metadata['meta_description'] ?? $product->brief_description,
-      'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
-      'og_title'         => $metadata['og_title'] ?? $product->name,
-      'og_description'   => $metadata['og_description'] ?? $product->brief_description,
-      'og_type'          => OgType::PRODUCT,
-      'noindex'          => $metadata['noindex'] ?? false,
-      'nofollow'         => $metadata['nofollow'] ?? false,
-    ]);
+    $product->metadata()->updateOrCreate(
+      [
+        'metadatable_id'   => $product->id,
+        'metadatable_type' => Product::class,
+      ],
+      [
+        'meta_title'       => $metadata['meta_title'] ?? $product->name,
+        'meta_description' => $metadata['meta_description'] ?? $product->brief_description,
+        'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
+        'og_title'         => $metadata['og_title'] ?? $product->name,
+        'og_description'   => $metadata['og_description'] ?? $product->brief_description,
+        'og_type'          => OgType::PRODUCT,
+        'noindex'          => $metadata['noindex'] ?? false,
+        'nofollow'         => $metadata['nofollow'] ?? false,
+      ]
+    );
   }
 
   protected function syncMetadata(Product $product, array $metadata): void
@@ -253,13 +259,27 @@ class ProductService
 
     if (empty($specs)) return;
 
-    $variant->specifications()->createMany(
-      collect($specs)->map(fn($spec) => [
-        'attribute_id'       => $spec['attribute_id'],
-        'attribute_value_id' => $spec['attribute_value_id'] ?? null,
-        'value'              => $spec['value'] ?? null,
-      ])->toArray()
-    );
+    $payload = collect($specs)->map(function ($spec) {
+      $attributeId = $spec['attribute_id'];
+      $inputValue  = trim($spec['value'] ?? '');
+
+      if ($inputValue === '') return null;
+
+      $masterValue = AttributesValue::firstOrCreate([
+        'attribute_id' => $attributeId,
+        'value'        => $inputValue,
+      ]);
+
+      return [
+        'attribute_id'       => $attributeId,
+        'attribute_value_id' => $masterValue->id,
+        'value'              => $inputValue,
+      ];
+    })->filter()->toArray();
+
+    if (!empty($payload)) {
+      $variant->specifications()->createMany($payload);
+    }
   }
 
   protected function syncRecommendedProducts(Product $product, array $recommendedIds): void
