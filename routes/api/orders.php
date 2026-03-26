@@ -10,5 +10,4 @@ Route::prefix('orders')->middleware('auth:api')->group(function () {
     Route::get('{order}', [OrderController::class, 'show']);
     Route::post('{order}/cancel', [OrderController::class, 'cancel']);
     Route::post('{order}/payment-proof', [OrderController::class, 'uploadPaymentProof']);
-    Route::post('{order}/niubiz/confirm', [OrderController::class, 'confirmNiubiz']);
 });

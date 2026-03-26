@@ -2,7 +2,7 @@
 
 namespace App\Mail\Order;
 
-use App\Models\Order;
+use App\Models\Orders\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -20,7 +20,7 @@ class PaymentFailed extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pago fallido - Pedido#' . $this->order->purchase_number,
+            subject: 'Pago fallido - Pedido#' . $this->order->code,
         );
     }
 
@@ -29,16 +29,16 @@ class PaymentFailed extends Mailable
         return new Content(
             view: 'mail.order.2-payment-failed',
             with: [
-                'customer' => $this->order->contact->full_name,
-                'purchase_number' => $this->order->purchase_number,
+                'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
+                'purchase_number' => $this->order->code,
                 'purchase_date' => $this->order->created_at?->format('d/m/Y h:i a') ?? '',
-                'total' => $this->order->total,
+                'total' => 'S/ ' . number_format((float) $this->order->total, 2, '.', ''),
                 'items' => $this->order->items->map(function ($item) {
                     return [
-                        'title' => $item->title,
+                        'title' => $item->product_name,
                         'quantity' => $item->quantity,
-                        'price' => $item->discount,
-                        'total' => $item->total,
+                        'price' => 'S/ ' . number_format((float) $item->unit_price, 2, '.', ''),
+                        'total' => 'S/ ' . number_format((float) $item->line_total, 2, '.', ''),
                     ];
                 }),
             ]

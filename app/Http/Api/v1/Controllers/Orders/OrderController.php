@@ -7,7 +7,6 @@ use App\Http\Api\v1\Requests\Orders\CancelOrderRequest;
 use App\Http\Api\v1\Requests\Orders\StoreOrderRequest;
 use App\Http\Api\v1\Requests\Orders\UploadPaymentProofRequest;
 use App\Http\Api\v1\Requests\Orders\ValidateOrderRequest;
-use App\Http\Api\v1\Requests\Payments\ConfirmNiubizPaymentRequest;
 use App\Http\Api\v1\Services\Orders\OrderService;
 use App\Models\Orders\Order;
 use Illuminate\Http\Request;
@@ -101,22 +100,4 @@ class OrderController extends Controller
         }
     }
 
-    public function confirmNiubiz(ConfirmNiubizPaymentRequest $request, Order $order)
-    {
-        $customerId = (string) auth('api')->id();
-
-        try {
-            $data = $this->orderService->confirmNiubizPayment(
-                $order,
-                $customerId,
-                (string) $request->validated('purchase_number')
-            );
-
-            return $this->success('Confirmación Niubiz procesada correctamente.', $data);
-        } catch (\InvalidArgumentException $exception) {
-            return $this->error($exception->getMessage(), null, 422);
-        } catch (\RuntimeException $exception) {
-            return $this->error($exception->getMessage(), null, 502);
-        }
-    }
 }

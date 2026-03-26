@@ -18,8 +18,8 @@ export default function OrderPaymentInfoCard({ order }: { order: OrderDetail }) 
                     <p className="font-semibold">{order.payment_method_type === 'bank_transfer' ? 'Transferencia bancaria' : 'Niubiz'}</p>
                 </div>
                 <div>
-                    <p className="text-xs text-muted-foreground">Estado del pago</p>
-                    <StatusBadge status={order.payment_status} />
+                    <p className="text-xs text-muted-foreground">Estado del pedido</p>
+                    <StatusBadge status={order.state} />
                 </div>
                 <div>
                     <p className="text-xs text-muted-foreground">Monto</p>

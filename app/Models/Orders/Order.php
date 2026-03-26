@@ -19,11 +19,11 @@ class Order extends Model
 
     protected $appends = [
         'has_voucher',
-        'payment_status_detail',
     ];
 
     protected $fillable = [
         'code',
+        'niubiz_purchase_number',
         'customer_id',
         'customer_email',
         'customer_first_name',
@@ -52,9 +52,7 @@ class Order extends Model
         'total',
         'payment_method_id',
         'payment_method_type',
-        'status',
-        'payment_status',
-        'shipping_status',
+        'state',
         'placed_at',
         'confirmed_at',
         'paid_at',
@@ -98,11 +96,6 @@ class Order extends Model
         return $this->hasMany(OrderPayment::class);
     }
 
-    public function paymentAttempts(): HasMany
-    {
-        return $this->hasMany(OrderPaymentAttempt::class);
-    }
-
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->latest();
@@ -115,7 +108,7 @@ class Order extends Model
 
     public function canBeCancelledByCustomer(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed'], true);
+        return in_array($this->state, ['pending_payment', 'payment_received', 'preparing'], true);
     }
 
     public function getHasVoucherAttribute(): bool
@@ -127,16 +120,4 @@ class Order extends Model
         return (string) ($payment?->voucher_url ?? '') !== '';
     }
 
-    public function getPaymentStatusDetailAttribute(): ?string
-    {
-        if ($this->payment_method_type !== 'bank_transfer') {
-            return null;
-        }
-
-        if ($this->payment_status !== 'pending') {
-            return null;
-        }
-
-        return $this->has_voucher ? 'voucher_uploaded_pending_review' : 'no_voucher_uploaded';
-    }
 }

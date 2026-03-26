@@ -2,7 +2,7 @@
 
 namespace App\Mail\Order;
 
-use App\Models\Order;
+use App\Models\Orders\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -20,7 +20,7 @@ class OrderCancelled extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pedido #' . $this->order->purchase_number . ' cancelado',
+            subject: 'Pedido #' . $this->order->code . ' cancelado',
         );
     }
 
@@ -29,10 +29,10 @@ class OrderCancelled extends Mailable
         return new Content(
             view: 'mail.order.6-cancelled',
             with: [
-                'customer' => $this->order->contact->full_name,
-                'purchase_number' => $this->order->purchase_number,
-                'email' => config('app.contact.email'),
-                'phone' => config('app.contact.phone'),
+                'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
+                'purchase_number' => $this->order->code,
+                'email' => config('app.orders_notifications.contact_email'),
+                'phone' => config('app.orders_notifications.contact_phone'),
             ],
         );
     }

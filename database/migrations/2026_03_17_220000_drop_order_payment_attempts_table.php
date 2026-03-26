@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('order_payment_attempts');
+    }
+
+    public function down(): void
+    {
         Schema::create('order_payment_attempts', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
@@ -39,10 +44,4 @@ return new class extends Migration
             $table->index(['status', 'created_at'], 'order_payment_attempts_status_created_idx');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('order_payment_attempts');
-    }
 };
-

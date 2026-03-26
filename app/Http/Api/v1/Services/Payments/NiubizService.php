@@ -8,7 +8,13 @@ use Illuminate\Support\Str;
 
 class NiubizService
 {
-    public function createSession(string $purchaseNumber, float $amount, string $currency = 'PEN'): array
+    public function createSession(
+        string $purchaseNumber,
+        float $amount,
+        string $currency = 'PEN',
+        array $antifraud = [],
+        array $dataMap = []
+    ): array
     {
         [$merchantId, $baseUrl, $timeout] = $this->baseConfig();
         $securityToken = $this->requestSecurityToken();
@@ -24,22 +30,22 @@ class NiubizService
             'timeout' => $timeout,
         ]);
 
+        $sessionPayload = [
+            'channel' => 'web',
+            'amount' => round($amount, 2),
+            'antifraud' => [
+                'clientIp' => (string) data_get($antifraud, 'clientIp', ''),
+                'merchantDefineData' => (array) data_get($antifraud, 'merchantDefineData', []),
+            ],
+            'dataMap' => $dataMap,
+        ];
+
         $response = $this->niubizHttp()->withHeaders([
                 'Authorization' => $securityToken,
             ])
             ->timeout($timeout)
             ->acceptJson()
-            ->post($endpoint, [
-                'channel' => 'web',
-                'amount' => round($amount, 2),
-                'recurrenceMaxAmount' => round($amount, 2),
-                'recurrenceAmount' => round($amount, 2),
-                'order' => [
-                    'purchaseNumber' => $purchaseNumber,
-                    'amount' => round($amount, 2),
-                    'currency' => strtoupper($currency),
-                ],
-            ]);
+            ->post($endpoint, $sessionPayload);
 
         if (!$response->successful()) {
             $this->warningLog('create_session_failed', $endpoint, $response);
@@ -64,7 +70,8 @@ class NiubizService
         string $purchaseNumber,
         float $amount,
         string $currency = 'PEN',
-        ?string $orderId = null
+        ?string $orderId = null,
+        array $dataMap = []
     ): array {
         [$merchantId, $baseUrl, $timeout] = $this->baseConfig();
         $securityToken = $this->requestSecurityToken();
@@ -80,22 +87,27 @@ class NiubizService
             'timeout' => $timeout,
         ]);
 
+        $authorizationPayload = [
+            'channel' => 'web',
+            'captureType' => 'manual',
+            'countable' => true,
+            'order' => [
+                'tokenId' => $transactionToken,
+                'purchaseNumber' => $purchaseNumber,
+                'amount' => round($amount, 2),
+                'currency' => strtoupper($currency),
+            ],
+        ];
+        if ($dataMap !== []) {
+            $authorizationPayload['dataMap'] = $dataMap;
+        }
+
         $response = $this->niubizHttp(false)->withHeaders([
                 'Authorization' => $securityToken,
             ])
             ->timeout($timeout)
             ->acceptJson()
-            ->post($endpoint, [
-                'channel' => 'web',
-                'captureType' => 'manual',
-                'countable' => true,
-                'order' => [
-                    'tokenId' => $transactionToken,
-                    'purchaseNumber' => $purchaseNumber,
-                    'amount' => round($amount, 2),
-                    'currency' => strtoupper($currency),
-                ],
-            ]);
+            ->post($endpoint, $authorizationPayload);
 
         if (!$response->successful()) {
             $this->warningLog('confirm_transaction_failed', $endpoint, $response);

@@ -25,6 +25,7 @@ interface DataTableProps<T> {
     onSearch?: (value: string) => void;
     initialSearch?: string;
     perPageOptions?: number[];
+    toolbarRight?: React.ReactNode;
 }
 
 export function DataTable<T>({
@@ -33,6 +34,7 @@ export function DataTable<T>({
     onSearch,
     initialSearch = '',
     perPageOptions,
+    toolbarRight,
 }: DataTableProps<T>) {
    
     const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? "");
@@ -75,13 +77,16 @@ export function DataTable<T>({
 
     return (
         <div className="w-full space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <Input
                     placeholder="Buscar..."
                     value={globalFilter ?? ""} 
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"
                 />
+                {toolbarRight ? (
+                    <div className="flex items-center justify-end gap-2">{toolbarRight}</div>
+                ) : null}
             </div>
 
             <div className="mb-4 overflow-x-auto rounded-md border">
