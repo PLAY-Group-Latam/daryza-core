@@ -29,31 +29,46 @@ export function AsyncMultiSelectCustomers({
     value,
     onChange,
     placeholder = 'Buscar cliente por nombre, email o teléfono',
-    requestPath = '/coupon/search-customers', // 👈 ruta de Daryza
+    requestPath = '/coupon/search-customers'
 }: AsyncMultiSelectCustomersProps) {
-    const [open, setOpen]       = useState(false);
-    const [query, setQuery]     = useState('');
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const debouncedFilter       = useDebounce(query, 500);
+    const debouncedFilter = useDebounce(query, 500);
 
     useEffect(() => {
-        const controller = new AbortController();
-        setLoading(true);
+        if (!debouncedFilter) return; 
 
-        fetch(`${requestPath}?q=${encodeURIComponent(debouncedFilter)}`, { signal: controller.signal })
-            .then((res) => res.json())
-            .then((data: Customer[]) => {
+        const controller = new AbortController();
+
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(
+                    `${requestPath}?q=${encodeURIComponent(debouncedFilter)}`,
+                    { signal: controller.signal }
+                );
+                if (!res.ok) throw new Error(`Error ${res.status}`);
+                const data: Customer[] = await res.json();
                 setResults((prev) => {
                     const map = new Map(prev.map((c) => [c.id, c]));
                     data.forEach((c) => map.set(c.id, c));
                     return Array.from(map.values());
                 });
-            })
-            .finally(() => setLoading(false));
+            } catch (err) {
+                if (err instanceof Error && err.name !== 'AbortError') {
+                    console.error('Error buscando clientes:', err);
+                   
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
 
+        fetchData();
         return () => controller.abort();
-    }, [debouncedFilter]);
+    }, [debouncedFilter, requestPath]); 
 
     useEffect(() => {
         if (value.length === 0) return;
@@ -72,9 +87,9 @@ export function AsyncMultiSelectCustomers({
     }, [value]);
 
     const options = results?.map((c) => ({
-        id:    c.id,
+        id: c.id,
         value: c.id,
-        name:  c.name,
+        name: c.name,
         email: c.email,
         phone: c.phone,
         photo: c.photo,
@@ -90,10 +105,10 @@ export function AsyncMultiSelectCustomers({
         onChange(value.filter((v) => v !== id));
     };
 
-    const selectedLabels  = value.map((id) => results.find((c) => c.id === id)?.name || id);
+    const selectedLabels = value.map((id) => results.find((c) => c.id === id)?.name || id);
     const maxDisplayItems = 3;
-    const displayItems    = selectedLabels.slice(0, maxDisplayItems);
-    const overflowCount   = selectedLabels.length > maxDisplayItems ? selectedLabels.length - maxDisplayItems : 0;
+    const displayItems = selectedLabels.slice(0, maxDisplayItems);
+    const overflowCount = selectedLabels.length > maxDisplayItems ? selectedLabels.length - maxDisplayItems : 0;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>

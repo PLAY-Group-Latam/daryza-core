@@ -45,13 +45,12 @@ function SeoCounter({
 
     return (
         <p
-            className={`mt-1 text-right text-xs ${
-                isOver
+            className={`mt-1 text-right text-xs ${isOver
                     ? 'text-red-600'
                     : isNear
-                      ? 'text-amber-600'
-                      : 'text-muted-foreground'
-            }`}
+                        ? 'text-amber-600'
+                        : 'text-muted-foreground'
+                }`}
         >
             {current}/{max}
         </p>
@@ -136,10 +135,15 @@ export function SidebarSection({
             })),
         [selectedParent],
     );
-    const selectedSubcategoryIds = useWatch({
+    const watchedCategories = useWatch({
         control,
         name: 'categories',
-    }) ?? [];
+    });
+
+    const selectedSubcategoryIds = useMemo(
+        () => watchedCategories ?? [],
+        [watchedCategories]
+    );
 
     useEffect(() => {
         const current = (selectedSubcategoryIds ?? []).map((id) => String(id));
@@ -428,8 +432,8 @@ export function SidebarSection({
                 {isSubmitting
                     ? 'Guardando...'
                     : isEdit
-                      ? 'Actualizar producto'
-                      : 'Crear producto'}
+                        ? 'Actualizar producto'
+                        : 'Crear producto'}
             </button>
         </aside>
     );

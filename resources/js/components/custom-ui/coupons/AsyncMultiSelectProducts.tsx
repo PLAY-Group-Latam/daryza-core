@@ -14,52 +14,87 @@ interface AsyncMultiSelectProps {
     requestPath?: string;
 }
 
+
+interface ProductOption {
+    id: string;
+    name: string;
+    sku: string;
+    image?: string;
+}
+
 export function AsyncMultiSelectProducts({
     value,
     onChange,
     placeholder = 'Buscar producto por nombre',
     requestPath = '/coupon/search-products', // 👈 ruta de Daryza
 }: AsyncMultiSelectProps) {
-    const [open, setOpen]       = useState(false);
-    const [query, setQuery]     = useState('');
-    const [results, setResults] = useState<any[]>([]);
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<ProductOption[]>([]);
     const [loading, setLoading] = useState(false);
-    const debouncedFilter       = useDebounce(query, 500);
+    const debouncedFilter = useDebounce(query, 500);
 
     useEffect(() => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => {
-            setLoading(true);
-            fetch(`${requestPath}?q=${encodeURIComponent(query)}`, { signal: controller.signal })
-                .then((res) => res.json())
-                .then((data) => setResults(data))
-                .finally(() => setLoading(false));
-        }, 300);
+        if (!debouncedFilter) return;
 
-        return () => {
-            controller.abort();
-            clearTimeout(timeout);
+        const controller = new AbortController();
+
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+
+                const res = await fetch(
+                    `${requestPath}?q=${encodeURIComponent(debouncedFilter)}`,
+                    { signal: controller.signal }
+                );
+
+                if (!res.ok) throw new Error(`Error ${res.status}`);
+
+                const data = await res.json();
+
+                if (Array.isArray(data)) {
+                    setResults(data);
+                }
+            } catch (err: any) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error buscando productos:', err);
+                }
+            } finally {
+                setLoading(false);
+            }
         };
-    }, [debouncedFilter]);
+
+        fetchProducts();
+
+        return () => controller.abort();
+    }, [debouncedFilter, requestPath]);
 
     useEffect(() => {
         if (value.length === 0) return;
 
         const controller = new AbortController();
         fetch(`${requestPath}?q=${value.join(',')}`, { signal: controller.signal })
-            .then((res) => res.json())
-            .then((data: any[]) => {
+            .then((res) => {
+                if (!res.ok) throw new Error(`Error ${res.status}`);
+                return res.json();
+            })
+            .then((data: ProductOption[]) => {
                 setResults((prev) => {
                     const existingIds = new Set(prev.map((p) => p.id));
                     return [...prev, ...data.filter((p) => !existingIds.has(p.id))];
                 });
+            })
+            .catch((err) => {
+                if (err.name !== 'AbortError') {
+                    console.error('Error cargando productos seleccionados:', err);
+                }
             });
 
         return () => controller.abort();
-    }, [value]);
+    }, [value, requestPath]);
 
     const options = results?.map((p) => ({
-        id:    p.id,
+        id: p.id,
         value: p.id + '|' + p.sku,
         label: p.name,
         image: p.image,
@@ -77,8 +112,8 @@ export function AsyncMultiSelectProducts({
 
     const selectedLabels = value.map((val) => results.find((o) => o.id === val)?.name || val);
     const maxDisplayItems = 3;
-    const displayItems    = selectedLabels.slice(0, maxDisplayItems);
-    const overflowCount   = selectedLabels.length > maxDisplayItems ? selectedLabels.length - maxDisplayItems : 0;
+    const displayItems = selectedLabels.slice(0, maxDisplayItems);
+    const overflowCount = selectedLabels.length > maxDisplayItems ? selectedLabels.length - maxDisplayItems : 0;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
