@@ -27,9 +27,7 @@ class DashboardDemoSeeder extends Seeder
         $department = $district->province->department;
         $province   = $district->province;
 
-        // ─────────────────────────────────────
         // 1. PAYMENT METHOD
-        // ─────────────────────────────────────
         $paymentMethod = PaymentMethod::query()->firstOrCreate(
             ['company_type' => 'daryza', 'name' => 'Cuenta Demo BCP'],
             [
@@ -39,9 +37,7 @@ class DashboardDemoSeeder extends Seeder
             ]
         );
 
-        // ─────────────────────────────────────
         // 2. CATEGORÍAS
-        // ─────────────────────────────────────
         $categoriesData = [
             'Limpieza del Hogar',
             'Desinfectantes',
@@ -57,9 +53,7 @@ class DashboardDemoSeeder extends Seeder
             )
         );
 
-        // ─────────────────────────────────────
         // 3. PRODUCTOS CON VARIANTES
-        // ─────────────────────────────────────
         $productsData = [
             ['name' => 'Limpiador Multiusos Brisa',    'price' => 12.90, 'category' => 'Limpieza del Hogar',   'code' => 'DASH-P-01'],
             ['name' => 'Desinfectante DAC5 5L',         'price' => 39.90, 'category' => 'Desinfectantes',       'code' => 'DASH-P-02'],
@@ -83,13 +77,11 @@ class DashboardDemoSeeder extends Seeder
                 ]
             );
 
-            // Asociar categoría
-           $category = $categories->firstWhere('name', $pd['category']);
-if ($category) {
-    $product->categories()->syncWithoutDetaching([(string) $category->id]);
-}
+            $category = $categories->firstWhere('name', $pd['category']);
+            if ($category) {
+                $product->categories()->syncWithoutDetaching([(string) $category->id]);
+            }
 
-            // Variante principal
             $variant = ProductVariant::query()->firstOrCreate(
                 ['sku' => $pd['code'] . '-V1'],
                 [
@@ -105,9 +97,7 @@ if ($category) {
             $variants->push(['variant' => $variant, 'product' => $product, 'price' => $pd['price']]);
         }
 
-        // ─────────────────────────────────────
         // 4. CUSTOMERS
-        // ─────────────────────────────────────
         $customers = collect([
             ['email' => 'dash.demo1@daryza.test', 'full_name' => 'Ana Torres',    'phone' => '900000201', 'dni' => '71000001'],
             ['email' => 'dash.demo2@daryza.test', 'full_name' => 'Luis Quispe',   'phone' => '900000202', 'dni' => '71000002'],
@@ -123,23 +113,10 @@ if ($category) {
             ]
         ))->values();
 
-        // ─────────────────────────────────────
         // 5. ÓRDENES DISTRIBUIDAS EN EL AÑO
-        // ─────────────────────────────────────
-        // Genera órdenes en distintos meses para que el gráfico se vea bien
         $ordersPerMonth = [
-            1  => 3,   // Enero
-            2  => 5,   // Febrero
-            3  => 8,   // Marzo
-            4  => 4,   // Abril
-            5  => 6,   // Mayo
-            6  => 7,   // Junio
-            7  => 5,   // Julio
-            8  => 9,   // Agosto
-            9  => 6,   // Setiembre
-            10 => 11,  // Octubre
-            11 => 8,   // Noviembre
-            12 => 14,  // Diciembre
+            1  => 3, 2  => 5, 3  => 8, 4  => 4, 5  => 6, 6  => 7,
+            7  => 5, 8  => 9, 9  => 6, 10 => 11, 11 => 8, 12 => 14,
         ];
 
         $orderIndex = 1;
@@ -189,9 +166,10 @@ if ($category) {
                         'total'                    => $total,
                         'payment_method_id'        => $paymentMethod->id,
                         'payment_method_type'      => 'bank_transfer',
-                        'status'                   => 'delivered',
-                        'payment_status'           => 'approved',
-                        'shipping_status'          => 'delivered',
+                        
+                        // SE CORRIGIÓ AQUÍ: 'status' cambió a 'state'
+                        'state'                    => 'delivered', 
+                        
                         'placed_at'                => $paidAt->copy()->subDays(2),
                         'confirmed_at'             => $paidAt->copy()->subDay(),
                         'paid_at'                  => $paidAt,
@@ -228,6 +206,6 @@ if ($category) {
             }
         }
 
-        $this->command?->info("DashboardDemoSeeder ejecutado: {$orderIndex} órdenes demo creadas en 12 meses con 5 productos y 5 categorías.");
+        $this->command?->info("DashboardDemoSeeder ejecutado: {$orderIndex} órdenes demo creadas.");
     }
 }
