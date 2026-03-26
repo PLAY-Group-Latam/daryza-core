@@ -4,6 +4,7 @@ namespace App\Http\Api\v1\Controllers\Payments;
 
 use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Services\Payments\NiubizService;
+use App\Http\Api\v1\Services\Orders\OrderNotificationService;
 use App\Models\Orders\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    public function __construct(protected NiubizService $niubizService) {}
+    public function __construct(
+        protected NiubizService $niubizService,
+        protected OrderNotificationService $orderNotificationService
+    ) {}
 
     public function createSession(Request $request): JsonResponse
     {
@@ -177,6 +181,8 @@ class PaymentController extends Controller
 
             $payment = $order->payments()->latest()->first();
 
+            $previousState = $order->state;
+
             if ($confirmation['is_approved']) {
                 $order->update([
                     'state' => 'payment_received',
@@ -213,6 +219,8 @@ class PaymentController extends Controller
                     ]);
                 }
             }
+
+            $this->orderNotificationService->sendStateChanged($order, $previousState, $order->state);
 
             return $order->fresh(['payments', 'statusHistory']);
         });

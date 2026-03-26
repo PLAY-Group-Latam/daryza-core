@@ -2,7 +2,7 @@
 
 namespace App\Mail\Order;
 
-use App\Models\Order;
+use App\Models\Orders\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -20,7 +20,7 @@ class OrderDeliveredPartial extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pedido #' . $this->order->purchase_number . ' entregado parcialmente',
+            subject: 'Pedido #' . $this->order->code . ' entregado parcialmente',
         );
     }
 
@@ -29,8 +29,8 @@ class OrderDeliveredPartial extends Mailable
         return new Content(
             view: 'mail.order.5-delivered-partial',
             with: [
-                'customer' => $this->order->contact->full_name,
-                'purchase_number' => $this->order->purchase_number,
+                'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
+                'purchase_number' => $this->order->code,
             ],
         );
     }

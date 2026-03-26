@@ -224,14 +224,26 @@
         .footer-cell {
             background-color: #333333;
             padding: 30px;
-            text-align: center;
             color: #ffffff;
         }
 
         .footer-text {
-            margin: 0 0 10px 0;
-            font-size: 14px;
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.4;
             color: #ffffff;
+        }
+
+        .footer-brand {
+            color: #44ac34;
+            font-weight: bold;
+        }
+
+        .footer-logo {
+            display: block;
+            width: 100px;
+            height: auto;
+            margin: 0;
         }
 
         .footer-link {
@@ -239,20 +251,47 @@
             text-decoration: none;
         }
 
-        .social-link {
-            display: inline-block;
-            margin: 0 10px;
-            padding: 8px 12px;
-            background-color: #FFD700;
-            color: #333333;
-            border-radius: 4px;
+        .footer-domain {
+            color: #ffffff;
             text-decoration: none;
-            font-size: 12px;
-            font-weight: bold;
         }
 
         .social-container {
-            margin: 16px 0 10px 0;
+            margin: 18px 0 16px 0;
+            text-align: center;
+        }
+
+        .social-link {
+            display: inline-block;
+            margin: 0 6px;
+            text-decoration: none;
+        }
+
+        .social-icon {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        .footer-inline-icon {
+            width: 14px;
+            height: 14px;
+            vertical-align: -2px;
+            margin-right: 6px;
+        }
+
+        .footer-contact-row {
+            margin: 16px 0 0 0;
+            text-align: center;
+        }
+
+        .footer-contact-item {
+            display: inline-block;
+            margin: 0 10px 6px 10px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         table {
@@ -297,11 +336,53 @@
                 margin: 10px 0 !important;
                 text-align: center !important;
             }
+
+            .footer-contact-item {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+                margin: 0 0 8px 0 !important;
+                line-height: 1.5 !important;
+            }
+
+            .footer-contact-item:last-child {
+                margin-bottom: 0 !important;
+            }
+
+            .footer-inline-icon {
+                margin-right: 8px !important;
+            }
         }
     </style>
 </head>
 
 <body class="email-body">
+    @php
+    $socialLinks = array_filter((array) config('emails.social_links', []), fn($url) => filled($url));
+    $frontendUrl = rtrim((string) config('app.frontend_url', 'https://www.daryza.com'), '/');
+    $phone = (string) config('emails.contact_phone', '+51 1 234 5678');
+    $mailAssets = (array) config('emails.assets', []);
+    $logoUrl = (string) ($mailAssets['logo'] ?? 'https://storage.googleapis.com/daryza_dev/logo-email-daryza.png');
+    $websiteIcon = (string) ($mailAssets['website_icon'] ??
+    'https://img.icons8.com/material-rounded/48/ffffff/globe--v1.png');
+    $phoneIcon = (string) ($mailAssets['phone_icon'] ?? 'https://img.icons8.com/ios-filled/50/ffffff/phone.png');
+    $locationIcon = (string) ($mailAssets['location_icon'] ?? 'https://img.icons8.com/ios-filled/50/ffffff/marker.png');
+    $socialIcons = [
+    'facebook' => (string) data_get($mailAssets, 'social.facebook',
+    'https://img.icons8.com/ios-filled/50/ffffff/facebook-new.png'),
+    'instagram' => (string) data_get($mailAssets, 'social.instagram', 'https://cdn.simpleicons.org/instagram/FFFFFF'),
+    'youtube' => (string) data_get($mailAssets, 'social.youtube',
+    'https://img.icons8.com/ios-filled/50/ffffff/youtube-play.png'),
+    'linkedin' => (string) data_get($mailAssets, 'social.linkedin',
+    'https://img.icons8.com/ios-filled/50/ffffff/linkedin.png'),
+    ];
+    $socialLabels = [
+    'facebook' => 'Facebook',
+    'instagram' => 'Instagram',
+    'youtube' => 'YouTube',
+    'linkedin' => 'LinkedIn',
+    ];
+    @endphp
     <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
             <td>
@@ -315,8 +396,7 @@
 
                                     <td align="center" class="header-cell">
 
-                                        <img src="https://storage.googleapis.com/daryza_dev/logo-email-daryza.png"
-                                            alt="Daryza Logo"
+                                        <img src="{{ $logoUrl }}" alt="Daryza Logo"
                                             style="display:block; width:160px; height:auto; margin:auto" />
                                     </td>
                                 </tr>
@@ -337,11 +417,46 @@
                                 {{-- FOOTER ESTÁTICO --}}
                                 <tr>
                                     <td class="footer-cell">
-                                        <p class="footer-text"><strong>Daryza Sac</strong></p>
-                                        <!-- <p class="footer-text">Desarrollado y administrado por Daryza SAC 🦋</p> -->
-                                        <p class="footer-text">
-                                            Lima, Perú
-                                        </p>
+                                        <img class="footer-logo" src="{{ $logoUrl }}" alt="Daryza Logo"
+                                            style="margin: 0 auto 2px auto;" />
+
+                                        @if (!empty($socialLinks))
+                                        <div class="social-container">
+                                            @foreach ($socialLinks as $network => $url)
+                                            @if (isset($socialIcons[$network], $socialLabels[$network]))
+                                            <a href="{{ $url }}" class="social-link" target="_blank"
+                                                rel="noopener noreferrer" aria-label="{{ $socialLabels[$network] }}">
+                                                <img class="social-icon" src="{{ $socialIcons[$network] }}"
+                                                    alt="{{ $socialLabels[$network] }}" />
+                                            </a>
+                                            @endif
+                                            @endforeach
+                                        </div>
+                                        @endif
+
+                                        <div class="footer-contact-row">
+                                            <a href="{{ $frontendUrl }}" class="footer-contact-item" target="_blank"
+                                                rel="noopener noreferrer"
+                                                style="color:#ffffff !important; text-decoration:none !important;">
+                                                <img class="footer-inline-icon" src="{{ $websiteIcon }}"
+                                                    alt="Sitio web" />
+                                                {{ $frontendUrl }}
+                                            </a>
+                                            <a href="tel:{{ preg_replace('/\s+/', '', $phone) }}"
+                                                class="footer-contact-item" target="_blank" rel="noopener noreferrer"
+                                                style="color:#ffffff !important; text-decoration:none !important;">
+                                                <img class="footer-inline-icon" src="{{ $phoneIcon }}" alt="Telefono" />
+                                                {{ $phone }}
+                                            </a>
+                                            <span class="footer-contact-item">
+                                                <img class="footer-inline-icon" src="{{ $locationIcon }}"
+                                                    alt="Ubicacion" />
+                                                Lima, Perú
+                                            </span>
+                                        </div>
+
+                                        <p class="footer-text" style="text-align: center; margin-top: 8px;">© 2026
+                                            Daryza Sac. Todos los derechos reservados.</p>
                                     </td>
                                 </tr>
 

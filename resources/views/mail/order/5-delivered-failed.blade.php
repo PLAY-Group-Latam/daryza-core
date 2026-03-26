@@ -24,12 +24,12 @@
     <p class="content-text">
         A continuación, te compartimos nuestros medios de contacto para cualquier duda o consulta
         adicional:
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.contact.email') }}">
-            {{ config('app.contact.email') }}
+        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.orders_notifications.contact_email') }}">
+            {{ config('app.orders_notifications.contact_email') }}
         </a>
         o al
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.contact.phone') }}">
-            {{ config('app.contact.phone') }}
+        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.orders_notifications.contact_phone') }}">
+            {{ config('app.orders_notifications.contact_phone') }}
         </a>.
     </p>
 

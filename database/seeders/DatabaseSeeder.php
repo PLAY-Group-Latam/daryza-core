@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             UbigeoSeeder::class,
+            DeliveryLimaOnlySeeder::class,
             CategoriesProductsSeeder::class,
             PageSeeder::class,
             HomeContentSeeder::class,

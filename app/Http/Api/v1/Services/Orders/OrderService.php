@@ -16,12 +16,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class OrderService
 {
     public function __construct(
-        protected GcsService $gcsService
+        protected GcsService $gcsService,
+        protected OrderNotificationService $orderNotificationService
     ) {}
 
     public function validateOrder(array $payload): array
@@ -143,7 +143,7 @@ class OrderService
                 $variant->decrement('stock', $quantity);
             }
 
-            $order->payments()->create([
+            $payment = $order->payments()->create([
                 'payment_method_id' => null,
                 'method' => $paymentInfo['method'],
                 'status' => $isNiubizApproved ? 'approved' : 'pending',
@@ -166,11 +166,15 @@ class OrderService
 
             $this->registerStatusHistory($order, null, $order->state, 'customer', $customer->id, 'Orden creada');
 
-            return $order->load([
+            $order = $order->load([
                 'items',
                 'payments',
                 'statusHistory',
             ]);
+
+            $this->orderNotificationService->sendOrderCreated($order);
+
+            return $order;
         });
     }
 
@@ -214,6 +218,8 @@ class OrderService
 
             $this->restoreStockForOrder($order);
             $this->registerStatusHistory($order, $previousStatus, 'cancelled', 'customer', $customerId, $reason ?: 'Cancelada por cliente');
+
+            $this->orderNotificationService->sendStateChanged($order, $previousStatus, 'cancelled');
 
             return $order->fresh(['items', 'payments', 'statusHistory']);
         });
@@ -341,6 +347,7 @@ class OrderService
             }
 
             $this->registerStatusHistory($order, $previousState, $newState, 'admin', $adminId, $note);
+            $this->orderNotificationService->sendStateChanged($order, $previousState, $newState);
 
             return $order->fresh(['items', 'payments', 'statusHistory']);
         });
@@ -420,6 +427,106 @@ class OrderService
         ];
     }
 
+    public function expirePendingBankTransferOrders(int $days = 5): array
+    {
+        $days = max(1, $days);
+        $cutoff = now()->subDays($days);
+        $candidateOrderIds = $this->findExpiredPendingBankTransferOrderIds($days);
+
+        $expiredIds = [];
+
+        foreach ($candidateOrderIds as $orderId) {
+            if ($this->expirePendingBankTransferOrderById((string) $orderId, $days)) {
+                $expiredIds[] = (string) $orderId;
+            }
+        }
+
+        return [
+            'expired_count' => count($expiredIds),
+            'expired_order_ids' => $expiredIds,
+            'cutoff' => $cutoff->toDateTimeString(),
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function findExpiredPendingBankTransferOrderIds(int $days = 5): array
+    {
+        $cutoff = now()->subDays(max(1, $days));
+
+        return Order::query()
+            ->where('payment_method_type', 'bank_transfer')
+            ->where('state', 'pending_payment')
+            ->where(function ($query) use ($cutoff) {
+                $query->where(function ($sub) use ($cutoff) {
+                    $sub->whereNotNull('placed_at')
+                        ->where('placed_at', '<=', $cutoff);
+                })->orWhere(function ($sub) use ($cutoff) {
+                    $sub->whereNull('placed_at')
+                        ->where('created_at', '<=', $cutoff);
+                });
+            })
+            ->pluck('id')
+            ->all();
+    }
+
+    public function expirePendingBankTransferOrderById(string $orderId, int $days = 5): bool
+    {
+        $days = max(1, $days);
+        $cutoff = now()->subDays($days);
+
+        return DB::transaction(function () use ($orderId, $cutoff): bool {
+            /** @var Order|null $order */
+            $order = Order::query()
+                ->with(['items', 'payments'])
+                ->lockForUpdate()
+                ->find($orderId);
+
+            if (!$order) {
+                return false;
+            }
+
+            $isStillPendingTransfer = $order->payment_method_type === 'bank_transfer'
+                && $order->state === 'pending_payment';
+            $referenceDate = $order->placed_at ?? $order->created_at;
+            $isExpired = $referenceDate && $referenceDate->lte($cutoff);
+
+            if (!$isStillPendingTransfer || !$isExpired) {
+                return false;
+            }
+
+            $previousState = $order->state;
+
+            $order->update([
+                'state' => 'cancelled',
+                'cancelled_at' => now(),
+                'notes' => trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada automáticamente por falta de pago (más de 5 días).'),
+            ]);
+
+            $payment = $order->payments()->latest()->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'failed',
+                    'rejected_at' => now(),
+                ]);
+            }
+
+            $this->restoreStockForOrder($order);
+            $this->registerStatusHistory(
+                $order,
+                $previousState,
+                'cancelled',
+                'system',
+                null,
+                'Cancelación automática por vencimiento de pago en transferencia bancaria'
+            );
+            $this->orderNotificationService->sendStateChanged($order, $previousState, 'cancelled');
+
+            return true;
+        });
+    }
+
     public function buildAdminStateMeta(Order $order): array
     {
         $actionsOrder = [
@@ -485,6 +592,7 @@ class OrderService
         }
 
         $zone = DeliveryZone::query()
+            ->where('delivery_cost', '>', 0)
             ->where(function ($query) use ($departmentId, $provinceId, $districtId) {
                 $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $districtId))
                     ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $provinceId))
