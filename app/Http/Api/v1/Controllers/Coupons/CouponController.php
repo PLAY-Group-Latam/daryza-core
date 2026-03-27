@@ -6,10 +6,19 @@ use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Requests\Coupons\ValidateCouponRequest;
 use App\Http\Api\v1\Services\Coupons\CouponService;
 use App\Models\Products\ProductVariant;
+use Illuminate\Http\Request;
 
 class CouponController extends Controller
 {
     public function __construct(protected CouponService $couponService) {}
+
+    public function index(Request $request)
+    {
+        $perPage = (int) $request->input('per_page', 10);
+        $coupons = $this->couponService->listPublicCoupons(max(1, min($perPage, 50)));
+
+        return $this->success('Cupones públicos obtenidos correctamente.', $coupons);
+    }
 
     public function validateCoupon(ValidateCouponRequest $request)
     {
