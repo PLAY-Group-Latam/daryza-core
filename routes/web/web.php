@@ -30,3 +30,4 @@ require __DIR__ . '/seo.php';
 require __DIR__ . '/orders.php';
 require __DIR__ . '/distributors.php';
 require __DIR__ . '/coupon.php';
+require __DIR__ . '/intention.php';

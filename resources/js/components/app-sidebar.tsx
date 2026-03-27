@@ -27,6 +27,7 @@ import {
     MapPin,
     Users, Store, Truck, CreditCard, SearchCheck, FileCode,
     Tags,
+    TrendingUp
 
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -157,6 +158,12 @@ const mainNavItems: NavItem[] = [
         title: 'Distribuidores Autorizados',
         href: '/distributors',
         icon: MapPin,
+    },
+    {
+        title:'Intencion de Compra',
+        href: '/intention-purchase',
+        icon:TrendingUp ,
+
     },
 
     {
