@@ -2,7 +2,9 @@
 
 namespace App\Http\Api\v1\Services\Orders;
 
+use App\Http\Api\v1\Services\Coupons\CouponService;
 use App\Http\Api\v1\Services\GcsService;
+use App\Models\Coupons\CouponRedemption;
 use App\Models\Orders\Order;
 use App\Models\Products\ProductVariant;
 use App\Models\Customers\Customer;
@@ -21,7 +23,8 @@ class OrderService
 {
     public function __construct(
         protected GcsService $gcsService,
-        protected OrderNotificationService $orderNotificationService
+        protected OrderNotificationService $orderNotificationService,
+        protected CouponService $couponService
     ) {}
 
     public function validateOrder(array $payload): array
@@ -29,6 +32,20 @@ class OrderService
         $items = $this->normalizeItems($payload['items']);
         $variants = $this->resolveVariants($items);
         $subtotal = $this->calculateSubtotal($items, $variants);
+        $couponCode = trim((string) ($payload['coupon_code'] ?? ''));
+        $discountTotal = 0.0;
+        $couponData = null;
+
+        if ($couponCode !== '') {
+            $couponData = $this->couponService->validateForOrder(
+                $couponCode,
+                collect($variants),
+                $items,
+                (string) auth('api')->id()
+            );
+            $discountTotal = (float) $couponData['discount_total'];
+        }
+
         $shippingInput = $this->extractShippingInput($payload);
 
         $shipping = $this->resolveShippingQuote(
@@ -41,9 +58,10 @@ class OrderService
         return [
             'subtotal' => round($subtotal, 2),
             'delivery_cost' => round($shipping['delivery_cost'], 2),
-            'discount_total' => 0,
-            'total' => round($subtotal + $shipping['delivery_cost'], 2),
+            'discount_total' => round($discountTotal, 2),
+            'total' => round(($subtotal - $discountTotal) + $shipping['delivery_cost'], 2),
             'shipping' => $shipping,
+            'coupon' => $couponData ? Arr::except($couponData, ['coupon']) : null,
             'items' => $this->previewItemsPayload($items, $variants),
         ];
     }
@@ -54,6 +72,20 @@ class OrderService
             $items = $this->normalizeItems($payload['items']);
             $variants = $this->resolveVariants($items, true);
             $subtotal = $this->calculateSubtotal($items, $variants);
+            $couponCode = trim((string) ($payload['coupon_code'] ?? ''));
+            $couponData = null;
+            $discountTotal = 0.0;
+
+            if ($couponCode !== '') {
+                $couponData = $this->couponService->validateForOrder(
+                    $couponCode,
+                    collect($variants),
+                    $items,
+                    $customer->id,
+                    true
+                );
+                $discountTotal = (float) $couponData['discount_total'];
+            }
 
             $shippingInput = $payload['shipping_info'];
             $shipping = $this->resolveShippingQuote(
@@ -104,8 +136,8 @@ class OrderService
                 'currency' => 'PEN',
                 'subtotal' => $subtotal,
                 'delivery_cost' => $shipping['delivery_cost'],
-                'discount_total' => 0,
-                'total' => $subtotal + $shipping['delivery_cost'],
+                'discount_total' => $discountTotal,
+                'total' => ($subtotal - $discountTotal) + $shipping['delivery_cost'],
 
                 'payment_method_id' => null,
                 'payment_method_type' => $paymentInfo['method'],
@@ -141,6 +173,16 @@ class OrderService
                 ]);
 
                 $variant->decrement('stock', $quantity);
+            }
+
+            if ($couponData) {
+                CouponRedemption::create([
+                    'coupon_id' => $couponData['coupon_id'],
+                    'customer_id' => $customer->id,
+                    'order_id' => $order->id,
+                    'discount_applied' => $discountTotal,
+                    'redeemed_at' => now(),
+                ]);
             }
 
             $payment = $order->payments()->create([
@@ -635,7 +677,11 @@ class OrderService
         $query = ProductVariant::query()
             ->whereIn('id', $ids)
             ->where('is_active', true)
-            ->with('product:id,name');
+            ->with([
+                'product:id,name',
+                'product.categories:id',
+                'product.businessLines:id',
+            ]);
 
         if ($lockForUpdate) {
             $query->lockForUpdate();

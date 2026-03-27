@@ -40,6 +40,7 @@ class StoreOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
 
             'payment_info' => ['required', 'array'],
             'payment_info.method' => ['required', 'in:bank_transfer,niubiz'],
