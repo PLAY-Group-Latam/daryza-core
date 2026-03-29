@@ -20,7 +20,6 @@ class DistributorSeeder extends Seeder
                 'email' => 'peterflores@pysprofessional.com',
                 'phone' => '932600621',
                 'note' => null,
-                'logo_pin' => null,
                 'establishment_img' => null,
                 'lat' => -16.4262704,
                 'lng' => -71.5271567,

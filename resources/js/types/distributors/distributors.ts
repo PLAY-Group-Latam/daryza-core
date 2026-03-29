@@ -1,14 +1,13 @@
 export interface Distributor {
     id: number;
-    name: string;   
+    name: string;
     ruc?: string;
     region: string;
-    address?: string; 
+    address?: string;
     email?: string;
     phone?: string;
     note?: string;
-    logo_pin?: string; 
-    establishment_img?: string; 
+    establishment_img?: string;
 
     coords: {
         lat: number;
@@ -17,4 +16,9 @@ export interface Distributor {
 
     created_at: string;
     updated_at: string;
+}
+
+export interface MapPinSetting {
+    url: string | null;
+    path: string | null;
 }

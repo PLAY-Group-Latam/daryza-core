@@ -3,6 +3,7 @@
 use App\Http\Api\v1\Middleware\JwtFromCookie;
 use App\Http\Web\Middleware\HandleAppearance;
 use App\Http\Web\Middleware\HandleInertiaRequests;
+use App\Http\Api\v1\Middleware\TrackApiEvents; 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,6 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(prepend: [
             JwtFromCookie::class,
+        ]);
+        $middleware->api(append: [
+            TrackApiEvents::class, 
         ]);
 
         $middleware->api(append: [

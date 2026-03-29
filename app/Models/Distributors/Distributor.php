@@ -15,13 +15,12 @@ class Distributor extends Model
         'email',
         'phone',
         'note',
-        'logo_pin',         
-        'establishment_img', 
+        'establishment_img',
         'lat',
-        'lng'
+        'lng',
     ];
 
-    protected $appends = ['coords']; 
+    protected $appends = ['coords'];
 
     protected $hidden = ['lat', 'lng'];
 

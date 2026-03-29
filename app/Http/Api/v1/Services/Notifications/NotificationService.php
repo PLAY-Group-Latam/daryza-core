@@ -13,7 +13,7 @@ class NotificationService
     const DEFAULT_IMAGE = '/images/daryza-default.png';
 
 
-    private function identifierQuery($query, ?int $customerId, ?string $visitorId)
+   private function identifierQuery($query, $customerId, ?string $visitorId)
     {
         return $query->where(function ($q) use ($customerId, $visitorId) {
             if ($customerId) {
@@ -90,9 +90,8 @@ class NotificationService
 
 
 
-    public function markAllAsRead(?int $customerId, ?string $visitorId): void
+  public function markAllAsRead($customerId, ?string $visitorId): void
     {
-      
         $deletedIds = $this->identifierQuery(
             NotificationRead::where('is_deleted', true),
             $customerId,
@@ -115,7 +114,7 @@ class NotificationService
 
 
 
-    public function deleteNotification(string $id, ?int $customerId, ?string $visitorId): void
+   public function deleteNotification(string $id, $customerId, ?string $visitorId): void
     {
         NotificationRead::updateOrCreate(
             [

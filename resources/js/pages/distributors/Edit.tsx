@@ -1,8 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import {
-    MapPin, Phone, Mail, ChevronLeft, Save, RefreshCcw
-} from 'lucide-react';
+import { MapPin, Phone, Mail, ChevronLeft, Save, RefreshCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,41 +27,33 @@ export default function Edit({ distributor }: Props) {
         address: distributor.address || '',
         email: distributor.email || '',
         phone: distributor.phone || '',
-        logo_pin: null as File | null,
         establishment_img: null as File | null,
     });
 
-    const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(distributor.logo_pin || null);
-    const [establishmentPreviewUrl, setEstablishmentPreviewUrl] = useState<string | null>(distributor.establishment_img || null);
+    const [establishmentPreviewUrl, setEstablishmentPreviewUrl] = useState<string | null>(
+        distributor.establishment_img || null
+    );
 
-    // Función para regresar a la ubicación original guardada en la base de datos
     const handleResetLocation = () => {
-        setData(prev => ({
-            ...prev,
-            lat: initialLat,
-            lng: initialLng
-        }));
+        setData(prev => ({ ...prev, lat: initialLat, lng: initialLng }));
     };
 
-    const handleFileChange = (field: 'logo_pin' | 'establishment_img', file: File | null) => {
-        setData(field, file);
-        const previewSetter = field === 'logo_pin' ? setLogoPreviewUrl : setEstablishmentPreviewUrl;
-        const defaultUrl = field === 'logo_pin' ? distributor.logo_pin : distributor.establishment_img;
-
+    const handleFileChange = (file: File | null) => {
+        setData('establishment_img', file);
         if (file) {
-            const url = URL.createObjectURL(file);
-            previewSetter(url);
+            setEstablishmentPreviewUrl(URL.createObjectURL(file));
         } else {
-            previewSetter(defaultUrl || null);
+            setEstablishmentPreviewUrl(distributor.establishment_img || null);
         }
     };
 
     useEffect(() => {
         return () => {
-            if (logoPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(logoPreviewUrl);
-            if (establishmentPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(establishmentPreviewUrl);
+            if (establishmentPreviewUrl?.startsWith('blob:')) {
+                URL.revokeObjectURL(establishmentPreviewUrl);
+            }
         };
-    }, [logoPreviewUrl, establishmentPreviewUrl]);
+    }, [establishmentPreviewUrl]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,7 +74,7 @@ export default function Edit({ distributor }: Props) {
                         </Button>
                         <div>
                             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Editar Distribuidor</h1>
-                            <p className="text-xs text-muted-foreground leading-none"> Actualiza la información y ubicación</p>
+                            <p className="text-xs text-muted-foreground leading-none">Actualiza la información y ubicación</p>
                         </div>
                     </div>
                     <Button type="submit" disabled={processing} className="bg-[#44AC34] hover:bg-[#388e2a] px-6">
@@ -98,52 +88,17 @@ export default function Edit({ distributor }: Props) {
                     {/* PANEL IZQUIERDO: FORMULARIO */}
                     <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
 
-                        {/* SECCIÓN DE IMÁGENES */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Pin del Mapa</Label>
-                                <div className="relative group">
-                                    <Upload
-                                        value={logoPreviewUrl}
-                                        onFileChange={(file) => handleFileChange('logo_pin', file)}
-                                        placeholder="Cambiar Pin"
-                                        previewClassName="h-28 w-full bg-slate-50 border-dashed border-2"
-                                    />
-                                    <div className="absolute -top-1 -right-1 bg-white shadow-lg p-1 rounded-full border border-slate-100 z-10 pointer-events-none">
-                                        <div className="relative h-10 w-8">
-                                            {logoPreviewUrl ? (
-                                                <div
-                                                    className="absolute inset-0 w-full h-full"
-                                                    style={{
-                                                        backgroundImage: `url('${logoPreviewUrl}')`,
-                                                        backgroundSize: 'cover',
-                                                        backgroundPosition: 'center',
-                                                        WebkitMaskImage: "url('/images/distributors/marker-icon.svg')",
-                                                        maskImage: "url('/images/distributors/marker-icon.svg')",
-                                                        WebkitMaskSize: 'contain',
-                                                        maskSize: 'contain',
-                                                        maskRepeat: 'no-repeat',
-                                                    }}
-                                                />
-                                            ) : (
-                                                <img src="/images/distributors/marker-icon.svg" className="absolute inset-0 w-full h-full opacity-50" alt="default" />
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                {errors.logo_pin && <p className="text-[10px] text-red-500">{errors.logo_pin}</p>}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Fachada</Label>
-                                <Upload
-                                    value={establishmentPreviewUrl}
-                                    onFileChange={(file) => handleFileChange('establishment_img', file)}
-                                    placeholder="Cambiar Foto"
-                                    previewClassName="h-28 w-full bg-slate-50 border-dashed border-2"
-                                />
-                                {errors.establishment_img && <p className="text-[10px] text-red-500">{errors.establishment_img}</p>}
-                            </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Foto del Establecimiento</Label>
+                            <Upload
+                                value={establishmentPreviewUrl}
+                                onFileChange={handleFileChange}
+                                placeholder="Cambiar Foto"
+                                previewClassName="h-28 w-full bg-slate-50 border-dashed border-2"
+                            />
+                            {errors.establishment_img && (
+                                <p className="text-[10px] text-red-500">{errors.establishment_img}</p>
+                            )}
                         </div>
 
                         {/* CAMPOS DE TEXTO */}
@@ -155,7 +110,7 @@ export default function Edit({ distributor }: Props) {
                                         value={data.name}
                                         onChange={e => setData('name', e.target.value)}
                                         placeholder="Ej. Distribuidora San Juan S.A.C."
-                                        className={errors.name ? "border-red-500 h-9" : "h-9"}
+                                        className={errors.name ? 'border-red-500 h-9' : 'h-9'}
                                     />
                                     {errors.name && <p className="text-[10px] text-red-500">{errors.name}</p>}
                                 </div>
@@ -233,10 +188,8 @@ export default function Edit({ distributor }: Props) {
                                 setData(prev => ({ ...prev, lat: latlng.lat, lng: latlng.lng }));
                             }}
                             initialCoords={{ lat: data.lat, lng: data.lng }}
-                            logoPreviewUrl={logoPreviewUrl}
                         />
 
-                        {/* WIDGET DE COORDENADAS Y BOTÓN DE RESETEO */}
                         <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-3">
                             <div className="flex gap-2">
                                 <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white shadow-sm flex items-center gap-2">
@@ -249,7 +202,6 @@ export default function Edit({ distributor }: Props) {
                                 </div>
                             </div>
 
-                            {/* Botón Flotante para regresar a la ubicación anterior */}
                             <Button
                                 type="button"
                                 variant="secondary"

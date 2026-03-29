@@ -7,11 +7,15 @@ Route::prefix('distributors')->name('distributors.')->group(function () {
 
     Route::get('/', [DistributorController::class, 'index'])
         ->name('index');
+
     Route::get('/create', [DistributorController::class, 'create'])
         ->name('create');
 
     Route::post('/', [DistributorController::class, 'store'])
         ->name('store');
+
+    Route::post('/map-pin', [DistributorController::class, 'updateMapPin'])
+        ->name('map-pin');
 
     Route::get('/{distributor}', [DistributorController::class, 'show'])
         ->name('show');
