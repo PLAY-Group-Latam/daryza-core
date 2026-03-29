@@ -18,9 +18,7 @@ class DistributorResource extends JsonResource
             'email'             => $this->email,
             'phone'             => $this->phone,
             'note'              => $this->note,
-            'logo_pin'          => $this->logo_pin, 
             'establishment_img' => $this->establishment_img, 
-            
             'coords' => [
                 'lat' => (float) $this->lat,
                 'lng' => (float) $this->lng,

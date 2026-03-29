@@ -4,7 +4,7 @@ namespace App\Http\Web\Controllers\Distributors;
 
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Services\Distributors\DistributorsService;
-use App\Http\Web\Resources\Distributors\DistributorsResource; 
+use App\Http\Web\Resources\Distributors\DistributorsResource;
 use App\Http\Web\Requests\Distributors\DistributorRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,17 +21,19 @@ class DistributorController extends Controller
     }
 
     public function index(Request $request): Response
-{
-    $paginated = $this->service->getPaginated($request->all());
+    {
+        $paginated = $this->service->getPaginated($request->all());
+        $mapPin    = $this->service->getMapPin();
 
-    return Inertia::render('distributors/Index', [
-      
-        'paginatedDistributors' => $paginated->through(function ($item) {
-            return new DistributorsResource($item);
-        }),
-        'filters' => $request->only(['search'])
-    ]);
-}
+        return Inertia::render('distributors/Index', [
+            'paginatedDistributors' => $paginated->through(fn ($item) => new DistributorsResource($item)),
+            'filters'               => $request->only(['search']),
+            'mapPin'                => [
+                'url'  => $mapPin->logo_pin,
+                'path' => $mapPin->logo_pin,
+            ],
+        ]);
+    }
 
     public function create(): Response
     {
@@ -46,26 +48,26 @@ class DistributorController extends Controller
             ->with('success', 'Distribuidor creado con éxito.');
     }
 
-    public function show($id)
+    public function show($id): Response
     {
         $distributor = $this->service->findById((int) $id);
 
-        return inertia('distributors/Show', [
-            'distributor' => new DistributorsResource($distributor)
+        return Inertia::render('distributors/Show', [
+            'distributor' => new DistributorsResource($distributor),
         ]);
     }
 
     public function edit($id): Response
     {
         $distributor = $this->service->findById((int) $id);
+
         return Inertia::render('distributors/Edit', [
-            'distributor' => new DistributorsResource($distributor)
+            'distributor' => new DistributorsResource($distributor),
         ]);
     }
 
     public function update(DistributorRequest $request, $id): RedirectResponse
     {
-       
         $this->service->update((int) $id, $request->validated());
 
         return redirect()->route('distributors.index')
@@ -74,10 +76,22 @@ class DistributorController extends Controller
 
     public function destroy($id): RedirectResponse
     {
-     
         $this->service->delete((int) $id);
 
         return redirect()->back()
             ->with('success', 'Distribuidor eliminado.');
+    }
+
+  public function updateMapPin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'logo_pin' => ['required', 'image', 'mimes:png,svg,jpg,jpeg,webp', 'max:2048'],
+        ]);
+
+        $this->service->updateMapPin($request->file('logo_pin'));
+
+        // Cambiamos el back() por un redirect directo al index de distribuidores
+        return redirect()->route('distributors.index')
+            ->with('success', 'Pin del mapa actualizado correctamente.');
     }
 }

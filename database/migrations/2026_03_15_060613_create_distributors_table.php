@@ -20,12 +20,9 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone', 20)->nullable();
             $table->text('note')->nullable();
-            $table->string('logo_pin')->nullable(); 
-            $table->string('establishment_img')->nullable(); 
-       
+            $table->string('establishment_img')->nullable();
             $table->decimal('lat', 10, 8);
             $table->decimal('lng', 11, 8);
-            
             $table->timestamps();
         });
     }

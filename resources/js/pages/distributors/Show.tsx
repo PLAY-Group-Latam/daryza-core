@@ -1,12 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    MapPin, Phone, Mail, FileText, 
-    ChevronLeft, Globe, Info, ImageIcon, 
+import {
+    MapPin, Phone, Mail, FileText,
+    ChevronLeft, Globe,
     Edit3, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Distributor } from '@/types/distributors/distributors';
@@ -25,8 +24,8 @@ export default function Show({ distributor }: Props) {
             <Head title={`Distribuidor - ${distributor.name}`} />
 
             <div className="flex h-[calc(100vh-64px)] flex-col gap-4 p-6 overflow-hidden">
-                
-                {/* BARRA DE ACCIONES SUPERIOR (Igual a Edit) */}
+
+                {/* BARRA DE ACCIONES SUPERIOR */}
                 <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" asChild className="rounded-full">
@@ -52,40 +51,28 @@ export default function Show({ distributor }: Props) {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden">
 
-                    {/* PANEL IZQUIERDO: DETALLES (Simulando el Form de Edit) */}
+                    {/* PANEL IZQUIERDO */}
                     <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                        
-                        {/* SECCIÓN DE IMÁGENES */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Pin del Mapa</Label>
-                                <div className="h-28 w-full bg-white border-2 border-slate-100 rounded-xl flex items-center justify-center p-4 relative overflow-hidden shadow-sm">
-                                    {distributor.logo_pin ? (
-                                        <img src={distributor.logo_pin} alt="Logo Pin" className="max-w-full max-h-full object-contain" />
-                                    ) : (
-                                        <div className="flex flex-col items-center opacity-20">
-                                            <ImageIcon className="h-6 w-6" />
-                                            <span className="text-[8px] font-bold">SIN LOGO</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Fachada</Label>
-                                <div className="h-28 w-full bg-slate-100 rounded-xl overflow-hidden relative shadow-sm border-2 border-white">
-                                    {distributor.establishment_img ? (
-                                        <img src={distributor.establishment_img} alt="Fachada" className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                                            <Globe className="h-6 w-6 opacity-20" />
-                                        </div>
-                                    )}
-                                </div>
+                        {/* FACHADA */}
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Foto del Establecimiento</Label>
+                            <div className="h-28 w-full bg-slate-100 rounded-xl overflow-hidden relative shadow-sm border-2 border-white">
+                                {distributor.establishment_img ? (
+                                    <img
+                                        src={distributor.establishment_img}
+                                        alt="Fachada"
+                                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                                        <Globe className="h-6 w-6 opacity-20" />
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* BLOQUE DE INFORMACIÓN (Misma estructura que Input) */}
+                        {/* INFORMACIÓN */}
                         <Card className="border-none shadow-sm ring-1 ring-slate-200">
                             <CardContent className="p-4 space-y-4">
                                 <div className="space-y-1.5">
@@ -145,15 +132,13 @@ export default function Show({ distributor }: Props) {
                         )}
                     </div>
 
-                    {/* PANEL DERECHO: MAPA (Solo lectura) */}
+                    {/* PANEL DERECHO: MAPA */}
                     <div className="lg:col-span-8 h-full rounded-2xl overflow-hidden border-2 border-white shadow-2xl relative bg-slate-200">
-                        <DistributorsMap 
-                            initialCoords={{ lat, lng }} 
-                            readOnly={true} // Asegura que no se mueva el marcador
-                            logoPreviewUrl={distributor.logo_pin} 
+                        <DistributorsMap
+                            initialCoords={{ lat, lng }}
+                            readOnly={true}
                         />
 
-                        {/* WIDGET DE COORDENADAS (Estilo Edit) */}
                         <div className="absolute top-4 right-4 z-[1000] flex gap-2">
                             <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white shadow-sm flex items-center gap-2">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">LAT</span>
