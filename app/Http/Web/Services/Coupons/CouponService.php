@@ -149,14 +149,13 @@ class CouponService
                 fn($q) => $q->whereIn('id', explode(',', $query)))
             ->when($query && !str_contains($query, ','),
                 fn($q) => $q
-                    ->where('first_name', 'ilike', '%' . $query . '%')
-                    ->orWhere('last_name', 'ilike', '%' . $query . '%')
+                    ->where('full_name', 'ilike', '%' . $query . '%')
                     ->orWhere('email', 'ilike', '%' . $query . '%'))
             ->limit(50)
             ->get()
             ->map(fn($c) => [
                 'id'    => $c->id,
-                'name'  => $c->full_name ?? trim($c->first_name . ' ' . $c->last_name),
+                'name'  => $c->full_name,
                 'email' => $c->email,
                 'phone' => $c->phone ?? null,
                 'photo' => $c->photo ?? null,

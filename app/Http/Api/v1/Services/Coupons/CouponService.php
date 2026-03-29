@@ -6,10 +6,63 @@ use App\Enums\Coupon\CouponScope;
 use App\Models\Coupons\Coupon;
 use App\Models\Products\ProductPackItem;
 use App\Models\Products\ProductVariant;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class CouponService
 {
+    public function listPublicCoupons(int $perPage = 10): LengthAwarePaginator
+    {
+        $now = now();
+
+        return Coupon::query()
+            ->select([
+                'id',
+                'code',
+                'description',
+                'discount_type',
+                'discount_amount',
+                'maximum_discount_amount',
+                'minimum_order_amount',
+                'scope',
+                'is_active',
+                'is_public',
+                'usage_limit',
+                'usage_limit_per_user',
+                'valid_from',
+                'valid_until',
+            ])
+            ->where('is_public', true)
+            ->where('is_active', true)
+            ->where('scope', '!=', CouponScope::Customer->value)
+            ->where(function ($query) use ($now) {
+                $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
+            })
+            ->where(function ($query) use ($now) {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
+            })
+            ->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->through(fn(Coupon $coupon) => [
+                'id' => $coupon->id,
+                'code' => $coupon->code,
+                'description' => $coupon->description,
+                'discount_type' => $coupon->discount_type,
+                'discount_amount' => (float) $coupon->discount_amount,
+                'maximum_discount_amount' => $coupon->maximum_discount_amount !== null
+                    ? (float) $coupon->maximum_discount_amount
+                    : null,
+                'minimum_order_amount' => (float) $coupon->minimum_order_amount,
+                'scope' => $coupon->scope,
+                'is_active' => (bool) $coupon->is_active,
+                'is_public' => (bool) $coupon->is_public,
+                'usage_limit' => $coupon->usage_limit,
+                'usage_limit_per_user' => $coupon->usage_limit_per_user,
+                'valid_from' => $coupon->valid_from?->toIso8601String(),
+                'valid_until' => $coupon->valid_until?->toIso8601String(),
+            ]);
+    }
+
     public function validateForOrder(
         string $couponCode,
         Collection $variants,
