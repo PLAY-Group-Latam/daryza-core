@@ -61,7 +61,8 @@ class OrderController extends Controller
         return Inertia::render('orders/Show', [
             'order' => array_merge(
                 $order->toArray(),
-                $this->orderService->buildAdminStateMeta($order)
+                $this->orderService->buildAdminStateMeta($order),
+                $this->orderService->buildPricingMeta($order)
             ),
         ]);
     }
