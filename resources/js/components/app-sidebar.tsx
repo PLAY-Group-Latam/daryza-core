@@ -24,7 +24,11 @@ import {
     LayoutTemplate,
     Newspaper,
     User,
-    Users,Store,Truck, CreditCard, SearchCheck, FileCode
+    MapPin,
+    Users, Store, Truck, CreditCard, SearchCheck, FileCode,
+    Tags,
+    TrendingUp
+
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -35,19 +39,14 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Clientes',
-        href: customers.index(),
-        icon: User,
-    },
-    {
-        title: 'Usuarios',
-        href: users.index(),
-        icon: Users,
-    },
-    {
         title: 'Órdenes',
         href: '/ordenes',
         icon: ClipboardList,
+    },
+    {
+        title: 'Clientes',
+        href: customers.index(),
+        icon: User,
     },
     {
         title: 'Productos',
@@ -80,6 +79,43 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
+        title: 'Cupones',
+        href: '/coupon',
+        icon: Tags,
+    },
+    {
+        title: 'Distribuidores Autorizados',
+        href: '/distributors',
+        icon: MapPin,
+    },
+    {
+        title: 'Intención de Compra',
+        href: '/intention-purchase',
+        icon: TrendingUp,
+    },
+    {
+        title: 'Leads',
+        icon: Headset,
+        children: [
+            {
+                title: 'Lista de Reclamaciones',
+                href: '/claims/items',
+            },
+            {
+                title: 'Lista de Contactos',
+                href: '/contacts/items',
+            },
+            {
+                title: 'Lista de Nosotros',
+                href: '/aboutus/items',
+            },
+            {
+                title: 'Lista de Trabajos',
+                href: '/jobs/items',
+            },
+        ],
+    },
+    {
         title: 'Blogs',
         icon: Newspaper,
         children: [
@@ -93,28 +129,10 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
-
     {
-        title: 'Leads',
-        icon: Headset,
-        children: [
-            {
-                title: 'Lista de Reclamaciones',
-                href: '/claims/items',
-            },
-            {
-                title: ' Lista de Contactos',
-                href: '/contacts/items',
-            },
-            {
-                title: 'Lista de Nosotros',
-                href: '/aboutus/items',
-            },
-            {
-                title: 'Lista de Trabajos',
-                href: '/jobs/items',
-            },
-        ],
+        title: 'Contenido General',
+        href: '/content/items',
+        icon: LayoutTemplate,
     },
     {
         title: 'Portal de Empleos',
@@ -139,11 +157,10 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Contenido General',
-        href: '/content/items',
-        icon: LayoutTemplate,
+        title: 'Usuarios',
+        href: users.index(),
+        icon: Users,
     },
-
     {
         title: 'Configuración',
         icon: Store,

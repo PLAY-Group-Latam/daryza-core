@@ -4,11 +4,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { DeliveryZone, ZoneType } from '@/models/Ubigeos';
 import deliveryZones from '@/routes/delivery-zones';
-import { reset } from '@/routes/password';
 import { router, useForm } from '@inertiajs/react';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
 
 interface ActionsProps {
     id: string;
@@ -24,13 +22,10 @@ interface FormData {
 }
 
 export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
-    // console.log('dataZone dnetro', dataZone);
     const {
         data,
         setData,
         errors,
-        post,
-        reset,
     } = useForm<FormData>({
         zone_type: zoneType,
         zone_id: id,
@@ -45,6 +40,7 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
             is_main: dataZone?.is_main ?? false,
             delivery_cost: dataZone?.delivery_cost ?? '',
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataZone, id, zoneType]);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -63,7 +59,6 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
         });
     };
 
-    // router.delete(route(routeName, id), {
     const handleDelete = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -92,7 +87,6 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
                     placeholder="Monto"
                     className={`w-32 ${errors.delivery_cost ? 'border-red-500' : ''}`}
                 />
-                {/* <InputError className="mt-0.5" message={errors.delivery_cost} /> */}
             </div>
             {zoneType === ZoneType.DISTRICT && (
                 <div className="flex items-center space-x-2">
@@ -103,18 +97,15 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
             <Button
                 type="button"
                 onClick={handleSubmit}
-                // onClick={(e) => e.stopPropagation()}
-                asChild
                 variant="default"
                 size="icon"
                 className="h-8 w-8"
             >
                 <SaveIcon className="h-4 w-4 p-1" />
             </Button>
-            <Button type="button" onClick={handleDelete} asChild variant="destructive" size="icon" className="h-8 w-8">
+            <Button type="button" onClick={handleDelete} variant="destructive" size="icon" className="h-8 w-8">
                 <Trash2Icon className="h-4 w-4 p-1 text-white" />
             </Button>
         </form>
     );
 }
-

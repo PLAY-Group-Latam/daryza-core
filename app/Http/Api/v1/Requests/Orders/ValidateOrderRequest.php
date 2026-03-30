@@ -4,7 +4,7 @@ namespace App\Http\Api\v1\Requests\Orders;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class PreviewOrderRequest extends FormRequest
+class ValidateOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,6 +17,7 @@ class PreviewOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
 
             'shipping_info' => ['required', 'array'],
             'shipping_info.department_id' => ['required', 'exists:departments,id'],

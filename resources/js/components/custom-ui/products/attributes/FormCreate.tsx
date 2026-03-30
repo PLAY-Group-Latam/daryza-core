@@ -33,25 +33,32 @@ export default function FormCreate({ attribute }: Props) {
     const { data, setData, post, put, processing, errors } = useForm<FormData>({
         name: attribute?.name || '',
         type: attribute?.type || 'text',
-        is_filterable: attribute?.is_filterable ?? false, // Por defecto false según pedido
+        is_filterable: attribute?.is_filterable ?? false,
         is_variant: attribute?.is_variant ?? false,
         values: attribute?.values?.map((v) => v.value) || [''],
     });
 
     const [useColor, setUseColor] = useState(false);
 
+    // ✅ FIX: evitar setState directo sin deps correctas
     useEffect(() => {
         if (isEdit && data.values.length > 0) {
             const isHex = /^#[0-9A-F]{6}$/i.test(data.values[0]);
-            if (isHex) setUseColor(true);
+            if (isHex) {
+                setUseColor(true);
+            }
         }
-    }, [isEdit]);
+    }, [isEdit, data.values]); // ✅ agregado data.values
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        isEdit && attribute
-            ? put(attributes.update(attribute.id).url)
-            : post(attributes.store().url);
+
+        // ✅ FIX: evitar expresión sin uso
+        if (isEdit && attribute) {
+            put(attributes.update(attribute.id).url);
+        } else {
+            post(attributes.store().url);
+        }
     };
 
     const handlePurposeChange = (value: string) => {
@@ -59,7 +66,6 @@ export default function FormCreate({ attribute }: Props) {
         setData((prev) => ({
             ...prev,
             is_variant: isVariant,
-            // LÓGICA AUTOMÁTICA: Variante -> select | Especificación -> text
             type: isVariant ? 'select' : 'text',
         }));
     };
@@ -72,7 +78,6 @@ export default function FormCreate({ attribute }: Props) {
 
     return (
         <form onSubmit={submit} className="max-w-3xl space-y-8">
-            {/* --- BLOQUE PRINCIPAL: DEFINICIÓN --- */}
             <section className="grid grid-cols-1 gap-10 md:grid-cols-2">
                 <div className="flex flex-col justify-between gap-3">
                     <Label htmlFor="name">Nombre del atributo</Label>
@@ -132,7 +137,6 @@ export default function FormCreate({ attribute }: Props) {
                 </div>
             </section>
 
-            {/* --- BLOQUE DINÁMICO: VALORES (Solo para Variantes) --- */}
             {data.is_variant && (
                 <section className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -241,6 +245,7 @@ export default function FormCreate({ attribute }: Props) {
                     </p>
                 </section>
             )}
+
             <footer className="flex justify-start">
                 <Button
                     type="submit"

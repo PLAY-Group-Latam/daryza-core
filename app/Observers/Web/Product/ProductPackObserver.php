@@ -2,21 +2,20 @@
 
 namespace App\Observers\Web\Product;
 
+use App\Http\Api\v1\Services\Notifications\NotificationService;
 use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\ProductPack;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductPackObserver
 {
     public function creating(ProductPack $pack): void
     {
-        // Generación automática del código si está vacío
         if (empty($pack->code)) {
-            // Ejemplo: PK-24-A8B9 (Puedes usar tu generador si prefieres)
             $pack->code = 'PK-' . date('y') . '-' . strtoupper(Str::random(6));
         }
 
-        // Asegurar que tenga slug si el frontend no lo envió (fallback)
         if (empty($pack->slug)) {
             $pack->slug = app(UniqueSlugResolver::class)->resolve(
                 ProductPack::class,
@@ -27,9 +26,15 @@ class ProductPackObserver
         }
     }
 
+  public function created(ProductPack $pack): void
+{
+    DB::afterCommit(function () use ($pack) {
+        app(NotificationService::class)->notifyNewPack($pack->fresh()); 
+    });
+}
+
     public function deleting(ProductPack $pack): void
     {
-        // Si es Soft Delete, renombramos el slug para liberar el original
         if (!$pack->isForceDeleting()) {
             $pack->slug = app(UniqueSlugResolver::class)->resolve(
                 ProductPack::class,
@@ -43,7 +48,6 @@ class ProductPackObserver
 
     public function restoring(ProductPack $pack): void
     {
-        // Al restaurar, limpiamos el slug de borrado
         $pack->slug = app(UniqueSlugResolver::class)->resolve(
             ProductPack::class,
             Str::slug($pack->name),

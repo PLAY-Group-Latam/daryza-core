@@ -2,7 +2,7 @@
 
 namespace App\Mail\Order;
 
-use App\Models\Order;
+use App\Models\Orders\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -14,14 +14,13 @@ class PaymentAproved extends Mailable
 {
     use Queueable, SerializesModels;
 
-
     public function __construct(private Order $order) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pago confirmado - Pedido #' . $this->order->purchase_number,
+            subject: 'Pago confirmado - Pedido #' . $this->order->code,
         );
     }
 
@@ -30,8 +29,8 @@ class PaymentAproved extends Mailable
         return new Content(
             view: 'mail.order.2-payment-approved',
             with: [
-                'customer' => $this->order->contact->full_name,
-                'purchase_number' => $this->order->purchase_number,
+                'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
+                'purchase_number' => $this->order->code,
             ]
         );
     }

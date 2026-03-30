@@ -113,12 +113,12 @@ class OrderDemoSeeder extends Seeder
         }
 
         $scenarios = [
-            ['status' => 'pending', 'payment_status' => 'pending', 'shipping_status' => 'pending', 'method' => 'bank_transfer', 'voucher_type' => 'boleta'],
-            ['status' => 'confirmed', 'payment_status' => 'approved', 'shipping_status' => 'assigned', 'method' => 'bank_transfer', 'voucher_type' => 'factura'],
-            ['status' => 'preparing', 'payment_status' => 'approved', 'shipping_status' => 'assigned', 'method' => 'niubiz', 'voucher_type' => 'boleta'],
-            ['status' => 'shipped', 'payment_status' => 'approved', 'shipping_status' => 'in_transit', 'method' => 'niubiz', 'voucher_type' => 'boleta'],
-            ['status' => 'delivered', 'payment_status' => 'approved', 'shipping_status' => 'delivered', 'method' => 'bank_transfer', 'voucher_type' => 'factura'],
-            ['status' => 'cancelled', 'payment_status' => 'rejected', 'shipping_status' => 'failed', 'method' => 'bank_transfer', 'voucher_type' => 'boleta'],
+            ['state' => 'pending_payment', 'payment_record_status' => 'pending', 'method' => 'bank_transfer', 'voucher_type' => 'boleta'],
+            ['state' => 'payment_received', 'payment_record_status' => 'approved', 'method' => 'bank_transfer', 'voucher_type' => 'factura'],
+            ['state' => 'preparing', 'payment_record_status' => 'approved', 'method' => 'niubiz', 'voucher_type' => 'boleta'],
+            ['state' => 'in_delivery', 'payment_record_status' => 'approved', 'method' => 'niubiz', 'voucher_type' => 'boleta'],
+            ['state' => 'delivered', 'payment_record_status' => 'approved', 'method' => 'bank_transfer', 'voucher_type' => 'factura'],
+            ['state' => 'cancelled', 'payment_record_status' => 'failed', 'method' => 'bank_transfer', 'voucher_type' => 'boleta'],
         ];
 
         foreach ($scenarios as $index => $scenario) {
@@ -128,13 +128,13 @@ class OrderDemoSeeder extends Seeder
             $unitPrice = (float) $variant->active_price;
 
             $subtotal = round($unitPrice * $quantity, 2);
-            $deliveryCost = $scenario['status'] === 'delivered' ? 0 : 8.90;
+            $deliveryCost = $scenario['state'] === 'delivered' ? 0 : 8.90;
             $total = round($subtotal + $deliveryCost, 2);
 
             $code = sprintf('ORD-DEMO-%03d', $index + 1);
-            $isPaid = $scenario['payment_status'] === 'approved';
-            $isConfirmed = in_array($scenario['status'], ['confirmed', 'preparing', 'shipped', 'delivered'], true);
-            $isShipped = in_array($scenario['status'], ['shipped', 'delivered'], true);
+            $isPaid = $scenario['payment_record_status'] === 'approved';
+            $isConfirmed = in_array($scenario['state'], ['payment_received', 'preparing', 'in_delivery', 'delivered'], true);
+            $isShipped = in_array($scenario['state'], ['in_delivery', 'delivered'], true);
 
             $order = Order::query()->updateOrCreate(
                 ['code' => $code],
@@ -167,17 +167,15 @@ class OrderDemoSeeder extends Seeder
                     'total' => $total,
                     'payment_method_id' => $scenario['method'] === 'bank_transfer' ? $paymentMethod->id : null,
                     'payment_method_type' => $scenario['method'],
-                    'status' => $scenario['status'],
-                    'payment_status' => $scenario['payment_status'],
-                    'shipping_status' => $scenario['shipping_status'],
+                    'state' => $scenario['state'],
                     'placed_at' => now()->subDays(8 - $index),
                     'confirmed_at' => $isConfirmed ? now()->subDays(7 - $index) : null,
                     'paid_at' => $isPaid ? now()->subDays(7 - $index) : null,
                     'shipped_at' => $isShipped ? now()->subDays(6 - $index) : null,
-                    'delivered_at' => $scenario['status'] === 'delivered' ? now()->subDays(5 - $index) : null,
-                    'cancelled_at' => $scenario['status'] === 'cancelled' ? now()->subDays(4 - $index) : null,
+                    'delivered_at' => $scenario['state'] === 'delivered' ? now()->subDays(5 - $index) : null,
+                    'cancelled_at' => $scenario['state'] === 'cancelled' ? now()->subDays(4 - $index) : null,
                     'notes' => 'Orden demo generada por seeder',
-                    'admin_notes' => 'Escenario: ' . $scenario['status'],
+                    'admin_notes' => 'Escenario: ' . $scenario['state'],
                 ]
             );
 
@@ -202,7 +200,7 @@ class OrderDemoSeeder extends Seeder
             $order->payments()->create([
                 'payment_method_id' => $scenario['method'] === 'bank_transfer' ? $paymentMethod->id : null,
                 'method' => $scenario['method'],
-                'status' => $scenario['payment_status'],
+                'status' => $scenario['payment_record_status'],
                 'amount' => $total,
                 'voucher_url' => $scenario['method'] === 'bank_transfer' ? 'https://example.com/voucher-demo-' . ($index + 1) . '.pdf' : null,
                 'voucher_uploaded_at' => $scenario['method'] === 'bank_transfer' ? now()->subDays(7 - $index) : null,
@@ -212,7 +210,7 @@ class OrderDemoSeeder extends Seeder
                 'gateway_masked_card' => $scenario['method'] === 'niubiz' ? '411111******1111' : null,
                 'gateway_payload' => $scenario['method'] === 'niubiz' ? ['seed' => true] : null,
                 'paid_at' => $isPaid ? now()->subDays(7 - $index) : null,
-                'rejected_at' => in_array($scenario['payment_status'], ['rejected', 'failed'], true) ? now()->subDays(6 - $index) : null,
+                'rejected_at' => in_array($scenario['payment_record_status'], ['rejected', 'failed'], true) ? now()->subDays(6 - $index) : null,
             ]);
 
             $order->statusHistory()->create([
@@ -223,33 +221,13 @@ class OrderDemoSeeder extends Seeder
                 'note' => 'Orden demo creada',
             ]);
 
-            if ($scenario['status'] !== 'pending') {
+            if ($scenario['state'] !== 'pending_payment') {
                 $order->statusHistory()->create([
-                    'from_status' => 'pending',
-                    'to_status' => $scenario['status'],
+                    'from_status' => 'pending_payment',
+                    'to_status' => $scenario['state'],
                     'changed_by_type' => 'admin',
                     'changed_by_id' => null,
                     'note' => 'Transicion demo de estado',
-                ]);
-            }
-
-            if ($scenario['payment_status'] !== 'pending') {
-                $order->statusHistory()->create([
-                    'from_status' => null,
-                    'to_status' => 'payment:' . $scenario['payment_status'],
-                    'changed_by_type' => 'admin',
-                    'changed_by_id' => null,
-                    'note' => 'Transicion demo de pago',
-                ]);
-            }
-
-            if ($scenario['shipping_status'] !== 'pending') {
-                $order->statusHistory()->create([
-                    'from_status' => null,
-                    'to_status' => 'shipping:' . $scenario['shipping_status'],
-                    'changed_by_type' => 'admin',
-                    'changed_by_id' => null,
-                    'note' => 'Transicion demo de envio',
                 ]);
             }
         }

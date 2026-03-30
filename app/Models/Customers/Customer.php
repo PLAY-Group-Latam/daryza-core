@@ -52,6 +52,11 @@ class Customer extends Authenticatable implements JWTSubject, CanResetPassword
         return $this->hasMany(Order::class);
     }
 
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
+
     /**
      * Accesor moderno para mostrar nombre capitalizado
      */

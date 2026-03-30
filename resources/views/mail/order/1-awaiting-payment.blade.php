@@ -14,12 +14,12 @@
 
     <p class="content-text">
         Recuerda que es importante enviar la constancia de pago al correo
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.contact.email') }}">
-            {{ config('app.contact.email') }}
+        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.orders_notifications.contact_email') }}">
+            {{ config('app.orders_notifications.contact_email') }}
         </a>
         o por WhatsApp al número
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.contact.phone') }}">
-            {{ config('app.contact.phone') }}
+        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.orders_notifications.contact_phone') }}">
+            {{ config('app.orders_notifications.contact_phone') }}
         </a>.
     </p>
 

@@ -12,13 +12,18 @@
     </p>
 
     <p class="content-text">
-        Agradecemos su preferencia. Para nosotros es importante conocer nuestra atención por lo que le pedimos responda esta
-        pequeña encuesta.
+        Agradecemos su preferencia.
     </p>
 
-    <div style="text-align: center;">
-        <a href="{{ config('app.contact.survey_link') }}" class="btn-primary">INICIAR ENCUESTA</a>
-    </div>
+    @if (filled(config('app.orders_notifications.survey_link')))
+        <p class="content-text">
+            Para nosotros es importante conocer tu experiencia.
+        </p>
+
+        <div style="text-align: center;">
+            <a href="{{ config('app.orders_notifications.survey_link') }}" class="btn-primary">INICIAR ENCUESTA</a>
+        </div>
+    @endif
 
     <p class="content-text">
         ¿Deseas conocer más de nuestras promociones? Dale click

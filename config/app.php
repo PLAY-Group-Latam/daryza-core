@@ -66,6 +66,12 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
+    'orders_notifications' => [
+        'contact_email' => env('ORDERS_CONTACT_EMAIL'),
+        'contact_phone' => env('ORDERS_CONTACT_PHONE'),
+        'survey_link' => env('ORDERS_SURVEY_LINK'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

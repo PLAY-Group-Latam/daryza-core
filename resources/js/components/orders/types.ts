@@ -4,9 +4,11 @@ export interface OrderRow {
     customer_email: string;
     customer_document_number: string;
     total: string;
-    status: string;
-    payment_status: string;
-    shipping_status: string;
+    payment_method_type?: 'bank_transfer' | 'niubiz';
+    state: string;
+    allowed_actions?: string[];
+    rollback_action?: string | null;
+    rollback_label?: string | null;
     created_at: string;
 }
 
@@ -40,15 +42,16 @@ export interface OrderStatusHistory {
 export interface OrderDetail {
     id: string;
     code: string;
-    status: string;
-    payment_status: string;
-    shipping_status: string;
+    state: string;
     customer_email: string;
     customer_first_name: string;
     customer_last_name: string;
     customer_document_number: string;
     customer_mobile_phone: string;
     payment_method_type: 'bank_transfer' | 'niubiz';
+    allowed_actions?: string[];
+    rollback_action?: string | null;
+    rollback_label?: string | null;
     total: string;
     delivery_cost: string;
     subtotal: string;
@@ -63,6 +66,14 @@ export interface OrderDetail {
     updated_at?: string;
     placed_at?: string | null;
     paid_at?: string | null;
+    customer?: {
+        id: string;
+        full_name: string;
+        email?: string | null;
+        phone?: string | null;
+        photo?: string | null;
+        dni?: string | null;
+    };
     items: OrderItem[];
     payments: OrderPayment[];
     status_history: OrderStatusHistory[];

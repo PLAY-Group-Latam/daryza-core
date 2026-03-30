@@ -2,7 +2,7 @@
 
 namespace App\Mail\Order;
 
-use App\Models\Order;
+use App\Models\Orders\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -20,7 +20,7 @@ class OrderPreparing extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Tu pedido #' . $this->order->purchase_number . ' está programado',
+            subject: 'Tu pedido #' . $this->order->code . ' está programado',
         );
     }
 
@@ -29,8 +29,8 @@ class OrderPreparing extends Mailable
         return new Content(
             view: 'mail.order.3-preparing',
             with: [
-                'customer' => $this->order->contact->full_name,
-                'purchase_number' => $this->order->purchase_number,
+                'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
+                'purchase_number' => $this->order->code,
             ],
         );
     }

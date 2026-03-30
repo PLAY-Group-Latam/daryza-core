@@ -10,4 +10,6 @@ Route::prefix('ordenes')->name('orders.')->middleware('auth')->group(function ()
     Route::patch('/{order}/status', [OrderController::class, 'updateStatus'])->name('status.update');
     Route::patch('/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('payment-status.update');
     Route::patch('/{order}/shipping-status', [OrderController::class, 'updateShippingStatus'])->name('shipping-status.update');
+    Route::patch('/{order}/admin-action', [OrderController::class, 'updateAdminAction'])->name('admin-action.update');
+    Route::patch('/admin-action/bulk', [OrderController::class, 'updateAdminActionBulk'])->name('admin-action.bulk');
 });

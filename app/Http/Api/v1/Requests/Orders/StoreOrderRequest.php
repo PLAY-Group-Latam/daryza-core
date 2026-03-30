@@ -40,17 +40,11 @@ class StoreOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
 
             'payment_info' => ['required', 'array'],
             'payment_info.method' => ['required', 'in:bank_transfer,niubiz'],
-            'payment_info.payment_method_id' => ['required_if:payment_info.method,bank_transfer', 'prohibited_if:payment_info.method,niubiz', 'nullable', 'exists:payment_methods,id'],
-            'payment_info.voucher_file' => ['required_if:payment_info.method,bank_transfer', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
-
-            'payment_info.niubiz.transaction_id' => ['nullable', 'string', 'max:100'],
-            'payment_info.niubiz.authorization_code' => ['nullable', 'string', 'max:100'],
-            'payment_info.niubiz.brand' => ['nullable', 'string', 'max:50'],
-            'payment_info.niubiz.masked_card' => ['nullable', 'string', 'max:30'],
-            'payment_info.niubiz.payload' => ['nullable', 'array'],
+            'payment_info.voucher_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
 
             'notes' => ['nullable', 'string', 'max:1000'],
         ];

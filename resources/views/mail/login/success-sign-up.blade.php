@@ -1,12 +1,12 @@
 @extends('layouts.mail')
 
 @section('content')
-<h1 class="content-title">¡Bienvenido a Rubbermaid! 🎉</h1>
+<h1 class="content-title">¡Bienvenido a Daryza! 🎉</h1>
 
 <p class="content-text">Hola <strong>{{$username}}</strong>,</p>
 
 <p class="content-text">
-    Te damos la bienvenida a la tienda oficial de Rubbermaid.
+    Te damos la bienvenida a la tienda oficial de Daryza.
     Ahora podrás acceder a todos nuestros productos de calidad comercial con las mejores ofertas.
 </p>
 

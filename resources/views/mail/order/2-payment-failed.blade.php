@@ -13,8 +13,8 @@
 
     <p class="content-text">
         Puedes solicitar soporte adicional al siguiente número:
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.contact.phone') }}">
-            {{ config('app.contact.phone') }}
+        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.orders_notifications.contact_phone') }}">
+            {{ config('app.orders_notifications.contact_phone') }}
         </a>.
     </p>
 

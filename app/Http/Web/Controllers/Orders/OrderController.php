@@ -17,15 +17,11 @@ class OrderController extends Controller
         $perPage = max(1, min((int) $request->input('per_page', 15), 100));
 
         $query = Order::query()
-            ->with(['items', 'payments', 'paymentMethod:id,name'])
+            ->with(['items', 'payments'])
             ->orderByDesc('created_at');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->string('payment_status'));
+        if ($request->filled('state')) {
+            $query->where('state', $request->string('state'));
         }
 
         if ($request->filled('search')) {
@@ -37,11 +33,19 @@ class OrderController extends Controller
             });
         }
 
-        $orders = $query->paginate($perPage)->withQueryString();
+        $orders = $query
+            ->paginate($perPage)
+            ->withQueryString()
+            ->through(function (Order $order) {
+                return array_merge(
+                    $order->toArray(),
+                    $this->orderService->buildAdminStateMeta($order)
+                );
+            });
 
         return Inertia::render('orders/Index', [
             'paginatedOrders' => $orders,
-            'filters' => $request->only(['status', 'payment_status', 'search']),
+            'filters' => $request->only(['state', 'search']),
         ]);
     }
 
@@ -51,24 +55,26 @@ class OrderController extends Controller
             'items',
             'payments',
             'statusHistory',
-            'paymentMethod:id,name,company_type',
-            'customer:id,full_name,email,phone',
+            'customer:id,full_name,email,phone,photo,dni',
         ]);
 
         return Inertia::render('orders/Show', [
-            'order' => $order,
+            'order' => array_merge(
+                $order->toArray(),
+                $this->orderService->buildAdminStateMeta($order)
+            ),
         ]);
     }
 
     public function updateStatus(Request $request, Order $order)
     {
         $data = $request->validate([
-            'status' => ['required', 'in:pending,confirmed,preparing,shipped,delivered,cancelled'],
+            'status' => ['required', 'in:pending_payment,payment_received,preparing,in_delivery,delivered,delivery_failed,cancelled,payment_failed,refunded'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
         try {
-            $this->orderService->updateOrderStatusByAdmin(
+            $this->orderService->updateStateByAdmin(
                 $order,
                 $data['status'],
                 $data['note'] ?? null,
@@ -83,43 +89,51 @@ class OrderController extends Controller
 
     public function updatePaymentStatus(Request $request, Order $order)
     {
-        $data = $request->validate([
-            'payment_status' => ['required', 'in:pending,approved,rejected,failed,refunded'],
-            'note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        try {
-            $this->orderService->updatePaymentStatusByAdmin(
-                $order,
-                $data['payment_status'],
-                $data['note'] ?? null,
-                (string) auth()->id()
-            );
-
-            return back()->with('success', 'Estado de pago actualizado correctamente.');
-        } catch (\InvalidArgumentException $exception) {
-            return back()->withErrors(['payment_status' => $exception->getMessage()]);
-        }
+        return back()->withErrors(['payment_status' => 'Estado de pago separado fue removido. Usa estado unificado.']);
     }
 
     public function updateShippingStatus(Request $request, Order $order)
     {
+        return back()->withErrors(['shipping_status' => 'Estado de envío separado fue removido. Usa estado unificado.']);
+    }
+
+    public function updateAdminAction(Request $request, Order $order)
+    {
         $data = $request->validate([
-            'shipping_status' => ['required', 'in:pending,assigned,in_transit,delivered,failed'],
+            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
         try {
-            $this->orderService->updateShippingStatusByAdmin(
+            $this->orderService->applyAdminAction(
                 $order,
-                $data['shipping_status'],
+                $data['action'],
                 $data['note'] ?? null,
                 (string) auth()->id()
             );
 
-            return back()->with('success', 'Estado de envío actualizado correctamente.');
+            return back()->with('success', 'Accion aplicada correctamente.');
         } catch (\InvalidArgumentException $exception) {
-            return back()->withErrors(['shipping_status' => $exception->getMessage()]);
+            return back()->withErrors(['action' => $exception->getMessage()]);
         }
+    }
+
+    public function updateAdminActionBulk(Request $request)
+    {
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'string'],
+            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $result = $this->orderService->applyAdminActionBulk(
+            $data['order_ids'],
+            $data['action'],
+            $data['note'] ?? null,
+            (string) auth()->id()
+        );
+
+        return back()->with('bulk_result', $result);
     }
 }

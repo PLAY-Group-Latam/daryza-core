@@ -17,8 +17,13 @@ class Order extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = [
+        'has_voucher',
+    ];
+
     protected $fillable = [
         'code',
+        'niubiz_purchase_number',
         'customer_id',
         'customer_email',
         'customer_first_name',
@@ -47,9 +52,7 @@ class Order extends Model
         'total',
         'payment_method_id',
         'payment_method_type',
-        'status',
-        'payment_status',
-        'shipping_status',
+        'state',
         'placed_at',
         'confirmed_at',
         'paid_at',
@@ -105,6 +108,16 @@ class Order extends Model
 
     public function canBeCancelledByCustomer(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed'], true);
+        return in_array($this->state, ['pending_payment', 'payment_received', 'preparing'], true);
     }
+
+    public function getHasVoucherAttribute(): bool
+    {
+        $payment = $this->relationLoaded('payments')
+            ? $this->payments->sortByDesc('created_at')->first()
+            : $this->payments()->latest()->first();
+
+        return (string) ($payment?->voucher_url ?? '') !== '';
+    }
+
 }

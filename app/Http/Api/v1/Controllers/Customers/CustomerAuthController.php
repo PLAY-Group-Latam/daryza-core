@@ -50,10 +50,7 @@ class CustomerAuthController extends Controller
 
     $customer = auth('api')->user();
 
-    SendEmailJob::dispatch(
-      new SuccessLogin($customer->full_name ?? 'Usuario'),
-      $customer->email
-    );
+    $this->dispatchSuccessLoginEmail($customer);
 
     return $this->successWithCookie(
       'Login exitoso',
@@ -94,6 +91,7 @@ class CustomerAuthController extends Controller
     ]);
 
     $token = JWTAuth::fromUser($customer);
+    $this->dispatchSuccessLoginEmail($customer);
 
     return $this->successWithCookie(
       'Login con Google exitoso',
@@ -182,6 +180,18 @@ class CustomerAuthController extends Controller
     return $this->success(
       'Usuario autenticado correctamente',
       ['user' => $user]
+    );
+  }
+
+  private function dispatchSuccessLoginEmail($customer): void
+  {
+    if (!$customer || empty($customer->email)) {
+      return;
+    }
+
+    SendEmailJob::dispatch(
+      new SuccessLogin($customer->full_name ?? 'Usuario'),
+      $customer->email
     );
   }
 }
