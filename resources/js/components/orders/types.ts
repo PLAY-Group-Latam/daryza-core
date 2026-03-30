@@ -55,6 +55,10 @@ export interface OrderDetail {
     total: string;
     delivery_cost: string;
     subtotal: string;
+    discount_total: string;
+    coupon_discount_total?: string;
+    delivery_base_cost?: string;
+    delivery_discount_total?: string;
     shipping_address_line: string;
     shipping_number?: string | null;
     shipping_floor_apartment?: string | null;

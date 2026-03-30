@@ -619,6 +619,20 @@ class OrderService
         ];
     }
 
+    public function buildPricingMeta(Order $order): array
+    {
+        $baseDeliveryCost = $this->resolveBaseDeliveryCostForOrder($order);
+        $deliveryCost = (float) $order->delivery_cost;
+        $couponDiscountTotal = (float) $order->discount_total;
+        $deliveryDiscountTotal = max(0.0, round($baseDeliveryCost - $deliveryCost, 2));
+
+        return [
+            'coupon_discount_total' => round($couponDiscountTotal, 2),
+            'delivery_base_cost' => round($baseDeliveryCost, 2),
+            'delivery_discount_total' => round($deliveryDiscountTotal, 2),
+        ];
+    }
+
     private function resolveShippingQuote(string $departmentId, string $provinceId, string $districtId, float $subtotal): array
     {
         $department = Department::query()->findOrFail($departmentId);
@@ -668,6 +682,20 @@ class OrderService
             'province_name' => $province->name,
             'district_name' => $district->name,
         ];
+    }
+
+    private function resolveBaseDeliveryCostForOrder(Order $order): float
+    {
+        $zone = DeliveryZone::query()
+            ->where(function ($query) use ($order) {
+                $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $order->district_id))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $order->province_id))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'department')->where('zone_id', $order->department_id));
+            })
+            ->orderByRaw("CASE zone_type WHEN 'district' THEN 1 WHEN 'province' THEN 2 ELSE 3 END")
+            ->first();
+
+        return $zone ? (float) $zone->delivery_cost : (float) $order->delivery_cost;
     }
 
     private function resolveVariants(array $items, bool $lockForUpdate = false): array

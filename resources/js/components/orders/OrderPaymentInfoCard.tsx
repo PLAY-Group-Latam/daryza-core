@@ -4,7 +4,8 @@ import { StatusBadge } from './status';
 import { OrderDetail } from './types';
 
 export default function OrderPaymentInfoCard({ order }: { order: OrderDetail }) {
-    const lastPayment = order.payments?.[0];
+    const lastPayment = [...(order.payments ?? [])]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
     return (
         <div className="rounded-lg border p-5">
@@ -25,16 +26,18 @@ export default function OrderPaymentInfoCard({ order }: { order: OrderDetail }) 
                     <p className="text-xs text-muted-foreground">Monto</p>
                     <p className="font-semibold">S/ {order.total}</p>
                 </div>
-                <div>
-                    <p className="text-xs text-muted-foreground">Voucher de pago</p>
-                    {lastPayment?.voucher_url ? (
-                        <a className="font-semibold text-primary underline" href={lastPayment.voucher_url} target="_blank" rel="noreferrer">
-                            Ver voucher
-                        </a>
-                    ) : (
-                        <p className="font-semibold">-</p>
-                    )}
-                </div>
+                {order.payment_method_type === 'bank_transfer' && (
+                    <div>
+                        <p className="text-xs text-muted-foreground">Voucher de pago</p>
+                        {lastPayment?.voucher_url ? (
+                            <a className="font-semibold text-primary underline" href={lastPayment.voucher_url} target="_blank" rel="noreferrer">
+                                Ver voucher
+                            </a>
+                        ) : (
+                            <p className="font-semibold">-</p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
