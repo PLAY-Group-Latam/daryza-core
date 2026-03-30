@@ -12,10 +12,20 @@ use Illuminate\Support\Str;
 class JobFactory extends Factory
 {
     protected $model = Job::class;
+    protected static int $sequence = 0;
 
     public function definition(): array
     {
-        $title = fake()->sentence(4);
+        $index = ++static::$sequence;
+        $titles = [
+            'Asesor Comercial',
+            'Coordinador Logistico',
+            'Analista de Marketing',
+            'Supervisor de Operaciones',
+            'Asistente Administrativo',
+        ];
+        $modalities = JobModality::cases();
+        $title = $titles[($index - 1) % count($titles)] . " {$index}";
         $area = Area::factory()->create();
         $place = Place::factory()->create();
         $place->areas()->syncWithoutDetaching([$area->id]);
@@ -23,12 +33,18 @@ class JobFactory extends Factory
         return [
             'title' => $title,
             'slug' => Str::slug($title) . '-' . Str::lower(Str::random(6)),
-            'description' => fake()->paragraphs(4, true),
-            'requirements' => [fake()->sentence(), fake()->sentence()],
-            'benefits' => [fake()->sentence(), fake()->sentence()],
-            'modality' => fake()->randomElement(JobModality::cases()),
-            'vacancies' => fake()->numberBetween(1, 10),
-            'is_active' => fake()->boolean(85),
+            'description' => "Descripcion del puesto {$title}. Se valoran habilidades tecnicas y trabajo en equipo.",
+            'requirements' => [
+                "Experiencia minima de {$index} ano(s) en el rubro.",
+                'Disponibilidad para trabajo presencial o hibrido.',
+            ],
+            'benefits' => [
+                'Planilla desde el primer dia.',
+                'Capacitaciones y linea de carrera.',
+            ],
+            'modality' => $modalities[($index - 1) % count($modalities)],
+            'vacancies' => (($index - 1) % 10) + 1,
+            'is_active' => true,
             'area_id' => $area->id,
             'place_id' => $place->id,
         ];
