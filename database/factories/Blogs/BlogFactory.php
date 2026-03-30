@@ -6,6 +6,8 @@ use App\Models\Blogs\Blog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
+use function fake;
+
 class BlogFactory extends Factory
 {
     protected $model = Blog::class;
