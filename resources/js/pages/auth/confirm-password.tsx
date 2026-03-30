@@ -10,10 +10,10 @@ import { Form, Head } from '@inertiajs/react';
 export default function ConfirmPassword() {
     return (
         <AuthLayout
-            title="Confirm your password"
-            description="This is a secure area of the application. Please confirm your password before continuing."
+            title="Confirmar contraseña"
+            description="Esta es una zona segura de la aplicación. Por favor, confirme su contraseña antes de continuar."
         >
-            <Head title="Confirm password" />
+            <Head title="Confirmar contraseña" />
 
             <Form
                 method={store().method}
@@ -23,7 +23,7 @@ export default function ConfirmPassword() {
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">Contraseña</Label>
                             <Input
                                 id="password"
                                 type="password"
@@ -43,7 +43,7 @@ export default function ConfirmPassword() {
                                 data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
-                                Confirm password
+                                Confirmar contraseña
                             </Button>
                         </div>
                     </div>

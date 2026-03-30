@@ -9,7 +9,7 @@ import { edit as editAppearance } from '@/routes/appearance';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Appearance settings',
+        title: 'Configuración de apariencia',
         href: editAppearance().url,
     },
 ];
@@ -17,13 +17,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Appearance() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Appearance settings" />
+            <Head title="Configuración de apariencia" />
 
             <SettingsLayout>
                 <div className="space-y-6">
                     <HeadingSmall
-                        title="Appearance settings"
-                        description="The application currently uses light mode only."
+                        title="Configuración de apariencia"
+                        description="Actualmente la aplicación usa solo modo claro."
                     />
                 </div>
             </SettingsLayout>
