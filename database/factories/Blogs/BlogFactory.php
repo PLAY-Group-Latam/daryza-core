@@ -13,17 +13,17 @@ class BlogFactory extends Factory
 
     public function definition(): array
     {
-        $title = 'Blog de prueba ' . Str::random(5);
+        $title = 'Blog de prueba ' . Str::random(2);
         return [
             'title' => Str::title($title),
             'slug' => Str::slug($title) . '-' . Str::lower(Str::random(5)),
-            'description' => fake()->paragraph(),
-            'content' => '<p>' . fake()->paragraphs(3, true) . '</p>',
+            'description' => 'Descripción de prueba',
+            'content' => '<p>Contenido de prueba</p>',
             'image' => null,
             'visibility' => true,
-            'author' => fake()->name(),
+            'author' => 'Autor de prueba',
             'miniature' => null,
-            'publication_date' => now()->subDays(fake()->numberBetween(1, 30))->toDateString(),
+            'publication_date' => now()->toDateString(),
         ];
     }
 }
