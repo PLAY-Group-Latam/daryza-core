@@ -8,11 +8,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class BlogCategoryFactory extends Factory
 {
     protected $model = BlogCategory::class;
+    protected static int $sequence = 0;
 
     public function definition(): array
     {
+        $index = ++static::$sequence;
+        $names = ['Novedades', 'Recetas', 'Nutricion', 'Promociones', 'Consejos'];
+
         return [
-            'name' => fake()->unique()->words(2, true),
+            'name' => $names[($index - 1) % count($names)] . " {$index}",
         ];
     }
 }
