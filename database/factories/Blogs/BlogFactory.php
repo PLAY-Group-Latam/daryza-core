@@ -6,7 +6,6 @@ use App\Models\Blogs\Blog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-use function fake;
 
 class BlogFactory extends Factory
 {
@@ -14,8 +13,7 @@ class BlogFactory extends Factory
 
     public function definition(): array
     {
-        $title = fake()->sentence(8);
-
+        $title = 'Blog de prueba ' . Str::random(5);
         return [
             'title' => Str::title($title),
             'slug' => Str::slug($title) . '-' . Str::lower(Str::random(5)),
