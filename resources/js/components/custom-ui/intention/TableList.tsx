@@ -17,15 +17,12 @@ export function TableList({ data: purchaseIntents = [], meta }: { data: any[]; m
 
     const [globalFilter, setGlobalFilter] = useState('');
 
-    // 1. IMPORTANTE: Memorizamos el objeto de paginación.
-    // Si pasas un objeto literal {} directo al state, React 
-    // crea una nueva referencia en cada render y causa el "Maximum update depth".
+
     const paginationState = useMemo(() => ({
         pageIndex: Math.max(0, currentPage - 1),
         pageSize,
     }), [currentPage, pageSize]);
 
-    // 2. Memorizamos la visibilidad para evitar re-renders innecesarios
     const columnVisibility = useMemo(() => ({ 'customer_id': false }), []);
 
     const table = useReactTable({
@@ -43,7 +40,7 @@ export function TableList({ data: purchaseIntents = [], meta }: { data: any[]; m
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
     });
-
+    console.log(table);
     return (
         <div className="p-4">
             <div className="flex items-center py-4">

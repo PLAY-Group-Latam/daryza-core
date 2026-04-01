@@ -16,6 +16,7 @@ use App\Http\Api\v1\Controllers\Payments\PaymentController;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class TrackApiEvents
@@ -33,13 +34,10 @@ class TrackApiEvents
         }
 
         $action = $request->route()?->getActionName();
-        \Illuminate\Support\Facades\Log::debug('[TrackApiEvents] action detectado:', [
-        'action' => $action,
-    ]);
 
         $map = [
             ProductController::class . '@show'             => 'product_view',
-            ProductController::class . '@showPack'         => 'product_view',
+            ProductController::class . '@showPack'         => 'pack_view', // ← CAMBIADO para diferenciarlo
             CartController::class . '@add'                 => 'add_to_cart',
             WishListController::class . '@toggle'          => 'wishlist_toggle',
             CouponController::class . '@validateCoupon'    => 'coupon_attempt',
@@ -50,17 +48,51 @@ class TrackApiEvents
 
         if (isset($map[$action])) {
             $eventType  = $map[$action];
+            
+            // 1. INTENTO DE CAPTURA DEL USUARIO LOGEADO EN RUTAS PÚBLICAS
             $customerId = Auth::guard('api')->id();
-            $sessionId  = $request->hasSession() ? $request->session()->getId() : null;
+
+            if (!$customerId && $request->bearerToken()) {
+                try {
+                    // Si la ruta no está protegida por auth:api, forzamos a Sanctum/JWT a leer el token
+                    $user = Auth::guard('api')->user(); 
+                    $customerId = $user ? $user->id : null;
+                    
+                    if ($customerId) {
+                        Log::info('[TrackApiEvents] Usuario rescatado mediante Bearer Token en ruta pública.', [
+                            'customer_id' => $customerId
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('[TrackApiEvents] Error intentando rescatar usuario del token: ' . $e->getMessage());
+                }
+            }
+
+            $sessionId = $request->hasSession() ? $request->session()->getId() : null;
+
+            // Log de depuración para saber exactamente qué valores se mandan al Job
+            Log::info('[TrackApiEvents] Evento detectado para despachar:', [
+                'action'      => $action,
+                'event_type'  => $eventType,
+                'customer_id' => $customerId,
+                'session_id'  => $sessionId,
+            ]);
 
             $payload = $this->extractPayload($action, $eventType, $request, $response);
 
-            TrackEventJob::dispatch([
-                'customer_id' => $customerId,
-                'session_id'  => $sessionId,
-                'event_type'  => $eventType,
-                'event_data'  => $payload,
-            ]);
+            // Evitamos despachar si el payload viene vacío (por ejemplo, fallos de parseo de JSON)
+            if (empty($payload)) {
+                Log::warning('[TrackApiEvents] No se despachó el evento porque el payload está vacío.', [
+                    'event_type' => $eventType
+                ]);
+            } else {
+                TrackEventJob::dispatch([
+                    'customer_id' => $customerId,
+                    'session_id'  => $sessionId,
+                    'event_type'  => $eventType,
+                    'event_data'  => $payload,
+                ]);
+            }
 
             $this->syncSessionEvents($request, $customerId, $sessionId);
         }
@@ -75,7 +107,8 @@ class TrackApiEvents
     protected function extractPayload(string $action, string $eventType, Request $request, Response $response): array
     {
         return match ($eventType) {
-            'product_view'           => $this->formatProductView($action, $response),
+            'product_view'           => $this->formatProductView($response),
+            'pack_view'              => $this->formatPackView($response), // ← NUEVO MÉTODO
             'add_to_cart'            => $this->formatAddToCart($request),
             'wishlist_toggle'        => $this->formatWishlistToggle($request, $response),
             'coupon_attempt'         => $this->formatCouponAttempt($request, $response),
@@ -87,34 +120,16 @@ class TrackApiEvents
     }
 
     // ─────────────────────────────────────────────
-    // PRODUCTOS
+    // PRODUCTOS Y PACKS
     // ─────────────────────────────────────────────
 
-    private function formatProductView(string $action, Response $response): array
+    private function formatProductView(Response $response): array
     {
         $content = json_decode($response->getContent(), true);
         $data    = $content['data'] ?? null;
 
         if (!$data) return [];
 
-        $isPack = str_contains($action, 'showPack');
-
-        if ($isPack) {
-            // showPack devuelve: { data: { pack: {...}, items: [...], pricing: {...} } }
-            $pack = $data['pack'] ?? null;
-            if (!$pack) return [];
-
-            return [
-                'product' => [
-                    'name'  => $pack['name']  ?? 'N/A',
-                    'sku'   => $pack['slug']  ?? 'N/A',
-                    'price' => (float) ($pack['active_price'] ?? $pack['final_price'] ?? $pack['price'] ?? 0),
-                    'type'  => 'pack',
-                ],
-            ];
-        }
-
-        // show devuelve: { data: { product: {...}, active_variant: {...} } }
         $product = $data['product']        ?? null;
         $variant = $data['active_variant'] ?? null;
 
@@ -126,6 +141,26 @@ class TrackApiEvents
                 'sku'   => $variant['sku']  ?? 'N/A',
                 'price' => (float) ($variant['active_price'] ?? $variant['price'] ?? 0),
                 'type'  => 'specification',
+            ],
+        ];
+    }
+
+    private function formatPackView(Response $response): array
+    {
+        $content = json_decode($response->getContent(), true);
+        $data    = $content['data'] ?? null;
+
+        if (!$data) return [];
+
+        $pack = $data['pack'] ?? null;
+        if (!$pack) return [];
+
+        return [
+            'product' => [
+                'name'  => $pack['name']  ?? 'N/A',
+                'sku'   => $pack['slug']  ?? 'N/A',
+                'price' => (float) ($pack['active_price'] ?? $pack['final_price'] ?? $pack['price'] ?? 0),
+                'type'  => 'pack',
             ],
         ];
     }
@@ -177,7 +212,7 @@ class TrackApiEvents
 
         $itemId  = $request->input('item_id') ?? $request->route('itemId');
         $type    = $request->input('type') ?? 'product';
-        $action  = $content['data']['action'] ?? null; // 'added' | 'removed'
+        $action  = $content['data']['action'] ?? null;
         $message = $content['message'] ?? '';
 
         $productName = null;
@@ -229,7 +264,7 @@ class TrackApiEvents
 
         return [
             'order_id'       => $order['id']             ?? $order['order_id']   ?? null,
-            'order_code'     => $order['code']            ?? $order['order_code'] ?? null,
+            'order_code'     => $order['code']           ?? $order['order_code'] ?? null,
             'total'          => (float) ($order['total']  ?? 0),
             'payment_method' => $order['payment_method']  ?? null,
             'items'          => collect($order['items'] ?? [])->map(fn($item) => [
@@ -282,6 +317,11 @@ class TrackApiEvents
                 ->update(['customer_id' => $customerId]);
 
             session()->put('events_synced', true);
+            
+            Log::info('[TrackApiEvents] Eventos de sesión sincronizados con el cliente.', [
+                'customer_id' => $customerId,
+                'session_id'  => $sessionId
+            ]);
         }
     }
 }
