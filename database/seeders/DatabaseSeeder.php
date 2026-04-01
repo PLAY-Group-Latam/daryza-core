@@ -33,6 +33,8 @@ class DatabaseSeeder extends Seeder
             AboutUsContentSeeder::class,
             BlogContentSeeder::class,
             BlogSeeder::class,
+            LandingSeeder::class,
+            LandingLeadSeeder::class,
             SystemAllContentSeeder::class,
             JobsPortalSeeder::class,
             SeoPageSeeder::class,

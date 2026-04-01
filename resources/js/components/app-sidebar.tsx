@@ -135,6 +135,11 @@ const mainNavItems: NavItem[] = [
         icon: LayoutTemplate,
     },
     {
+        title: 'Landing',
+        href: '/landings/items',
+        icon: LayoutTemplate,
+    },
+    {
         title: 'Portal de Empleos',
         icon: Briefcase,
         children: [

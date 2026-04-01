@@ -21,17 +21,18 @@ export const columns: ColumnDef<Blog>[] = [
         header: 'Artículo',
         cell: ({ row }) => {
             const blog = row.original;
-            const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+            const frontendUrl = String(import.meta.env.VITE_FRONTEND_URL ?? '').replace(/\/$/, '');
+            const publicUrl = `${frontendUrl}/blog/${encodeURIComponent(blog.slug)}`;
 
             return (
                 <div className="flex flex-col">
                     <a
-                        href={`${frontendUrl}/blog/${blog.slug}`}
+                        href={publicUrl}
                         className="w-fit font-medium text-blue-600 hover:underline"
                         target="_blank" // si quieres abrir en otra pestaña
                         rel="noopener noreferrer"
                     >
-                        {`${frontendUrl}/${blog.title}`}
+                        {publicUrl}
                     </a>
                     <span className="text-sm text-muted-foreground">
                         por {blog.author}

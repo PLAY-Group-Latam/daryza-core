@@ -36,7 +36,10 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
         },
         ref,
     ) => {
-        const [isManuallyEdited, setIsManuallyEdited] = React.useState(false);
+        const [isAutoMode, setIsAutoMode] = React.useState(
+            (value ?? '').trim() === '',
+        );
+        const lastAutoValueRef = React.useRef<string>('');
 
         const generateSlug = (text: string) => {
             return text
@@ -51,17 +54,34 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
         };
 
         React.useEffect(() => {
-            if (!isManuallyEdited && source) {
-                const newSlug = generateSlug(source);
-                if (newSlug !== value) {
-                    onChange(newSlug);
-                }
+            const currentValue = (value ?? '').trim();
+            const newSlug = generateSlug(source ?? '');
+
+            // Auto-sync solo cuando:
+            // 1) el slug está vacío, o
+            // 2) el slug actual fue generado previamente por este componente.
+            const canAutoSync =
+                currentValue === '' ||
+                currentValue === lastAutoValueRef.current;
+
+            if (!canAutoSync) {
+                setIsAutoMode(false);
+                return;
+            }
+
+            setIsAutoMode(true);
+
+            if (newSlug !== '' && newSlug !== currentValue) {
+                lastAutoValueRef.current = newSlug;
+                onChange(newSlug);
+            } else if (newSlug !== '') {
+                lastAutoValueRef.current = newSlug;
             }
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [source, isManuallyEdited]);
+        }, [source, value]);
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            setIsManuallyEdited(true);
+            setIsAutoMode(false);
             const rawValue = e.target.value
                 .toLowerCase()
                 .replace(/[^a-z0-9-]/g, '');
@@ -69,8 +89,10 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
         };
 
         const handleReset = () => {
-            setIsManuallyEdited(false);
-            if (source) onChange(generateSlug(source));
+            const generated = generateSlug(source ?? '');
+            lastAutoValueRef.current = generated;
+            setIsAutoMode(true);
+            onChange(generated);
         };
 
         return (
@@ -79,7 +101,7 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
                     <Label htmlFor={id} className="text-sm font-medium">
                         {label}
                     </Label>
-                    {isManuallyEdited && (
+                    {!isAutoMode && (
                         <span className="flex animate-in items-center gap-1 text-[10px] text-amber-600 fade-in">
                             <Unlock className="h-3 w-3" /> Editar Manual
                         </span>
@@ -101,14 +123,14 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
                         placeholder={placeholder} // Placeholder dinámico
                         className={cn(
                             'pr-10 pl-9 font-mono text-sm transition-colors',
-                            isManuallyEdited
+                            !isAutoMode
                                 ? 'border-amber-200 focus-visible:ring-amber-200'
                                 : '',
                         )}
                     />
 
                     <div className="absolute top-1/2 right-1 -translate-y-1/2">
-                        {isManuallyEdited ? (
+                        {!isAutoMode ? (
                             <Button
                                 type="button"
                                 variant="ghost"

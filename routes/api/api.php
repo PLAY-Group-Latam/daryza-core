@@ -23,4 +23,5 @@ Route::prefix('v1')
     require __DIR__ . '/script.php';
     require __DIR__ . '/niubiz.php';
     require __DIR__ . '/distributor.php';
+    require __DIR__ . '/landings.php';
   });
