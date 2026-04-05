@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+   public function up(): void
     {
         Schema::create('distributors', function (Blueprint $table) {
             $table->id();
@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('establishment_img')->nullable();
             $table->decimal('lat', 10, 8);
             $table->decimal('lng', 11, 8);
+            
+            $table->boolean('is_active')->default(true); 
+            $table->softDeletes(); 
+            
             $table->timestamps();
         });
     }

@@ -19,6 +19,8 @@ class DistributorResource extends JsonResource
             'phone'             => $this->phone,
             'note'              => $this->note,
             'establishment_img' => $this->establishment_img, 
+            'is_active'         => (bool) $this->is_active, 
+
             'coords' => [
                 'lat' => (float) $this->lat,
                 'lng' => (float) $this->lng,

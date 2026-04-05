@@ -110,6 +110,14 @@ class SeoPageSeeder extends Seeder
                 'meta_description' => 'Desarrolla tu talento con nosotros. Revisa nuestras vacantes actuales.',
                 'is_static' => true
             ],
+            [
+                'slug' => 'distribuidores',
+                'title' => 'Distribuidores Autorizados',
+                'path' => '/distribuidores',
+                'meta_title' => "Locales y Puntos de Distribuidores Autorizados | $brand",
+                'meta_description' => 'Encuentra el distribuidor autorizado de productos Daryza más cercano a tu ubicación en todo el Perú.',
+                'is_static' => true
+            ],
 
             // --- BLOG ---
             [
