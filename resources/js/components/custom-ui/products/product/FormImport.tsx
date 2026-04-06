@@ -2,7 +2,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -30,11 +30,33 @@ const ImportSchema = z.object({
 
 type ImportFormValues = z.infer<typeof ImportSchema>;
 
+type ImportResult = {
+    mode?: 'validate' | 'import';
+    ok?: boolean;
+    message?: string;
+    summary?: {
+        total?: number;
+        processed?: number;
+        failed?: number;
+        dry_run?: boolean;
+        products_created?: number;
+        products_updated?: number;
+        products_unchanged?: number;
+        variants_created?: number;
+        variants_updated?: number;
+        variants_unchanged?: number;
+        errors?: string[];
+    };
+};
+
 export default function FormImport() {
-    const [importFeedback, setImportFeedback] = useState<{
-        type: 'success' | 'error';
-        message: string;
-    } | null>(null);
+    const { errors: serverErrors, importResult } = usePage<{
+        errors?: Record<string, string>;
+        importResult?: ImportResult | null;
+    }>().props;
+    const [lastAction, setLastAction] = useState<'validate' | 'import'>(
+        'validate',
+    );
 
     const methods = useForm<ImportFormValues>({
         resolver: zodResolver(ImportSchema),
@@ -49,31 +71,22 @@ export default function FormImport() {
     } = methods;
 
     const file = watch('file');
+    const canImport = Boolean(importResult?.mode === 'validate' && importResult?.ok);
 
-    const onSubmit = async (data: ImportFormValues) => {
-        setImportFeedback(null);
+    const onSubmit = async (
+        data: ImportFormValues,
+        action: 'validate' | 'import',
+    ) => {
+        setLastAction(action);
         const formData = new FormData();
         formData.append('file', data.file);
+        formData.append('action', action);
 
-        // Aquí se muestra el loader mientras se envía la petición
         await new Promise<void>((resolve) => {
             router.post(products.items.import().url, formData, {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => {
-                    setImportFeedback({
-                        type: 'success',
-                        message:
-                            'Importación completada. Revisa la lista de productos y mensajes del sistema.',
-                    });
-                },
-                onError: () => {
-                    setImportFeedback({
-                        type: 'error',
-                        message:
-                            'No se pudo completar la importación. Revisa el archivo y vuelve a intentarlo.',
-                    });
-                },
+                preserveState: true,
                 onFinish: () => resolve(),
             });
         });
@@ -82,7 +95,7 @@ export default function FormImport() {
     return (
         <FormProvider {...methods}>
             <form
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={(e) => e.preventDefault()}
                 className="relative mx-auto max-w-md"
             >
                 {' '}
@@ -90,7 +103,9 @@ export default function FormImport() {
                     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
                         <Loader2 className="mb-4 h-12 w-12 animate-spin text-white" />
                         <span className="font-semibold text-white">
-                            Importando productos...
+                            {lastAction === 'validate'
+                                ? 'Validando archivo...'
+                                : 'Importando productos...'}
                         </span>
                     </div>
                 )}
@@ -146,16 +161,83 @@ export default function FormImport() {
                     {errors.file && (
                         <InputError message={errors.file.message} />
                     )}
-                    {importFeedback && (
-                        <p
-                            className={`rounded-md border px-3 py-2 text-sm ${
-                                importFeedback.type === 'success'
-                                    ? 'border-green-200 bg-green-50 text-green-700'
-                                    : 'border-red-200 bg-red-50 text-red-700'
+                    {serverErrors?.file && (
+                        <InputError message={serverErrors.file} />
+                    )}
+
+                    {importResult && (
+                        <div
+                            className={`rounded-lg border p-4 ${
+                                importResult.ok
+                                    ? 'border-green-200 bg-green-50'
+                                    : 'border-red-200 bg-red-50'
                             }`}
                         >
-                            {importFeedback.message}
-                        </p>
+                            <p
+                                className={`text-sm font-medium ${
+                                    importResult.ok
+                                        ? 'text-green-700'
+                                        : 'text-red-700'
+                                }`}
+                            >
+                                {importResult.message}
+                            </p>
+
+                            {importResult.summary && (
+                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-gray-700 sm:grid-cols-2">
+                                    <p>
+                                        Filas: {importResult.summary.processed ?? 0}/
+                                        {importResult.summary.total ?? 0}
+                                    </p>
+                                    <p>
+                                        Errores:{' '}
+                                        {importResult.summary.failed ?? 0}
+                                    </p>
+                                    {!importResult.summary.dry_run && (
+                                        <>
+                                            <p>
+                                                Productos C/U/SC:{' '}
+                                                {importResult.summary
+                                                    .products_created ?? 0}
+                                                /
+                                                {importResult.summary
+                                                    .products_updated ?? 0}
+                                                /
+                                                {importResult.summary
+                                                    .products_unchanged ?? 0}
+                                            </p>
+                                            <p>
+                                                Variantes C/U/SC:{' '}
+                                                {importResult.summary
+                                                    .variants_created ?? 0}
+                                                /
+                                                {importResult.summary
+                                                    .variants_updated ?? 0}
+                                                /
+                                                {importResult.summary
+                                                    .variants_unchanged ?? 0}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {Array.isArray(importResult.summary?.errors) &&
+                                importResult.summary?.errors.length > 0 && (
+                                    <div className="mt-3 max-h-44 overflow-y-auto rounded border border-red-200 bg-white p-2">
+                                        {importResult.summary.errors
+                                            .slice(0, 20)
+                                            .map((rowError, index) => (
+                                                <p
+                                                    key={`${rowError}-${index}`}
+                                                    className="text-xs text-red-700"
+                                                >
+                                                    {rowError}
+                                                </p>
+                                            ))}
+                                    </div>
+                                )}
+                        </div>
                     )}
 
                     {/* Botón de descargar plantilla */}
@@ -171,20 +253,36 @@ export default function FormImport() {
                     </div>
 
                     {/* Botón de envío */}
-                    <Button
-                        type="submit"
-                        className={`flex h-11 w-full items-center justify-center gap-2 transition-colors duration-300 ${isSubmitting ? 'cursor-not-allowed bg-gray-400' : 'bg-green-600 text-white hover:bg-green-700'} `}
-                        disabled={!file || isSubmitting}
-                    >
-                        {isSubmitting && (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        )}
-                        <span>
-                            {isSubmitting
-                                ? 'Importando productos...'
-                                : 'Importar Productos'}
-                        </span>
-                    </Button>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 border-green-600 text-green-700 hover:bg-green-50"
+                            disabled={!file || isSubmitting}
+                            onClick={handleSubmit((data) =>
+                                onSubmit(data, 'validate'),
+                            )}
+                        >
+                            {isSubmitting && lastAction === 'validate' && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            Validar archivo
+                        </Button>
+
+                        <Button
+                            type="button"
+                            className={`h-11 ${canImport ? 'bg-black text-white hover:bg-black/90' : 'bg-gray-300 text-gray-500'}`}
+                            disabled={!file || isSubmitting || !canImport}
+                            onClick={handleSubmit((data) =>
+                                onSubmit(data, 'import'),
+                            )}
+                        >
+                            {isSubmitting && lastAction === 'import' && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            Importar
+                        </Button>
+                    </div>
                 </div>
             </form>
         </FormProvider>

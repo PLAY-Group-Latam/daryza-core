@@ -24,24 +24,30 @@ class ProductImportService
   /**
    * Crear producto base (una sola vez por código)
    */
-  public function createProduct(array $data): Product
+  public function createProduct(array $data, ?string &$status = null): Product
   {
     // Buscamos incluyendo eliminados
     $product = Product::withTrashed()->where('code', $data['code'])->first();
 
     if ($product) {
+      $wasTrashed = $product->trashed();
       // Si estaba en la papelera, lo restauramos
-      if ($product->trashed()) {
+      if ($wasTrashed) {
         $product->restore();
       }
       // Actualizamos los datos básicos por si cambiaron en el Excel
-      $product->update([
+      $product->fill([
         'name' => $data['name'],
         'brief_description' => $data['brief_description'] ?? $product->brief_description,
         'description' => $data['description'] ?? $product->description,
       ]);
+      $wasDirty = $product->isDirty();
+      if ($wasDirty) {
+        $product->save();
+      }
 
       $this->syncImportedProductMetadata($product);
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
       return $product;
     }
 
@@ -65,6 +71,7 @@ class ProductImportService
     ]);
 
     $this->syncImportedProductMetadata($product);
+    $status = 'created';
 
     return $product;
   }
@@ -143,7 +150,7 @@ class ProductImportService
   /**
    * Crear variante de producto
    */
-  public function createVariant(Product $product, array $data): ProductVariant
+  public function createVariant(Product $product, array $data, ?string &$status = null): ProductVariant
   {
     // Buscamos la variante por SKU incluyendo las borradas
     $variant = ProductVariant::withTrashed()
@@ -163,12 +170,18 @@ class ProductImportService
     ];
 
     if ($variant) {
+      $wasTrashed = $variant->trashed();
       // 1. Si estaba borrada, la restauramos
-      if ($variant->trashed()) {
+      if ($wasTrashed) {
         $variant->restore();
       }
       // 2. Actualizamos con los nuevos datos del Excel
-      $variant->update($variantData);
+      $variant->fill($variantData);
+      $wasDirty = $variant->isDirty();
+      if ($wasDirty) {
+        $variant->save();
+      }
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
       return $variant;
     }
 
@@ -178,7 +191,114 @@ class ProductImportService
     $variantData['id'] = Str::ulid();
     $variantData['sku'] = $data['sku_daryza'];
 
+    $status = 'created';
     return ProductVariant::create($variantData);
+  }
+
+  /**
+   * Crea o actualiza la variante principal cuando la fila no trae atributos de variante.
+   *
+   * Reglas:
+   * - Si existe una variante principal del producto, se reutiliza.
+   * - Si no existe principal, se reutiliza la primera variante disponible.
+   * - Si no existe ninguna, se crea una nueva con SKU derivado del código del producto.
+   */
+  public function createOrUpdateSingleVariant(Product $product, array $data, ?string &$status = null): ProductVariant
+  {
+    $variant = ProductVariant::withTrashed()
+      ->where('product_id', $product->id)
+      ->where('is_main', true)
+      ->first();
+
+    if (!$variant) {
+      $variant = ProductVariant::withTrashed()
+        ->where('product_id', $product->id)
+        ->orderBy('created_at')
+        ->first();
+    }
+
+    $baseSku = trim((string) ($data['sku_daryza'] ?? ''));
+    if ($baseSku === '') {
+      $baseSku = trim((string) ($product->code ?? ''));
+    }
+
+    if ($baseSku === '') {
+      $baseSku = 'PRODUCTO';
+    }
+
+    $baseSku .= '-UNICA';
+
+    $sku = $this->resolveUniqueSkuForImport($baseSku, $variant?->id);
+
+    $price = $data['price'] ?? null;
+    if ($price === null) {
+      $price = $variant?->price ?? 0;
+    }
+
+    $variantData = [
+      'product_id'     => $product->id,
+      'sku'            => $sku,
+      'sku_supplier'   => $data['sku_supplier'] ?? $variant?->sku_supplier,
+      'price'          => $price,
+      'promo_price'    => $data['promo_price'] ?? null,
+      'is_on_promo'    => $data['is_on_promo'] ?? false,
+      'promo_start_at' => $data['promo_start_at'] ?? null,
+      'promo_end_at'   => $data['promo_end_at'] ?? null,
+      'stock'          => $data['stock'] ?? ($variant?->stock ?? 0),
+      'is_active'      => $data['is_active'] ?? true,
+      'is_main'        => true,
+    ];
+
+    if ($variant) {
+      $wasTrashed = $variant->trashed();
+      if ($wasTrashed) {
+        $variant->restore();
+      }
+
+      ProductVariant::query()
+        ->where('product_id', $product->id)
+        ->where('id', '!=', $variant->id)
+        ->where('is_main', true)
+        ->update(['is_main' => false]);
+
+      $variant->fill($variantData);
+      $wasDirty = $variant->isDirty();
+      if ($wasDirty) {
+        $variant->save();
+      }
+
+      // Producto único no usa atributos de variante.
+      $variant->attributes()->detach();
+
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
+      return $variant;
+    }
+
+    $variantData['id'] = Str::ulid();
+
+    $status = 'created';
+    return ProductVariant::create($variantData);
+  }
+
+  protected function resolveUniqueSkuForImport(string $baseSku, ?string $currentVariantId = null): string
+  {
+    $sku = $baseSku;
+    $counter = 1;
+
+    while (true) {
+      $query = ProductVariant::withTrashed()->where('sku', $sku);
+
+      if ($currentVariantId) {
+        $query->where('id', '!=', $currentVariantId);
+      }
+
+      if (!$query->exists()) {
+        return $sku;
+      }
+
+      $counter++;
+      $sku = "{$baseSku}-{$counter}";
+    }
   }
 
 

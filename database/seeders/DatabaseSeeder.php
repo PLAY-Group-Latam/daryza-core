@@ -38,8 +38,8 @@ class DatabaseSeeder extends Seeder
             SystemAllContentSeeder::class,
             JobsPortalSeeder::class,
             SeoPageSeeder::class,
-            OrderDemoSeeder::class,
-            DashboardDemoSeeder::class,
+            // OrderDemoSeeder::class,
+            // DashboardDemoSeeder::class,
             DistributorSeeder::class
             
         ]);

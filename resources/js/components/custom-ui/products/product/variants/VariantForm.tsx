@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
     Sheet,
     SheetContent,
@@ -22,7 +23,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { Attribute } from '@/types/products/attributes';
 import { Link } from '@inertiajs/react';
 import { Boxes, PackagePlus, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
 import { ProductFormValues } from '../schema';
@@ -41,6 +42,7 @@ export function VariantForm({
     const {
         control,
         getValues,
+        setValue,
         trigger,
         formState: { errors },
     } = useFormContext<ProductFormValues>();
@@ -49,6 +51,9 @@ export function VariantForm({
         number | null
     >(null);
     const [sheetValidationMessage, setSheetValidationMessage] = useState<
+        string | null
+    >(null);
+    const [variantCreationMessage, setVariantCreationMessage] = useState<
         string | null
     >(null);
 
@@ -70,16 +75,33 @@ export function VariantForm({
     const {
         fields,
         remove,
+        replace,
         appendFirst,
         appendNext,
         activeAttributes,
         selectedIds,
     } = useVariantForm(variantAttributes);
+    const [isSingleProduct, setIsSingleProduct] = useState(
+        (fields?.length ?? 0) <= 1,
+    );
     const watchedVariants = useWatch({
         control,
         name: 'variants',
         defaultValue: [],
     });
+    useEffect(() => {
+        if (!isSingleProduct || fields.length <= 1) return;
+
+        const currentVariants = getValues('variants') ?? [];
+        if (currentVariants.length === 0) return;
+
+        replace([
+            {
+                ...currentVariants[0],
+                is_main: true,
+            },
+        ]);
+    }, [fields.length, getValues, isSingleProduct, replace]);
 
     const hasNestedError = (value: unknown): boolean => {
         if (!value || typeof value !== 'object') return false;
@@ -133,6 +155,24 @@ export function VariantForm({
     );
 
     const openSheetForCreate = (isFirst: boolean) => {
+        if (isSingleProduct && fields.length > 0 && !isFirst) {
+            setVariantCreationMessage(
+                'Producto único activado: solo se permite una variante.',
+            );
+            return;
+        }
+
+        if (!isFirst && selectedIds.length === 0) {
+            setVariantCreationMessage(
+                variantAttributes.length === 0
+                    ? 'Primero crea atributos de variante para pasar a producto configurable.'
+                    : 'Selecciona al menos un atributo de variante para agregar otra variante.',
+            );
+            return;
+        }
+
+        setVariantCreationMessage(null);
+
         if (isFirst) {
             appendFirst();
         } else {
@@ -227,17 +267,42 @@ export function VariantForm({
             <p className="text-xs font-bold tracking-widest text-slate-600 uppercase">
                 ● Variantes
             </p>
-            <p className="text-xs text-slate-500">
-                Debe existir exactamente una variante principal activa.
-            </p>
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div>
+                    <p className="text-sm font-medium text-slate-700">
+                        Producto único
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        Activa este modo para mantener solo una variante.
+                    </p>
+                </div>
+                <Switch
+                    checked={isSingleProduct}
+                    onCheckedChange={(checked) => {
+                        setIsSingleProduct(checked);
+                        setVariantCreationMessage(null);
+                        if (checked) {
+                            setValue('variant_attribute_ids', [], {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                            });
+                        }
+                    }}
+                />
+            </div>
             {variantsErrorMessage && (
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
                     {variantsErrorMessage}
                 </p>
             )}
+            {variantCreationMessage && (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    {variantCreationMessage}
+                </p>
+            )}
 
             {/* Toggles — un solo Controller para el campo completo */}
-            {variantAttributes.length > 0 && (
+            {variantAttributes.length > 0 && !isSingleProduct && (
                 <Controller
                     name="variant_attribute_ids"
                     control={control}
@@ -278,13 +343,12 @@ export function VariantForm({
                     }}
                 />
             )}
-
             {/* Estado vacío */}
             {fields.length === 0 && (
                 <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
                         <Boxes
-                            className="h-6 w-6 text-indigo-400"
+                            className="h-6 w-6 text-emerald-500"
                             strokeWidth={1.5}
                         />
                     </div>
@@ -292,27 +356,28 @@ export function VariantForm({
                         Aún no hay variantes creadas
                     </p>
 
-                    {!variantAttributes.length ? (
+                    <p className="mt-1 text-xs text-slate-500 italic">
+                        Puedes iniciar como producto simple con una sola
+                        variante.
+                    </p>
+
+                    <Button
+                        type="button"
+                        onClick={() => openSheetForCreate(true)}
+                        className="mt-3 flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                    >
+                        <PackagePlus className="h-4 w-4" /> Crear primera
+                        variante
+                    </Button>
+
+                    {!variantAttributes.length && (
                         <Link
                             href="/productos/attributes"
-                            className="mt-2 flex items-center gap-1.5 text-xs font-medium text-indigo-600 underline underline-offset-4"
+                            className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-700 underline underline-offset-4"
                         >
-                            <Settings className="h-3.5 w-3.5" /> Ir a crear
-                            atributos
+                            <Settings className="h-3.5 w-3.5" /> Crear
+                            atributos para producto configurable
                         </Link>
-                    ) : !selectedIds.length ? (
-                        <p className="mt-1 text-xs text-slate-500 italic">
-                            Selecciona al menos un atributo para continuar
-                        </p>
-                    ) : (
-                        <Button
-                            type="button"
-                            onClick={() => openSheetForCreate(true)}
-                            className="mt-3 flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                        >
-                            <PackagePlus className="h-4 w-4" /> Crear primera
-                            variante
-                        </Button>
                     )}
                 </div>
             )}
@@ -435,6 +500,10 @@ export function VariantForm({
                                                         variant="ghost"
                                                         size="sm"
                                                         className="text-red-600 hover:text-red-700"
+                                                        disabled={
+                                                            isSingleProduct &&
+                                                            fields.length === 1
+                                                        }
                                                         onClick={() =>
                                                             handleRemoveVariant(
                                                                 index,
@@ -451,17 +520,38 @@ export function VariantForm({
                             </TableBody>
                         </Table>
                     </div>
-
-                    <div className="flex justify-center">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => openSheetForCreate(false)}
-                            className="flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-5 py-2 text-sm text-slate-600 hover:border-indigo-400 hover:text-indigo-600"
-                        >
-                            <span>+</span> Agregar Variante
-                        </Button>
-                    </div>
+                    {!isSingleProduct && (
+                        <div className="space-y-2">
+                            <div className="flex justify-center">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => openSheetForCreate(false)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-5 py-2 text-sm text-slate-600 hover:border-emerald-400 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <span>+</span> Agregar Variante
+                                </Button>
+                            </div>
+                            {selectedIds.length === 0 && (
+                                <p className="text-center text-xs text-slate-500">
+                                    {variantAttributes.length === 0
+                                        ? 'Primero crea atributos de variante para habilitar más variantes.'
+                                        : 'Selecciona al menos un atributo para habilitar más variantes.'}
+                                </p>
+                            )}
+                            {variantAttributes.length === 0 && (
+                                <div className="flex justify-center">
+                                    <Link
+                                        href="/productos/attributes"
+                                        className="text-xs font-medium text-emerald-700 underline underline-offset-4"
+                                    >
+                                        Ir a crear atributos
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
 
