@@ -4,6 +4,7 @@ namespace App\Http\Web\Services\Products;
 
 use App\Enums\AttributeType;
 use App\Enums\OgType;
+use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
@@ -16,6 +17,10 @@ use Illuminate\Support\Str;
 
 class ProductImportService
 {
+  public function __construct(
+    protected UniqueSlugResolver $slugResolver
+  ) {}
+
   /**
    * Crear producto base (una sola vez por código)
    */
@@ -34,19 +39,25 @@ class ProductImportService
         'name' => $data['name'],
         'brief_description' => $data['brief_description'] ?? $product->brief_description,
         'description' => $data['description'] ?? $product->description,
-        // 'slug' => Str::slug($data['name']), // Aseguramos que se limpie
       ]);
 
       $this->syncImportedProductMetadata($product);
       return $product;
     }
 
+    $slug = $this->slugResolver->resolve(
+      Product::class,
+      Str::slug($data['name'] ?? ''),
+      null,
+      'producto'
+    );
+
     // Si realmente no existe, lo creamos
     $product = Product::create([
       'id' => Str::ulid(),
       'code' => $data['code'],
       'name' => $data['name'],
-      'slug' => Str::slug($data['name']),
+      'slug' => $slug,
       'brief_description' => $data['brief_description'] ?? null,
       'description' => $data['description'] ?? null,
       'is_active' => $data['is_active'] ?? true,
