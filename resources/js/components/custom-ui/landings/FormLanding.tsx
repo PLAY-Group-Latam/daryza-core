@@ -1,5 +1,6 @@
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Upload } from '@/components/custom-ui/upload';
+import { SeoMetadataFields } from '@/components/custom-ui/seo/SeoMetadataFields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -202,8 +203,8 @@ export default function FormLanding({ landing }: Props) {
                 og_description: landing?.metadata?.og_description ?? '',
                 og_image: landing?.metadata?.og_image ?? null,
                 og_type: landing?.metadata?.og_type ?? 'website',
-                noindex: landing?.metadata?.noindex ?? false,
-                nofollow: landing?.metadata?.nofollow ?? false,
+                noindex: false,
+                nofollow: false,
             },
             sections: normalizeSections(landing?.sections),
         });
@@ -948,61 +949,40 @@ export default function FormLanding({ landing }: Props) {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <p className="text-xs font-bold tracking-widest uppercase">
-                                ● SEO
-                            </p>
-                            <div className="space-y-4">
-                                <Label>Título meta</Label>
-                                <Input
-                                    value={data.metadata.meta_title ?? ''}
-                                    onChange={(e) =>
-                                        setData('metadata', {
-                                            ...data.metadata,
-                                            meta_title: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Meta title"
-                                />
-
-                                <Label>Descripción meta</Label>
-                                <Textarea
-                                    value={data.metadata.meta_description ?? ''}
-                                    onChange={(e) =>
-                                        setData('metadata', {
-                                            ...data.metadata,
-                                            meta_description: e.target.value,
-                                        })
-                                    }
-                                    rows={3}
-                                    placeholder="Meta description"
-                                />
-
-                                <Label>Palabras clave meta</Label>
-                                <Input
-                                    value={data.metadata.meta_keywords ?? ''}
-                                    onChange={(e) =>
-                                        setData('metadata', {
-                                            ...data.metadata,
-                                            meta_keywords: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Meta keywords"
-                                />
-
-                                <Label>URL canónica</Label>
-                                <Input
-                                    value={data.metadata.canonical_url ?? ''}
-                                    onChange={(e) =>
-                                        setData('metadata', {
-                                            ...data.metadata,
-                                            canonical_url: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Canonical URL"
-                                />
-                            </div>
-                        </div>
+                        <SeoMetadataFields
+                            title="● SEO"
+                            values={{
+                                meta_title: data.metadata.meta_title,
+                                meta_description: data.metadata.meta_description,
+                                meta_keywords: data.metadata.meta_keywords ?? '',
+                                canonical_url: data.metadata.canonical_url,
+                            }}
+                            errors={{
+                                meta_title: errorFor('metadata.meta_title'),
+                                meta_description: errorFor(
+                                    'metadata.meta_description',
+                                ),
+                                meta_keywords: errorFor(
+                                    'metadata.meta_keywords',
+                                ),
+                                canonical_url: errorFor(
+                                    'metadata.canonical_url',
+                                ),
+                            }}
+                            onChange={(field, value) =>
+                                setData('metadata', {
+                                    ...data.metadata,
+                                    [field]: value as never,
+                                })
+                            }
+                            limits={{
+                                meta_title: 160,
+                                meta_description: 320,
+                                meta_keywords: 255,
+                                canonical_url: 500,
+                            }}
+                            showMetaKeywords
+                        />
 
                         <Button
                             type="submit"

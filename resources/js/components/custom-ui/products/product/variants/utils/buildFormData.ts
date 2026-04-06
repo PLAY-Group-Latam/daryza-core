@@ -35,11 +35,8 @@ export function buildFormData(
         'metadata[meta_description]',
         data.metadata.meta_description ?? '',
     );
+    fd.append('metadata[meta_keywords]', data.metadata.meta_keywords ?? '');
     fd.append('metadata[canonical_url]', data.metadata.canonical_url ?? '');
-    fd.append('metadata[og_title]', data.metadata.og_title ?? '');
-    fd.append('metadata[og_description]', data.metadata.og_description ?? '');
-    fd.append('metadata[noindex]', data.metadata.noindex ? '1' : '0');
-    fd.append('metadata[nofollow]', data.metadata.nofollow ? '1' : '0');
 
     // — Variantes —
     data.variants.forEach((variant, vi) => {

@@ -61,13 +61,22 @@ const VariantSchema = z.object({
 });
 
 const MetadataSchema = z.object({
-    meta_title: z.string().max(160).optional(),
-    meta_description: z.string().max(320).optional(),
-    canonical_url: z.string().max(500).optional(),
-    og_title: z.string().max(160).optional(),
-    og_description: z.string().max(320).optional(),
-    noindex: z.boolean(),
-    nofollow: z.boolean(),
+    meta_title: z
+        .string()
+        .max(160, 'El meta título no puede superar los 160 caracteres.')
+        .optional(),
+    meta_description: z
+        .string()
+        .max(320, 'La meta descripción no puede superar los 320 caracteres.')
+        .optional(),
+    meta_keywords: z
+        .string()
+        .max(255, 'Las palabras clave no pueden superar los 255 caracteres.')
+        .optional(),
+    canonical_url: z
+        .string()
+        .max(500, 'La URL canónica no puede superar los 500 caracteres.')
+        .optional(),
 });
 
 // — Schema principal —
@@ -263,10 +272,7 @@ export const defaultValues: ProductFormValues = {
     metadata: {
         meta_title: '',
         meta_description: '',
+        meta_keywords: '',
         canonical_url: '',
-        og_title: '',
-        og_description: '',
-        noindex: false,
-        nofollow: false,
     },
 };
