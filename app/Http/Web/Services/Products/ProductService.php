@@ -107,30 +107,104 @@ class ProductService
 
   protected function createMetadata(Product $product, array $metadata): void
   {
+    $resolvedMetaTitle = $metadata['meta_title'] ?? $product->name;
+    $resolvedMetaDescription = $metadata['meta_description'] ?? $product->brief_description;
+
+    $payload = $this->normalizeSeoMetadataPayload([
+      'meta_title'       => $resolvedMetaTitle,
+      'meta_description' => $resolvedMetaDescription,
+      'meta_keywords'    => $metadata['meta_keywords'] ?? null,
+      'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
+      'og_title'         => $resolvedMetaTitle,
+      'og_description'   => $resolvedMetaDescription,
+      'og_type'          => OgType::PRODUCT,
+      'noindex'          => false,
+      'nofollow'         => false,
+    ]);
+
     $product->metadata()->updateOrCreate(
       [
         'metadatable_id'   => $product->id,
         'metadatable_type' => Product::class,
       ],
-      [
-        'meta_title'       => $metadata['meta_title'] ?? $product->name,
-        'meta_description' => $metadata['meta_description'] ?? $product->brief_description,
-        'canonical_url'    => $metadata['canonical_url'] ?? config('app.frontend_url') . "/productos/{$product->slug}",
-        'og_title'         => $metadata['og_title'] ?? $product->name,
-        'og_description'   => $metadata['og_description'] ?? $product->brief_description,
-        'og_type'          => OgType::PRODUCT,
-        'noindex'          => $metadata['noindex'] ?? false,
-        'nofollow'         => $metadata['nofollow'] ?? false,
-      ]
+      $payload
     );
   }
 
   protected function syncMetadata(Product $product, array $metadata): void
   {
+    $existingMetadata = $product->metadata()->first();
+    $resolvedMetaTitle = $metadata['meta_title']
+      ?? $existingMetadata?->meta_title
+      ?? $product->name;
+    $resolvedMetaDescription = $metadata['meta_description']
+      ?? $existingMetadata?->meta_description
+      ?? $product->brief_description;
+    $resolvedMetaKeywords = array_key_exists('meta_keywords', $metadata)
+      ? $metadata['meta_keywords']
+      : $existingMetadata?->meta_keywords;
+    $resolvedCanonicalUrl = $metadata['canonical_url']
+      ?? $existingMetadata?->canonical_url
+      ?? config('app.frontend_url') . "/productos/{$product->slug}";
+
+    $payload = $this->normalizeSeoMetadataPayload([
+      'meta_title' => $resolvedMetaTitle,
+      'meta_description' => $resolvedMetaDescription,
+      'meta_keywords' => $resolvedMetaKeywords,
+      'canonical_url' => $resolvedCanonicalUrl,
+      'og_title' => $resolvedMetaTitle,
+      'og_description' => $resolvedMetaDescription,
+      'og_type' => OgType::PRODUCT,
+      'noindex' => false,
+      'nofollow' => false,
+    ]);
+
     $product->metadata()->updateOrCreate(
       ['metadatable_id' => $product->id, 'metadatable_type' => Product::class],
-      $metadata
+      $payload
     );
+  }
+
+  protected function normalizeSeoMetadataPayload(array $metadata): array
+  {
+    if (array_key_exists('meta_title', $metadata)) {
+      $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'], 160);
+    }
+    if (array_key_exists('meta_description', $metadata)) {
+      $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'], 320);
+    }
+    if (array_key_exists('meta_keywords', $metadata)) {
+      $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'], 255);
+    }
+    if (array_key_exists('canonical_url', $metadata)) {
+      $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'], 500);
+    }
+    if (array_key_exists('og_title', $metadata)) {
+      $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'], 160);
+    }
+    if (array_key_exists('og_description', $metadata)) {
+      $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'], 320);
+    }
+    $metadata['noindex'] = false;
+    $metadata['nofollow'] = false;
+
+    return $metadata;
+  }
+
+  protected function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
   }
 
   // =========================================================================

@@ -39,11 +39,8 @@ export function mapProductToForm(product: ProductEdit): ProductFormValues {
         metadata: {
             meta_title: product.metadata?.meta_title ?? '',
             meta_description: product.metadata?.meta_description ?? '',
+            meta_keywords: product.metadata?.meta_keywords ?? '',
             canonical_url: product.metadata?.canonical_url ?? '',
-            og_title: product.metadata?.og_title ?? '',
-            og_description: product.metadata?.og_description ?? '',
-            noindex: product.metadata?.noindex ?? false,
-            nofollow: product.metadata?.nofollow ?? false,
         },
     };
 }

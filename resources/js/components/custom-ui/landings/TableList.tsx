@@ -24,7 +24,7 @@ const routes = {
 export const columns: ColumnDef<Landing>[] = [
     {
         accessorKey: 'title',
-        header: 'Landing',
+        header: 'Título',
         cell: ({ row }) => {
             const landing = row.original;
             const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
@@ -32,15 +32,17 @@ export const columns: ColumnDef<Landing>[] = [
 
             return (
                 <div className="flex flex-col">
+                    <span className="font-medium text-foreground">
+                        {landing.title}
+                    </span>
                     <a
                         href={publicUrl}
-                        className="w-fit font-medium text-blue-600 hover:underline"
+                        className="w-fit text-sm text-blue-600 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        {landing.title}
+                        {publicUrl}
                     </a>
-                    <span className="text-sm text-muted-foreground">{publicUrl}</span>
                 </div>
             );
         },

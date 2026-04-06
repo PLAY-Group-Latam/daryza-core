@@ -4,6 +4,7 @@ namespace App\Http\Web\Services\Products;
 
 use App\Enums\AttributeType;
 use App\Enums\OgType;
+use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
@@ -16,6 +17,10 @@ use Illuminate\Support\Str;
 
 class ProductImportService
 {
+  public function __construct(
+    protected UniqueSlugResolver $slugResolver
+  ) {}
+
   /**
    * Crear producto base (una sola vez por código)
    */
@@ -34,19 +39,25 @@ class ProductImportService
         'name' => $data['name'],
         'brief_description' => $data['brief_description'] ?? $product->brief_description,
         'description' => $data['description'] ?? $product->description,
-        // 'slug' => Str::slug($data['name']), // Aseguramos que se limpie
       ]);
 
       $this->syncImportedProductMetadata($product);
       return $product;
     }
 
+    $slug = $this->slugResolver->resolve(
+      Product::class,
+      Str::slug($data['name'] ?? ''),
+      null,
+      'producto'
+    );
+
     // Si realmente no existe, lo creamos
     $product = Product::create([
       'id' => Str::ulid(),
       'code' => $data['code'],
       'name' => $data['name'],
-      'slug' => Str::slug($data['name']),
+      'slug' => $slug,
       'brief_description' => $data['brief_description'] ?? null,
       'description' => $data['description'] ?? null,
       'is_active' => $data['is_active'] ?? true,
@@ -61,26 +72,71 @@ class ProductImportService
   protected function syncImportedProductMetadata(Product $product): void
   {
     $frontendUrl = rtrim((string) (config('app.frontend_url') ?: config('app.url')), '/');
+    $resolvedMetaTitle = $product->name;
+    $resolvedMetaDescription = $product->brief_description;
+    $payload = $this->normalizeSeoMetadataPayload([
+      'meta_title' => $resolvedMetaTitle,
+      'meta_description' => $resolvedMetaDescription,
+      'meta_keywords' => $product->name,
+      'og_title' => $resolvedMetaTitle,
+      'og_description' => $resolvedMetaDescription ?? $resolvedMetaTitle,
+      'canonical_url' => $frontendUrl !== ''
+        ? "{$frontendUrl}/productos/{$product->slug}"
+        : null,
+      'og_type' => OgType::PRODUCT,
+      'noindex' => false,
+      'nofollow' => false,
+    ]);
 
     $product->metadata()->updateOrCreate(
       [
         'metadatable_id' => $product->id,
         'metadatable_type' => Product::class,
       ],
-      [
-        'meta_title' => $product->name,
-        'meta_description' => $product->brief_description,
-        'og_title' => $product->name,
-        // Requisito solicitado: OG description igual al título.
-        'og_description' => $product->name,
-        'canonical_url' => $frontendUrl !== ''
-          ? "{$frontendUrl}/productos/{$product->slug}"
-          : null,
-        'og_type' => OgType::PRODUCT,
-        'noindex' => false,
-        'nofollow' => false,
-      ]
+      $payload
     );
+  }
+
+  protected function normalizeSeoMetadataPayload(array $metadata): array
+  {
+    if (array_key_exists('meta_title', $metadata)) {
+      $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'], 160);
+    }
+    if (array_key_exists('meta_description', $metadata)) {
+      $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'], 320);
+    }
+    if (array_key_exists('meta_keywords', $metadata)) {
+      $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'], 255);
+    }
+    if (array_key_exists('canonical_url', $metadata)) {
+      $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'], 500);
+    }
+    if (array_key_exists('og_title', $metadata)) {
+      $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'], 160);
+    }
+    if (array_key_exists('og_description', $metadata)) {
+      $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'], 320);
+    }
+    $metadata['noindex'] = false;
+    $metadata['nofollow'] = false;
+
+    return $metadata;
+  }
+
+  protected function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
   }
 
 

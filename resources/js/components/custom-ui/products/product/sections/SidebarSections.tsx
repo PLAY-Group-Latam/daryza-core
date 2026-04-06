@@ -5,15 +5,14 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
 
 import { MultiSelect } from '@/components/custom-ui/MultiSelect';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 
 import { ProductRecommendable } from '@/types/products/productEdit';
 import { ProductFormValues } from '../schema';
 import { RecommendedProductsField } from './RecommendedProductsField';
+import { SeoMetadataSection } from './SeoMetadataSection';
 
 interface Props {
     categories: CategorySelect[];
@@ -29,30 +28,6 @@ function SectionTitle({ children }: { children: ReactNode }) {
     return (
         <p className="text-xs font-bold tracking-widest text-gray-700 uppercase">
             ● {children}
-        </p>
-    );
-}
-
-function SeoCounter({
-    current,
-    max,
-}: {
-    current: number;
-    max: number;
-}) {
-    const isOver = current > max;
-    const isNear = current >= Math.floor(max * 0.9);
-
-    return (
-        <p
-            className={`mt-1 text-right text-xs ${isOver
-                    ? 'text-red-600'
-                    : isNear
-                        ? 'text-amber-600'
-                        : 'text-muted-foreground'
-                }`}
-        >
-            {current}/{max}
         </p>
     );
 }
@@ -117,12 +92,6 @@ export function SidebarSection({
     });
     const parentCategoryId =
         typeof rawParentCategoryId === 'string' ? rawParentCategoryId : '';
-    const metaTitle = useWatch({ control, name: 'metadata.meta_title' }) ?? '';
-    const metaDescription =
-        useWatch({ control, name: 'metadata.meta_description' }) ?? '';
-    const ogTitle = useWatch({ control, name: 'metadata.og_title' }) ?? '';
-    const ogDescription =
-        useWatch({ control, name: 'metadata.og_description' }) ?? '';
 
     const selectedParent = categories.find(
         (category) => String(category.id) === String(parentCategoryId),
@@ -167,7 +136,17 @@ export function SidebarSection({
                 shouldValidate: true,
             });
         }
-    }, [parentCategoryId, selectedSubcategoryIds, subcategoryOptions, setValue]);
+
+        if (filtered.length > 0) {
+            clearErrors('categories');
+        }
+    }, [
+        parentCategoryId,
+        selectedSubcategoryIds,
+        subcategoryOptions,
+        setValue,
+        clearErrors,
+    ]);
 
     return (
         <aside className="sticky top-24 space-y-8">
@@ -250,7 +229,7 @@ export function SidebarSection({
             <Controller
                 name="categories"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                     <div className="space-y-2">
                         <SectionTitle>Subcategorías</SectionTitle>
                         {!parentCategoryId && (
@@ -288,26 +267,38 @@ export function SidebarSection({
                                                     const current = (
                                                         field.value ?? []
                                                     ).map((id) => String(id));
+                                                    let nextValues: string[] = [];
                                                     if (e.target.checked) {
-                                                        field.onChange(
-                                                            Array.from(
-                                                                new Set([
-                                                                    ...current,
-                                                                    String(
-                                                                        option.value,
-                                                                    ),
-                                                                ]),
-                                                            ),
+                                                        nextValues = Array.from(
+                                                            new Set([
+                                                                ...current,
+                                                                String(
+                                                                    option.value,
+                                                                ),
+                                                            ]),
                                                         );
                                                     } else {
-                                                        field.onChange(
-                                                            current.filter(
-                                                                (id) =>
-                                                                    id !==
-                                                                    String(
-                                                                        option.value,
-                                                                    ),
-                                                            ),
+                                                        nextValues = current.filter(
+                                                            (id) =>
+                                                                id !==
+                                                                String(
+                                                                    option.value,
+                                                                ),
+                                                        );
+                                                    }
+
+                                                    setValue(
+                                                        'categories',
+                                                        nextValues,
+                                                        {
+                                                            shouldDirty: true,
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+
+                                                    if (nextValues.length > 0) {
+                                                        clearErrors(
+                                                            'categories',
                                                         );
                                                     }
                                                 }}
@@ -319,9 +310,9 @@ export function SidebarSection({
                             </div>
                         )}
 
-                        {errors.categories && (
+                        {fieldState.error && (
                             <p className="text-sm text-red-500">
-                                {errors.categories.message}
+                                {fieldState.error.message}
                             </p>
                         )}
                     </div>
@@ -334,95 +325,7 @@ export function SidebarSection({
                 searchUrl={recommendedSearchUrl}
             />
 
-            {/* SEO */}
-            <div className="space-y-4">
-                <SectionTitle>SEO & Metadatos</SectionTitle>
-
-                <Controller
-                    name="metadata.meta_title"
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Input
-                                {...field}
-                                placeholder="Meta title (max 160)"
-                            />
-                            <SeoCounter
-                                current={String(metaTitle).length}
-                                max={160}
-                            />
-                        </div>
-                    )}
-                />
-
-                <Controller
-                    name="metadata.meta_description"
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Textarea
-                                {...field}
-                                className="h-20 w-full rounded-xl border p-3 text-sm"
-                                placeholder="Meta description (max 320)"
-                            />
-                            <SeoCounter
-                                current={String(metaDescription).length}
-                                max={320}
-                            />
-                        </div>
-                    )}
-                />
-
-                <Controller
-                    name="metadata.og_title"
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Input {...field} placeholder="OG title" />
-                            <SeoCounter
-                                current={String(ogTitle).length}
-                                max={160}
-                            />
-                        </div>
-                    )}
-                />
-
-                <Controller
-                    name="metadata.og_description"
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Textarea
-                                {...field}
-                                className="h-20 w-full rounded-xl border p-3 text-sm"
-                                placeholder="OG description"
-                            />
-                            <SeoCounter
-                                current={String(ogDescription).length}
-                                max={320}
-                            />
-                        </div>
-                    )}
-                />
-
-                <Controller
-                    name="metadata.canonical_url"
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Input
-                                {...field}
-                                placeholder="https://ejemplo.com/producto"
-                            />
-                            {errors.metadata?.canonical_url && (
-                                <p className="mt-1 text-xs text-red-500">
-                                    {errors.metadata.canonical_url.message}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                />
-            </div>
+            <SeoMetadataSection />
 
             <button
                 type="submit"

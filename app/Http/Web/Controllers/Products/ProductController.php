@@ -69,7 +69,8 @@ class ProductController extends Controller
     );
 
     $product->load([
-      'categories.parent', // <--- CARGAR LA RELACIÓN PIVOT      'metadata',
+      'categories.parent',
+      'metadata',
       'businessLines', // <--- AGREGADO: Cargar relación
       'technicalSheets',
       'recommendedProducts:id,code,name,slug',

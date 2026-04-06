@@ -82,6 +82,9 @@ class StoreLandingRequest extends FormRequest
         $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'] ?? null, 255);
         $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'] ?? null, 160);
         $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'] ?? null, 320);
+        $metadata['og_image'] = $this->truncateNullableString($metadata['og_image'] ?? null, 500);
+        $metadata['og_type'] = $this->truncateNullableString($metadata['og_type'] ?? null, 50);
+        $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'] ?? null, 500);
 
         $this->merge(['metadata' => $metadata]);
     }

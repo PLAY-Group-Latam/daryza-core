@@ -20,28 +20,27 @@ class ProductExcelController extends Controller
     }
 
     public function import(StoreProductImportRequest $request)
-{
-    $file = $request->file('file');
-    try {
-    
-        ProductObserver::$muteNotifications = true;
-        Excel::import(new ProductsImport(), $file);
-        ProductObserver::$muteNotifications = false;
+    {
+        $file = $request->file('file');
 
-        return redirect()->route('products.items.index')->with('success', 'Productos importados correctamente.');
-    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-        ProductObserver::$muteNotifications = false; 
-        $failures = $e->failures();
-        foreach ($failures as $failure) {
-            Log::error("Fila {$failure->row()}: " . implode(', ', $failure->errors()));
+        try {
+            ProductObserver::$muteNotifications = true;
+            Excel::import(new ProductsImport(), $file);
+
+            return redirect()->route('products.items.index')->with('success', 'Productos importados correctamente.');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            foreach ($failures as $failure) {
+                Log::error("Fila {$failure->row()}: " . implode(', ', $failure->errors()));
+            }
+            return back()->withErrors(['file' => 'Algunas filas no pasaron la validación.']);
+        } catch (\Exception $e) {
+            Log::error('Error al importar productos: ' . $e->getMessage());
+            return back()->withErrors(['file' => 'Error al procesar el archivo.']);
+        } finally {
+            ProductObserver::$muteNotifications = false;
         }
-        return back()->withErrors(['file' => 'Algunas filas no pasaron la validación.']);
-    } catch (\Exception $e) {
-        ProductObserver::$muteNotifications = false; 
-        Log::error('Error al importar productos: ' . $e->getMessage());
-        return back()->withErrors(['file' => 'Error al procesar el archivo.']);
     }
-}
 
     public function export()
     {

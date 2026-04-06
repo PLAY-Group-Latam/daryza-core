@@ -11,6 +11,37 @@ use Illuminate\Validation\Validator;
 
 class UpdateProductRequest extends FormRequest
 {
+  protected function prepareForValidation(): void
+  {
+    $metadata = $this->input('metadata', []);
+    if (!is_array($metadata)) {
+      return;
+    }
+
+    $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'] ?? null, 160);
+    $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'] ?? null, 320);
+    $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'] ?? null, 255);
+    $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'] ?? null, 500);
+
+    $this->merge(['metadata' => $metadata]);
+  }
+
+  private function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
+  }
+
   public function authorize(): bool
   {
     return true;
@@ -22,10 +53,11 @@ class UpdateProductRequest extends FormRequest
       // ======================
       // PRODUCTO
       // ======================
-      'name' => ['required', 'string'],
+      'name' => ['required', 'string', 'max:255'],
       'slug' => [
         'required',
         'string',
+        'max:255',
         Rule::unique('products', 'slug')->ignore($this->product),
       ],
       'categories'        => ['required', 'array', 'min:1'],
@@ -35,7 +67,7 @@ class UpdateProductRequest extends FormRequest
       'business_lines.*'  => ['exists:business_lines,id'],
       'recommended_product_ids'   => ['nullable', 'array'],
       'recommended_product_ids.*' => ['distinct', 'exists:products,id'],
-      'brief_description' => ['nullable', 'string'],
+      'brief_description' => ['nullable', 'string', 'max:500'],
       'description'       => ['nullable', 'string'],
       'is_active'         => ['required', 'boolean'],
       'is_home'           => ['required', 'boolean'],
@@ -45,13 +77,10 @@ class UpdateProductRequest extends FormRequest
       // ======================
       // METADATA
       // ======================
-      'metadata.meta_title'       => ['nullable', 'string'],
-      'metadata.meta_description' => ['nullable', 'string'],
-      'metadata.canonical_url'    => ['nullable', 'string'],
-      'metadata.og_title'         => ['nullable', 'string'],
-      'metadata.og_description'   => ['nullable', 'string'],
-      'metadata.noindex'          => ['required', 'boolean'],
-      'metadata.nofollow'         => ['required', 'boolean'],
+      'metadata.meta_title'       => ['nullable', 'string', 'max:160'],
+      'metadata.meta_description' => ['nullable', 'string', 'max:320'],
+      'metadata.meta_keywords'    => ['nullable', 'string', 'max:255'],
+      'metadata.canonical_url'    => ['nullable', 'url', 'max:500'],
 
       // ======================
       // VARIANTS
@@ -66,7 +95,7 @@ class UpdateProductRequest extends FormRequest
       'variants.*.is_active'       => ['boolean'],
       'variants.*.is_on_promo'     => ['boolean'],
       'variants.*.promo_start_at'  => ['nullable', 'date'],
-      'variants.*.promo_end_at'    => ['nullable', 'date'],
+      'variants.*.promo_end_at'    => ['nullable', 'date', 'after:variants.*.promo_start_at'],
       'variants.*.is_main'         => ['boolean'],
 
       // ======================
@@ -92,7 +121,7 @@ class UpdateProductRequest extends FormRequest
       // ======================
       'variants.*.specifications'                    => ['nullable', 'array'],
       'variants.*.specifications.*.attribute_id'     => ['required', 'exists:attributes,id'],
-      'variants.*.specifications.*.value'            => ['nullable', 'string'],
+      'variants.*.specifications.*.value'            => ['nullable', 'string', 'max:1000'],
       'variants.*.specification_selector'            => ['nullable'],
 
       // ======================
@@ -108,8 +137,11 @@ class UpdateProductRequest extends FormRequest
   {
     return [
       'name.required'               => 'El nombre del producto es obligatorio.',
+      'name.max'                    => 'El nombre no puede superar los 255 caracteres.',
       'slug.required'               => 'El slug es obligatorio.',
       'slug.unique'                 => 'El slug ya está en uso.',
+      'slug.max'                    => 'El slug no puede superar los 255 caracteres.',
+      'brief_description.max'       => 'La descripción corta no puede superar los 500 caracteres.',
       'is_active.required'          => 'Debes indicar si el producto está activo.',
       'is_home.required'            => 'Debes indicar si se muestra en el home.',
       'categories.required'         => 'Debes seleccionar al menos una categoría.',
@@ -122,8 +154,15 @@ class UpdateProductRequest extends FormRequest
       'variants.*.price.min'        => 'El precio no puede ser negativo.',
       'variants.*.promo_price.numeric' => 'El precio de promoción debe ser un número.',
       'variants.*.promo_price.min'     => 'El precio de promoción no puede ser negativo.',
+      'variants.*.promo_end_at.after'  => 'La fecha de fin debe ser posterior a la fecha de inicio.',
       'variants.*.stock.required'   => 'El stock es obligatorio.',
       'variants.*.specifications.*.attribute_id.required' => 'Atributo técnico obligatorio.',
+      'variants.*.specifications.*.value.max' => 'El valor de la especificación no puede superar los 1000 caracteres.',
+      'metadata.meta_title.max'       => 'El meta título no puede superar los 160 caracteres.',
+      'metadata.meta_description.max' => 'La meta descripción no puede superar los 320 caracteres.',
+      'metadata.meta_keywords.max'    => 'Las palabras clave no pueden superar los 255 caracteres.',
+      'metadata.canonical_url.url'    => 'La URL canónica no tiene un formato válido.',
+      'metadata.canonical_url.max'    => 'La URL canónica no puede superar los 500 caracteres.',
     ];
   }
 

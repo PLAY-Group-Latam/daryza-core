@@ -83,11 +83,15 @@ class BlogService
     if (!isset($metadata['meta_description'])) {
       $metadata['meta_description'] = $data['description'] ?? $blog->description;
     }
+    $metadata['og_title'] = $metadata['meta_title'];
+    $metadata['og_description'] = $metadata['meta_description'];
 
     // Canonical automático si no viene
     if (!isset($metadata['canonical_url'])) {
       $metadata['canonical_url'] = $baseUrl . '/blogs/' . ($data['slug'] ?? $blog->slug);
     }
+
+    $metadata = $this->normalizeSeoMetadataPayload($metadata);
 
     if ($blog->metadata) {
       $blog->metadata->update($metadata);
@@ -128,5 +132,53 @@ class BlogService
       },
       $html
     );
+  }
+
+  protected function normalizeSeoMetadataPayload(array $metadata): array
+  {
+    if (array_key_exists('meta_title', $metadata)) {
+      $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'], 255);
+    }
+    if (array_key_exists('meta_description', $metadata)) {
+      $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'], 500);
+    }
+    if (array_key_exists('meta_keywords', $metadata)) {
+      $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'], 255);
+    }
+    if (array_key_exists('canonical_url', $metadata)) {
+      $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'], 255);
+    }
+    if (array_key_exists('og_title', $metadata)) {
+      $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'], 255);
+    }
+    if (array_key_exists('og_description', $metadata)) {
+      $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'], 500);
+    }
+    if (array_key_exists('og_image', $metadata)) {
+      $metadata['og_image'] = $this->truncateNullableString($metadata['og_image'], 255);
+    }
+    if (array_key_exists('og_type', $metadata)) {
+      $metadata['og_type'] = $this->truncateNullableString($metadata['og_type'], 50);
+    }
+    $metadata['noindex'] = false;
+    $metadata['nofollow'] = false;
+
+    return $metadata;
+  }
+
+  protected function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
   }
 }

@@ -61,21 +61,29 @@ class LandingService
         $brandStoryDescription = (string) data_get($sections, 'brandStory.description', '');
         $defaultMetaDescription = $brandStoryDescription !== '' ? $brandStoryDescription : null;
         $defaultKeywords = $this->buildDefaultKeywords($landing->title, $brandStoryDescription, $landing->slug);
+        $resolvedMetaTitle = $this->limitNullableString(
+            $metadata['meta_title'] ?? $landing->title,
+            160
+        );
+        $resolvedMetaDescription = $this->limitNullableString(
+            $metadata['meta_description'] ?? $existingMetadata?->meta_description ?? $defaultMetaDescription,
+            320
+        );
 
         $ogImage = $this->resolveMediaValue($metadata['og_image'] ?? null, "landings/{$landing->id}/metadata")
             ?? $existingMetadata?->og_image;
 
         $payload = [
-            'meta_title' => $this->limitNullableString($metadata['meta_title'] ?? $landing->title, 160),
-            'meta_description' => $this->limitNullableString($metadata['meta_description'] ?? $existingMetadata?->meta_description ?? $defaultMetaDescription, 320),
+            'meta_title' => $resolvedMetaTitle,
+            'meta_description' => $resolvedMetaDescription,
             'meta_keywords' => $this->limitNullableString($metadata['meta_keywords'] ?? $existingMetadata?->meta_keywords ?? $defaultKeywords, 255),
-            'og_title' => $this->limitNullableString($metadata['og_title'] ?? $existingMetadata?->og_title ?? $landing->title, 160),
-            'og_description' => $this->limitNullableString($metadata['og_description'] ?? $existingMetadata?->og_description ?? ($metadata['meta_description'] ?? $defaultMetaDescription), 320),
-            'og_image' => $ogImage,
-            'og_type' => $metadata['og_type'] ?? 'website',
-            'canonical_url' => $metadata['canonical_url'] ?? $defaultCanonical,
-            'noindex' => (bool) ($metadata['noindex'] ?? $existingMetadata?->noindex ?? false),
-            'nofollow' => (bool) ($metadata['nofollow'] ?? $existingMetadata?->nofollow ?? false),
+            'og_title' => $resolvedMetaTitle,
+            'og_description' => $resolvedMetaDescription,
+            'og_image' => $this->limitNullableString($ogImage, 500),
+            'og_type' => $this->limitNullableString($metadata['og_type'] ?? 'website', 50),
+            'canonical_url' => $this->limitNullableString($metadata['canonical_url'] ?? $defaultCanonical, 500),
+            'noindex' => false,
+            'nofollow' => false,
         ];
 
         $landing->metadata()->updateOrCreate(
