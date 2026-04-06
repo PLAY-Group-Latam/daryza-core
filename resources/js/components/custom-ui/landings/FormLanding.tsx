@@ -408,7 +408,7 @@ export default function FormLanding({ landing }: Props) {
 
                             <div className="overflow-hidden rounded-xl border">
                                 <div className="overflow-x-auto">
-                                    <div className="min-w-[740px]">
+                                    <div className="min-w-185">
                                         <div className="grid grid-cols-12 bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                                             <div className="col-span-1">#</div>
                                             <div className="col-span-4">
@@ -825,7 +825,7 @@ export default function FormLanding({ landing }: Props) {
 
                                 <div className="overflow-hidden rounded-xl border">
                                     <div className="overflow-x-auto">
-                                        <div className="min-w-[740px]">
+                                        <div className="min-w-185">
                                             <div className="grid grid-cols-12 bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                                                 <div className="col-span-1">
                                                     #

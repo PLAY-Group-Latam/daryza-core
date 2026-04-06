@@ -19,6 +19,21 @@ const columns: ColumnDef<Attribute>[] = [
         accessorKey: 'name',
         header: 'Nombre',
     },
+    {
+        id: 'usage',
+        header: 'Uso',
+        cell: ({ row }) => (
+            <span
+                className={
+                    row.original.is_variant
+                        ? 'font-medium text-emerald-700'
+                        : 'font-medium text-blue-700'
+                }
+            >
+                {row.original.is_variant ? 'Variante' : 'Especificación'}
+            </span>
+        ),
+    },
     // {
     //     accessorKey: 'type',
     //     header: 'Tipo',
@@ -26,21 +41,21 @@ const columns: ColumnDef<Attribute>[] = [
     //         <span className="capitalize">{row.original.type}</span>
     //     ),
     // },
-    {
-        accessorKey: 'is_variant',
-        header: 'Variante',
-        cell: ({ row }) => (
-            <span
-                className={
-                    row.original.is_variant
-                        ? 'font-medium text-green-600'
-                        : 'font-medium text-red-600'
-                }
-            >
-                {row.original.is_variant ? 'Sí' : 'No'}
-            </span>
-        ),
-    },
+    // {
+    //     accessorKey: 'is_variant',
+    //     header: 'Variante',
+    //     cell: ({ row }) => (
+    //         <span
+    //             className={
+    //                 row.original.is_variant
+    //                     ? 'font-medium text-green-600'
+    //                     : 'font-medium text-red-600'
+    //             }
+    //         >
+    //             {row.original.is_variant ? 'Sí' : 'No'}
+    //         </span>
+    //     ),
+    // },
 
     {
         id: 'values',

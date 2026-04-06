@@ -37,13 +37,13 @@ const VariantAttributeSchema = z.object({
 
 const SpecificationSchema = z.object({
     attribute_id: z.string().min(1),
-    value: z.string().max(1000),
+    value: z.string().trim().max(1000),
 });
 
 const VariantSchema = z.object({
     id: z.string().optional(),
-    sku: z.string().min(1, 'El SKU es obligatorio').max(100),
-    sku_supplier: z.string().max(100).optional(),
+    sku: z.string().trim().min(1, 'El SKU es obligatorio').max(100),
+    sku_supplier: z.string().trim().max(100).optional(),
     price: z.coerce.number().min(0, 'El precio no puede ser negativo'),
     promo_price: z.preprocess(
         parseOptionalNumber,
@@ -73,9 +73,9 @@ const MetadataSchema = z.object({
 // — Schema principal —
 
 export const ProductSchema = z.object({
-    name: z.string().min(1, 'El nombre es obligatorio').max(255),
-    slug: z.string().min(1, 'El slug es obligatorio').max(255),
-    brief_description: z.string().max(500).optional(),
+    name: z.string().trim().min(1, 'El nombre es obligatorio').max(255),
+    slug: z.string().trim().min(1, 'El slug es obligatorio').max(255),
+    brief_description: z.string().trim().max(500).optional(),
     description: z.string().optional(),
     is_active: z.boolean(),
     is_home: z.boolean(),

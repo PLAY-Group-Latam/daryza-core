@@ -167,7 +167,17 @@ export function SidebarSection({
                 shouldValidate: true,
             });
         }
-    }, [parentCategoryId, selectedSubcategoryIds, subcategoryOptions, setValue]);
+
+        if (filtered.length > 0) {
+            clearErrors('categories');
+        }
+    }, [
+        parentCategoryId,
+        selectedSubcategoryIds,
+        subcategoryOptions,
+        setValue,
+        clearErrors,
+    ]);
 
     return (
         <aside className="sticky top-24 space-y-8">
@@ -250,7 +260,7 @@ export function SidebarSection({
             <Controller
                 name="categories"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                     <div className="space-y-2">
                         <SectionTitle>Subcategorías</SectionTitle>
                         {!parentCategoryId && (
@@ -288,26 +298,38 @@ export function SidebarSection({
                                                     const current = (
                                                         field.value ?? []
                                                     ).map((id) => String(id));
+                                                    let nextValues: string[] = [];
                                                     if (e.target.checked) {
-                                                        field.onChange(
-                                                            Array.from(
-                                                                new Set([
-                                                                    ...current,
-                                                                    String(
-                                                                        option.value,
-                                                                    ),
-                                                                ]),
-                                                            ),
+                                                        nextValues = Array.from(
+                                                            new Set([
+                                                                ...current,
+                                                                String(
+                                                                    option.value,
+                                                                ),
+                                                            ]),
                                                         );
                                                     } else {
-                                                        field.onChange(
-                                                            current.filter(
-                                                                (id) =>
-                                                                    id !==
-                                                                    String(
-                                                                        option.value,
-                                                                    ),
-                                                            ),
+                                                        nextValues = current.filter(
+                                                            (id) =>
+                                                                id !==
+                                                                String(
+                                                                    option.value,
+                                                                ),
+                                                        );
+                                                    }
+
+                                                    setValue(
+                                                        'categories',
+                                                        nextValues,
+                                                        {
+                                                            shouldDirty: true,
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+
+                                                    if (nextValues.length > 0) {
+                                                        clearErrors(
+                                                            'categories',
                                                         );
                                                     }
                                                 }}
@@ -319,9 +341,9 @@ export function SidebarSection({
                             </div>
                         )}
 
-                        {errors.categories && (
+                        {fieldState.error && (
                             <p className="text-sm text-red-500">
-                                {errors.categories.message}
+                                {fieldState.error.message}
                             </p>
                         )}
                     </div>

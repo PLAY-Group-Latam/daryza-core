@@ -114,9 +114,7 @@ export function VariantAttributes({
 
     return (
         <div className="space-y-3">
-            <p className="text-xs font-medium text-slate-600">Atributos</p>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="space-y-3">
                 {attributes.map((attr, attrIndex) => (
                     <Controller
                         key={attr.id}
@@ -125,8 +123,8 @@ export function VariantAttributes({
                         render={({ field, fieldState }) => {
                             if (attr.type === 'select') {
                                 return (
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">
+                                    <div>
+                                        <Label className="mb-2 block text-xs">
                                             {attr.name}
                                         </Label>
                                         <div className="flex flex-wrap gap-2">
@@ -163,7 +161,7 @@ export function VariantAttributes({
                                             })}
                                         </div>
                                         {fieldState.error?.message && (
-                                            <p className="text-xs text-red-500">
+                                            <p className="mt-2 text-xs text-red-500">
                                                 {fieldState.error.message}
                                             </p>
                                         )}
@@ -179,7 +177,7 @@ export function VariantAttributes({
                                     render={({ field: valueField }) => {
                                         if (attr.type === 'boolean') {
                                             return (
-                                                <div className="flex items-center gap-2 pt-5">
+                                                <div className="flex items-center gap-2 rounded-lg border border-slate-200 p-3">
                                                     <Switch
                                                         checked={
                                                             valueField.value ===
@@ -201,7 +199,7 @@ export function VariantAttributes({
                                         }
 
                                         return (
-                                            <div className="flex flex-col gap-1">
+                                            <div className="rounded-lg border border-slate-200 p-3">
                                                 <Label className="text-xs">
                                                     {attr.name}
                                                 </Label>
@@ -210,6 +208,7 @@ export function VariantAttributes({
                                                     value={
                                                         valueField.value ?? ''
                                                     }
+                                                    className="mt-2"
                                                     placeholder={attr.name}
                                                 />
                                             </div>
