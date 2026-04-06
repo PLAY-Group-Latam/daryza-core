@@ -2,11 +2,14 @@
 
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import { useState } from 'react'
-import L from 'leaflet'
+import L, { LatLng } from 'leaflet'
 
-function LocationSelector({ onSelect }: any) {
+interface LocationSelectorProps {
+    onSelect: (coords: LatLng) => void
+}
 
-    const [position, setPosition] = useState<any>(null)
+function LocationSelector({ onSelect }: LocationSelectorProps) {
+    const [position, setPosition] = useState<LatLng | null>(null)
 
     useMapEvents({
         click(e) {
@@ -23,21 +26,21 @@ function LocationSelector({ onSelect }: any) {
     ) : null
 }
 
-export default function SelectDistributorLocation({ onSelect }: any) {
+interface SelectDistributorLocationProps {
+    onSelect: (coords: LatLng) => void
+}
 
+export default function SelectDistributorLocation({ onSelect }: SelectDistributorLocationProps) {
     return (
         <MapContainer
             center={[-12.0464, -77.0428]}
             zoom={12}
             className="h-[500px] w-full rounded-xl"
         >
-
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-
             <LocationSelector onSelect={onSelect} />
-
         </MapContainer>
     )
 }

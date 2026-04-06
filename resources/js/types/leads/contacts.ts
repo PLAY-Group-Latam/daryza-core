@@ -55,6 +55,7 @@ export interface ContactFieldConfig {
     keys: string[]; 
     icon?: ReactNode;
     isFullWidth?: boolean;
+    isFullWidthCard?: boolean; // Para casos donde queremos que el campo ocupe todo el ancho pero dentro de una card con padding, como el caso de "Empresa" en Sales Advisor.
     isLocation?: boolean;
 }
 

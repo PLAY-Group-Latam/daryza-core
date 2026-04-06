@@ -35,7 +35,9 @@ class DistributorsService
                       ->orWhere('region', 'like', "%{$search}%");
                 });
             })
-            ->latest()
+            // 🚀 CAMBIO AQUÍ: Primero priorizamos los activos (true = 1) y luego los inactivos (false = 0)
+            ->orderBy('is_active', 'desc') 
+            ->latest() // Luego los ordenamos por fecha de creación
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -48,6 +50,7 @@ class DistributorsService
                 $data['establishment_img'] = $this->gcs->uploadFile($data['establishment_img'], 'distributors/establishments');
             }
 
+            // Aquí $data ya trae el campo 'is_active' si viene del Request
             return Distributor::create($data);
         });
     }
@@ -67,6 +70,7 @@ class DistributorsService
                 unset($data['establishment_img']);
             }
 
+            // Al hacer el update, 'is_active' se actualizará solito
             $distributor->update($data);
             return $distributor;
         });

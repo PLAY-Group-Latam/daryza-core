@@ -2,9 +2,9 @@
 
 namespace App\Http\Web\Services\Dashboard;
 
+use App\Models\Events\EventLog;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderPayment;
-use App\Models\Products\Product;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -40,25 +40,54 @@ class DashboardService
                 ->whereBetween('paid_at', [$previousFrom, $previousTo]);
         })->count();
 
-        $averageTicket = $currentOrders > 0
-            ? $currentSales / $currentOrders
+        $averageTicket = $currentOrders > 0 ? $currentSales / $currentOrders : 0;
+        $previousTicket = $previousOrders > 0 ? $previousSales / $previousOrders : 0;
+
+        // Conversión actual: add_to_cart → payment_result_success (por customer_id único)
+        $currentCartsStarted = EventLog::where('event_type', 'add_to_cart')
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->whereNotNull('customer_id')
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        $currentPaymentsDone = EventLog::where('event_type', 'payment_result_success')
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->whereNotNull('customer_id')
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        $conversionRate = $currentCartsStarted > 0
+            ? round(($currentPaymentsDone / $currentCartsStarted) * 100, 2)
             : 0;
 
-        $previousTicket = $previousOrders > 0
-            ? $previousSales / $previousOrders
+        // Conversión anterior
+        $previousCartsStarted = EventLog::where('event_type', 'add_to_cart')
+            ->whereBetween('created_at', [$previousFrom, $previousTo])
+            ->whereNotNull('customer_id')
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        $previousPaymentsDone = EventLog::where('event_type', 'payment_result_success')
+            ->whereBetween('created_at', [$previousFrom, $previousTo])
+            ->whereNotNull('customer_id')
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        $previousConversionRate = $previousCartsStarted > 0
+            ? round(($previousPaymentsDone / $previousCartsStarted) * 100, 2)
             : 0;
 
         return [
-            'totalSales' => (float) round($currentSales, 2),
-            'totalOrders' => (int) $currentOrders,
-            'averageTicket' => (float) round($averageTicket, 2),
+            'totalSales'       => (float) round($currentSales, 2),
+            'totalOrders'      => (int) $currentOrders,
+            'averageTicket'    => (float) round($averageTicket, 2),
 
-            'salesGrowth' => $this->calculateGrowth($currentSales, $previousSales),
-            'ordersGrowth' => $this->calculateGrowth($currentOrders, $previousOrders),
-            'ticketGrowth' => $this->calculateGrowth($averageTicket, $previousTicket),
+            'salesGrowth'      => $this->calculateGrowth($currentSales, $previousSales),
+            'ordersGrowth'     => $this->calculateGrowth($currentOrders, $previousOrders),
+            'ticketGrowth'     => $this->calculateGrowth($averageTicket, $previousTicket),
 
-            'conversionRate' => 0,
-            'conversionGrowth' => 0,
+            'conversionRate'   => $conversionRate,
+            'conversionGrowth' => $this->calculateGrowth($conversionRate, $previousConversionRate),
         ];
     }
 
@@ -136,7 +165,7 @@ class DashboardService
         ]);
     }
 
-    private function calculateGrowth(float $current, float $previous): float 
+    private function calculateGrowth(float $current, float $previous): float
     {
         if ($previous <= 0) {
             return 0;

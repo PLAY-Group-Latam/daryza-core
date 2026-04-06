@@ -4,12 +4,14 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { LocateFixed, X, Search } from 'lucide-react'
+import { usePage } from '@inertiajs/react'
 
 interface DistributorsMapProps {
     initialCoords?: { lat: number; lng: number };
     readOnly?: boolean;
     onPositionChange?: (coords: { lat: number; lng: number }) => void;
-    logoPreviewUrl?: string | null;
+    coverageRadius?: number;
 }
 
 interface NominatimResult {
@@ -17,6 +19,13 @@ interface NominatimResult {
     display_name: string;
     lat: string;
     lon: string;
+}
+
+interface InertiaPageProps {
+    mapPin?: {
+        url: string | null;
+    };
+    [key: string]: unknown;
 }
 
 const createDynamicIcon = (logoUrl: string | null | undefined) => {
@@ -48,6 +57,7 @@ const createDynamicIcon = (logoUrl: string | null | undefined) => {
                     mask-size: contain;
                     -webkit-mask-repeat: no-repeat;
                     mask-repeat: no-repeat;
+                    border-radius: 8px;
                 ">
                 </div>
             </div>
@@ -78,38 +88,76 @@ function MapEvents({ readOnly, onMapClick }: { readOnly: boolean; onMapClick: (l
     return null
 }
 
-export default function DistributorsMap({ initialCoords, readOnly = false, onPositionChange, logoPreviewUrl }: DistributorsMapProps) {
-    // Estado de la posición del marcador
+export default function DistributorsMap({
+    initialCoords,
+    readOnly = false,
+    onPositionChange,
+    coverageRadius = 1500
+}: DistributorsMapProps) {
+    const { mapPin } = usePage<InertiaPageProps>().props;
+
     const [position, setPosition] = useState<L.LatLng | null>(null)
-    const [search, setSearch] = useState('')
+    const [search, setSearch] = useState<string>('')
     const [results, setResults] = useState<NominatimResult[]>([])
-    const [isSearching, setIsSearching] = useState(false)
-    const [showDropdown, setShowDropdown] = useState(false)
+    const [isSearching, setIsSearching] = useState<boolean>(false)
+    const [showDropdown, setShowDropdown] = useState<boolean>(false)
     const [flyTarget, setFlyTarget] = useState<L.LatLng | null>(null)
 
     const searchRef = useRef<HTMLDivElement>(null)
     const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
-    // REACCIÓN A CAMBIOS EXTERNOS (Botón Restablecer)
-    // Este useEffect asegura que si el padre cambia initialCoords, el pin se mueva.
     useEffect(() => {
         if (initialCoords) {
             const newPos = new L.LatLng(initialCoords.lat, initialCoords.lng);
             setPosition(newPos);
-            setFlyTarget(newPos); // Mueve la cámara también
+            setFlyTarget(newPos);
         }
     }, [initialCoords?.lat, initialCoords?.lng]);
 
-    const markerIcon = useMemo(() => createDynamicIcon(logoPreviewUrl || null), [logoPreviewUrl]);
+    const markerIcon = useMemo(() => createDynamicIcon(mapPin?.url ?? null), [mapPin?.url]);
+
+    const fetchAddressFromCoords = async (lat: number, lng: number) => {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+            const data = await res.json();
+            if (data.display_name) {
+                const shortAddress = data.display_name.split(',').slice(0, 3).join(',');
+                setSearch(shortAddress);
+            }
+        } catch (error) {
+            console.error("Error obteniendo dirección:", error);
+        }
+    }
 
     const updatePosition = (latlng: L.LatLng) => {
         setPosition(latlng)
         if (onPositionChange) {
             onPositionChange({ lat: latlng.lat, lng: latlng.lng });
         }
+        if (!readOnly) {
+            fetchAddressFromCoords(latlng.lat, latlng.lng);
+        }
     }
 
-    // Cerrar dropdown de búsqueda al clickear fuera
+    const handleUseCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            alert("Tu navegador no soporta geolocalización.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const currentPos = new L.LatLng(pos.coords.latitude, pos.coords.longitude);
+                updatePosition(currentPos);
+                setFlyTarget(currentPos);
+            },
+            (error) => {
+                alert("No se pudo obtener tu ubicación. Permite el acceso e inténtalo de nuevo.");
+                console.error(error);
+            }
+        );
+    }
+
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -133,7 +181,7 @@ export default function DistributorsMap({ initialCoords, readOnly = false, onPos
                 const res = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=5&countrycodes=pe`
                 )
-                const data = await res.json()
+                const data: NominatimResult[] = await res.json()
                 setResults(data)
                 setShowDropdown(data.length > 0)
             } catch {
@@ -148,59 +196,112 @@ export default function DistributorsMap({ initialCoords, readOnly = false, onPos
         const newPos = new L.LatLng(parseFloat(result.lat), parseFloat(result.lon))
         updatePosition(newPos)
         setFlyTarget(newPos)
-        setSearch(result.display_name.split(',').slice(0, 2).join(','))
+        setSearch(result.display_name.split(',').slice(0, 3).join(','))
         setShowDropdown(false)
+    }
+
+    const clearSearch = () => {
+        setSearch('');
+        setResults([]);
+        setShowDropdown(false);
     }
 
     return (
         <div className="relative h-full w-full">
-            {!readOnly && (
-                <div ref={searchRef} className="absolute top-4 left-4 z-[1000] w-72 lg:w-96">
-                    <div className="flex items-center gap-2 bg-white rounded-xl shadow-xl px-3 py-2 border border-slate-200">
-                        {isSearching ? (
-                            <div className="w-4 h-4 border-2 border-slate-300 border-t-[#44AC34] animate-spin rounded-full" />
-                        ) : (
-                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                            </svg>
-                        )}
-                        <input
-                            value={search}
-                            onChange={(e) => handleSearchInput(e.target.value)}
-                            onFocus={() => results.length > 0 && setShowDropdown(true)}
-                            placeholder="Buscar en el mapa..."
-                            className="flex-1 text-sm outline-none bg-transparent"
-                        />
-                    </div>
-                    {showDropdown && results.length > 0 && (
-                        <div className="mt-1 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden">
-                            {results.map((result) => (
-                                <button
-                                    key={result.place_id}
-                                    type="button"
-                                    onClick={() => handleSelectResult(result)}
-                                    className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 border-b last:border-0"
-                                >
-                                    {result.display_name}
-                                </button>
-                            ))}
+            <div className="absolute inset-0 z-[1000] pointer-events-none">
+                {!readOnly && (
+                    <>
+                        <div ref={searchRef} className="absolute top-4 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-4 w-[calc(100%-2rem)] sm:w-72 lg:w-96 pointer-events-auto">
+                            <div className="flex items-center gap-2 bg-white rounded-xl shadow-xl px-3 py-2.5 border border-slate-200 transition-all focus-within:ring-2 focus-within:ring-[#44AC34]/20 focus-within:border-[#44AC34]">
+                                {isSearching ? (
+                                    <div className="w-4 h-4 border-2 border-slate-300 border-t-[#44AC34] animate-spin rounded-full" />
+                                ) : (
+                                    <Search className="w-4 h-4 text-slate-400" />
+                                )}
+                                <input
+                                    value={search}
+                                    onChange={(e) => handleSearchInput(e.target.value)}
+                                    onFocus={() => results.length > 0 && setShowDropdown(true)}
+                                    placeholder="Buscar en el mapa..."
+                                    className="flex-1 text-sm outline-none bg-transparent"
+                                />
+                                {search.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className="p-0.5 hover:bg-slate-100 rounded-full transition-colors"
+                                    >
+                                        <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                                    </button>
+                                )}
+                            </div>
+                            {showDropdown && results.length > 0 && (
+                                <div className="mt-1.5 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden backdrop-blur-sm">
+                                    {results.map((result) => (
+                                        <button
+                                            key={result.place_id}
+                                            type="button"
+                                            onClick={() => handleSelectResult(result)}
+                                            className="w-full text-left px-4 py-2.5 text-xs hover:bg-slate-50 border-b last:border-0 transition-colors flex flex-col gap-0.5"
+                                        >
+                                            <span className="font-medium text-slate-700">{result.display_name.split(',')[0]}</span>
+                                            <span className="text-slate-400 truncate">{result.display_name.split(',').slice(1).join(',')}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
+
+                        <button
+                            type="button"
+                            onClick={handleUseCurrentLocation}
+                            className="absolute top-[70px] sm:top-4 right-4 bg-white p-2.5 rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors pointer-events-auto group"
+                            title="Usar mi ubicación actual"
+                        >
+                            <LocateFixed className="h-5 w-5 text-slate-600 group-hover:text-[#44AC34] transition-colors" />
+                        </button>
+                    </>
+                )}
+
+                <div className="absolute bottom-4 left-4 flex flex-col [&_.leaflet-control]:!m-0 [&_.leaflet-control]:pointer-events-auto [&_.leaflet-bar]:!border-none [&_.leaflet-bar]:!shadow-lg [&_.leaflet-bar_a]:!bg-white [&_.leaflet-bar_a]:!text-slate-600 [&_.leaflet-bar_a]:!border-slate-200 [&_.leaflet-bar_a]:!rounded-lg [&_.leaflet-bar_a:first-child]:!mb-1">
+                    <div id="leaflet-zoom-container" />
                 </div>
-            )}
+            </div>
 
             <MapContainer
                 center={initialCoords ? [initialCoords.lat, initialCoords.lng] : [-12.0464, -77.0428]}
                 zoom={15}
-                className="h-full w-full"
-                zoomControl={false}
+                className="h-full w-full z-0"
+                zoomControl={true}
             >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
                 <MapEvents readOnly={readOnly} onMapClick={updatePosition} />
                 <MapController targetPosition={flyTarget} />
 
-                {position && <Marker position={position} icon={markerIcon} />}
+                {position && (
+                    <Marker position={position} icon={markerIcon} />
+                )}
+
+                <ZoomMover />
             </MapContainer>
         </div>
     )
+}
+
+function ZoomMover() {
+    const map = useMap();
+    useEffect(() => {
+        const zoomControl = map.zoomControl;
+        const container = document.getElementById('leaflet-zoom-container');
+        if (zoomControl && container) {
+            const zoomElement = zoomControl.getContainer();
+            if (zoomElement) {
+                container.appendChild(zoomElement);
+            }
+        }
+    }, [map]);
+    return null;
 }

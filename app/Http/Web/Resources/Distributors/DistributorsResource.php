@@ -22,6 +22,8 @@ class DistributorsResource extends JsonResource
             'note'              => $this->note,
             'logo_pin'          => $this->logo_pin,          
             'establishment_img' => $this->establishment_img,  
+            'is_active'         => (bool) $this->is_active, 
+
             'coords'            => $this->coords,
             'created_at'        => $this->created_at->format('Y-m-d H:i:s'),
             'updated_at'        => $this->updated_at->format('Y-m-d H:i:s'),

@@ -7,8 +7,10 @@ use App\Http\Web\Requests\Products\StoreBusinessLineRequest;
 use App\Http\Web\Requests\Products\UpdateBusinessLineRequest;
 use App\Http\Web\Services\Products\BusinessLineService;
 use App\Models\Products\BusinessLine;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class BusinessLineController extends Controller
 {
@@ -16,56 +18,60 @@ class BusinessLineController extends Controller
         protected BusinessLineService $businessLineService,
     ) {}
 
-    public function index()
+    public function index(): Response
     {
-        // Seguimos tu lógica: capturar per_page del request (por defecto 10)
-        $perPage = request()->input('per_page', 10);
+        $perPage = request()->integer('per_page', 10);
 
         $businessLines = BusinessLine::latest()
             ->paginate($perPage)
-            ->withQueryString(); // Mantiene los filtros en la URL al cambiar de página
+            ->withQueryString();
 
         return Inertia::render('products/businessLines/Index', [
             'paginatedBusinessLines' => $businessLines,
         ]);
     }
-    public function create()
+
+    public function create(): Response
     {
         return Inertia::render('products/businessLines/Create');
     }
-    public function store(StoreBusinessLineRequest $request)
+
+    public function store(StoreBusinessLineRequest $request): RedirectResponse
     {
         $this->businessLineService->create($request->validated());
 
-        // REDIRECCIÓN PARA INERTIA
-        return redirect()->route('products.business-lines.index')
-            ->with('message', 'Línea de negocio creada con éxito');
+        return redirect()
+            ->route('products.business-lines.index')
+            ->with('success', 'Línea de negocio creada con éxito');
     }
 
-
-    public function edit(BusinessLine $businessLine)
+    public function edit(BusinessLine $businessLine): Response
     {
         return Inertia::render('products/businessLines/Edit', [
-            'businessLine' => $businessLine
+            'businessLine' => $businessLine,
         ]);
     }
 
-    public function update(UpdateBusinessLineRequest $request, BusinessLine $businessLine)
+    public function update(UpdateBusinessLineRequest $request, BusinessLine $businessLine): RedirectResponse
     {
         $this->businessLineService->update($businessLine, $request->validated());
 
-        return redirect()->route('products.business-lines.index')
-            ->with('message', 'Línea de negocio actualizada con éxito');
+        return redirect()
+            ->route('products.business-lines.index')
+            ->with('success', 'Línea de negocio actualizada con éxito');
     }
-    public function destroy(BusinessLine $businessLine)
+
+    public function destroy(BusinessLine $businessLine): RedirectResponse
     {
         try {
             $this->businessLineService->delete($businessLine);
+
+            return redirect()
+                ->route('products.business-lines.index')
+                ->with('success', 'Línea de negocio eliminada correctamente');
+
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors());
         }
-
-        return redirect()->route('products.business-lines.index')
-            ->with('message', 'Línea de negocio eliminada correctamente');
     }
 }

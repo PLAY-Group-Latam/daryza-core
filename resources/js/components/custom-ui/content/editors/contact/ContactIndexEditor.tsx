@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
 import { ContactContent ,ConsultaCard,BannerType,BannerContent} from '@/types/content/content-types';
+import { Plus, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
 
@@ -17,7 +19,7 @@ const DEFAULT_CARD: ConsultaCard = {
     titulo_normal: '',
     titulo_bold: '',
     imagen: null,
-    items: [{ texto: '' }, { texto: '' }, { texto: '' }],
+    items: [{ texto: '' }],
 };
 
 const CARD_LABELS = [
@@ -74,6 +76,17 @@ function CardEditor({
         onUpdate({ items });
     };
 
+    const addItem = () => {
+        if (card.items.length >= 4) return;
+        onUpdate({ items: [...card.items, { texto: '' }] });
+    };
+
+    const removeItem = (i: number) => {
+        if (card.items.length <= 1) return;
+        const items = card.items.filter((_, idx) => idx !== i);
+        onUpdate({ items });
+    };
+
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
@@ -115,7 +128,30 @@ function CardEditor({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Ítems</Label>
+                        <div className="flex items-center justify-between">
+                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Ítems</Label>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={addItem}
+                                            disabled={card.items.length >= 4}
+                                            className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/70 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Plus size={12} />
+                                            Agregar ítem
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" className="text-xs">
+                                        {card.items.length >= 4
+                                            ? 'Máximo 4 ítems permitidos'
+                                            : `Agregar ítem (${card.items.length}/4)`}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+
                         <div className="space-y-1.5">
                             {card.items.map((item, i) => (
                                 <div key={i} className="flex items-center gap-2">
@@ -126,6 +162,15 @@ function CardEditor({
                                         placeholder={`Ítem ${i + 1}`}
                                         className="text-sm"
                                     />
+                                    {card.items.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(i)}
+                                            className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>

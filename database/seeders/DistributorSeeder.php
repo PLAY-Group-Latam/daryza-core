@@ -23,6 +23,10 @@ class DistributorSeeder extends Seeder
                 'establishment_img' => null,
                 'lat' => -16.4262704,
                 'lng' => -71.5271567,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'MUMAZ DISTRIBUCIONES S.A.C.',
@@ -34,6 +38,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -16.4309568,
                 'lng' => -71.5099499,
+                'is_active' => false,       
+
+
+
             ],
             [
                 'name' => 'COMERCIAL LA GOLOSINA S.A.C.',
@@ -45,6 +53,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -16.3957574,
                 'lng' => -71.5283004,
+                'is_active' => true,       
+
+
+
             ],
 
             // TUMBES
@@ -58,6 +70,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -3.680421,
                 'lng' => -80.6838053,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'SOLUCIONES INTEGRALES EL SIAR E.I.R.L.',
@@ -69,6 +85,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -3.9530984,
                 'lng' => -80.9484595,
+                'is_active' => true,       
+
+
+
             ],
 
             // TRUJILLO
@@ -82,6 +102,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -8.1121092,
                 'lng' => -79.0478477,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'EUROQUIMICOS PERU S.A.C.',
@@ -93,6 +117,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -8.110103,
                 'lng' => -79.0171134,
+                'is_active' => true,       
+
+
+
             ],
 
             // PIURA
@@ -106,6 +134,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -5.2037811,
                 'lng' => -80.6367315,
+                'is_active' => true,       
+
+
+
             ],
 
             // ICA
@@ -119,6 +151,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.4246762,
                 'lng' => -76.1168082,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'HUERTAS CHAPILLIQUEN AMBAR MILUSKA',
@@ -130,6 +166,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -14.0794443,
                 'lng' => -75.7411465,
+                'is_active' => true,       
+
+
+
             ],
 
             // HUANCAYO
@@ -143,6 +183,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -12.0735644,
                 'lng' => -75.2076509,
+                'is_active' => true,       
+
+
+
             ],
 
             // CUSCO
@@ -156,6 +200,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.5317304,
                 'lng' => -71.9556703,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'DISTRIBUCIONES LIP E.I.R.L.',
@@ -167,6 +215,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.5399482,
                 'lng' => -71.9084726,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'BYOCLEAN INVERSIONES E.I.R.L.',
@@ -178,7 +230,11 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.519955,
                 'lng' => -71.973839,
-            ],
+
+                'is_active' => true,       
+
+
+                ],
             [
                 'name' => 'PLASTIQUERIA PAZ SUR S.A.C.',
                 'region' => 'Cusco',
@@ -189,6 +245,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.522916,
                 'lng' => -71.9812033,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'HUILLCA SALAS LUCY',
@@ -200,6 +260,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -13.5299869,
                 'lng' => -72.0032603,
+                'is_active' => true,       
+
+
+
             ],
 
             // IQUITOS
@@ -213,6 +277,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -3.7390758,
                 'lng' => -73.2534119,
+                'is_active' => true,       
+
+
+
             ],
             [
                 'name' => 'SERVICIOS GENERALES L & L E.I.R.L.',
@@ -224,6 +292,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -3.744779,
                 'lng' => -73.2438411,
+                'is_active' => true,       
+
+
+
             ],
 
             // CAJAMARCA
@@ -237,6 +309,10 @@ class DistributorSeeder extends Seeder
                 'note' => null,
                 'lat' => -7.1557509,
                 'lng' => -78.5120606,
+                'is_active' => true,       
+
+
+
             ],
 
         ];
