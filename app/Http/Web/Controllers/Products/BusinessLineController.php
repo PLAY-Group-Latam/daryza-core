@@ -1,94 +1,77 @@
 <?php
 
-namespace App\Http\Web\Controllers\Distributors;
+namespace App\Http\Web\Controllers\Products;
 
 use App\Http\Web\Controllers\Controller;
-use App\Http\Web\Services\Distributors\DistributorsService;
-use App\Http\Web\Resources\Distributors\DistributorsResource;
-use App\Http\Web\Requests\Distributors\DistributorRequest;
+use App\Http\Web\Requests\Products\StoreBusinessLineRequest;
+use App\Http\Web\Requests\Products\UpdateBusinessLineRequest;
+use App\Http\Web\Services\Products\BusinessLineService;
+use App\Models\Products\BusinessLine;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache; // Agregamos la fachada de Caché
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class DistributorController extends Controller
+class BusinessLineController extends Controller
 {
-    protected DistributorsService $service;
+    public function __construct(
+        protected BusinessLineService $businessLineService,
+    ) {}
 
-    public function __construct(DistributorsService $service)
+    public function index(): Response
     {
-        $this->service = $service;
-    }
+        $perPage = request()->integer('per_page', 10);
 
-    public function index(Request $request): Response
-    {
-        $paginated = $this->service->getPaginated($request->all());
+        $businessLines = BusinessLine::latest()
+            ->paginate($perPage)
+            ->withQueryString();
 
-        // Quitamos la consulta manual de $mapPin
-        return Inertia::render('distributors/Index', [
-            'paginatedDistributors' => $paginated->through(fn ($item) => new DistributorsResource($item)),
-            'filters'               => $request->only(['search']),
+        return Inertia::render('products/businessLines/Index', [
+            'paginatedBusinessLines' => $businessLines,
         ]);
     }
 
     public function create(): Response
     {
-        return Inertia::render('distributors/Create');
+        return Inertia::render('products/businessLines/Create');
     }
 
-    public function store(DistributorRequest $request): RedirectResponse
+    public function store(StoreBusinessLineRequest $request): RedirectResponse
     {
-        $this->service->store($request->validated());
+        $this->businessLineService->create($request->validated());
 
-        return redirect()->route('distributors.index')
-            ->with('success', 'Distribuidor creado con éxito.');
+        return redirect()
+            ->route('products.business-lines.index')
+            ->with('success', 'Línea de negocio creada con éxito');
     }
 
-    public function show($id): Response
+    public function edit(BusinessLine $businessLine): Response
     {
-        $distributor = $this->service->findById((int) $id);
-
-        return Inertia::render('distributors/Show', [
-            'distributor' => new DistributorsResource($distributor),
+        return Inertia::render('products/businessLines/Edit', [
+            'businessLine' => $businessLine,
         ]);
     }
 
-    public function edit($id): Response
+    public function update(UpdateBusinessLineRequest $request, BusinessLine $businessLine): RedirectResponse
     {
-        $distributor = $this->service->findById((int) $id);
+        $this->businessLineService->update($businessLine, $request->validated());
 
-        return Inertia::render('distributors/Edit', [
-            'distributor' => new DistributorsResource($distributor),
-        ]);
+        return redirect()
+            ->route('products.business-lines.index')
+            ->with('success', 'Línea de negocio actualizada con éxito');
     }
 
-    public function update(DistributorRequest $request, $id): RedirectResponse
+    public function destroy(BusinessLine $businessLine): RedirectResponse
     {
-        $this->service->update((int) $id, $request->validated());
+        try {
+            $this->businessLineService->delete($businessLine);
 
-        return redirect()->route('distributors.index')
-            ->with('success', 'Distribuidor actualizado con éxito.');
-    }
+            return redirect()
+                ->route('products.business-lines.index')
+                ->with('success', 'Línea de negocio eliminada correctamente');
 
-    public function destroy($id): RedirectResponse
-    {
-        $this->service->delete((int) $id);
-
-        return redirect()->back()
-            ->with('success', 'Distribuidor eliminado.');
-    }
-
-    public function updateMapPin(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'logo_pin' => ['required', 'image', 'mimes:png,svg,jpg,jpeg,webp', 'max:2048'],
-        ]);
-
-        $this->service->updateMapPin($request->file('logo_pin'));
-        Cache::forget('global_map_pin');
-
-        return redirect()->route('distributors.index')
-            ->with('success', 'Pin del mapa actualizado correctamente.');
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
     }
 }

@@ -18,7 +18,7 @@ export default function Login({ status }: LoginProps) {
             title="Iniciar Sesión"
             description="Ingresa tus credenciales para acceder a tu cuenta"
         >
-            <Head title="Inicio" />
+            <Head title="Login" />
 
             <Form
                 method={store().method}

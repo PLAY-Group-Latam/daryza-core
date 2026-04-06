@@ -8,6 +8,7 @@ use App\Http\Web\Resources\Distributors\DistributorsResource;
 use App\Http\Web\Requests\Distributors\DistributorRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache; // Agregamos la fachada de Caché
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,15 +24,11 @@ class DistributorController extends Controller
     public function index(Request $request): Response
     {
         $paginated = $this->service->getPaginated($request->all());
-        $mapPin    = $this->service->getMapPin();
 
+        // Quitamos la consulta manual de $mapPin
         return Inertia::render('distributors/Index', [
             'paginatedDistributors' => $paginated->through(fn ($item) => new DistributorsResource($item)),
             'filters'               => $request->only(['search']),
-            'mapPin'                => [
-                'url'  => $mapPin->logo_pin,
-                'path' => $mapPin->logo_pin,
-            ],
         ]);
     }
 
@@ -82,15 +79,15 @@ class DistributorController extends Controller
             ->with('success', 'Distribuidor eliminado.');
     }
 
-  public function updateMapPin(Request $request): RedirectResponse
+    public function updateMapPin(Request $request): RedirectResponse
     {
         $request->validate([
             'logo_pin' => ['required', 'image', 'mimes:png,svg,jpg,jpeg,webp', 'max:2048'],
         ]);
 
         $this->service->updateMapPin($request->file('logo_pin'));
+        Cache::forget('global_map_pin');
 
-        // Cambiamos el back() por un redirect directo al index de distribuidores
         return redirect()->route('distributors.index')
             ->with('success', 'Pin del mapa actualizado correctamente.');
     }

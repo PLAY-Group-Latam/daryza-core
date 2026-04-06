@@ -90,25 +90,29 @@ export default function Dashboard({
     categoryData,
 }: DashboardProps) {
     const [dateRange, setDateRange] = useState({ from: filters.from, to: filters.to });
-    const [isLoading, setIsLoading] = useState(false); // ✅ DENTRO del componente
+    const [isLoading, setIsLoading] = useState(false);
+ 
+ 
 
-    // ✅ DENTRO del componente
-    useEffect(() => {
-        const removeStart = router.on('start', () => setIsLoading(true));
-        const removeFinish = router.on('finish', () => setIsLoading(false));
-        return () => {
-            removeStart();
-            removeFinish();
-        };
-    }, []);
+   const handleDateRangeChange = (values: { range: DateRange }) => {
+    const { from, to } = values.range;
+    if (!from || !to) return;
 
-    const handleDateRangeChange = (values: { range: DateRange }) => {
-        const { from, to } = values.range;
-        const formattedFrom = from ? format(from, 'yyyy-MM-dd HH:mm:ss') : '';
-        const formattedTo = to ? format(to, 'yyyy-MM-dd HH:mm:ss') : '';
-        setDateRange({ from: formattedFrom, to: formattedTo });
-        router.get('/dashboard', { from: formattedFrom, to: formattedTo }, { preserveScroll: true, preserveState: true });
-    };
+    const formattedFrom = format(from, 'yyyy-MM-dd HH:mm:ss');
+    const formattedTo = format(to, 'yyyy-MM-dd HH:mm:ss');
+
+    setIsLoading(true);
+
+    router.get(
+        '/dashboard',
+        { from: formattedFrom, to: formattedTo },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => setIsLoading(false),
+        }
+    );
+};
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
