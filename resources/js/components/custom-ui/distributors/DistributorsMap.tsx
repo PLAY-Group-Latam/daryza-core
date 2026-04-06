@@ -5,14 +5,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { LocateFixed, X, Search } from 'lucide-react'
-import { usePage } from '@inertiajs/react' // <-- 1. Importamos usePage de Inertia
+import { usePage } from '@inertiajs/react'
 
 interface DistributorsMapProps {
     initialCoords?: { lat: number; lng: number };
     readOnly?: boolean;
     onPositionChange?: (coords: { lat: number; lng: number }) => void;
-    // Eliminamos el logoPreviewUrl de las props ya que lo leeremos globalmente
-    coverageRadius?: number; 
+    coverageRadius?: number;
 }
 
 interface NominatimResult {
@@ -20,6 +19,13 @@ interface NominatimResult {
     display_name: string;
     lat: string;
     lon: string;
+}
+
+interface InertiaPageProps {
+    mapPin?: {
+        url: string | null;
+    };
+    [key: string]: unknown;
 }
 
 const createDynamicIcon = (logoUrl: string | null | undefined) => {
@@ -82,20 +88,19 @@ function MapEvents({ readOnly, onMapClick }: { readOnly: boolean; onMapClick: (l
     return null
 }
 
-export default function DistributorsMap({ 
-    initialCoords, 
-    readOnly = false, 
-    onPositionChange, 
-    coverageRadius = 1500 // 1.5 km por defecto
+export default function DistributorsMap({
+    initialCoords,
+    readOnly = false,
+    onPositionChange,
+    coverageRadius = 1500
 }: DistributorsMapProps) {
-    // 2. Jalamos el mapPin que mandamos desde el Middleware de Inertia
-    const { mapPin } = usePage().props as any;
+    const { mapPin } = usePage<InertiaPageProps>().props;
 
     const [position, setPosition] = useState<L.LatLng | null>(null)
-    const [search, setSearch] = useState('')
+    const [search, setSearch] = useState<string>('')
     const [results, setResults] = useState<NominatimResult[]>([])
-    const [isSearching, setIsSearching] = useState(false)
-    const [showDropdown, setShowDropdown] = useState(false)
+    const [isSearching, setIsSearching] = useState<boolean>(false)
+    const [showDropdown, setShowDropdown] = useState<boolean>(false)
     const [flyTarget, setFlyTarget] = useState<L.LatLng | null>(null)
 
     const searchRef = useRef<HTMLDivElement>(null)
@@ -109,8 +114,7 @@ export default function DistributorsMap({
         }
     }, [initialCoords?.lat, initialCoords?.lng]);
 
-    // 3. Pasamos la URL del pin global a la función que crea el icono
-    const markerIcon = useMemo(() => createDynamicIcon(mapPin?.url || null), [mapPin?.url]);
+    const markerIcon = useMemo(() => createDynamicIcon(mapPin?.url ?? null), [mapPin?.url]);
 
     const fetchAddressFromCoords = async (lat: number, lng: number) => {
         try {
@@ -177,7 +181,7 @@ export default function DistributorsMap({
                 const res = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=5&countrycodes=pe`
                 )
-                const data = await res.json()
+                const data: NominatimResult[] = await res.json()
                 setResults(data)
                 setShowDropdown(data.length > 0)
             } catch {
@@ -222,8 +226,8 @@ export default function DistributorsMap({
                                     className="flex-1 text-sm outline-none bg-transparent"
                                 />
                                 {search.length > 0 && (
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={clearSearch}
                                         className="p-0.5 hover:bg-slate-100 rounded-full transition-colors"
                                     >
@@ -270,8 +274,8 @@ export default function DistributorsMap({
                 className="h-full w-full z-0"
                 zoomControl={true}
             >
-                <TileLayer 
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
                 <MapEvents readOnly={readOnly} onMapClick={updatePosition} />

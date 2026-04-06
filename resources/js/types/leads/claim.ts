@@ -21,6 +21,7 @@ export interface TypeOfClaim {
 }
 
 export interface ClaimData {
+    claim_code:number;
     document_type_id: string;
     document_number: string;
     address: string;
@@ -28,6 +29,7 @@ export interface ClaimData {
     well_hired_id: string;
     type_of_service_id: string;
     type_of_claim_id: string;
+    customer_request: string;
     description: string;
     terms_conditions: string | number;
     created_at_form: string;

@@ -4,7 +4,7 @@
 <h1 class="content-title">Recibimos tu Reclamo</h1>
 
 <div style="background-color: #f8f9fa; padding: 10px 15px; border-radius: 6px; border-left: 4px solid #44ac34; margin-bottom: 20px;">
-    <p style="margin: 0; font-size: 13px; color: #6c757d; font-weight: bold;">CÓDIGO DE RECLAMO:</p>
+    <p style="margin: 0; font-size: 13px; color: #6c757d; font-weight: bold;">Número de Reclamo:</p>
     <p style="margin: 3px 0 0 0; font-size: 18px; color: #212529; font-weight: bold;">
         {{ $complaintsBook->data['claim_code'] ?? 'N/A' }}
     </p>

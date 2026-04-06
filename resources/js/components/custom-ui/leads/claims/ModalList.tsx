@@ -13,6 +13,7 @@ import {
     MapPin,
     Package,
     Phone,
+    ShoppingCart, // 👈 NUEVO: Icono para la fecha de compra
     Tag,
     User,
     X,
@@ -76,7 +77,7 @@ export const ModalClaimList = ({ claim, isOpen, onClose }: ModalListProps) => {
                         </div>
 
                         {/* Términos y Condiciones */}
-                        <div className="mb-4  border-slate-200 pb-4 lg:mb-6 lg:pb-6 dark:border-zinc-800">
+                        <div className="mb-4 border-slate-200 pb-4 lg:mb-6 lg:pb-6 dark:border-zinc-800">
                             <div className="flex items-start gap-3">
                                 <CheckCircle2
                                     size={18}
@@ -115,9 +116,14 @@ export const ModalClaimList = ({ claim, isOpen, onClose }: ModalListProps) => {
                                 <Hash size={14} strokeWidth={2.5} />
                                 <span>Expediente Digital</span>
                             </div>
+                            
+                            {/* 👈 NUEVO: Renderizado del código de reclamo */}
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+                                Número de Reclamación: {claim.data.claim_code || '---'}
+                            </h3>
+                            
                             <p className="text-sm text-slate-600 dark:text-zinc-400">
-                                Información detallada de la incidencia
-                                registrada
+                                Información detallada de la incidencia registrada
                             </p>
                         </div>
 
@@ -133,17 +139,37 @@ export const ModalClaimList = ({ claim, isOpen, onClose }: ModalListProps) => {
                                 value={claim.data.type_of_service_id}
                                 icon={<Tag size={18} />}
                             />
+                            {/* 👈 NUEVO: Campo de Fecha de Compra (Asumiendo que viene en los datos del form) */}
+                            <InfoCard
+                                label="Fecha de la Compra"
+                                value={claim.data.created_at_form} 
+                                icon={<ShoppingCart size={18} />}
+                            />
+                        </div>
+
+                        {/* 👈 NUEVO: Pedido del Cliente (Customer Request) */}
+                        <div className="mb-6 flex-1 lg:mb-8">
+                            <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-slate-500 uppercase dark:text-zinc-500">
+                                <FileText size={14} strokeWidth={2.5} />
+                                <span>Pedido del Cliente</span>
+                            </div>
+
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-zinc-300">
+                                    {claim.data.customer_request || 'Sin pedido específico consignado.'}
+                                </p>
+                            </div>
                         </div>
 
                         {/* Descripción del Reclamo */}
                         <div className="mb-6 flex-1 lg:mb-8">
                             <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-slate-500 uppercase dark:text-zinc-500">
                                 <FileText size={14} strokeWidth={2.5} />
-                                <span>Detalle del Hecho</span>
+                                <span>Detalle del Reclamo</span>
                             </div>
 
-                            <div className="max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700 sm:text-base dark:text-zinc-300">
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-zinc-300">
                                     {claim.data.description}
                                 </p>
                             </div>

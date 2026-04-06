@@ -1,6 +1,6 @@
 <?php
 
-namespace  App\Http\Api\v1\Requests\Leads;
+namespace App\Http\Api\v1\Requests\Leads;
 
 use App\Rules\ValidPeruvianDocument;
 use App\Rules\ValidPeruvianPhone;
@@ -19,12 +19,15 @@ class ContactRequest extends FormRequest
     public function rules(): array
     {
         return [
-
             'type' => ['required', Rule::in($this->allowedTypes())],
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', new ValidPeruvianPhone],
+            
+            // AGREGADO: Regla general para el desplegable que comparten todos
+            'document_type' => ['required', 'string', Rule::in(['DNI', 'RUC', 'CE'])],
             'ruc_or_dni' => ['required' , 'string', new ValidPeruvianDocument],
+            
             'comments' => ['nullable', 'string', 'max:1000'],
 
             ...$this->helpCenterRules(),
@@ -51,9 +54,9 @@ class ContactRequest extends FormRequest
     protected function helpCenterRules(): array
     {
         return [
-            'contact_reason' => ['required_if:type,help_center', 'string', 'max:255'],
+            'contact_reason' => ['nullable_if:type,help_center', 'string', 'max:255'],
             'purchase_document' => ['required_if:type,help_center', 'string', 'max:255'],
-            'purchase_date' => ['required_if:type,help_center', 'date', 'before_or_equal:today'],
+            'purchase_date' => ['nullable_if:type,help_center', 'date', 'before_or_equal:today'],
         ];
     }
 
@@ -76,7 +79,7 @@ class ContactRequest extends FormRequest
     {
         return [
             'company_name' => ['required_if:type,sales_advisor', 'string', 'max:255'],
-            'province' => ['required_if:type,sales_advisor', 'string', 'max:100'],
+          
         ];
     }
 
@@ -95,7 +98,8 @@ class ContactRequest extends FormRequest
             'full_name' => 'nombre completo',
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
-            'ruc_or_dni' => 'DNI, CE o RUC',
+            'document_type' => 'tipo de documento', // Agregado
+            'ruc_or_dni' => 'número de documento', // Ajustado el label para que sea genérico
             'comments' => 'comentarios',
             'contact_reason' => 'motivo de contacto',
             'purchase_document' => 'documento de compra',
@@ -126,7 +130,12 @@ class ContactRequest extends FormRequest
             'email.email' => 'El correo electrónico debe ser una dirección válida.',
             'email.max' => 'El correo electrónico no puede exceder 255 caracteres.',
             'phone.required' => 'El teléfono es obligatorio.',
-            'ruc_or_dni.required' => 'El DNI, CE o RUC es obligatorio.',
+            
+            // AGREGADOS: Mensajes para el tipo de documento
+            'document_type.required' => 'Debe seleccionar un tipo de documento.',
+            'document_type.in' => 'El tipo de documento seleccionado no es válido.',
+            
+            'ruc_or_dni.required' => 'El número de documento es obligatorio.',
             'comments.max' => 'Los comentarios no pueden exceder 1000 caracteres.',
 
             // Help Center
@@ -167,9 +176,6 @@ class ContactRequest extends FormRequest
         ];
     }
 
-    /**
-     * Handle a failed validation attempt.
-     */
     protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(
@@ -181,26 +187,22 @@ class ContactRequest extends FormRequest
         );
     }
 
-    /**
-     * Sanitizar datos antes de validar
-     */
     protected function prepareForValidation()
     {
         $this->merge([
-            // Limpiar teléfono
             'phone' => isset($this->phone) ? trim($this->phone) : null,
 
-            // Limpiar DNI/RUC
+            // MODIFICADO: Mantenemos el soporte de letras para Carné de Extranjería (CE)
             'ruc_or_dni' => isset($this->ruc_or_dni)
-                ? preg_replace('/[^0-9]/', '', $this->ruc_or_dni)
+                ? ($this->document_type === 'CE' 
+                    ? strtoupper(trim($this->ruc_or_dni)) 
+                    : preg_replace('/[^0-9]/', '', $this->ruc_or_dni))
                 : null,
 
-            // Limpiar nombre
             'full_name' => isset($this->full_name)
                 ? preg_replace('/\s+/', ' ', trim($this->full_name))
                 : null,
 
-            // Limpiar email
             'email' => isset($this->email)
                 ? strtolower(trim($this->email))
                 : null,

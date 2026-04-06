@@ -25,7 +25,7 @@ class ClaimService
         $nextCorrelative = Str::padLeft($claimsCount + 1, 5, '0');
         $timestamp = Carbon::now('America/Lima')->format('dmY-His'); 
         
-        $claimCode = "{$nextCorrelative}-{$timestamp}";
+        $claimCode = "{$timestamp}-{$nextCorrelative}";
 
         $payload = [
             'type'      => Lead::TYPE_CLAIM,
@@ -62,6 +62,7 @@ class ClaimService
             'well_hired_id'      => $data['well_hired_id'],
             'type_of_service_id' => $data['type_of_service_id'],
             'type_of_claim_id'   => $data['type_of_claim_id'],
+            'customer_request'   => $data['customer_request'],
             'description'        => $data['description'],
             'terms_conditions'   => $data['terms_conditions'],
             'created_at_form'    => now()->toDateTimeString(),

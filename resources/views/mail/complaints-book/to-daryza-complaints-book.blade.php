@@ -11,7 +11,7 @@
 
 <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin: 20px 0;">
     <p style="margin: 4px 0; font-size: 14px; color: #495057;">
-        <strong>Código de Reclamo:</strong> 
+        <strong>Número de Reclamo:</strong> 
         <span style="font-family: monospace; font-size: 15px; font-weight: bold; color: #dc3545;">
             {{ $complaintsBook->data['claim_code'] ?? 'N/A' }}
         </span>
