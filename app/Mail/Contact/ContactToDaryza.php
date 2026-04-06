@@ -11,19 +11,21 @@ use Illuminate\Queue\SerializesModels;
 
 class ContactToDaryza extends Mailable {
 
-    public object $complaintsBook;
     use Queueable, SerializesModels;
 
-    public function __construct(array $complaintsBook) {
-        $this->complaintsBook = (object) $complaintsBook;
+    // Cambiamos el nombre para que sea semántico
+    public object $contact;
+
+    public function __construct(array $contactData) {
+        // Convertimos a objeto para acceder con -> en el Blade
+        $this->contact = (object) $contactData;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Nuevo Lead de Contacto',
-
+            subject: 'Nuevo Lead de Contacto - Daryza',
         );
     }
 
@@ -32,10 +34,8 @@ class ContactToDaryza extends Mailable {
         return new Content(
             view: 'mail.contact.to-daryza-contact',
             with: [
-                'complaintsBook' => $this->complaintsBook,
+                'contact' => $this->contact,
             ]
         );
     }
 }
-
-

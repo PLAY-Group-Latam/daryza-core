@@ -25,7 +25,7 @@ class ContactRequest extends FormRequest
             'phone' => ['required', 'string', new ValidPeruvianPhone],
             
             // AGREGADO: Regla general para el desplegable que comparten todos
-            'document_type' => ['required', 'string', Rule::in(['DNI', 'RUC', 'CE'])],
+            'document_type' => ['nullable', 'string', Rule::in(['DNI', 'RUC', 'CE', 'razon_social'])],
             'ruc_or_dni' => ['required' , 'string', new ValidPeruvianDocument],
             
             'comments' => ['nullable', 'string', 'max:1000'],
