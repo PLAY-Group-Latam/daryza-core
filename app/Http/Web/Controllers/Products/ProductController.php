@@ -78,7 +78,7 @@ class ProductController extends Controller
         $q->orderBy('created_at', 'asc')
           ->orderBy('id', 'asc') // ← desempate estable
           ->with([
-            'selections.attributeValue',
+            'selections.attributeValue.attribute',
             'media'          => fn($q) => $q->orderBy('order', 'asc'),
             'specifications.attribute',
           ]);
@@ -151,11 +151,12 @@ class ProductController extends Controller
       })->values(),
 
       'variant_attribute_ids' => $product->variants
-        ->flatMap(
-          fn($variant) =>
-          $variant->attributes
-            ->map(fn($attrValue) => $attrValue->attribute->id)
-        )
+        ->flatMap(function ($variant) {
+          return $variant->selections
+            ->map(fn($selection) => $selection->attributeValue?->attribute)
+            ->filter(fn($attribute) => $attribute && (bool) ($attribute->is_variant ?? false))
+            ->map(fn($attribute) => $attribute->id);
+        })
         ->unique()
         ->values(),
 

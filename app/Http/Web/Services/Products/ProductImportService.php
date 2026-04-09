@@ -76,6 +76,11 @@ class ProductImportService
     return $product;
   }
 
+  public function resolveProductById(string $id): ?Product
+  {
+    return Product::withTrashed()->find($id);
+  }
+
   protected function syncImportedProductMetadata(Product $product): void
   {
     $frontendUrl = rtrim((string) (config('app.frontend_url') ?: config('app.url')), '/');
@@ -226,9 +231,7 @@ class ProductImportService
       $baseSku = 'PRODUCTO';
     }
 
-    $baseSku .= '-UNICA';
-
-    $sku = $this->resolveUniqueSkuForImport($baseSku, $variant?->id);
+    $sku = $baseSku;
 
     $price = $data['price'] ?? null;
     if ($price === null) {
@@ -299,6 +302,24 @@ class ProductImportService
       $counter++;
       $sku = "{$baseSku}-{$counter}";
     }
+  }
+
+  public function findGlobalSkuConflict(string $sku, string $productId, ?string $ignoreVariantId = null): ?ProductVariant
+  {
+    $normalizedSku = trim($sku);
+    if ($normalizedSku === '') {
+      return null;
+    }
+
+    $query = ProductVariant::withTrashed()
+      ->where('sku', $normalizedSku)
+      ->where('product_id', '!=', $productId);
+
+    if ($ignoreVariantId) {
+      $query->where('id', '!=', $ignoreVariantId);
+    }
+
+    return $query->first();
   }
 
 

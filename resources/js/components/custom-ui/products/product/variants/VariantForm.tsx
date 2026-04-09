@@ -82,26 +82,20 @@ export function VariantForm({
         selectedIds,
     } = useVariantForm(variantAttributes);
     const [isSingleProduct, setIsSingleProduct] = useState(
-        (fields?.length ?? 0) <= 1,
+        (selectedIds?.length ?? 0) === 0,
     );
     const watchedVariants = useWatch({
         control,
         name: 'variants',
         defaultValue: [],
     });
+    // Regla de negocio: si existen atributos de variante seleccionados,
+    // no puede considerarse "producto único".
     useEffect(() => {
-        if (!isSingleProduct || fields.length <= 1) return;
-
-        const currentVariants = getValues('variants') ?? [];
-        if (currentVariants.length === 0) return;
-
-        replace([
-            {
-                ...currentVariants[0],
-                is_main: true,
-            },
-        ]);
-    }, [fields.length, getValues, isSingleProduct, replace]);
+        if ((selectedIds?.length ?? 0) > 0 && isSingleProduct) {
+            setIsSingleProduct(false);
+        }
+    }, [selectedIds, isSingleProduct]);
 
     const hasNestedError = (value: unknown): boolean => {
         if (!value || typeof value !== 'object') return false;
@@ -282,6 +276,15 @@ export function VariantForm({
                         setIsSingleProduct(checked);
                         setVariantCreationMessage(null);
                         if (checked) {
+                            const currentVariants = getValues('variants') ?? [];
+                            if (currentVariants.length > 1) {
+                                replace([
+                                    {
+                                        ...currentVariants[0],
+                                        is_main: true,
+                                    },
+                                ]);
+                            }
                             setValue('variant_attribute_ids', [], {
                                 shouldDirty: true,
                                 shouldValidate: true,

@@ -41,7 +41,7 @@ class ProductExcelController extends Controller
                     'summary' => $summary,
                     'message' => $failed === 0
                         ? 'Validación exitosa. Puedes proceder con la importación.'
-                        : "Validación con incidencias. Errores detectados: {$failed}.",
+                        : "Errores detectados: {$failed}.",
                 ]);
             }
 
@@ -74,6 +74,33 @@ class ProductExcelController extends Controller
                     'failed' => count($failures),
                     'errors' => collect($failures)
                         ->map(fn($failure) => "Fila {$failure->row()}: " . implode(', ', $failure->errors()))
+                        ->values()
+                        ->all(),
+                    'error_details' => collect($failures)
+                        ->map(function ($failure) {
+                            $attribute = (string) $failure->attribute();
+                            $values = method_exists($failure, 'values') ? $failure->values() : [];
+                            $value = is_array($values) && $attribute !== ''
+                                ? (string) ($values[$attribute] ?? '')
+                                : '';
+
+                            return [
+                                'row' => $failure->row(),
+                                'message' => implode(', ', $failure->errors()),
+                                'field' => $attribute !== '' ? $attribute : 'sin_columna',
+                                'value' => $value,
+                                'context' => [],
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'error_columns' => collect($failures)
+                        ->groupBy(fn($failure) => (string) $failure->attribute())
+                        ->map(fn($group, $attribute) => [
+                            'column' => (string) $attribute,
+                            'count' => $group->count(),
+                        ])
+                        ->sortByDesc('count')
                         ->values()
                         ->all(),
                 ],

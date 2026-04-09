@@ -60,6 +60,8 @@ const columns: ColumnDef<Attribute>[] = [
     {
         id: 'values',
         header: 'Valores',
+        size: 320,
+        maxSize: 360,
         cell: ({ row }) => {
             const attribute = row.original;
 
@@ -81,13 +83,14 @@ const columns: ColumnDef<Attribute>[] = [
                 /^#([0-9A-F]{3}){1,2}$/i.test(value);
 
             const colors = attribute.values.filter((v) => isColor(v.value));
-            const texts = attribute.values
+            const textValues = attribute.values
                 .filter((v) => !isColor(v.value))
-                .map((v) => v.value)
-                .join(', ');
+                .map((v) => v.value);
+            const visibleTexts = textValues.slice(0, 6).join(', ');
+            const hiddenTextsCount = Math.max(textValues.length - 6, 0);
 
             return (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex max-w-[320px] flex-wrap items-center gap-2">
                     {colors.map((v) => (
                         <span
                             key={v.id}
@@ -97,8 +100,16 @@ const columns: ColumnDef<Attribute>[] = [
                         />
                     ))}
 
-                    {texts && (
-                        <span className="text-xs text-gray-700">{texts}</span>
+                    {visibleTexts && (
+                        <span
+                            className="max-w-[260px] truncate text-xs text-gray-700"
+                            title={textValues.join(', ')}
+                        >
+                            {visibleTexts}
+                            {hiddenTextsCount > 0
+                                ? `, +${hiddenTextsCount}`
+                                : ''}
+                        </span>
                     )}
                 </div>
             );
