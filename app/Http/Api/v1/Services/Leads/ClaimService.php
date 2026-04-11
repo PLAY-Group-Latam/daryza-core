@@ -6,6 +6,7 @@ use App\Models\Leads\Lead;
 use Illuminate\Http\UploadedFile;
 use App\Http\Api\v1\Services\GcsService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ClaimService
@@ -19,13 +20,20 @@ class ClaimService
         $this->leadNotificationService = $leadNotificationService;
     }
 
-    public function save(array $data): Lead
-    {
+   public function save(array $data): Lead
+{
+    return DB::transaction(function () use ($data) {
+        
+        $lastLead = Lead::where('type', Lead::TYPE_CLAIM)
+            ->lockForUpdate()
+            ->latest('id')
+            ->first();
+
+        $nextNumber = $lastLead ? (Lead::where('type', Lead::TYPE_CLAIM)->count() + 1) : 1;
         $claimsCount = Lead::where('type', Lead::TYPE_CLAIM)->count();
         $nextCorrelative = Str::padLeft($claimsCount + 1, 5, '0');
-        $timestamp = Carbon::now('America/Lima')->format('dmY-His'); 
-        
-        $claimCode = "{$timestamp}-{$nextCorrelative}";
+        $timestamp = Carbon::now('America/Lima')->format('dmY'); 
+        $claimCode = "DAR-{$timestamp}-{$nextCorrelative}";
 
         $payload = [
             'type'      => Lead::TYPE_CLAIM,
@@ -39,17 +47,16 @@ class ClaimService
         if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
             $folder = 'leads/claims';
             $publicUrl = $this->gcsService->uploadFile($data['file_attached'], $folder);
-
             $payload['file_path'] = $publicUrl;
             $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
         }
 
         $lead = Lead::create($payload);
-        
         $this->leadNotificationService->notify($lead);
 
         return $lead;
-    }
+    });
+}
 
     protected function mapJsonFields(array $data, string $claimCode): array
     {

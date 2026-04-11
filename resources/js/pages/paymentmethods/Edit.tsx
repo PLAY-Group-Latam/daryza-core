@@ -15,16 +15,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------
-   BREADCRUMBS Y SCHEMA
+   BREADCRUMBS, PROPS Y SCHEMA
 ------------------------------------------------------------------- */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Métodos de Pago', href: '/metodos-de-pago' },
     { title: 'Editar cuenta', href: '#' },
 ];
 
+interface Props {
+    paymentMethod: PaymentMethod;
+    currencies: string[]; // Recibimos el array de strings del Enum
+}
+
 const paymentMethodSchema = z.object({
     company_type: z.string().min(1, 'Debes seleccionar una marca'),
     bank_name: z.string().min(1, 'Ingresa el nombre del banco'),
+    currency: z.string().min(1, 'Selecciona una moneda'), // Agregado
     account_number: z.string().min(5, 'El número de cuenta es demasiado corto'),
     interbank_account_number: z.string().optional().or(z.literal('')),
     is_active: z.boolean(),
@@ -32,15 +38,15 @@ const paymentMethodSchema = z.object({
 
 type PaymentFormValues = z.infer<typeof paymentMethodSchema>;
 
-export default function Edit({ paymentMethod }: { paymentMethod: PaymentMethod }) {
+export default function Edit({ paymentMethod, currencies }: Props) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Inicializamos con los valores que vienen de la base de datos
     const form = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentMethodSchema),
         defaultValues: {
             company_type: paymentMethod.company_type,
-            bank_name: paymentMethod.name || '', // Ajustado al nombre real de la columna
+            bank_name: paymentMethod.name || '',
+            currency: paymentMethod.currency || '', // Mapeamos el valor actual
             account_number: paymentMethod.account_number || '',
             interbank_account_number: paymentMethod.extra_info || '',
             is_active: !!paymentMethod.is_active,
@@ -52,7 +58,6 @@ export default function Edit({ paymentMethod }: { paymentMethod: PaymentMethod }
             onStart: () => setIsSubmitting(true),
             onFinish: () => setIsSubmitting(false),
             onError: (errors) => {
-                // Sincronizar errores del servidor con RHF
                 Object.keys(errors).forEach((key) => {
                     form.setError(key as keyof PaymentFormValues, {
                         type: 'server',
@@ -79,28 +84,56 @@ export default function Edit({ paymentMethod }: { paymentMethod: PaymentMethod }
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             
-                            {/* Marca */}
-                            <FormField
-                                control={form.control}
-                                name="company_type"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Marca</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona una Marca" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="daryza">Daryza</SelectItem>
-                                           
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/* Marca */}
+                                <FormField
+                                    control={form.control}
+                                    name="company_type"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Marca</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Marca" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="daryza">Daryza</SelectItem>
+                                                    <SelectItem value="itp">ITP</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Moneda (Dinámico) */}
+                                <FormField
+                                    control={form.control}
+                                    name="currency"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Moneda</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Moneda" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {currencies?.map((currency) => (
+                                                        <SelectItem key={currency} value={currency}>
+                                                            {currency}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             {/* Banco */}
                             <FormField

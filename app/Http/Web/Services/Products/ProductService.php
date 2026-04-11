@@ -49,48 +49,45 @@ class ProductService
   }
 
   public function update(Product $product, array $data, array $variantFiles = []): Product
-  {
+{
     return DB::transaction(function () use ($product, $data, $variantFiles) {
 
-      $product->update(collect($data)->only([
-        'name',
-        'slug',
-        'brief_description',
-        'description',
-        'is_active',
-        'is_home',
-      ])->toArray());
+        $product->update(collect($data)->only([
+            'name',
+            'slug',
+            'brief_description',
+            'description',
+            'is_active',
+            'is_home',
+        ])->toArray());
 
-      if (isset($data['categories']) || isset($data['parent_category_id'])) {
-        $this->syncProductCategories($product, $data);
-      }
-
-      if (isset($data['business_lines'])) {
-        $product->businessLines()->sync($data['business_lines']);
-      }
-
-      if (array_key_exists('recommended_product_ids', $data)) {
-        $this->syncRecommendedProducts($product, $data['recommended_product_ids'] ?? []);
-      }
-
-      if (isset($data['metadata'])) {
-        $this->syncMetadata($product, $data['metadata']);
-      }
-
-      $this->mediaService->syncTechnicalSheets($product, $data['technicalSheets'] ?? []);
-
-      if (isset($data['variants'])) {
-        $this->updateVariants($product, $data['variants'], $variantFiles);
-
-        // Coherencia de catálogo: un producto sin variantes no debe quedar activo.
-        if (!$product->variants()->exists() && $product->is_active) {
-          $product->update(['is_active' => false]);
+        if (isset($data['categories']) || isset($data['parent_category_id'])) {
+            $this->syncProductCategories($product, $data);
         }
-      }
 
-      return $product;
+        if (isset($data['business_lines'])) {
+            $product->businessLines()->sync($data['business_lines']);
+        }
+
+        $this->syncRecommendedProducts($product, $data['recommended_product_ids'] ?? []);
+  
+        if (isset($data['metadata'])) {
+            $this->syncMetadata($product, $data['metadata']);
+        }
+
+        $this->mediaService->syncTechnicalSheets($product, $data['technicalSheets'] ?? []);
+
+        if (isset($data['variants'])) {
+            $this->updateVariants($product, $data['variants'], $variantFiles);
+
+            if (!$product->variants()->exists() && $product->is_active) {
+                $product->update(['is_active' => false]);
+            }
+        }
+
+        return $product;
     });
-  }
+}
 
   public function delete(Product $product): void
   {
@@ -356,20 +353,20 @@ class ProductService
     }
   }
 
-  protected function syncRecommendedProducts(Product $product, array $recommendedIds): void
-  {
+protected function syncRecommendedProducts(Product $product, array $recommendedIds): void
+{
     $syncPayload = collect($recommendedIds)
-      ->filter(fn($id) => is_string($id) && $id !== '')
-      ->unique()
-      ->reject(fn($id) => $id === $product->id)
-      ->values()
-      ->mapWithKeys(fn($id, $index) => [
-        $id => ['position' => $index + 1],
-      ])
-      ->all();
-
+        ->filter(fn($id) => !is_null($id) && $id !== '')
+        ->unique()
+        ->reject(fn($id) => (string)$id === (string)$product->id)
+        
+        ->values()
+        ->mapWithKeys(fn($id, $index) => [
+            $id => ['position' => $index + 1],
+        ])
+        ->all();
     $product->recommendedProducts()->sync($syncPayload);
-  }
+}
 
   protected function syncProductCategories(Product $product, array $data): void
   {
