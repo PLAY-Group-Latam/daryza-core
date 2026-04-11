@@ -11,12 +11,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// 1. Corregimos la desestructuración de las props
-// El Controller envía 'paginatedIntents', así que lo recibimos con ese mismo nombre.
+
 export default function PurchaseIntentList({ paginatedIntents }: { paginatedIntents: any }) {
     
-    // Debug rápido: esto te dirá en la consola del navegador qué está llegando
-    console.log('Props de Inertia:', paginatedIntents);
+   
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

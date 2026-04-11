@@ -59,7 +59,7 @@ export default function ImagenPromocionalEditor({ section }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Enviando datos:', data.content);
+        
 
         router.post(
             `/content/update/${section.page.slug}/${section.type}/${section.id}`,

@@ -13,9 +13,10 @@ import { formatDate } from '@/lib/helpers/formatDate';
 import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ChevronDown, Eye } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import OrderStateGuideDialog from './OrderStateGuideDialog';
 import {
     ADMIN_ACTION_OPTIONS,
     AdminOrderAction,
@@ -24,7 +25,6 @@ import {
     isAdminActionAvailable,
     UnifiedStatusBadge,
 } from './status';
-import OrderStateGuideDialog from './OrderStateGuideDialog';
 import { OrderRow } from './types';
 
 interface OrdersTableListProps {
@@ -34,7 +34,13 @@ interface OrdersTableListProps {
 function RowActions({ order }: { order: OrderRow }) {
     return (
         <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="icon" asChild title="Ver detalle">
+            <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                asChild
+                title="Ver detalle"
+            >
                 <Link href={`/ordenes/${order.id}`}>
                     <Eye className="h-4 w-4" />
                 </Link>
@@ -44,32 +50,52 @@ function RowActions({ order }: { order: OrderRow }) {
 }
 
 export default function OrdersTableList({ data }: OrdersTableListProps) {
-    const pageIds = data.data.map((order) => order.id);
+    const pageIds = useMemo(
+    () => data.data.map((order) => order.id),
+    [data.data]
+);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isApplying, setIsApplying] = useState(false);
     const [bulkMessage, setBulkMessage] = useState<string | null>(null);
 
-    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+    const allSelected =
+        pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
 
-    const toggleOne = (id: string, checked: boolean) => {
-        setSelectedIds((prev) => (checked ? [...new Set([...prev, id])] : prev.filter((item) => item !== id)));
-    };
-
-    const toggleAll = (checked: boolean) => {
-        setSelectedIds((prev) => {
-            if (checked) return [...new Set([...prev, ...pageIds])];
-            return prev.filter((id) => !pageIds.includes(id));
-        });
-    };
+    const toggleOne = useCallback((id: string, checked: boolean) => {
+        setSelectedIds((prev) =>
+            checked
+                ? [...new Set([...prev, id])]
+                : prev.filter((item) => item !== id),
+        );
+    }, []);
+    const toggleAll = useCallback(
+        (checked: boolean) => {
+            setSelectedIds((prev) => {
+                if (checked) return [...new Set([...prev, ...pageIds])];
+                return prev.filter((id) => !pageIds.includes(id));
+            });
+        },
+        [pageIds],
+    );
 
     const applyBulkAction = async (action: AdminOrderAction) => {
         if (selectedIds.length === 0 || isApplying) return;
-        const selectedOrders = data.data.filter((order) => selectedIds.includes(order.id));
-        const allowedOrders = selectedOrders.filter((order) => isAdminActionAvailable(order, action));
-        const blockedOrders = selectedOrders.filter((order) => !isAdminActionAvailable(order, action));
+        const selectedOrders = data.data.filter((order) =>
+            selectedIds.includes(order.id),
+        );
+        const allowedOrders = selectedOrders.filter((order) =>
+            isAdminActionAvailable(order, action),
+        );
+        const blockedOrders = selectedOrders.filter(
+            (order) => !isAdminActionAvailable(order, action),
+        );
         if (allowedOrders.length === 0) {
-            setBulkMessage('La accion seleccionada no aplica para las ordenes seleccionadas.');
-            toast.error('La accion seleccionada no aplica para las ordenes seleccionadas.');
+            setBulkMessage(
+                'La accion seleccionada no aplica para las ordenes seleccionadas.',
+            );
+            toast.error(
+                'La accion seleccionada no aplica para las ordenes seleccionadas.',
+            );
             return;
         }
 
@@ -92,7 +118,15 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 },
                 onSuccess: (page) => {
                     setSelectedIds([]);
-                    const flash = (page.props as { flash?: { bulk_result?: { failed?: Array<{ reason?: string }> } } }).flash;
+                    const flash = (
+                        page.props as {
+                            flash?: {
+                                bulk_result?: {
+                                    failed?: Array<{ reason?: string }>;
+                                };
+                            };
+                        }
+                    ).flash;
                     const failedReasons = flash?.bulk_result?.failed ?? [];
                     if (blockedOrders.length > 0) {
                         setBulkMessage(
@@ -102,11 +136,18 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                             `Actualizacion parcial: ${allowedOrders.length} actualizadas, ${blockedOrders.length} sin cambios.`,
                         );
                     } else {
-                        setBulkMessage(`Se enviaron ${allowedOrders.length} orden(es) al cambio.`);
-                        toast.success(`Se actualizaron ${allowedOrders.length} orden(es).`);
+                        setBulkMessage(
+                            `Se enviaron ${allowedOrders.length} orden(es) al cambio.`,
+                        );
+                        toast.success(
+                            `Se actualizaron ${allowedOrders.length} orden(es).`,
+                        );
                     }
                     if (failedReasons.length > 0) {
-                        toast.error(failedReasons[0]?.reason ?? 'Algunas ordenes no pudieron actualizarse.');
+                        toast.error(
+                            failedReasons[0]?.reason ??
+                                'Algunas ordenes no pudieron actualizarse.',
+                        );
                     }
                     router.reload({ only: ['paginatedOrders'] });
                 },
@@ -114,7 +155,7 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
         );
     };
 
-    const columns = useMemo<ColumnDef<OrderRow>[]>(
+   const columns = useMemo<ColumnDef<OrderRow>[]>(
         () => [
             {
                 id: 'select',
@@ -128,7 +169,9 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 cell: ({ row }) => (
                     <Checkbox
                         checked={selectedIds.includes(row.original.id)}
-                        onCheckedChange={(value) => toggleOne(row.original.id, value === true)}
+                        onCheckedChange={(value) =>
+                            toggleOne(row.original.id, value === true)
+                        }
                         aria-label={`Seleccionar orden ${row.original.code}`}
                     />
                 ),
@@ -136,7 +179,9 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
             {
                 accessorKey: 'code',
                 header: 'Numero de orden',
-                cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+                cell: ({ row }) => (
+                    <span className="font-medium">{row.original.code}</span>
+                ),
             },
             {
                 accessorKey: 'customer_email',
@@ -144,19 +189,27 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 cell: ({ row }) => (
                     <div className="flex flex-col">
                         <span>{row.original.customer_email}</span>
-                        <span className="text-xs text-muted-foreground">Doc: {row.original.customer_document_number}</span>
+                        <span className="text-xs text-muted-foreground">
+                            Doc: {row.original.customer_document_number}
+                        </span>
                     </div>
                 ),
             },
             {
                 accessorKey: 'created_at',
                 header: 'Fecha',
-                cell: ({ row }) => <span>{formatDate(row.original.created_at, true)}</span>,
+                cell: ({ row }) => (
+                    <span>{formatDate(row.original.created_at, true)}</span>
+                ),
             },
             {
                 id: 'unified_status',
                 header: 'Estado',
-                cell: ({ row }) => <UnifiedStatusBadge status={getUnifiedOrderStatus(row.original)} />,
+                cell: ({ row }) => (
+                    <UnifiedStatusBadge
+                        status={getUnifiedOrderStatus(row.original)}
+                    />
+                ),
             },
             {
                 accessorKey: 'payment_method_type',
@@ -182,31 +235,49 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 cell: ({ row }) => <RowActions order={row.original} />,
             },
         ],
-        [allSelected, selectedIds],
+        [allSelected, selectedIds, toggleAll, toggleOne],
     );
 
-    const selectedOrders = data.data.filter((order) => selectedIds.includes(order.id));
+    const selectedOrders = data.data.filter((order) =>
+        selectedIds.includes(order.id),
+    );
     const availableBulkActions = ADMIN_ACTION_OPTIONS.filter((action) =>
-        selectedOrders.some((order) => isAdminActionAvailable(order, action.value)),
+        selectedOrders.some((order) =>
+            isAdminActionAvailable(order, action.value),
+        ),
     );
 
     const toolbarRight = (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" disabled={selectedIds.length === 0 || isApplying}>
-                        {isApplying ? 'Aplicando...' : 'Actualizar estado'} <ChevronDown className="ml-2 h-4 w-4" />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={selectedIds.length === 0 || isApplying}
+                    >
+                        {isApplying ? 'Aplicando...' : 'Actualizar estado'}{' '}
+                        <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end">
                     {availableBulkActions.map((item) => {
-                        const selectedOrderForLabel = selectedOrders.length === 1 ? selectedOrders[0] : null;
+                        const selectedOrderForLabel =
+                            selectedOrders.length === 1
+                                ? selectedOrders[0]
+                                : null;
                         const label = selectedOrderForLabel
-                            ? getAdminActionLabel(selectedOrderForLabel, item.value)
+                            ? getAdminActionLabel(
+                                  selectedOrderForLabel,
+                                  item.value,
+                              )
                             : item.label;
 
                         return (
-                            <DropdownMenuItem key={item.value} onClick={() => applyBulkAction(item.value)}>
+                            <DropdownMenuItem
+                                key={item.value}
+                                onClick={() => applyBulkAction(item.value)}
+                            >
                                 {label}
                             </DropdownMenuItem>
                         );
@@ -219,8 +290,14 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
 
     return (
         <div className="space-y-3">
-            {bulkMessage ? <p className="text-sm text-muted-foreground">{bulkMessage}</p> : null}
-            <DataTable columns={columns} data={data} toolbarRight={toolbarRight} />
+            {bulkMessage ? (
+                <p className="text-sm text-muted-foreground">{bulkMessage}</p>
+            ) : null}
+            <DataTable
+                columns={columns}
+                data={data}
+                toolbarRight={toolbarRight}
+            />
         </div>
     );
 }

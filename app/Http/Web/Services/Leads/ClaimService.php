@@ -11,7 +11,6 @@ class ClaimService
 {
     public function getPaginatedClaims(int $perPage = 10, ?string $search = null): LengthAwarePaginator
     {
-        
         $query = Lead::query()->where('type', Lead::TYPE_CLAIM);
 
         if ($search) {
@@ -19,7 +18,9 @@ class ClaimService
                 $searchTerm = "%" . trim($search) . "%";
                 $q->where('full_name', 'ilike', $searchTerm)
                   ->orWhere('email', 'ilike', $searchTerm)
-                  ->orWhereRaw("data->>'document_number' ilike ?", [$searchTerm]);
+                  ->orWhereRaw("data->>'document_number' ilike ?", [$searchTerm])
+                  // 🚀 NUEVO: Permite a soporte buscar por el código de reclamo
+                  ->orWhereRaw("data->>'claim_code' ilike ?", [$searchTerm]);
             });
         }
 
@@ -27,30 +28,37 @@ class ClaimService
     }
 
     public function save(array $data): Lead
-    {
-        $payload = [
-            'type'      => Lead::TYPE_CLAIM,
-            'full_name' => $data['name'],
-            'email'     => $data['email'],
-            'phone'     => $data['phone_number'],
-            'status'    => Lead::STATUS_NEW, 
-            'data'      => $this->mapJsonFields($data),
-        ];
+{
+    
+    $claimsCount = Lead::where('type', Lead::TYPE_CLAIM)->count();
+    $nextCorrelative = Str::padLeft($claimsCount + 1, 5, '0');
+    
+    $timestamp = Carbon::now()->format('dmY-His'); 
+    $claimCode = "{$nextCorrelative}-{$timestamp}";
 
-        if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
-            $payload['file_path'] = $data['file_attached']->store('leads/claims', 'public');
-            $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
-        }
+    $payload = [
+        'type'      => Lead::TYPE_CLAIM,
+        'full_name' => $data['name'],
+        'email'     => $data['email'],
+        'phone'     => $data['phone_number'],
+        'status'    => Lead::STATUS_NEW, 
+        'data'      => $this->mapJsonFields($data, $claimCode),
+    ];
 
-        return Lead::create($payload);
+    if (isset($data['file_attached']) && $data['file_attached'] instanceof UploadedFile) {
+        $payload['file_path'] = $data['file_attached']->store('leads/claims', 'public');
+        $payload['file_original_name'] = $data['file_attached']->getClientOriginalName();
     }
+
+    return Lead::create($payload);
+}
 
     public function update(Lead $claim, array $data): bool
     {
         return $claim->update([
             'full_name' => $data['name'] ?? $claim->full_name,
             'email'     => $data['email'] ?? $claim->email,
-            'phone'     => $data['phone_number'] ?? $claim->phone,
+            'phone'     => $data['phone_number'] ?? $claim-m>phone,
             'status'    => $data['status'] ?? $claim->status,
            
         ]);
@@ -64,9 +72,10 @@ class ClaimService
         return $claim->delete();
     }
 
-    protected function mapJsonFields(array $data): array
+   protected function mapJsonFields(array $data, string $claimCode): array
     {
         return [
+            'claim_code'         => $claimCode, 
             'document_type_id'   => $data['document_type_id'],
             'document_number'    => $data['document_number'],
             'address'            => $data['address'],

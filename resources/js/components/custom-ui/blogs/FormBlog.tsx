@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { DatePicker } from '../DatePicker';
 import { MultiSelect } from '../MultiSelect';
 import { RichTextEditor } from '../rich-text-tiptap/RichTextEditor';
+import { SeoMetadataFields } from '../seo/SeoMetadataFields';
 import { SlugInput } from '../slug-text';
 import { Upload } from '../upload';
 
@@ -43,11 +44,30 @@ export const BlogSchema = z.object({
     miniature: z.union([z.instanceof(File), z.string()]).optional(),
 
     metadata: z.object({
-        meta_title: z.string().optional(),
-        meta_description: z.string().optional(),
-        canonical_url: z.string().optional(),
-        og_title: z.string().optional(),
-        og_description: z.string().optional(),
+        meta_title: z
+            .string()
+            .max(255, 'El meta título no puede superar los 255 caracteres.')
+            .optional(),
+        meta_description: z
+            .string()
+            .max(500, 'La meta descripción no puede superar los 500 caracteres.')
+            .optional(),
+        meta_keywords: z
+            .string()
+            .max(255, 'Las meta keywords no pueden superar los 255 caracteres.')
+            .optional(),
+        canonical_url: z
+            .string()
+            .max(255, 'La URL canónica no puede superar los 255 caracteres.')
+            .optional(),
+        og_title: z
+            .string()
+            .max(255, 'El OG título no puede superar los 255 caracteres.')
+            .optional(),
+        og_description: z
+            .string()
+            .max(500, 'La OG descripción no puede superar los 500 caracteres.')
+            .optional(),
         noindex: z.boolean(),
         nofollow: z.boolean(),
     }),
@@ -81,11 +101,12 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
             metadata: {
                 meta_title: blog?.metadata?.meta_title || '',
                 meta_description: blog?.metadata?.meta_description || '',
+                meta_keywords: blog?.metadata?.meta_keywords || '',
                 canonical_url: blog?.metadata?.canonical_url || '',
                 og_title: blog?.metadata?.og_title || '',
                 og_description: blog?.metadata?.og_description || '',
-                noindex: blog?.metadata?.noindex ?? false,
-                nofollow: blog?.metadata?.nofollow ?? false,
+                noindex: false,
+                nofollow: false,
             },
         },
     });
@@ -93,6 +114,7 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
     const {
         control,
         handleSubmit,
+        setValue,
         watch,
         formState: { errors, isSubmitting, isDirty },
     } = methods;
@@ -105,16 +127,24 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
         const action = isEdit
             ? blogs.items.update(blog.id).url
             : blogs.items.store().url;
+        const payload: BlogFormValues = {
+            ...data,
+            metadata: {
+                ...data.metadata,
+                noindex: false,
+                nofollow: false,
+            },
+        };
 
         await new Promise<void>((resolve) => {
             if (isEdit) {
-                router.put(action, data, {
+                router.put(action, payload, {
                     preserveScroll: true,
                     forceFormData: true,
                     onFinish: () => resolve(),
                 });
             } else {
-                router.post(action, data, {
+                router.post(action, payload, {
                     preserveScroll: true,
                     forceFormData: true,
                     onFinish: () => resolve(),
@@ -373,45 +403,35 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                             />
                         </div>
                         {/* SEO */}
-                        <div className="space-y-4">
-                            <p className="text-xs font-bold tracking-widest uppercase">
-                                ● SEO & Metadatos
-                            </p>
-
-                            <Controller
-                                name="metadata.meta_title"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        {...field}
-                                        placeholder="Meta title"
-                                    />
-                                )}
-                            />
-
-                            <Controller
-                                name="metadata.meta_description"
-                                control={control}
-                                render={({ field }) => (
-                                    <Textarea
-                                        {...field}
-                                        className="h-24 w-full rounded-xl border p-3 text-sm"
-                                        placeholder="Meta description"
-                                    />
-                                )}
-                            />
-
-                            <Controller
-                                name="metadata.canonical_url"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        {...field}
-                                        placeholder="Canonical URL"
-                                    />
-                                )}
-                            />
-                        </div>
+                        <SeoMetadataFields
+                            values={watch('metadata')}
+                            errors={{
+                                meta_title:
+                                    errors.metadata?.meta_title?.message,
+                                meta_description:
+                                    errors.metadata?.meta_description?.message,
+                                meta_keywords:
+                                    errors.metadata?.meta_keywords?.message,
+                                canonical_url:
+                                    errors.metadata?.canonical_url?.message,
+                            }}
+                            onChange={(field, value) =>
+                                setValue(
+                                    `metadata.${field}` as const,
+                                    value as never,
+                                    {
+                                        shouldDirty: true,
+                                        shouldValidate: true,
+                                    },
+                                )
+                            }
+                            limits={{
+                                meta_title: 255,
+                                meta_description: 500,
+                                meta_keywords: 255,
+                                canonical_url: 255,
+                            }}
+                        />
                         <Button
                             type="submit"
                             disabled={!isDirty || isSubmitting} // deshabilitado si no hay cambios o se está enviando

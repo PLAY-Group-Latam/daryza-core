@@ -45,8 +45,10 @@ class ProductImportRowMapper
 
         $price = $this->normalizeDecimal($get(self::HEADER_PRICE));
         $promoPrice = $this->normalizeDecimal($get(self::HEADER_PROMO_PRICE));
-        $promoStart = $this->transformDate($get(self::HEADER_PROMO_START));
-        $promoEnd = $this->transformDate($get(self::HEADER_PROMO_END));
+        $promoStartRaw = $get(self::HEADER_PROMO_START);
+        $promoEndRaw = $get(self::HEADER_PROMO_END);
+        $promoStart = $this->transformDate($promoStartRaw);
+        $promoEnd = $this->transformDate($promoEndRaw);
 
         $availability = strtoupper($this->normalizeText($get(self::HEADER_AVAILABILITY)));
         $isActive = ($availability === 'D');
@@ -68,6 +70,8 @@ class ProductImportRowMapper
                 'is_on_promo' => $promoPrice !== null && $promoPrice > 0,
                 'promo_start_at' => $promoStart,
                 'promo_end_at' => $promoEnd,
+                'promo_start_raw' => $promoStartRaw,
+                'promo_end_raw' => $promoEndRaw,
                 'stock' => (int) ($get(self::HEADER_STOCK) ?? 0),
                 'is_active' => $isActive,
             ],
@@ -132,10 +136,24 @@ class ProductImportRowMapper
 
         try {
             if (is_numeric($value)) {
-                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value));
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value))
+                    ->setTime(12, 0, 0);
             }
 
-            return Carbon::parse((string) $value);
+            $raw = trim((string) $value);
+            if ($raw === '') {
+                return null;
+            }
+
+            $formats = ['d/m/Y', 'd-m-Y'];
+            foreach ($formats as $format) {
+                $parsed = Carbon::createFromFormat($format, $raw);
+                if ($parsed !== false) {
+                    return $parsed->setTime(12, 0, 0);
+                }
+            }
+
+            return null;
         } catch (\Throwable) {
             return null;
         }

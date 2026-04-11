@@ -14,5 +14,5 @@ Route::prefix('content')->group(function () {
     Route::get('/page/{slug}', [ContentApiController::class, 'getPage']);
 
     Route::get('/config/sections-map', [ConfigContentController::class, 'sectionsMap']);
-    
+
 });

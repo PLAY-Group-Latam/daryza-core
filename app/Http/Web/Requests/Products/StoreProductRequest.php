@@ -10,6 +10,37 @@ use Illuminate\Validation\Validator;
 
 class StoreProductRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $metadata = $this->input('metadata', []);
+        if (!is_array($metadata)) {
+            return;
+        }
+
+        $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'] ?? null, 160);
+        $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'] ?? null, 320);
+        $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'] ?? null, 255);
+        $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'] ?? null, 500);
+
+        $this->merge(['metadata' => $metadata]);
+    }
+
+    private function truncateNullableString(mixed $value, int $max): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        return function_exists('mb_substr')
+            ? mb_substr($text, 0, $max)
+            : substr($text, 0, $max);
+    }
+
     public function rules(): array
     {
         return [
@@ -69,11 +100,8 @@ class StoreProductRequest extends FormRequest
             // — SEO —
             'metadata.meta_title'       => ['nullable', 'string', 'max:160'],
             'metadata.meta_description' => ['nullable', 'string', 'max:320'],
+            'metadata.meta_keywords'    => ['nullable', 'string', 'max:255'],
             'metadata.canonical_url'    => ['nullable', 'url', 'max:500'],
-            'metadata.og_title'         => ['nullable', 'string', 'max:160'],
-            'metadata.og_description'   => ['nullable', 'string', 'max:320'],
-            'metadata.noindex'          => ['required', 'boolean'],
-            'metadata.nofollow'         => ['required', 'boolean'],
         ];
     }
 
@@ -139,12 +167,9 @@ class StoreProductRequest extends FormRequest
             // — SEO —
             'metadata.meta_title.max'       => 'El meta título no puede superar los 160 caracteres.',
             'metadata.meta_description.max' => 'La meta descripción no puede superar los 320 caracteres.',
+            'metadata.meta_keywords.max'    => 'Las palabras clave no pueden superar los 255 caracteres.',
             'metadata.canonical_url.url'    => 'La URL canónica no tiene un formato válido.',
             'metadata.canonical_url.max'    => 'La URL canónica no puede superar los 500 caracteres.',
-            'metadata.og_title.max'         => 'El OG título no puede superar los 160 caracteres.',
-            'metadata.og_description.max'   => 'La OG descripción no puede superar los 320 caracteres.',
-            'metadata.noindex.required'     => 'Debes indicar el valor de noindex.',
-            'metadata.nofollow.required'    => 'Debes indicar el valor de nofollow.',
         ];
     }
 

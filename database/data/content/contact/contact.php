@@ -52,7 +52,8 @@ return [
                 'items' => [
                     ['texto' => 'Consulta sobre uso de productos'],
                     ['texto' => 'Documentación de productos'],
-                    ['texto' => 'Encuesta de satisfacción / sugerencias de mejora.'],
+                    ['texto' => 'Tengo una queja o reclamo'],
+                    ['texto' => 'Tengo sugerencias de mejora'],
                 ],
             ],
         ],

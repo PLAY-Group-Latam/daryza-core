@@ -4,9 +4,10 @@ namespace App\Http\Web\Controllers\Settings;
 
 use App\Http\Web\Controllers\Controller;
 use App\Http\Web\Services\Settings\PaymenMethodsService;
+use App\Http\Web\Requests\Settings\PayMethodsRequest; 
 use App\Models\Settings\PaymentMethod;
+use App\Enums\Currency\CurrencyType; 
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,21 +26,14 @@ class PaymentMethodController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('paymentmethods/Create');
+        return Inertia::render('paymentmethods/Create', [
+            'currencies' => CurrencyType::values()
+        ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(PayMethodsRequest $request): RedirectResponse
     {
-        // Validamos usando los nombres del Frontend (React useForm)
-        $validated = $request->validate([
-            'company_type'             => 'required|string|in:daryza,itp',
-            'bank_name'                => 'required|string|max:255',
-            'account_number'           => 'required|string|max:255',
-            'interbank_account_number' => 'nullable|string|max:255',
-            'is_active'                => 'boolean',
-        ]);
-
-        $this->service->store($validated);
+        $this->service->store($request->validated());
 
         return redirect()->route('paymentMethods.index')
             ->with('success', 'Método de pago creado correctamente.');
@@ -48,22 +42,14 @@ class PaymentMethodController extends Controller
     public function edit(PaymentMethod $paymentMethod): Response
     {
         return Inertia::render('paymentmethods/Edit', [
-            'paymentMethod' => $paymentMethod
+            'paymentMethod' => $paymentMethod,
+            'currencies'    => CurrencyType::values() // <--- También aquí para el select de edición
         ]);
     }
 
-    public function update(Request $request, PaymentMethod $paymentMethod): RedirectResponse
+    public function update(PayMethodsRequest $request, PaymentMethod $paymentMethod): RedirectResponse
     {
-        // Validamos igual que en el store pero permitiendo que sean opcionales (sometimes)
-        $validated = $request->validate([
-            'company_type'             => 'sometimes|required|string|in:daryza,itp',
-            'bank_name'                => 'sometimes|required|string|max:255',
-            'account_number'           => 'sometimes|required|string|max:255',
-            'interbank_account_number' => 'nullable|string|max:255',
-            'is_active'                => 'boolean',
-        ]);
-
-        $this->service->update($paymentMethod, $validated);
+        $this->service->update($paymentMethod, $request->validated());
 
         return redirect()->route('paymentMethods.index')
             ->with('success', 'Método de pago actualizado con éxito.');

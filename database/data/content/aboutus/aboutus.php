@@ -87,14 +87,14 @@ return [
     |--------------------------------------------------------------------------
     */
     'nosotros_sostenibilidad' => [
-        'titulo'      => 'Sostenibilidad - Productos BIO',
+        'titulo'      => '¿Por que Daryza?',
         'descripcion' => 'Lorem ipsum dolor sit amet consectetur adipiscing elit malesuada a justo, interdum condimentum massa ultrices tempor semper ridiculus facilisis diam phasellus, gravida venenatis nisl lacinia scelerisque.',
         'cards' => [
-            ['nombre' => 'Pasión', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b797692.webp'],
-            ['nombre' => 'Pasión', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b8f3900.webp'],
-            ['nombre' => 'Pasión', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b9a2057.webp'],
-            ['nombre' => 'Pasión', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67ba383f8.webp'],
-            ['nombre' => 'Pasión', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67bad8422.webp'],
+            ['nombre' => 'Lejias', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b797692.webp'],
+            ['nombre' => 'Bolsas Bio', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b8f3900.webp'],
+            ['nombre' => 'Desinfectantes', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67b9a2057.webp'],
+            ['nombre' => 'Perfumador', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67ba383f8.webp'],
+            ['nombre' => 'Limpia todo', 'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/25/images/699d67bad8422.webp'],
         ],
     ],
 

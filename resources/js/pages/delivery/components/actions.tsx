@@ -101,10 +101,10 @@ export function Actions({ id, zoneType, data: dataZone }: ActionsProps) {
                 size="icon"
                 className="h-8 w-8"
             >
-                <SaveIcon className="h-4 w-4 p-1" />
+                <SaveIcon className="h-4 w-4" />
             </Button>
             <Button type="button" onClick={handleDelete} variant="destructive" size="icon" className="h-8 w-8">
-                <Trash2Icon className="h-4 w-4 p-1 text-white" />
+                <Trash2Icon className="h-4 w-4" />
             </Button>
         </form>
     );

@@ -3,6 +3,8 @@
 namespace App\Http\Web\Services;
 
 use App\Models\Customers\Customer;
+
+use App\Models\Orders\OrderPayment;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -34,5 +36,27 @@ class CustomerService
         return $customer;
     }
 
+
+
+public function getMetrics(string $customerId): array
+{
+    $stats = OrderPayment::where('status', 'approved')
+        ->whereHas('order', function ($query) use ($customerId) {
+            $query->where('customer_id', $customerId);
+        })
+        ->selectRaw('COUNT(DISTINCT order_id) as total_orders, SUM(amount) as total_spent')
+        ->first();
+
+    $totalOrders = (int) ($stats->total_orders ?? 0);
+    $totalSpent = (float) ($stats->total_spent ?? 0);
+
+    return [
+        'total_orders' => $totalOrders,
+        'total_spent' => 'S/ ' . number_format($totalSpent, 2),
+        'average_order_value' => $totalOrders > 0 
+            ? 'S/ ' . number_format($totalSpent / $totalOrders, 2) 
+            : 'S/ 0.00',
+    ];
+}
    
 }

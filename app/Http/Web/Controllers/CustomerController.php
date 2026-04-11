@@ -16,26 +16,31 @@ class CustomerController extends Controller
 {
     public function __construct(protected CustomerService $customerService) {}
 
-    public function index()
-    {
-        $perPage = request()->input('per_page', 10);
-        $paginatedCustomers = Customer::with(['billingProfile', 'addresses'])
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage)
-            ->through(function ($customer) {
-                // Ocultamos los IDs de las direcciones solo para el frontend
-                $customer->addresses->each(function ($address) {
-                    $address->makeHidden(['department_id', 'province_id', 'district_id']);
-                });
 
-                return $customer;
+
+public function index()
+{
+    $perPage = request()->input('per_page', 10);
+    
+    $paginatedCustomers = Customer::with(['billingProfile', 'addresses'])
+        ->orderBy('created_at', 'desc')
+        ->paginate($perPage)
+        ->through(function ($customer) {
+        
+            $customer->addresses->each(function ($address) {
+                $address->makeHidden(['department_id', 'province_id', 'district_id']);
             });
 
 
-        return Inertia::render('customers/Index', [
-            'paginatedCustomers' => $paginatedCustomers,
-        ]);
-    }
+            $customer->metrics = $this->customerService->getMetrics($customer->id);
+
+            return $customer;
+        });
+
+    return Inertia::render('customers/Index', [
+        'paginatedCustomers' => $paginatedCustomers,
+    ]);
+}
 
     // public function create()
     // {

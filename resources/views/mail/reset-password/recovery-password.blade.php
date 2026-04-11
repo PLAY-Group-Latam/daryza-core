@@ -1,47 +1,36 @@
 @extends('layouts.mail')
 
-@section('title', 'Cambio de contraseña')
-
 @section('content')
-<tr>
-  <td style="padding:35px 30px 25px;">
-    <h2 style="margin:0 0 20px; font-size:22px; color:#333;">Cambio de contraseña</h2>
-
-    <p style="font-size:15px; color:#555; line-height:1.6; margin:0 0 10px;">
-      Hola <strong>{{ $email }}</strong>,
+<div style="padding: 20px; font-family: Arial, sans-serif; color: #333;">
+    <p style="font-size: 15px; margin-bottom: 20px;">
+        Hola <strong>{{ $username ?? $email }}</strong>,
     </p>
 
-    <p style="font-size:15px; color:#555; line-height:1.6; margin:0 0 20px;">
-      Por favor, haz clic en el siguiente enlace para cambiar tu contraseña:
+    <p style="font-size: 15px; margin-bottom: 20px;">
+        Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>Tienda Daryza Perú</strong>.
+    </p>
+
+    <p style="font-size: 15px; margin-bottom: 20px;">
+        Para continuar con el proceso, haz clic en el siguiente enlace:
     </p>
 
     <p style="text-align: center; margin: 30px 0;">
-      <a href="{{ $url }}" style="
-        background-color: #ff9900;
-        border-radius: 6px;
-        color: #ffffff;
-        display: inline-block;
-        font-size: 15px;
-        font-weight: bold;
-        padding: 12px 24px;
-        text-decoration: none;
-    ">
-        Cambiar contraseña
-      </a>
+        <a href="{{ $url }}" style="font-weight: bold; color: #000; text-decoration: underline; font-size: 16px;">
+            Restablecer contraseña
+        </a>
     </p>
 
-    <p style="font-size:15px; color:#555; line-height:1.6; margin:0;">
-      Si no has solicitado este cambio, por favor ignora este correo.
+    <p style="font-size: 15px; margin-bottom: 20px; line-height: 1.5;">
+        Este enlace estará disponible por tiempo limitado por motivos de seguridad. Si no solicitaste este cambio, puedes ignorar este mensaje y tu contraseña permanecerá sin modificaciones.
     </p>
-  </td>
-</tr>
 
-<tr>
-  <td>
-    <p style="font-size: 13px; color: #999; line-height: 1.6; text-align: center; margin:24px;">
-      Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
-      <a href="{{ $url }}" target="_blank" style="color: #555; word-break: break-all;">{{ $url }}</a>
+    <p style="font-size: 15px; margin-bottom: 20px;">
+        Si tienes alguna duda o necesitas ayuda, puedes contactarnos a 
+        <a href="atencionalcliente@daryza.com" style="color: #007bff; text-decoration: underline;">atencionalcliente@daryza.com</a> o al <strong>{{ env('MAIL_CONTACT_PHONE') }}</strong>.
     </p>
-  </td>
-</tr>
+
+    <p style="font-size: 15px; margin-top: 30px;">
+        Equipo <strong>Daryza</strong>
+    </p>
+</div>
 @endsection

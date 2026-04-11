@@ -18,12 +18,14 @@ interface DatePickerProps {
     value?: Date;
     onChange: (date?: Date) => void;
     placeholder?: string;
+    align?: 'start' | 'center' | 'end'; // 👈 agregar
 }
 
 export function DatePicker({
     value,
     onChange,
     placeholder = 'Seleccionar fecha',
+    align = 'start', // 👈 valor por defecto
 }: DatePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -43,7 +45,7 @@ export function DatePicker({
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0" align={align}>
                 <Calendar
                     mode="single"
                     selected={value}

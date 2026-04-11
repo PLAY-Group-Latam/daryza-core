@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use App\Enums\Currency\CurrencyType;
 return new class extends Migration
 {
     /**
@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('company_type');              
             $table->string('name');                       
             $table->string('account_number')->nullable(); 
+            $table->string('currency')->default(CurrencyType::SOLES->value);
             $table->string('extra_info')->nullable();     
             $table->boolean('is_active')->default(true);
             $table->timestamps();

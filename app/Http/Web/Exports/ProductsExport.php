@@ -2,16 +2,20 @@
 
 namespace App\Http\Web\Exports;
 
+use App\Http\Web\Services\Products\ProductImportRowMapper;
 use App\Models\Products\ProductVariant;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 
-class ProductsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class ProductsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithColumnWidths
 {
-  // Variable para rastrear el último producto procesado
-  private $lastProductId = null;
+  /**
+   * Variable para rastrear el último producto procesado.
+   */
+  private ?string $lastProductId = null;
 
   public function collection()
   {
@@ -24,7 +28,9 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       'specifications.attribute'
     ])
       ->join('products', 'product_variants.product_id', '=', 'products.id')
-      ->orderBy('products.id') // Agrupamos por código de producto
+      ->orderBy('products.code') // Agrupamos por código de producto
+      ->orderBy('product_variants.created_at')
+      ->orderBy('product_variants.id')
       ->select('product_variants.*') // Evitamos colisión de IDs
       ->get();
   }
@@ -32,32 +38,32 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
   public function headings(): array
   {
     return [
-      'Codigo',
-      'Nombre',
-      'Descripcion Corta',
-      'Descripcion',
-      'Precio',
-      'Precio Oferta',
-      'Inicio Precio Oferta',
-      'Fin Precio Oferta',
-      'Presentacion',
-      'Aroma',
-      'Color',
-      'Talla',
-      'SKU Proveedor',
-      'SKU Daryza',
-      'Marca',
-      'Inventario',
-      'Disponibilidad Catalogo',
-      'Peso KG',
-      'Alto CM',
-      'Largo CM',
-      'Ancho CM',
-      'Volumen CM',
-      'Categorias',
-      'Sub Categorias',
-      'Linea de Negocio',
-      'Productos Recomendados',
+      ProductImportRowMapper::HEADER_CODE,
+      ProductImportRowMapper::HEADER_NAME,
+      ProductImportRowMapper::HEADER_BRIEF,
+      ProductImportRowMapper::HEADER_DESCRIPTION,
+      ProductImportRowMapper::HEADER_PRICE,
+      ProductImportRowMapper::HEADER_PRESENTATION,
+      ProductImportRowMapper::HEADER_AROMA,
+      ProductImportRowMapper::HEADER_COLOR,
+      ProductImportRowMapper::HEADER_SIZE,
+      ProductImportRowMapper::HEADER_SKU_SUPPLIER,
+      ProductImportRowMapper::HEADER_SKU_DARYZA,
+      ProductImportRowMapper::HEADER_BRAND,
+      ProductImportRowMapper::HEADER_STOCK,
+      ProductImportRowMapper::HEADER_AVAILABILITY,
+      ProductImportRowMapper::HEADER_WEIGHT,
+      ProductImportRowMapper::HEADER_HEIGHT,
+      ProductImportRowMapper::HEADER_LENGTH,
+      ProductImportRowMapper::HEADER_WIDTH,
+      ProductImportRowMapper::HEADER_VOLUME,
+      ProductImportRowMapper::HEADER_PROMO_PRICE,
+      ProductImportRowMapper::HEADER_PROMO_START,
+      ProductImportRowMapper::HEADER_PROMO_END,
+      ProductImportRowMapper::HEADER_BUSINESS_LINE,
+      ProductImportRowMapper::HEADER_CATEGORY,
+      ProductImportRowMapper::HEADER_SUBCATEGORY,
+      'productos_recomendados',
     ];
   }
 
@@ -107,9 +113,6 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       $brief,
       $desc,
       $variant->price,
-      $variant->promo_price,
-      $variant->promo_start_at ? $variant->promo_start_at->format('Y-m-d H:i:s') : '',
-      $variant->promo_end_at ? $variant->promo_end_at->format('Y-m-d H:i:s') : '',
       $attributes->get('Presentación'),
       $attributes->get('Aroma'),
       $attributes->get('Color'),
@@ -124,10 +127,25 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       str_replace(' cm', '', $specs->get('Largo')),
       str_replace(' cm', '', $specs->get('Ancho')),
       str_replace(' cm', '', $specs->get('Volumen')),
+      $variant->promo_price,
+      $variant->promo_start_at ? $variant->promo_start_at->format('d/m/Y') : '',
+      $variant->promo_end_at ? $variant->promo_end_at->format('d/m/Y') : '',
+      $businessLines,
       $catName,
       $subCategories,
-      $businessLines,
       $recommendedCodes,
+    ];
+  }
+
+  public function columnWidths(): array
+  {
+    return [
+      // nombre
+      'B' => 36,
+      // descripcion_corta
+      'C' => 40,
+      // descripcion
+      'D' => 48,
     ];
   }
 }

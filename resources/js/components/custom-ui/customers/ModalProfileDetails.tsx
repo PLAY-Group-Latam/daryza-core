@@ -22,16 +22,18 @@ interface ModalProfileDetailsProps {
 }
 
 export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
-    // console.log('clientessssssssss', customer);
     const metrics = [
         {
             label: 'Total de pedidos',
-            value: customer.metrics?.total_orders ?? '—',
+            value: customer.metrics?.total_orders ?? '0',
         },
-        { label: 'Total gastado', value: customer.metrics?.total_spent ?? '—' },
+        {
+            label: 'Total gastado',
+            value: customer.metrics?.total_spent ?? 'S/ 0.00',
+        },
         {
             label: 'Ticket promedio',
-            value: customer.metrics?.average_order_value ?? '—',
+            value: customer.metrics?.average_order_value ?? 'S/ 0.00',
         },
     ];
 

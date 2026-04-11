@@ -4,6 +4,7 @@ namespace App\Http\Web\Services\Products;
 
 use App\Enums\AttributeType;
 use App\Enums\OgType;
+use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
@@ -16,37 +17,53 @@ use Illuminate\Support\Str;
 
 class ProductImportService
 {
+  public function __construct(
+    protected UniqueSlugResolver $slugResolver
+  ) {}
+
   /**
    * Crear producto base (una sola vez por código)
    */
-  public function createProduct(array $data): Product
+  public function createProduct(array $data, ?string &$status = null): Product
   {
     // Buscamos incluyendo eliminados
     $product = Product::withTrashed()->where('code', $data['code'])->first();
 
     if ($product) {
+      $wasTrashed = $product->trashed();
       // Si estaba en la papelera, lo restauramos
-      if ($product->trashed()) {
+      if ($wasTrashed) {
         $product->restore();
       }
       // Actualizamos los datos básicos por si cambiaron en el Excel
-      $product->update([
+      $product->fill([
         'name' => $data['name'],
         'brief_description' => $data['brief_description'] ?? $product->brief_description,
         'description' => $data['description'] ?? $product->description,
-        // 'slug' => Str::slug($data['name']), // Aseguramos que se limpie
       ]);
+      $wasDirty = $product->isDirty();
+      if ($wasDirty) {
+        $product->save();
+      }
 
       $this->syncImportedProductMetadata($product);
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
       return $product;
     }
+
+    $slug = $this->slugResolver->resolve(
+      Product::class,
+      Str::slug($data['name'] ?? ''),
+      null,
+      'producto'
+    );
 
     // Si realmente no existe, lo creamos
     $product = Product::create([
       'id' => Str::ulid(),
       'code' => $data['code'],
       'name' => $data['name'],
-      'slug' => Str::slug($data['name']),
+      'slug' => $slug,
       'brief_description' => $data['brief_description'] ?? null,
       'description' => $data['description'] ?? null,
       'is_active' => $data['is_active'] ?? true,
@@ -54,40 +71,91 @@ class ProductImportService
     ]);
 
     $this->syncImportedProductMetadata($product);
+    $status = 'created';
 
     return $product;
+  }
+
+  public function resolveProductById(string $id): ?Product
+  {
+    return Product::withTrashed()->find($id);
   }
 
   protected function syncImportedProductMetadata(Product $product): void
   {
     $frontendUrl = rtrim((string) (config('app.frontend_url') ?: config('app.url')), '/');
+    $resolvedMetaTitle = $product->name;
+    $resolvedMetaDescription = $product->brief_description;
+    $payload = $this->normalizeSeoMetadataPayload([
+      'meta_title' => $resolvedMetaTitle,
+      'meta_description' => $resolvedMetaDescription,
+      'meta_keywords' => $product->name,
+      'og_title' => $resolvedMetaTitle,
+      'og_description' => $resolvedMetaDescription ?? $resolvedMetaTitle,
+      'canonical_url' => $frontendUrl !== ''
+        ? "{$frontendUrl}/productos/{$product->slug}"
+        : null,
+      'og_type' => OgType::PRODUCT,
+      'noindex' => false,
+      'nofollow' => false,
+    ]);
 
     $product->metadata()->updateOrCreate(
       [
         'metadatable_id' => $product->id,
         'metadatable_type' => Product::class,
       ],
-      [
-        'meta_title' => $product->name,
-        'meta_description' => $product->brief_description,
-        'og_title' => $product->name,
-        // Requisito solicitado: OG description igual al título.
-        'og_description' => $product->name,
-        'canonical_url' => $frontendUrl !== ''
-          ? "{$frontendUrl}/productos/{$product->slug}"
-          : null,
-        'og_type' => OgType::PRODUCT,
-        'noindex' => false,
-        'nofollow' => false,
-      ]
+      $payload
     );
+  }
+
+  protected function normalizeSeoMetadataPayload(array $metadata): array
+  {
+    if (array_key_exists('meta_title', $metadata)) {
+      $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'], 160);
+    }
+    if (array_key_exists('meta_description', $metadata)) {
+      $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'], 320);
+    }
+    if (array_key_exists('meta_keywords', $metadata)) {
+      $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'], 255);
+    }
+    if (array_key_exists('canonical_url', $metadata)) {
+      $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'], 500);
+    }
+    if (array_key_exists('og_title', $metadata)) {
+      $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'], 160);
+    }
+    if (array_key_exists('og_description', $metadata)) {
+      $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'], 320);
+    }
+    $metadata['noindex'] = false;
+    $metadata['nofollow'] = false;
+
+    return $metadata;
+  }
+
+  protected function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
   }
 
 
   /**
    * Crear variante de producto
    */
-  public function createVariant(Product $product, array $data): ProductVariant
+  public function createVariant(Product $product, array $data, ?string &$status = null): ProductVariant
   {
     // Buscamos la variante por SKU incluyendo las borradas
     $variant = ProductVariant::withTrashed()
@@ -107,12 +175,18 @@ class ProductImportService
     ];
 
     if ($variant) {
+      $wasTrashed = $variant->trashed();
       // 1. Si estaba borrada, la restauramos
-      if ($variant->trashed()) {
+      if ($wasTrashed) {
         $variant->restore();
       }
       // 2. Actualizamos con los nuevos datos del Excel
-      $variant->update($variantData);
+      $variant->fill($variantData);
+      $wasDirty = $variant->isDirty();
+      if ($wasDirty) {
+        $variant->save();
+      }
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
       return $variant;
     }
 
@@ -122,7 +196,142 @@ class ProductImportService
     $variantData['id'] = Str::ulid();
     $variantData['sku'] = $data['sku_daryza'];
 
+    $status = 'created';
     return ProductVariant::create($variantData);
+  }
+
+  /**
+   * Crea o actualiza la variante principal cuando la fila no trae atributos de variante.
+   *
+   * Reglas:
+   * - Si existe una variante principal del producto, se reutiliza.
+   * - Si no existe principal, se reutiliza la primera variante disponible.
+   * - Si no existe ninguna, se crea una nueva con SKU derivado del código del producto.
+   */
+  public function createOrUpdateSingleVariant(Product $product, array $data, ?string &$status = null): ProductVariant
+  {
+    $variant = ProductVariant::withTrashed()
+      ->where('product_id', $product->id)
+      ->where('is_main', true)
+      ->first();
+
+    if (!$variant) {
+      $variant = ProductVariant::withTrashed()
+        ->where('product_id', $product->id)
+        ->orderBy('created_at')
+        ->first();
+    }
+
+    $baseSku = trim((string) ($data['sku_daryza'] ?? ''));
+    if ($baseSku === '') {
+      $baseSku = trim((string) ($product->code ?? ''));
+    }
+
+    if ($baseSku === '') {
+      $baseSku = 'PRODUCTO';
+    }
+
+    $sku = $baseSku;
+
+    $price = $data['price'] ?? null;
+    if ($price === null) {
+      $price = $variant?->price ?? 0;
+    }
+
+    $variantData = [
+      'product_id'     => $product->id,
+      'sku'            => $sku,
+      'sku_supplier'   => $data['sku_supplier'] ?? $variant?->sku_supplier,
+      'price'          => $price,
+      'promo_price'    => $data['promo_price'] ?? null,
+      'is_on_promo'    => $data['is_on_promo'] ?? false,
+      'promo_start_at' => $data['promo_start_at'] ?? null,
+      'promo_end_at'   => $data['promo_end_at'] ?? null,
+      'stock'          => $data['stock'] ?? ($variant?->stock ?? 0),
+      'is_active'      => $data['is_active'] ?? true,
+      'is_main'        => true,
+    ];
+
+    if ($variant) {
+      $wasTrashed = $variant->trashed();
+      if ($wasTrashed) {
+        $variant->restore();
+      }
+
+      ProductVariant::query()
+        ->where('product_id', $product->id)
+        ->where('id', '!=', $variant->id)
+        ->where('is_main', true)
+        ->update(['is_main' => false]);
+
+      $variant->fill($variantData);
+      $wasDirty = $variant->isDirty();
+      if ($wasDirty) {
+        $variant->save();
+      }
+
+      // Producto único no usa atributos de variante.
+      $variant->attributes()->detach();
+
+      $status = ($wasTrashed || $wasDirty) ? 'updated' : 'unchanged';
+      return $variant;
+    }
+
+    $variantData['id'] = Str::ulid();
+
+    $status = 'created';
+    return ProductVariant::create($variantData);
+  }
+
+  protected function resolveUniqueSkuForImport(string $baseSku, ?string $currentVariantId = null): string
+  {
+    $sku = $baseSku;
+    $counter = 1;
+
+    while (true) {
+      $query = ProductVariant::withTrashed()->where('sku', $sku);
+
+      if ($currentVariantId) {
+        $query->where('id', '!=', $currentVariantId);
+      }
+
+      if (!$query->exists()) {
+        return $sku;
+      }
+
+      $counter++;
+      $sku = "{$baseSku}-{$counter}";
+    }
+  }
+
+  public function findGlobalSkuConflict(string $sku, string $productId, ?string $ignoreVariantId = null): ?ProductVariant
+  {
+    $normalizedSku = trim($sku);
+    if ($normalizedSku === '') {
+      return null;
+    }
+
+    $query = ProductVariant::withTrashed()
+      ->where('sku', $normalizedSku)
+      ->where('product_id', '!=', $productId);
+
+    if ($ignoreVariantId) {
+      $query->where('id', '!=', $ignoreVariantId);
+    }
+
+    return $query->first();
+  }
+
+  public function findSku(string $sku): ?ProductVariant
+  {
+    $normalizedSku = trim($sku);
+    if ($normalizedSku === '') {
+      return null;
+    }
+
+    return ProductVariant::withTrashed()
+      ->where('sku', $normalizedSku)
+      ->first();
   }
 
 

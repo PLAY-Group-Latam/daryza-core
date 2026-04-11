@@ -29,7 +29,7 @@ class Lead extends Model
     const STATUS_LOST = 'lost';
 
     protected $fillable = [
-        'type', 'full_name', 'email', 'phone', 
+        'type', 'full_name', 'email', 'phone',
         'data', 'file_path', 'file_original_name', 'status',
     ];
 
@@ -82,4 +82,5 @@ class Lead extends Model
         
         return $statuses[$this->status] ?? 'Desconocido';
     }
+
 }

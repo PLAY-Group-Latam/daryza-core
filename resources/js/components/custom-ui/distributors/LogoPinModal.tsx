@@ -22,35 +22,39 @@ export default function LogoPinModal({ open, onClose, currentPinUrl }: Props) {
         logo_pin: File | null;
     }>({ logo_pin: null });
 
-    const [previewUrl, setPreviewUrl] = useState<string | null>(currentPinUrl ?? null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    // Sync preview con el pin actual cuando se abre el modal
-    useEffect(() => {
-        if (open) setPreviewUrl(currentPinUrl ?? null);
-    }, [open, currentPinUrl]);
-
-    // Limpiar blob URL al desmontar
+    // Limpiar blob URL al cambiar o desmontar
     useEffect(() => {
         return () => {
-            if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+            if (previewUrl?.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
         };
     }, [previewUrl]);
 
     const handleFileChange = (file: File | null) => {
         setData('logo_pin', file);
-        if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(file ? URL.createObjectURL(file) : (currentPinUrl ?? null));
+
+        if (previewUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
+        if (file) {
+            setPreviewUrl(URL.createObjectURL(file));
+        } else {
+            setPreviewUrl(null);
+        }
     };
 
     const handleClose = () => {
         reset();
-        setPreviewUrl(currentPinUrl ?? null);
+        setPreviewUrl(null);
         onClose();
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Cambiamos la URL aquí:
         post('/distributors/map-pin', {
             onSuccess: () => {
                 reset();
@@ -58,6 +62,8 @@ export default function LogoPinModal({ open, onClose, currentPinUrl }: Props) {
             },
         });
     };
+
+    const finalPreview = previewUrl || currentPinUrl;
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -73,7 +79,6 @@ export default function LogoPinModal({ open, onClose, currentPinUrl }: Props) {
                         </p>
                     </DialogHeader>
 
-                    {/* Upload + preview del marcador */}
                     <div className="relative mb-6">
                         <Upload
                             value={data.logo_pin}
@@ -82,14 +87,13 @@ export default function LogoPinModal({ open, onClose, currentPinUrl }: Props) {
                             previewClassName="h-36 w-full bg-slate-50 border-dashed border-2"
                         />
 
-                        {/* Simulador del pin con máscara SVG */}
                         <div className="absolute -top-2 -right-2 bg-white shadow-lg p-1.5 rounded-full border border-slate-100 z-10 pointer-events-none">
                             <div className="relative h-12 w-10">
-                                {previewUrl ? (
+                                {finalPreview ? (
                                     <div
                                         className="absolute inset-0 w-full h-full"
                                         style={{
-                                            backgroundImage: `url('${previewUrl}')`,
+                                            backgroundImage: `url('${finalPreview}')`,
                                             backgroundSize: 'cover',
                                             backgroundPosition: 'center',
                                             WebkitMaskImage: "url('/images/distributors/marker-icon.svg')",
@@ -111,7 +115,6 @@ export default function LogoPinModal({ open, onClose, currentPinUrl }: Props) {
                         </div>
                     </div>
 
-                    {/* Aviso si ya hay pin configurado */}
                     {currentPinUrl && !data.logo_pin && (
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mb-4">
                             <MapPin className="h-3 w-3 shrink-0" />

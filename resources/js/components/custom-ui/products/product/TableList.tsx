@@ -22,13 +22,18 @@ interface TableListProps {
 export const columns: ColumnDef<Product>[] = [
     {
         accessorKey: 'name',
-        header: 'Slug / Nombre ',
+        header: 'Nombre / Slug',
         cell: ({ row }) => {
             const product = row.original;
             const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
             // console.log(frontendUrl);
             return (
                 <div className="flex flex-col text-sm">
+                    <div className="flex items-center gap-1">
+                        <span className="font-medium text-black">
+                            {product.name}
+                        </span>
+                    </div>
                     <a
                         href={`${frontendUrl}/producto/${product.slug}`}
                         target="_blank"
@@ -37,11 +42,6 @@ export const columns: ColumnDef<Product>[] = [
                     >
                         {`${frontendUrl}/products/${product.slug}`}
                     </a>
-                    <div className="flex items-center gap-1">
-                        <span className="font-medium text-black">
-                            {product.name}
-                        </span>
-                    </div>
                 </div>
             );
         },

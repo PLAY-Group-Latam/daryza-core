@@ -7,6 +7,41 @@ use Illuminate\Validation\Rule;
 
 class UpdateBlogRequest extends FormRequest
 {
+  protected function prepareForValidation(): void
+  {
+    $metadata = $this->input('metadata', []);
+    if (!is_array($metadata)) {
+      return;
+    }
+
+    $metadata['meta_title'] = $this->truncateNullableString($metadata['meta_title'] ?? null, 255);
+    $metadata['meta_description'] = $this->truncateNullableString($metadata['meta_description'] ?? null, 500);
+    $metadata['meta_keywords'] = $this->truncateNullableString($metadata['meta_keywords'] ?? null, 255);
+    $metadata['canonical_url'] = $this->truncateNullableString($metadata['canonical_url'] ?? null, 255);
+    $metadata['og_title'] = $this->truncateNullableString($metadata['og_title'] ?? null, 255);
+    $metadata['og_description'] = $this->truncateNullableString($metadata['og_description'] ?? null, 500);
+    $metadata['og_image'] = $this->truncateNullableString($metadata['og_image'] ?? null, 255);
+    $metadata['og_type'] = $this->truncateNullableString($metadata['og_type'] ?? null, 50);
+
+    $this->merge(['metadata' => $metadata]);
+  }
+
+  private function truncateNullableString(mixed $value, int $max): ?string
+  {
+    if ($value === null) {
+      return null;
+    }
+
+    $text = trim((string) $value);
+    if ($text === '') {
+      return null;
+    }
+
+    return function_exists('mb_substr')
+      ? mb_substr($text, 0, $max)
+      : substr($text, 0, $max);
+  }
+
   public function authorize(): bool
   {
     return true;

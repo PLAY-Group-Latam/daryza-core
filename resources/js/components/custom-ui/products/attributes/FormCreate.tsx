@@ -14,7 +14,7 @@ import attributes from '@/routes/products/attributes';
 import { Attribute } from '@/types/products/attributes';
 import { useForm } from '@inertiajs/react';
 import { Info, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface FormData {
     name: string;
@@ -38,17 +38,14 @@ export default function FormCreate({ attribute }: Props) {
         values: attribute?.values?.map((v) => v.value) || [''],
     });
 
-    const [useColor, setUseColor] = useState(false);
+    const [manualUseColor, setManualUseColor] = useState<boolean | null>(null);
 
-    // ✅ FIX: evitar setState directo sin deps correctas
-    useEffect(() => {
-        if (isEdit && data.values.length > 0) {
-            const isHex = /^#[0-9A-F]{6}$/i.test(data.values[0]);
-            if (isHex) {
-                setUseColor(true);
-            }
-        }
-    }, [isEdit, data.values]); // ✅ agregado data.values
+    const autoUseColor =
+        isEdit &&
+        data.values.length > 0 &&
+        /^#[0-9A-F]{6}$/i.test(data.values[0]);
+
+    const useColor = manualUseColor ?? autoUseColor;
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -150,7 +147,7 @@ export default function FormCreate({ attribute }: Props) {
                                 id="color-mode"
                                 checked={useColor}
                                 onCheckedChange={(checked) =>
-                                    setUseColor(Boolean(checked))
+                                    setManualUseColor(Boolean(checked))
                                 }
                             />
                             <Label

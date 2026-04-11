@@ -15,10 +15,11 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - .:/var/www
-      - './infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini'
+      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
         # - './infrastructure/php/www.conf:/usr/local/etc/php-fpm.d/www.conf'
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     networks:
       - daryza
 
@@ -38,15 +39,37 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - .:/var/www
-      - './infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini'
+      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     networks:
       - daryza
-    command: >
-      sh -lc "until php -r 'new PDO(\"pgsql:host=postgresql;port=5432;dbname=\".getenv(\"DB_DATABASE\"), getenv(\"DB_USERNAME\"), getenv(\"DB_PASSWORD\"));' >/dev/null 2>&1;
-      do echo 'waiting postgresql...'; sleep 2; done;
-      php artisan queue:work --verbose --tries=3 --timeout=90"
+    command: php artisan queue:work --queue=default --tries=1 --timeout=3600 --sleep=1 --backoff=5
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile
+    container_name: daryza_scheduler
+    restart: unless-stopped
+    environment:
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - .:/var/www
+      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - daryza
+    command: php artisan schedule:work
 
   nginx:
     image: nginx:alpine

@@ -11,6 +11,12 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from '@/components/ui/chart';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import AppLayout from '@/layouts/app-layout';
 import { parseSoles } from '@/lib/helpers/parseSoles';
@@ -24,7 +30,7 @@ import {
 import { Head, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import {
-    DollarSign,
+    Info,
     Package,
     ShoppingCart,
     TrendingDown,
@@ -90,24 +96,26 @@ export default function Dashboard({
     categoryData,
 }: DashboardProps) {
     const [dateRange, setDateRange] = useState({ from: filters.from, to: filters.to });
-    const [isLoading, setIsLoading] = useState(false); // ✅ DENTRO del componente
-
-    // ✅ DENTRO del componente
-    useEffect(() => {
-        const removeStart = router.on('start', () => setIsLoading(true));
-        const removeFinish = router.on('finish', () => setIsLoading(false));
-        return () => {
-            removeStart();
-            removeFinish();
-        };
-    }, []);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleDateRangeChange = (values: { range: DateRange }) => {
         const { from, to } = values.range;
-        const formattedFrom = from ? format(from, 'yyyy-MM-dd HH:mm:ss') : '';
-        const formattedTo = to ? format(to, 'yyyy-MM-dd HH:mm:ss') : '';
-        setDateRange({ from: formattedFrom, to: formattedTo });
-        router.get('/dashboard', { from: formattedFrom, to: formattedTo }, { preserveScroll: true, preserveState: true });
+        if (!from || !to) return;
+
+        const formattedFrom = format(from, 'yyyy-MM-dd HH:mm:ss');
+        const formattedTo = format(to, 'yyyy-MM-dd HH:mm:ss');
+
+        setIsLoading(true);
+
+        router.get(
+            '/dashboard',
+            { from: formattedFrom, to: formattedTo },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setIsLoading(false),
+            }
+        );
     };
 
     return (
@@ -135,74 +143,118 @@ export default function Dashboard({
                 </div>
 
                 {/* KPIs Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card className="rounded-xl border py-6 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading ? <KpiSkeleton /> : (
-                                <>
-                                    <div className="text-2xl font-bold">{parseSoles(kpiData.totalSales)}</div>
-                                    {renderGrowth(kpiData.salesGrowth)}
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
+                <TooltipProvider>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {/* Ventas Totales */}
+                        <Card className="rounded-xl border py-6 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="flex items-center gap-2">
+                                    <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Dinero total de ventas confirmadas.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <span className="text-xs font-bold text-muted-foreground">S/</span>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoading ? <KpiSkeleton /> : (
+                                    <>
+                                        <div className="text-2xl font-bold">{parseSoles(kpiData.totalSales)}</div>
+                                        {renderGrowth(kpiData.salesGrowth)}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    <Card className="rounded-xl border py-6 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
-                            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading ? <KpiSkeleton /> : (
-                                <>
-                                    <div className="text-2xl font-bold">{kpiData.totalOrders}</div>
-                                    {renderGrowth(kpiData.ordersGrowth)}
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
+                        {/* Pedidos */}
+                        <Card className="rounded-xl border py-6 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="flex items-center gap-2">
+                                    <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Número de compras realizadas con éxito.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                {isLoading ? <KpiSkeleton /> : (
+                                    <>
+                                        <div className="text-2xl font-bold">{kpiData.totalOrders}</div>
+                                        {renderGrowth(kpiData.ordersGrowth)}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    <Card className="rounded-xl border py-6 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading ? <KpiSkeleton /> : (
-                                <>
-                                    <div className="text-2xl font-bold">{parseSoles(kpiData.averageTicket)}</div>
-                                    {renderGrowth(kpiData.ticketGrowth)}
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
+                        {/* Ticket Promedio */}
+                        <Card className="rounded-xl border py-6 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="flex items-center gap-2">
+                                    <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Lo que gasta un cliente en promedio por cada compra.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                {isLoading ? <KpiSkeleton /> : (
+                                    <>
+                                        <div className="text-2xl font-bold">{parseSoles(kpiData.averageTicket)}</div>
+                                        {renderGrowth(kpiData.ticketGrowth)}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    <Card className="rounded-xl border py-6 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Tasa Conversión</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading ? <KpiSkeleton /> : (
-                                <>
-                                    <div className="text-2xl font-bold">{kpiData.conversionRate}%</div>
-                                    {renderGrowth(kpiData.conversionGrowth)}
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                        {/* Tasa Conversión */}
+                        <Card className="rounded-xl border py-6 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="flex items-center gap-2">
+                                    <CardTitle className="text-sm font-medium">Tasa Conversión</CardTitle>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Porcentaje de visitas que terminan en una compra.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                {isLoading ? <KpiSkeleton /> : (
+                                    <>
+                                        <div className="text-2xl font-bold">{kpiData.conversionRate}%</div>
+                                        {renderGrowth(kpiData.conversionGrowth)}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TooltipProvider>
 
-                {/* Charts Section */}
                 {/* Charts Section */}
                 <div className="grid gap-6 lg:grid-cols-2">
-
                     {/* 1. Gráfico de Ventas Mensuales */}
-                    <Card className="rounded-xl border py-6 shadow-sm overflow-hidden"> {/* overflow-hidden para evitar que el scroll manche los bordes redondeados */}
+                    <Card className="rounded-xl border py-6 shadow-sm overflow-hidden">
                         <CardHeader>
                             <CardTitle className="text-xl font-bold text-slate-800">
                                 Ventas y Pedidos Mensuales
@@ -212,9 +264,7 @@ export default function Dashboard({
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {/* ESTE ES EL CONTENEDOR DEL SCROLL */}
                             <div className="w-full overflow-x-auto pb-6 custom-scrollbar">
-                                {/* Forzamos un ancho mínimo para que el gráfico no se comprima */}
                                 <div className="min-w-[700px] h-[350px]">
                                     <ChartContainer config={chartConfig} className="h-full w-full">
                                         <LineChart data={salesData} margin={{ left: 10, right: 10, top: 10 }}>
@@ -237,9 +287,7 @@ export default function Dashboard({
                             <CardDescription>Productos con mayores ingresos este mes</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {/* ESTE ES EL CONTENEDOR DEL SCROLL */}
                             <div className="w-full overflow-x-auto pb-6 custom-scrollbar">
-                                {/* Forzamos un ancho mínimo aquí también */}
                                 <div className="min-w-[700px] h-[350px]">
                                     <ChartContainer config={chartConfig} className="h-full w-full">
                                         <BarChart data={topProductsData} margin={{ top: 40, bottom: 20, left: 10, right: 10 }}>
@@ -272,16 +320,13 @@ export default function Dashboard({
 
                 {/* Tablas Detalladas */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Detalle de Productos Top */}
                     <Card className="rounded-xl border shadow-sm overflow-hidden">
                         <CardHeader >
                             <CardTitle className="text-xl font-bold text-slate-800">Detalle de Productos Top</CardTitle>
                             <CardDescription>Información detallada de los productos más exitosos</CardDescription>
                         </CardHeader>
-                        {/* Eliminamos el padding lateral del CardContent para que el scroll llegue al borde */}
                         <CardContent className="p-0">
                             <div className="w-full overflow-x-auto">
-                                {/* min-w-full asegura que ocupe todo el ancho, y el scroll se activa por el contenido */}
                                 <table className="w-full min-w-[500px] border-collapse">
                                     <thead>
                                         <tr >
@@ -293,7 +338,6 @@ export default function Dashboard({
                                     <tbody className="divide-y divide-slate-300">
                                         {topProductsData.map((p) => (
                                             <tr key={p.product} className="transition-colors hover:bg-slate-50">
-                                                {/* truncate evita que nombres gigantes rompan la tabla */}
                                                 <td className="px-6 py-4 text-sm font-bold text-slate-700 max-w-[200px] truncate">
                                                     {p.product}
                                                 </td>
@@ -311,7 +355,6 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
 
-                    {/* Detalle de Categorías */}
                     <Card className="rounded-xl border shadow-sm overflow-hidden">
                         <CardHeader>
                             <CardTitle className="text-xl font-bold text-slate-800">Detalle de Categorías</CardTitle>

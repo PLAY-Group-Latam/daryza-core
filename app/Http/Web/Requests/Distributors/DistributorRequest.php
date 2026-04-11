@@ -11,9 +11,8 @@ class DistributorRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
+   public function rules(): array
     {
-
         $rules = [
             'name'      => 'required|string|max:255',
             'region'    => 'required|string|max:100',
@@ -24,6 +23,7 @@ class DistributorRequest extends FormRequest
             'email'     => 'nullable|email|max:255',
             'phone'     => 'nullable|string|max:20',
             'note'      => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ];
 
         if ($this->isMethod('POST')) {

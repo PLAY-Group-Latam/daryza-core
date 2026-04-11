@@ -8,7 +8,7 @@ export default function Index() {
     const { paginatedCategories } = usePage<{
         paginatedCategories: PaginatedProductCategories;
     }>().props;
-    console.log('Categorías paginadas:', paginatedCategories);
+   
      
     return (
         <AppLayout>

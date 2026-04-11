@@ -8,6 +8,7 @@ use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CartService
 {
@@ -157,30 +158,42 @@ class CartService
             throw new \InvalidArgumentException('El item del carrito no pertenece al cliente autenticado.');
         }
     }
+protected function loadCart(Cart $cart): Cart
+{
+    $cart->load([
+        'items' => fn($query) => $query->orderByDesc('created_at'),
+        'items.item' => function (MorphTo $morphTo) {
+            $morphTo->morphWith([
+                ProductVariant::class => [
+                    'product',
+                    'product.recommendedProducts' => function ($q) {
+                        $q->active()->with([
+                            'mainVariant' => fn($v) => $v->select('id', 'product_id', 'price', 'promo_price', 'sku', 'is_on_promo'),
+                            'mainVariant.mainImage' => fn($i) => $i->select('id', 'mediable_id', 'mediable_type', 'file_path')
+                        ]);
+                    },
+                    'mainImage',
+                    'selections.attributeValue',
+                ],
+                ProductPack::class => [
+                    'mainImage',
+                ],
+            ]);
+        },
+    ]);
 
-    protected function loadCart(Cart $cart): Cart
-    {
-        $cart->load([
-            'items' => fn($query) => $query->orderByDesc('created_at'),
-            'items.item' => function (MorphTo $morphTo) {
-                $morphTo->morphWith([
-                    ProductVariant::class => [
-                        'product',
-                        'mainImage',
-                        'selections',
-                        'selections.attributeValue',
-                    ],
-                    ProductPack::class => [
-                        'mainImage',
-                    ],
-                ]);
-            },
-        ]);
+    // LOG PARA DEBUG EN SERVICIO
+    $cart->items->each(function($cartItem) {
+        if ($cartItem->item_type === \App\Models\Products\ProductVariant::class) {
+            $count = $cartItem->item->product?->recommendedProducts->count() ?? 0;
+            \Log::info("CartService: Item {$cartItem->id} (Producto: {$cartItem->item->product?->name}) tiene {$count} recomendaciones.");
+        }
+    });
 
-        $validItems = $cart->items->filter(fn(CartItem $item) => $item->item !== null)->values();
-        $cart->setRelation('items', $validItems);
+    $validItems = $cart->items->filter(fn(CartItem $item) => $item->item !== null)->values();
+    $cart->setRelation('items', $validItems);
 
-        return $cart;
-    }
+    return $cart;
+}
 }
 

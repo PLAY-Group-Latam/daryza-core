@@ -3,7 +3,7 @@ import { DataTablePagination } from "@/components/data-table-pagination";
 import { Paginate } from "@/interfaces/paginate";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel } from "@tanstack/react-table";
 import { useState, useEffect } from "react";
-import { columns } from "./columns-intention-detail"; // ✅ SOLO cambia esto
+import { columns } from "./columns-intention-detail";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export function TableDetail({
@@ -12,12 +12,9 @@ export function TableDetail({
 }: { data: object[]; meta: Paginate }) {
     
 
-    console.log("📊 TableDetail recibió data:", purchaseIntents);
-
     const [data, setData] = useState(() => [...purchaseIntents]);
     
     useEffect(() => {
-        console.log("🔄 useEffect: Actualizando data de la tabla", purchaseIntents);
         setData(purchaseIntents);
     }, [purchaseIntents]);
     const [globalFilter, setGlobalFilter] = useState('');

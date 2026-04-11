@@ -13,7 +13,8 @@ Route::prefix('auth')->group(function () {
 
     Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword']);
     Route::post('/reset-password',  [CustomerAuthController::class, 'resetPassword']);
-
+    Route::post('refresh',         [CustomerAuthController::class, 'refresh']);
+    
     // Rutas protegidas por JWT (auth:api)
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [CustomerAuthController::class, 'logout']);

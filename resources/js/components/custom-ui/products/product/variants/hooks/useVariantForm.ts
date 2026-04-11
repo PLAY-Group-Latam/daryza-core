@@ -8,7 +8,7 @@ import { buildAttributeDefault } from '../utils/buildAttributeDefault';
 export function useVariantForm(variantAttributes: Attribute[]) {
     const { control, getValues, setValue } = useFormContext<ProductFormValues>();
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control,
         name: 'variants',
         keyName: '_fieldId',
@@ -119,9 +119,17 @@ export function useVariantForm(variantAttributes: Attribute[]) {
         [getValues, remove, setValue],
     );
 
+    const replaceVariants = useCallback(
+        (variants: VariantFormValues[]) => {
+            replace(variants);
+        },
+        [replace],
+    );
+
     return {
         fields,
         remove: removeVariant,
+        replace: replaceVariants,
         appendFirst,
         appendNext,
         activeAttributes,
