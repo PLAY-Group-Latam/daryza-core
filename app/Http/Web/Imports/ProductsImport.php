@@ -4,18 +4,25 @@ namespace App\Http\Web\Imports;
 
 use App\Http\Web\Services\Products\ProductImportService;
 use App\Http\Web\Services\Products\ProductImportRowMapper;
+use App\Models\Products\Product;
+use App\Models\Products\ProductImportSession;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Events\AfterImport;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 
-class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, WithEvents
+class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, WithEvents, WithStartRow
 {
+    private const CANCELLED_EXCEPTION_MARKER = '__PRODUCT_IMPORT_CANCELLED__';
     public function __construct(
-        private readonly bool $dryRun = false
+        private readonly bool $dryRun = false,
+        private readonly ?string $importSessionId = null,
+        private readonly int $resumeFromDataRow = 1
     ) {}
 
     /**
@@ -88,6 +95,12 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      * @var array<string, mixed>
      */
     private array $productsCache = [];
+    /**
+     * @var array<string, string|null>
+     */
+    private array $productIdByCodeCache = [];
+    private int $lastProgressPersistedAt = 0;
+    private int $processedOffset = 0;
 
     /**
      * @return array{code: string, name: string, has_sku: bool, has_price: bool, has_attributes: bool, has_variant_signal: bool, sku_normalized: string}
@@ -116,11 +129,6 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
     private function shouldDeferHeaderRow(array $ctx, bool $hasValidCode): bool
     {
         return $hasValidCode && !$ctx['has_variant_signal'];
-    }
-
-    private function shouldDeferSingleVariant(array $ctx): bool
-    {
-        return !$ctx['has_attributes'] && $ctx['has_sku'] && $ctx['has_price'];
     }
 
     private function shouldCreateVariant(array $ctx): bool
@@ -187,6 +195,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
     public function collection(Collection $rows)
     {
         $this->summary['dry_run'] = $this->dryRun;
+        $this->processedOffset = max(0, $this->resumeFromDataRow - 1);
 
         $service = app(ProductImportService::class);
         $mapper = app(ProductImportRowMapper::class);
@@ -194,6 +203,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         foreach ($rows as $row) {
             $this->summary['total']++;
             $excelRow = $this->summary['total'] + 1; // +1 por la cabecera
+            $this->persistProgressIfNeeded();
 
             if ($this->isRowEmpty($row)) {
                 continue;
@@ -278,22 +288,51 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 // Crear producto solo si no existe en cache
                 if (!isset($this->productsCache[$code])) {
                     if ($this->dryRun) {
-                        $this->productsCache[$code] = ['id' => $code];
-                        $this->trackProductCode($code);
+                        $existingProductId = $this->resolveProductIdByCode($code);
+                        $this->productsCache[$code] = ['id' => $existingProductId ?: $code];
+                        $this->trackProductCode($code, $existingProductId);
                     } else {
-                        $productStatus = null;
-                        $product = $service->createProduct($mapped['product'], $productStatus);
+                        $productData = $this->runTransactionalWithRowError(
+                            fn() => DB::transaction(function () use ($service, $mapped, $code, $name) {
+                                $productStatus = null;
+                                $product = $service->createProduct($mapped['product'], $productStatus);
 
-                        $service->associateProductCategories(
-                            $product,
-                            $mapped['categories']['parent'],
-                            $mapped['categories']['children']
+                                $service->associateProductCategories(
+                                    $product,
+                                    $mapped['categories']['parent'],
+                                    $mapped['categories']['children']
+                                );
+                                $service->associateProductBusinessLines($product, $mapped['business_lines']);
+
+                                Log::info("Producto procesado: {$code} - {$name}", ['status' => $productStatus]);
+
+                                return [
+                                    'product' => $product,
+                                    'status' => $productStatus,
+                                ];
+                            }),
+                            $excelRow,
+                            'Error guardando datos del producto. Se revirtio la fila.',
+                            [
+                                'codigo' => $code,
+                                'nombre' => $name,
+                            ],
+                            [
+                                ProductImportRowMapper::HEADER_CODE,
+                                ProductImportRowMapper::HEADER_NAME,
+                            ],
+                            $row
                         );
-                        $service->associateProductBusinessLines($product, $mapped['business_lines']);
+
+                        if ($productData === null) {
+                            continue;
+                        }
+
+                        $product = $productData['product'];
+                        $productStatus = $productData['status'];
                         $this->productsCache[$code] = $product;
                         $this->trackProductCode($code, $product->id);
                         $this->bumpSummaryStatus('products', $productStatus);
-                        Log::info("Producto procesado: {$code} - {$name}", ['status' => $productStatus]);
                     }
                 }
             }
@@ -313,13 +352,18 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 $code = $this->lastCode;
             }
 
+            $product = null;
+            $productId = null;
             if ($this->dryRun) {
-                $this->summary['processed']++;
-                continue;
+                $productId = $this->resolveProductIdByCode($code);
+            } else {
+                // Tomar el producto correcto desde cache
+                $product = $this->productsCache[$code];
+                $productId = (string) ($product->id ?? '');
+                if ($productId === '') {
+                    $productId = null;
+                }
             }
-
-            // Tomar el producto correcto desde cache
-            $product = $this->productsCache[$code];
 
             if ($ctx['has_sku']) {
                 if (isset($this->seenSkus[$ctx['sku_normalized']])) {
@@ -344,11 +388,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 ];
             }
 
-            if (!$this->dryRun && $ctx['has_sku']) {
-                $skuConflict = $service->findGlobalSkuConflict(
-                    $sku_daryza,
-                    $product->id
-                );
+            if ($ctx['has_sku']) {
+                $skuConflict = $productId
+                    ? $service->findGlobalSkuConflict($sku_daryza, $productId)
+                    : $service->findSku($sku_daryza);
 
                 if ($skuConflict) {
                     $this->summary['sku_duplicates']++;
@@ -382,6 +425,11 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             }
 
             if (!$this->validateVariantRequirements($excelRow, $mapped, $ctx, $row)) {
+                continue;
+            }
+
+            if ($this->dryRun) {
+                $this->summary['processed']++;
                 continue;
             }
 
@@ -462,29 +510,54 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
             // Crear variante si hay SKU Daryza y precio (con o sin atributos)
             if ($this->shouldCreateVariant($ctx)) {
-                $variantStatus = null;
-                $variant = $service->createVariant($product, $mapped['variant'], $variantStatus);
+                $variantData = $this->runTransactionalWithRowError(
+                    fn() => DB::transaction(function () use ($service, $product, $mapped, $ctx, $sku_daryza) {
+                        $variantStatus = null;
+                        $variant = $service->createVariant($product, $mapped['variant'], $variantStatus);
+
+                        $attributes = $mapped['attributes'];
+                        if (!empty($attributes)) {
+                            $service->associateVariantAttributes($variant, $attributes);
+                        }
+
+                        $specs = $mapped['specifications'];
+                        if (!empty($specs)) {
+                            $service->associateVariantSpecifications($variant, $specs);
+                        }
+
+                        Log::info("Variante procesada: SKU {$sku_daryza}, Producto {$product->code}", [
+                            'status' => $variantStatus,
+                        ]);
+
+                        return [
+                            'status' => $variantStatus,
+                            'without_attributes' => !$ctx['has_attributes'],
+                        ];
+                    }),
+                    $excelRow,
+                    'Error guardando datos de variante. Se revirtio la fila.',
+                    [
+                        'codigo' => $product->code ?? $code,
+                        'sku_daryza' => $sku_daryza,
+                    ],
+                    [
+                        ProductImportRowMapper::HEADER_SKU_DARYZA,
+                        ProductImportRowMapper::HEADER_PRICE,
+                    ],
+                    $row
+                );
+
+                if ($variantData === null) {
+                    continue;
+                }
+
+                $variantStatus = $variantData['status'];
                 $this->bumpSummaryStatus('variants', $variantStatus);
                 $this->variantsCreatedByCode[$product->code] = true;
-                if (!$ctx['has_attributes']) {
+                if ($variantData['without_attributes']) {
                     $this->summary['variants_without_attributes']++;
                 }
-                $attributes = $mapped['attributes'];
-
-                if (!empty($attributes)) {
-                    $service->associateVariantAttributes($variant, $attributes);
-                }
-
-                $specs = $mapped['specifications'];
-
-                if (!empty($specs)) {
-                    $service->associateVariantSpecifications($variant, $specs);
-                }
-
                 $this->summary['processed']++;
-                Log::info("Variante procesada: SKU {$sku_daryza}, Producto {$product->code}", [
-                    'status' => $variantStatus,
-                ]);
             } else {
                 $this->registerRowError(
                     $excelRow,
@@ -514,7 +587,15 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 $service = app(ProductImportService::class);
 
                 foreach ($this->pendingRecommendationsByProductCode as $productCode => $recommendedCodes) {
-                    $service->syncProductRecommendationsByCodes($productCode, $recommendedCodes);
+                    $this->runTransactionalWithWarning(
+                        fn() => DB::transaction(function () use ($service, $productCode, $recommendedCodes) {
+                            $service->syncProductRecommendationsByCodes($productCode, $recommendedCodes);
+                        }),
+                        'No se pudo sincronizar recomendaciones del producto en importacion',
+                        [
+                            'product_code' => $productCode,
+                        ]
+                    );
                 }
             },
         ];
@@ -522,7 +603,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     public function chunkSize(): int
     {
-        return 300;
+        return 100;
     }
 
     public function headingRow(): int
@@ -535,8 +616,11 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      */
     public function getSummary(): array
     {
+        $globalProcessed = $this->processedOffset + (int) ($this->summary['total'] ?? 0);
+
         return [
             ...$this->summary,
+            'processed_global' => $globalProcessed,
             'errors' => $this->rowErrors,
             'error_details' => $this->rowErrorDetails,
             'error_columns' => $this->formatColumnErrors(),
@@ -671,9 +755,6 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
         $line = "Fila {$excelRow}: {$message}";
         $this->rowErrors[] = $line;
-        if (count($this->rowErrors) > 100) {
-            array_shift($this->rowErrors);
-        }
 
         $normalizedColumns = array_values(array_filter(array_map('strval', $columns)));
         if (!empty($normalizedColumns)) {
@@ -692,11 +773,61 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             'value' => $value,
             'context' => $context,
         ];
-        if (count($this->rowErrorDetails) > 100) {
-            array_shift($this->rowErrorDetails);
-        }
 
         Log::warning($line, $context);
+        $this->persistProgressIfNeeded(true);
+    }
+
+    private function persistProgressIfNeeded(bool $force = false): void
+    {
+        if (!$this->importSessionId) {
+            return;
+        }
+
+        $current = (int) ($this->summary['total'] ?? 0);
+        if (!$force && ($current - $this->lastProgressPersistedAt) < 25) {
+            return;
+        }
+
+        $failed = (int) ($this->summary['failed'] ?? 0);
+        $globalProcessed = $this->processedOffset + $current;
+        $session = ProductImportSession::query()
+            ->select(['id', 'total_rows', 'status'])
+            ->find($this->importSessionId);
+
+        if (!$session) {
+            return;
+        }
+
+        if ((string) $session->status === 'cancelled') {
+            throw new \RuntimeException(self::CANCELLED_EXCEPTION_MARKER);
+        }
+
+        $totalRows = (int) ($session->total_rows ?? 0);
+        $progress = $totalRows > 0
+            ? min(99, (int) floor(($globalProcessed / max(1, $totalRows)) * 100))
+            : max(1, min(99, (int) floor($current / 10)));
+
+        ProductImportSession::query()
+            ->whereKey($this->importSessionId)
+            ->update([
+                'processed_rows' => $globalProcessed,
+                'failed_rows' => $failed,
+                'progress_percent' => $progress,
+            ]);
+
+        $this->lastProgressPersistedAt = $current;
+    }
+
+    public static function cancellationExceptionMarker(): string
+    {
+        return self::CANCELLED_EXCEPTION_MARKER;
+    }
+
+    public function startRow(): int
+    {
+        // Row 1 = headings. Data row 1 starts at sheet row 2.
+        return max(2, $this->resumeFromDataRow + 1);
     }
 
     private function resolveRowValue(array|Collection|null $row, string $field, array $columns): string
@@ -762,6 +893,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function trackProductCode(string $code, ?string $productId = null): void
     {
+        if (!array_key_exists($code, $this->productIdByCodeCache)) {
+            $this->productIdByCodeCache[$code] = $productId;
+        }
+
         if (!isset($this->variantsCreatedByCode[$code])) {
             $this->variantsCreatedByCode[$code] = false;
         }
@@ -851,21 +986,129 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 }
             }
 
-            $variantStatus = null;
-            $variant = $service->createOrUpdateSingleVariant($product, $pending['variant'], $variantStatus);
-            $this->bumpSummaryStatus('variants', $variantStatus);
-            $this->variantsCreatedByCode[$product->code] = true;
+            $singleVariantData = $this->runTransactionalWithRowError(
+                fn() => DB::transaction(function () use ($service, $product, $pending) {
+                    $variantStatus = null;
+                    $variant = $service->createOrUpdateSingleVariant($product, $pending['variant'], $variantStatus);
 
-            $specs = $pending['specifications'] ?? [];
-            if (!empty($specs)) {
-                $service->associateVariantSpecifications($variant, $specs);
+                    $specs = $pending['specifications'] ?? [];
+                    if (!empty($specs)) {
+                        $service->associateVariantSpecifications($variant, $specs);
+                    }
+
+                    Log::info("Producto único importado/actualizado: {$product->code}, Variante {$variant->sku}", [
+                        'status' => $variantStatus,
+                    ]);
+
+                    return [
+                        'status' => $variantStatus,
+                    ];
+                }),
+                $pending['row'],
+                'Error creando/actualizando producto unico. Se revirtio la fila.',
+                [
+                    'codigo' => $pending['product_code'],
+                ],
+                [ProductImportRowMapper::HEADER_CODE, ProductImportRowMapper::HEADER_SKU_DARYZA],
+                $pending['raw_row']
+            );
+
+            if ($singleVariantData === null) {
+                continue;
             }
 
-            Log::info("Producto único importado/actualizado: {$product->code}, Variante {$variant->sku}", [
-                'status' => $variantStatus,
-            ]);
+            $variantStatus = $singleVariantData['status'];
+            $this->bumpSummaryStatus('variants', $variantStatus);
+            $this->variantsCreatedByCode[$product->code] = true;
         }
 
         $this->pendingSingleVariantRows = [];
+    }
+
+    private function resolveProductIdByCode(string $code): ?string
+    {
+        $normalized = trim($code);
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (array_key_exists($normalized, $this->productIdByCodeCache)) {
+            return $this->productIdByCodeCache[$normalized];
+        }
+
+        $id = Product::withTrashed()
+            ->where('code', $normalized)
+            ->value('id');
+
+        $resolved = is_string($id) && trim($id) !== '' ? $id : null;
+        $this->productIdByCodeCache[$normalized] = $resolved;
+
+        return $resolved;
+    }
+
+    private function isCancellationException(\Throwable $e): bool
+    {
+        return $e->getMessage() === self::CANCELLED_EXCEPTION_MARKER;
+    }
+
+    /**
+     * @template T
+     * @param callable():T $callback
+     * @param array<string, mixed> $context
+     * @param array<int, string> $columns
+     * @param array|Collection|null $row
+     * @return T|null
+     */
+    private function runTransactionalWithRowError(
+        callable $callback,
+        int $excelRow,
+        string $rowErrorMessage,
+        array $context,
+        array $columns,
+        array|Collection|null $row = null
+    ): mixed {
+        try {
+            return $callback();
+        } catch (\Throwable $e) {
+            if ($this->isCancellationException($e)) {
+                throw $e;
+            }
+
+            $this->registerRowError(
+                $excelRow,
+                $rowErrorMessage,
+                [
+                    ...$context,
+                    'error' => $e->getMessage(),
+                ],
+                $columns,
+                $row
+            );
+
+            return null;
+        }
+    }
+
+    /**
+     * @param callable():void $callback
+     * @param array<string, mixed> $context
+     */
+    private function runTransactionalWithWarning(
+        callable $callback,
+        string $warningMessage,
+        array $context = []
+    ): void {
+        try {
+            $callback();
+        } catch (\Throwable $e) {
+            if ($this->isCancellationException($e)) {
+                throw $e;
+            }
+
+            Log::warning($warningMessage, [
+                ...$context,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -322,6 +322,18 @@ class ProductImportService
     return $query->first();
   }
 
+  public function findSku(string $sku): ?ProductVariant
+  {
+    $normalizedSku = trim($sku);
+    if ($normalizedSku === '') {
+      return null;
+    }
+
+    return ProductVariant::withTrashed()
+      ->where('sku', $normalizedSku)
+      ->first();
+  }
+
 
   /**
    * Asociar especificaciones técnicas a una variante

@@ -22,12 +22,27 @@ Route::prefix('productos')->name('products.')->middleware('auth')->group(functio
   Route::post('items/import', [ProductExcelController::class, 'import'])
     ->name('items.import');
 
+  Route::get('items/import/sessions/{session}', [ProductExcelController::class, 'status'])
+    ->name('items.import.status');
+
+  Route::post('items/import/sessions/{session}/retry', [ProductExcelController::class, 'retry'])
+    ->name('items.import.retry');
+
+  Route::post('items/import/sessions/{session}/cancel', [ProductExcelController::class, 'cancel'])
+    ->name('items.import.cancel');
+
+  Route::get('items/import/sessions/{session}/errors', [ProductExcelController::class, 'errors'])
+    ->name('items.import.errors');
+
+  Route::delete('items/import/sessions', [ProductExcelController::class, 'clearHistory'])
+    ->name('items.import.clear');
+
   Route::get('items/export', [ProductExcelController::class, 'export'])
     ->name('items.export');
 
   Route::resource('items', ProductController::class)->parameters([
     'items' => 'product',
-  ]);;
+  ]);
 
   Route::resource('lineas-de-negocio', BusinessLineController::class)
     ->names('business-lines')
