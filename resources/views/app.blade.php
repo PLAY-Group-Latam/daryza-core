@@ -22,6 +22,20 @@
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
+        <meta name="description" content="Daryza - Expertos en soluciones de limpieza y desinfección en el Perú.">
+
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:title" content="Daryza | Soluciones de Limpieza">
+        <meta property="og:description" content="Encuentra los mejores productos y suministros de limpieza. Calidad profesional para tu hogar o empresa.">
+        <meta property="og:image" content="{{ asset('images/logo.png') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:image:type" content="image/png">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Daryza | Soluciones de Limpieza">
+        <meta name="twitter:description" content="Calidad profesional en productos de limpieza.">
+        <meta name="twitter:image" content="{{ asset('images/logo.png') }}">
     </head>
     <body class="font-sans antialiased">
         @inertia

@@ -40,7 +40,7 @@ export function TableList({ data: purchaseIntents = [], meta }: { data: any[]; m
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
     });
-    console.log(table);
+   
     return (
         <div className="p-4">
             <div className="flex items-center py-4">

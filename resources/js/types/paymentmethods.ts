@@ -2,6 +2,7 @@ export interface PaymentMethod {
     id: string;             
     company_type: string;    
     name: string;       
+    currency: string;
     account_number: string;  
     extra_info?: string; 
     is_active: boolean;   

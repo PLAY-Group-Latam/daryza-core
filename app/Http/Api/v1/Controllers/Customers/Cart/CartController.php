@@ -11,6 +11,7 @@ use App\Http\Api\v1\Services\Cart\CartService;
 use App\Models\Customers\CartItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {

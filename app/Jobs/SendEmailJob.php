@@ -21,16 +21,28 @@ class SendEmailJob implements ShouldQueue
      * Execute the job.
      */
     public function handle(): void
-    {
-        // return;
-        try {
-            MailService::to($this->to)->send($this->mailable);
-        } catch (\Throwable $e) {
-            Log::error('Email job failed', [
-                'to' => $this->to,
-                'error' => $e->getMessage(),
-            ]);
-            return;
-        }
+{
+    Log::info('Iniciando SendEmailJob', [
+        'destinatario' => $this->to,
+        'mailable_class' => get_class($this->mailable)
+    ]);
+
+    if (empty($this->to)) {
+        Log::error('El destinatario está vacío en SendEmailJob');
+        return;
     }
+
+    try {
+        // Ejecutamos el envío
+        MailService::to($this->to)->send($this->mailable);
+        
+        Log::info('MailService ejecutado con éxito para: ' . $this->to);
+    } catch (\Throwable $e) {
+        Log::error('Error crítico en SendEmailJob', [
+            'to' => $this->to,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+    }
+}
 }

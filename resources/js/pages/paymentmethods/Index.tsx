@@ -16,8 +16,7 @@ interface Props {
 }
 
 export default function PaymentMethodsList({ paymentMethods }: Props) {
-    useFlashMessage();
-
+  
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Métodos de Pago" />

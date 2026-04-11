@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Password;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
+
 class CustomerAuthController extends Controller
 {
 
@@ -99,6 +100,31 @@ class CustomerAuthController extends Controller
       $token
     );
   }
+ public function refresh()
+{
+    try {
+        $oldToken = JWTAuth::getToken();
+
+        if (!$oldToken) {
+            return $this->error('Token no encontrado', 401);
+        }
+
+        $newToken = JWTAuth::setToken($oldToken)->refresh(false, true);
+
+        return $this->successWithCookie(
+            'Token renovado correctamente',
+            [],
+            $newToken
+        );
+
+    } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+        return $this->error('Sesión expirada, inicia sesión nuevamente', 401);
+    } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+        return $this->error('Token inválido', 401);
+    } catch (JWTException $e) {
+        return $this->error('No se pudo renovar el token', 401);
+    }
+}
 
 
  // Funciones de Recuperar contraseña

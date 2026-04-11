@@ -14,16 +14,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------
-   BREADCRUMBS Y SCHEMA
+    BREADCRUMBS, PROPS Y SCHEMA
 ------------------------------------------------------------------- */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Métodos de Pago', href: '/metodos-de-pago' },
     { title: 'Nueva cuenta bancaria', href: '/metodos-de-pago/crear' },
 ];
 
+interface Props {
+    currencies: string[]; // Recibido desde el Controller via Inertia
+}
+
 const paymentMethodSchema = z.object({
     company_type: z.string().min(1, 'Debes seleccionar una marca'),
     bank_name: z.string().min(1, 'Ingresa el nombre del banco'),
+    currency: z.string().min(1, 'Selecciona una moneda'), // Agregado
     account_number: z.string().min(5, 'El número de cuenta es demasiado corto'),
     interbank_account_number: z.string().optional().or(z.literal('')),
     is_active: z.boolean(),
@@ -31,7 +36,7 @@ const paymentMethodSchema = z.object({
 
 type PaymentFormValues = z.infer<typeof paymentMethodSchema>;
 
-export default function Create() {
+export default function Create({ currencies }: Props) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<PaymentFormValues>({
@@ -39,6 +44,7 @@ export default function Create() {
         defaultValues: {
             company_type: '',
             bank_name: '',
+            currency: '', // Inicializado vacío
             account_number: '',
             interbank_account_number: '',
             is_active: true,
@@ -50,7 +56,6 @@ export default function Create() {
             onStart: () => setIsSubmitting(true),
             onFinish: () => setIsSubmitting(false),
             onError: (errors) => {
-                // Vincular errores de Laravel con React Hook Form
                 Object.keys(errors).forEach((key) => {
                     form.setError(key as keyof PaymentFormValues, {
                         type: 'server',
@@ -75,28 +80,56 @@ export default function Create() {
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             
-                            {/* Marca / company_type */}
-                            <FormField
-                                control={form.control}
-                                name="company_type"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Marca</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona una Marca" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="daryza">Daryza</SelectItem>
-                                               
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/* Marca / company_type */}
+                                <FormField
+                                    control={form.control}
+                                    name="company_type"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Marca</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecciona una Marca" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="daryza">Daryza</SelectItem>
+                                                    <SelectItem value="itp">ITP</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Moneda / currency (Dinámico del Enum) */}
+                                <FormField
+                                    control={form.control}
+                                    name="currency"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Moneda</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Moneda" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {currencies?.map((currency) => (
+                                                        <SelectItem key={currency} value={currency}>
+                                                            {currency}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             {/* Entidad Bancaria / bank_name */}
                             <FormField

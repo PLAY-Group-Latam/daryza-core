@@ -17,7 +17,7 @@ interface ScriptsListProps {
 }
 
 export default function ScriptsList({ scripts, meta }: ScriptsListProps) {
-    useFlashMessage();
+   
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lista de Scripts" />

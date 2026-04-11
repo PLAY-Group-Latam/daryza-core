@@ -26,6 +26,7 @@ class PaymenMethodsService
                 'company_type'   => $data['company_type'],
                 // MAPEADO: bank_name (del form) -> name (en DB)
                 'name'           => $data['bank_name'], 
+                'currency'       => $data['currency'], // <--- Agregado
                 'account_number' => $data['account_number'],
                 // MAPEADO: interbank_account_number (del form) -> extra_info (en DB)
                 'extra_info'     => $data['interbank_account_number'] ?? null,
@@ -44,6 +45,7 @@ class PaymenMethodsService
                 'company_type'   => $data['company_type'] ?? $paymentMethod->company_type,
                 // MAPEADO: bank_name -> name
                 'name'           => $data['bank_name'] ?? $paymentMethod->name,
+                'currency'       => $data['currency'] ?? $paymentMethod->currency,
                 'account_number' => $data['account_number'] ?? $paymentMethod->account_number,
                 // MAPEADO: interbank_account_number -> extra_info
                 'extra_info'     => $data['interbank_account_number'] ?? $paymentMethod->extra_info,

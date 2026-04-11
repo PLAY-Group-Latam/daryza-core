@@ -7,6 +7,7 @@ use App\Models\Orders\OrderPayment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\Currency\CurrencyType;
 
 class PaymentMethod extends Model
 {
@@ -17,7 +18,8 @@ class PaymentMethod extends Model
 
     protected $fillable = [
         'company_type',   
-        'name',        
+        'name',   
+        'currency',     
         'account_number', 
         'extra_info',    
         'is_active',
@@ -25,6 +27,7 @@ class PaymentMethod extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'currency'  => CurrencyType::class,
     ];
 
     public function orders()

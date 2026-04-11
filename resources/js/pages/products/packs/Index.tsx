@@ -14,7 +14,7 @@ export default function Index() {
         paginatedPacks: PaginatedPacks;
     }>().props;
 
-    // console.log(paginatedPacks);
+   
     return (
         <AppLayout>
             <Head title="Lista de Packs" />
