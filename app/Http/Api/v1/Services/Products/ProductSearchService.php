@@ -12,146 +12,188 @@ use Illuminate\Support\Collection;
 
 class ProductSearchService
 {
-    public function getSuggestions(string $query, int $limit = 6): array
+    private const MIN_QUERY_LENGTH = 2;
+    private const DEFAULT_LIMIT    = 6;
+
+    public function getSuggestions(string $query, int $limit = self::DEFAULT_LIMIT): array
     {
-        $q = trim($query);
+        $q    = trim($query);
         $lowQ = mb_strtolower($q);
-        
-        if (mb_strlen($q) < 2) return ['products' => [], 'suggestions' => []];
 
-        // 1. Obtener productos y packs para el lado derecho
-        $productsCollection = $this->fetchProductsRaw($q, $limit);
-
-        // 2. Obtener Categorías
-        $categories = ProductCategory::active()
-            ->where('name', 'ILIKE', "%{$q}%")
-            ->limit(3)->get()
-            ->map(fn($c) => [
-                'text' => $c->name,
-                'url'  => $c->parent_id 
-                    ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}" 
-                    : "/productos?categories[]={$c->slug}",
-                'type' => 'category'
-            ]);
-
-        // 3. Obtener Marcas
-        $brands = AttributesValue::whereHas('attribute', fn($query) => $query->where('name', 'ILIKE', '%Marca%'))
-            ->where('value', 'ILIKE', "%{$q}%")
-            ->limit(2)->get()
-            ->map(fn($b) => [
-                'text' => $b->value,
-                'url'  => "/productos?brands[]={$b->id}",
-                'type' => 'brand'
-            ]);
-
-        // 4. Obtener Líneas de Negocio (Usa el ID según tu FilterService)
-        $businessLines = BusinessLine::where('is_active', true)
-            ->where('name', 'ILIKE', "%{$q}%")
-            ->limit(2)->get()
-            ->map(fn($bl) => [
-                'text' => $bl->name,
-                'url'  => "/productos?business_lines[]={$bl->id}",
-                'type' => 'business_line'
-            ]);
-
-        // 5. Obtener Dinámicas (Usa el Slug según tu FilterService)
-        $dynamics = DynamicCategory::where('is_active', true)
-            ->where('name', 'ILIKE', "%{$q}%")
-            ->limit(2)->get()
-            ->map(fn($d) => [
-                'text' => $d->name,
-                'url'  => "/productos?dynamics[]={$d->slug}",
-                'type' => 'dynamic'
-            ]);
-
-        // 6. Combinar y Limpiar duplicados por texto (Evita doble "Perfumadores")
-        $entities = collect([])
-            ->concat($categories)
-            ->concat($brands)
-            ->concat($businessLines)
-            ->concat($dynamics)
-            ->unique(fn($item) => mb_strtolower($item['text']));
-
-        // 7. Construir lista final de sugerencias
-        $leftSuggestions = collect([]);
-        $existsExactMatch = $entities->contains(fn($item) => mb_strtolower($item['text']) === $lowQ);
-
-        // Si no hay match exacto con una entidad, la primera opción es la búsqueda general
-        if (!$existsExactMatch) {
-            $targetUrl = "/productos?q=" . urlencode($q);
-            
-            // Atajo para Packs
-            if (in_array($lowQ, ['pack', 'packs'])) {
-                $targetUrl = "/productos?is_pack=true";
-            }
-
-            $leftSuggestions->push([
-                'text' => $q, 
-                'url'  => $targetUrl,
-                'type' => 'query' 
-            ]);
+        if (mb_strlen($q) < self::MIN_QUERY_LENGTH) {
+            return ['products' => [], 'suggestions' => []];
         }
 
-        // Unimos la query general con las entidades encontradas
-        $finalSuggestions = $leftSuggestions->concat($entities);
+        $products    = $this->fetchProductsRaw($q, $limit);
+        $suggestions = $this->buildSuggestions($q, $lowQ, $limit);
 
         return [
-            'products' => $productsCollection->map(fn($p) => $this->formatProductResponse($p))->values(),
-            'suggestions' => $finalSuggestions->values()->take($limit)
+            'products'    => $products->map(fn($p) => $this->formatProductResponse($p))->values(),
+            'suggestions' => $suggestions->values()->take($limit),
         ];
     }
 
+    // =========================================================================
+    // Productos + Packs
+    // =========================================================================
+
     private function fetchProductsRaw(string $q, int $limit): Collection
     {
-        $standard = Product::active()
-            ->where(function($query) use ($q) {
+        $products = Product::active()
+            ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhereHas('variants', fn($v) => $v->where('sku', 'ILIKE', "%{$q}%"));
-            })
+                      ->orWhereHas('variants', fn($v) => $v->where('sku', 'ILIKE', "%{$q}%"))
+            )
             ->with(['mainVariant.mainImage'])
             ->limit($limit)
             ->get();
 
         $packs = ProductPack::where('is_active', true)
             ->where('name', 'ILIKE', "%{$q}%")
-            ->with(['mainImage'])
+            ->with('mainImage')
             ->limit(2)
             ->get();
 
-        return $standard->concat($packs)->take($limit);
+        return $products->concat($packs)->take($limit);
     }
 
-    private function formatProductResponse($item): array
-    {
-        $isPack = $item instanceof ProductPack;
+    // =========================================================================
+    // Sugerencias
+    // =========================================================================
 
-        if ($isPack) {
-            return [
-                'id'         => "pk-{$item->id}",
-                'name'       => $item->name,
-                'sku'        => 'PACK-' . $item->id,
-                'slug'       => $item->id,
-                'price'      => (float) ($item->is_on_promotion ? $item->promo_price : $item->price),
-                'is_promo'   => (bool) $item->is_on_promotion,
-                'image'      => $item->mainImage?->file_path ?? null,
-                'target_url' => "/packs/{$item->id}"
-            ];
+    private function buildSuggestions(string $q, string $lowQ, int $limit): Collection
+    {
+        $entities = collect()
+            ->concat($this->suggestCategories($q))
+            ->concat($this->suggestBrands($q))
+            ->concat($this->suggestBusinessLines($q))
+            ->concat($this->suggestDynamics($q))
+            ->unique(fn($item) => mb_strtolower($item['text']));
+
+        $hasExactMatch = $entities->contains(
+            fn($item) => mb_strtolower($item['text']) === $lowQ
+        );
+
+        $head = $hasExactMatch
+            ? collect()
+            : collect([[
+                'text' => $q,
+                'url'  => $this->generalSearchUrl($q, $lowQ),
+                'type' => 'query',
+            ]]);
+
+        return $head->concat($entities);
+    }
+
+    private function suggestCategories(string $q): Collection
+    {
+        return ProductCategory::active()
+            ->where('name', 'ILIKE', "%{$q}%")
+            ->with('parent:id,slug')
+            ->limit(3)
+            ->get()
+            ->map(fn($c) => [
+                'text' => $c->name,
+                'url'  => $c->parent_id
+                    ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}"
+                    : "/productos?categories[]={$c->slug}",
+                'type' => 'category',
+            ]);
+    }
+
+    private function suggestBrands(string $q): Collection
+    {
+        return AttributesValue::whereHas(
+                'attribute',
+                fn($query) => $query->where('name', 'ILIKE', '%Marca%')
+            )
+            ->where('value', 'ILIKE', "%{$q}%")
+            ->limit(2)
+            ->get()
+            ->map(fn($b) => [
+                'text' => $b->value,
+                'url'  => "/productos?brands[]={$b->id}",
+                'type' => 'brand',
+            ]);
+    }
+
+    private function suggestBusinessLines(string $q): Collection
+    {
+        return BusinessLine::where('is_active', true)
+            ->where('name', 'ILIKE', "%{$q}%")
+            ->limit(2)
+            ->get()
+            ->map(fn($bl) => [
+                'text' => $bl->name,
+                'url'  => "/productos?business_lines[]={$bl->slug}",
+                'type' => 'business_line',
+            ]);
+    }
+
+    private function suggestDynamics(string $q): Collection
+    {
+        return DynamicCategory::where('is_active', true)
+            ->where('name', 'ILIKE', "%{$q}%")
+            ->limit(2)
+            ->get()
+            ->map(fn($d) => [
+                'text' => $d->name,
+                'url'  => "/productos?dynamics[]={$d->slug}",
+                'type' => 'dynamic',
+            ]);
+    }
+
+    private function generalSearchUrl(string $q, string $lowQ): string
+    {
+        if (in_array($lowQ, ['pack', 'packs'])) {
+            return '/productos?is_pack=true';
         }
 
-        $v = $item->mainVariant;
-        $isPromo = $v?->is_on_promo && 
-                  (!$v->promo_start_at || $v->promo_start_at->isPast()) && 
-                  (!$v->promo_end_at || $v->promo_end_at->isFuture());
+        return '/productos?q=' . urlencode($q);
+    }
+
+    // =========================================================================
+    // Formato de respuesta
+    // =========================================================================
+
+    private function formatProductResponse(mixed $item): array
+    {
+        return $item instanceof ProductPack
+            ? $this->formatPack($item)
+            : $this->formatProduct($item);
+    }
+
+    private function formatPack(ProductPack $pack): array
+    {
+        return [
+            'id'         => "pk-{$pack->id}",
+            'name'       => $pack->name,
+            'sku'        => 'PACK-' . $pack->id,
+            'slug'       => $pack->slug,
+            'price'      => (float) $pack->final_price,
+            'is_promo'   => (bool) $pack->is_on_promotion,
+            'image'      => $pack->mainImage?->file_path,
+            'target_url' => "/packs/{$pack->slug}",
+        ];
+    }
+
+    private function formatProduct(Product $product): array
+    {
+        $v = $product->mainVariant;
+
+        $isPromo = $v?->is_on_promo
+            && (!$v->promo_start_at || $v->promo_start_at->isPast())
+            && (!$v->promo_end_at   || $v->promo_end_at->isFuture());
 
         return [
-            'id'         => $item->id,
-            'name'       => $item->name,
+            'id'         => $product->id,
+            'name'       => $product->name,
             'sku'        => $v?->sku,
-            'slug'       => $item->slug,
-            'price'      => (float) ($isPromo ? $v->promo_price : $v->price),
+            'slug'       => $product->slug,
+            'price'      => (float) ($isPromo ? $v->promo_price : $v?->price),
             'is_promo'   => $isPromo,
-            'image'      => $v?->mainImage?->file_path ?? null,
-            'target_url' => "/producto/{$item->slug}"
+            'image'      => $v?->mainImage?->file_path,
+            'target_url' => "/producto/{$product->slug}",
         ];
     }
 }
