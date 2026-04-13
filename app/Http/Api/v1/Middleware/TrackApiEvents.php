@@ -245,11 +245,11 @@ class TrackApiEvents
         $content = json_decode($response->getContent(), true);
 
         return [
-            'code'     => $request->input('code')    ?? $request->input('coupon'),
+            'code'     => $request->input('coupon_code') ?? $request->input('code') ?? $request->input('coupon'),
             'success'  => $content['success']         ?? false,
             'message'  => $content['message']          ?? '',
-            'discount' => $content['data']['discount'] ?? $content['data']['amount'] ?? null,
-            'type'     => $content['data']['type']     ?? null,
+            'discount' => $content['data']['discount_total'] ?? $content['data']['discount'] ?? $content['data']['amount'] ?? null,
+            'type'     => $content['data']['discount_type'] ?? $content['data']['type'] ?? null,
         ];
     }
 

@@ -11,11 +11,11 @@ use Illuminate\Support\Collection;
 
 class CouponService
 {
-    public function listPublicCoupons(int $perPage = 10): LengthAwarePaginator
+    public function listCouponsForContext(int $perPage = 10, ?string $customerId = null): LengthAwarePaginator
     {
         $now = now();
 
-        return Coupon::query()
+        $query = Coupon::query()
             ->select([
                 'id',
                 'code',
@@ -32,16 +32,43 @@ class CouponService
                 'valid_from',
                 'valid_until',
             ])
-            ->where('is_public', true)
             ->where('is_active', true)
-            ->where('scope', '!=', CouponScope::Customer->value)
             ->where(function ($query) use ($now) {
                 $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
             })
             ->where(function ($query) use ($now) {
                 $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
             })
+            ->where(function ($query) use ($customerId) {
+                $query
+                    ->where(function ($publicQuery) {
+                        $publicQuery
+                            ->where('is_public', true)
+                            ->where('scope', '!=', CouponScope::Customer->value);
+                    });
+
+                if ($customerId) {
+                    $query->orWhere(function ($customerScopeQuery) use ($customerId) {
+                        $customerScopeQuery
+                            ->where('scope', CouponScope::Customer->value)
+                            ->whereHas('customers', function ($customerQuery) use ($customerId) {
+                                $customerQuery->where('customers.id', $customerId);
+                            });
+                    });
+                }
+            })
             ->orderByDesc('created_at')
+            ->withCount('redemptions as usage_count');
+
+        if ($customerId) {
+            $query->withCount([
+                'redemptions as usage_count_by_customer' => function ($redemptionQuery) use ($customerId) {
+                    $redemptionQuery->where('customer_id', $customerId);
+                },
+            ]);
+        }
+
+        return $query
             ->paginate($perPage)
             ->through(fn(Coupon $coupon) => [
                 'id' => $coupon->id,
@@ -60,6 +87,14 @@ class CouponService
                 'usage_limit_per_user' => $coupon->usage_limit_per_user,
                 'valid_from' => $coupon->valid_from?->toIso8601String(),
                 'valid_until' => $coupon->valid_until?->toIso8601String(),
+                'usage_count' => (int) ($coupon->usage_count ?? 0),
+                'usage_count_by_customer' => $customerId ? (int) ($coupon->usage_count_by_customer ?? 0) : null,
+                'remaining_usage_global' => is_null($coupon->usage_limit)
+                    ? null
+                    : max(0, (int) $coupon->usage_limit - (int) ($coupon->usage_count ?? 0)),
+                'remaining_usage_by_customer' => $customerId && !is_null($coupon->usage_limit_per_user)
+                    ? max(0, (int) $coupon->usage_limit_per_user - (int) ($coupon->usage_count_by_customer ?? 0))
+                    : null,
             ]);
     }
 

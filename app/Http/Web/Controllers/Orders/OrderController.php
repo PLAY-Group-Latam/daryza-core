@@ -4,9 +4,11 @@ namespace App\Http\Web\Controllers\Orders;
 
 use App\Http\Api\v1\Services\Orders\OrderService;
 use App\Http\Web\Controllers\Controller;
+use App\Http\Web\Exports\OrdersExport;
 use App\Models\Orders\Order;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OrderController extends Controller
 {
@@ -65,6 +67,14 @@ class OrderController extends Controller
                 $this->orderService->buildPricingMeta($order)
             ),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $fileName = 'ordenes_daryza_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+        $filters = $request->only(['state', 'search']);
+
+        return Excel::download(new OrdersExport($filters), $fileName);
     }
 
     public function updateStatus(Request $request, Order $order)

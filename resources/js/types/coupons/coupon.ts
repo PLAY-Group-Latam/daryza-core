@@ -2,6 +2,7 @@ import { Customer } from '../customers';
 
 export type DiscountType = 'fixed' | 'percentage';
 export type CouponScope = 'global' | 'category' | 'product' | 'pack' | 'business_line' | 'customer';
+type CouponRelationItem = { id: string; name?: string | null };
 
 export interface CouponRedemption {
     id: string;
@@ -27,6 +28,10 @@ export interface CouponModel {
     is_public: boolean;
     usage_limit: number | null;
     usage_limit_per_user: number | null;
+    usage_count?: number;
+    usage_count_by_customer?: number | null;
+    remaining_usage_global?: number | null;
+    remaining_usage_by_customer?: number | null;
     // 👈 usage_count eliminado
     valid_from: string | null;
     valid_until: string | null;
@@ -35,10 +40,10 @@ export interface CouponModel {
     deleted_at?: string | null; // 👈 nuevo por softDeletes
 
     // Relaciones
-    products?: any[];
-    categories?: any[];
-    packs?: any[];
-    business_lines?: any[];  // 👈 renombrado de business_dynamics
+    products?: CouponRelationItem[];
+    categories?: CouponRelationItem[];
+    packs?: CouponRelationItem[];
+    business_lines?: CouponRelationItem[];  // 👈 renombrado de business_dynamics
     customers?: Customer[];
     redemptions?: CouponRedemption[];
 }
