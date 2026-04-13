@@ -127,6 +127,7 @@ class CouponRequest extends FormRequest
         $data = $this->all();
 
         $this->merge([
+            'code'                    => strtoupper(trim((string) ($data['code'] ?? ''))),
             'is_active'               => filter_var($data['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'is_public'               => filter_var($data['is_public'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'discount_type'           => strtolower(trim($data['discount_type'] ?? '')),

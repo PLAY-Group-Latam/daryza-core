@@ -15,9 +15,13 @@ class CouponController extends Controller
     public function index(Request $request)
     {
         $perPage = (int) $request->input('per_page', 10);
-        $coupons = $this->couponService->listPublicCoupons(max(1, min($perPage, 50)));
+        $customerId = auth('api')->id();
+        $coupons = $this->couponService->listCouponsForContext(max(1, min($perPage, 50)), $customerId ? (string) $customerId : null);
+        $message = $customerId
+            ? 'Cupones disponibles del cliente obtenidos correctamente.'
+            : 'Cupones públicos obtenidos correctamente.';
 
-        return $this->success('Cupones públicos obtenidos correctamente.', $coupons);
+        return $this->success($message, $coupons);
     }
 
     public function validateCoupon(ValidateCouponRequest $request)

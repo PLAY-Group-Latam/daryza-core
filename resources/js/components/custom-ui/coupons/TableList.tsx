@@ -88,7 +88,7 @@ export const columns: ColumnDef<CouponModel>[] = [
         id: 'total_uses',
         header: 'Usos',
         cell: ({ row }) => (
-            <span>{row.original.redemptions?.length ?? 0}</span>
+            <span>{row.original.usage_count ?? row.original.redemptions?.length ?? 0}</span>
         ),
     },
     {
