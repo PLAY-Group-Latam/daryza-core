@@ -3,6 +3,7 @@
 namespace App\Http\Web\Controllers;
 
 use App\Actions\Web\Customers\UpdateCustomerPassword;
+use App\Http\Web\Exports\CustomersExport;
 use App\Http\Web\Requests\Customers\StoreCustomerRequest;
 use App\Http\Web\Requests\Customers\UpdateCustomerRequest;
 use App\Http\Web\Services\CustomerService;
@@ -11,36 +12,33 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerController extends Controller
 {
     public function __construct(protected CustomerService $customerService) {}
 
+    public function index()
+    {
+        $perPage = request()->input('per_page', 10);
 
+        $paginatedCustomers = Customer::with(['billingProfile', 'addresses'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage)
+            ->through(function ($customer) {
+                $customer->addresses->each(function ($address) {
+                    $address->makeHidden(['department_id', 'province_id', 'district_id']);
+                });
 
-public function index()
-{
-    $perPage = request()->input('per_page', 10);
-    
-    $paginatedCustomers = Customer::with(['billingProfile', 'addresses'])
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage)
-        ->through(function ($customer) {
-        
-            $customer->addresses->each(function ($address) {
-                $address->makeHidden(['department_id', 'province_id', 'district_id']);
+                $customer->metrics = $this->customerService->getMetrics($customer->id);
+
+                return $customer;
             });
 
-
-            $customer->metrics = $this->customerService->getMetrics($customer->id);
-
-            return $customer;
-        });
-
-    return Inertia::render('customers/Index', [
-        'paginatedCustomers' => $paginatedCustomers,
-    ]);
-}
+        return Inertia::render('customers/Index', [
+            'paginatedCustomers' => $paginatedCustomers,
+        ]);
+    }
 
     // public function create()
     // {
@@ -68,6 +66,13 @@ public function index()
             'success',
             'La contraseña del cliente se actualizó correctamente.'
         );
+    }
+
+    public function export()
+    {
+        $fileName = 'clientes_daryza_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new CustomersExport(), $fileName);
     }
 
     // public function edit(Customer $customer)

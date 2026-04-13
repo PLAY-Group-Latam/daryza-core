@@ -19,6 +19,7 @@ class CouponService
     public function getPaginatedCoupons(int $perPage = 10): LengthAwarePaginator
     {
         return Coupon::with(['products', 'categories', 'packs', 'businessLines', 'customers'])
+            ->withCount('redemptions as usage_count')
             ->latest()
             ->paginate($perPage);
     }
@@ -26,6 +27,7 @@ class CouponService
     public function getCouponById(string $id): Coupon
     {
         return Coupon::with(['products', 'categories', 'packs', 'businessLines', 'customers'])
+            ->withCount('redemptions as usage_count')
             ->findOrFail($id);
     }
 
@@ -35,7 +37,7 @@ class CouponService
     {
         return DB::transaction(function () use ($data) {
             $coupon = Coupon::create([
-                'code'                    => $data['code'],
+                'code'                    => strtoupper(trim((string) $data['code'])),
                 'description'             => $data['description'] ?? null,
                 'discount_type'           => $data['discount_type'],
                 'discount_amount'         => $data['discount_amount'],
@@ -62,7 +64,7 @@ class CouponService
             $coupon = Coupon::findOrFail($id);
 
             $coupon->update([
-                'code'                    => $data['code'],
+                'code'                    => strtoupper(trim((string) $data['code'])),
                 'description'             => $data['description'] ?? null,
                 'discount_type'           => $data['discount_type'],
                 'discount_amount'         => $data['discount_amount'],

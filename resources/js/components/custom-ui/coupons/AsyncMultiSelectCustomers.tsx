@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -33,7 +32,7 @@ export function AsyncMultiSelectCustomers({
 }: AsyncMultiSelectCustomersProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(false);
     const debouncedFilter = useDebounce(query, 500);
 
@@ -84,7 +83,7 @@ export function AsyncMultiSelectCustomers({
             });
 
         return () => controller.abort();
-    }, [value]);
+    }, [value, requestPath]);
 
     const options = results?.map((c) => ({
         id: c.id,

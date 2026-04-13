@@ -31,7 +31,7 @@ class NotificationService
 
    
 
-    public function getNotifications(?int $customerId, ?string $visitorId, int $perPage = 5): array
+    public function getNotifications(?string $customerId, ?string $visitorId, int $perPage = 5): array
     {
 
         $deletedIds = $this->identifierQuery(
@@ -76,7 +76,7 @@ class NotificationService
 
 
 
-    public function markAsRead(string $id, ?int $customerId, ?string $visitorId): void
+    public function markAsRead(string $id, ?string $customerId, ?string $visitorId): void
     {
         NotificationRead::updateOrCreate(
             [
@@ -90,7 +90,7 @@ class NotificationService
 
 
 
-  public function markAllAsRead($customerId, ?string $visitorId): void
+  public function markAllAsRead(?string $customerId, ?string $visitorId): void
     {
         $deletedIds = $this->identifierQuery(
             NotificationRead::where('is_deleted', true),
@@ -114,7 +114,7 @@ class NotificationService
 
 
 
-   public function deleteNotification(string $id, $customerId, ?string $visitorId): void
+   public function deleteNotification(string $id, ?string $customerId, ?string $visitorId): void
     {
         NotificationRead::updateOrCreate(
             [
