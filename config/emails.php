@@ -15,6 +15,11 @@ return [
 
     'claim_admin_email' => env('MAIL_CLAIMS'),
 
+    'landing_leads' => [
+        'admin_email' => env('MAIL_LANDING_LEADS_ADMIN'),
+        'attention_schedule' => env('MAIL_LANDING_LEADS_ATTENTION_SCHEDULE', 'Lunes a viernes de 8am a 5 pm y sábado de 8am a 12 pm'),
+    ],
+
     'social_links' => [
         'facebook' => env('MAIL_SOCIAL_FACEBOOK'),
         'instagram' => env('MAIL_SOCIAL_INSTAGRAM'),

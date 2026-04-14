@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class LandingLeadService
 {
+    public function __construct(
+        protected LandingLeadNotificationService $notificationService
+    ) {}
+
     public function save(string $slug, array $data, string $ipAddress, ?string $userAgent): LandingLead
     {
         $landing = Landing::query()
@@ -19,7 +23,7 @@ class LandingLeadService
             throw new ModelNotFoundException('Landing no encontrada o inactiva.');
         }
 
-        return LandingLead::query()->create([
+        $lead = LandingLead::query()->create([
             'landing_id' => $landing->id,
             'form_key' => $data['form_key'] ?? 'advisor_form',
             'campaign_key' => null,
@@ -37,5 +41,9 @@ class LandingLeadService
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
         ]);
+
+        $this->notificationService->notify($lead, $landing);
+
+        return $lead;
     }
 }

@@ -1,8 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
     Sheet,
     SheetContent,
@@ -11,6 +11,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
 import {
     Table,
     TableBody,
@@ -66,11 +67,8 @@ export function VariantForm({
     const variantAttributeErrorMessage = !Array.isArray(
         errors.variant_attribute_ids,
     )
-        ? (
-              errors.variant_attribute_ids as
-                  | { message?: string }
-                  | undefined
-          )?.message
+        ? (errors.variant_attribute_ids as { message?: string } | undefined)
+              ?.message
         : undefined;
     const {
         fields,
@@ -221,15 +219,17 @@ export function VariantForm({
             'variant_attribute_ids',
         ] as Parameters<typeof trigger>[0];
 
-        const isCurrentVariantValid = await trigger(
-            variantPaths,
-            { shouldFocus: true },
-        );
-        const isVariantsRulesValid = await trigger('variants', {
+        const isCurrentVariantValid = await trigger(variantPaths, {
             shouldFocus: true,
         });
+        const isCurrentVariantRulesValid = await trigger(
+            `variants.${editingVariantIndex}`,
+            {
+                shouldFocus: true,
+            },
+        );
 
-        if (!isCurrentVariantValid || !isVariantsRulesValid) {
+        if (!isCurrentVariantValid || !isCurrentVariantRulesValid) {
             setSheetValidationMessage(
                 'Hay información por revisar. Te marqué en rojo el bloque y campo pendiente.',
             );
@@ -378,8 +378,8 @@ export function VariantForm({
                             href="/productos/attributes"
                             className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-700 underline underline-offset-4"
                         >
-                            <Settings className="h-3.5 w-3.5" /> Crear
-                            atributos para producto configurable
+                            <Settings className="h-3.5 w-3.5" /> Crear atributos
+                            para producto configurable
                         </Link>
                     )}
                 </div>
@@ -415,7 +415,8 @@ export function VariantForm({
                                     const hasVariantError =
                                         hasNestedError(variantErrors);
                                     const shouldMarkRow =
-                                        hasVariantError || hasGlobalVariantIssue;
+                                        hasVariantError ||
+                                        hasGlobalVariantIssue;
 
                                     return (
                                         <TableRow

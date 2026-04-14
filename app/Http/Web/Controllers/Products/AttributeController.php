@@ -88,16 +88,66 @@ class AttributeController extends Controller
 
       // Si es tipo SELECT, actualizamos los valores
       if ($attribute->type === AttributeType::SELECT) {
-        // Eliminamos valores antiguos
-        $attribute->values()->delete();
+        $incomingValues = array_values($data['values'] ?? []);
 
-        // Creamos nuevos valores
-        if (!empty($data['values'])) {
-          foreach ($data['values'] as $value) {
-            $attribute->values()->create([
-              'value' => $value,
-            ]);
+        // Importante: mantenemos IDs existentes para no romper
+        // las selecciones de variantes que dependen de attribute_value_id.
+        $existingValues = $attribute->values()
+          ->orderBy('created_at', 'asc')
+          ->orderBy('id', 'asc')
+          ->get()
+          ->values();
+
+        // Índice por valor actual para reusar el mismo registro cuando el
+        // valor ya existe (aunque haya cambiado de posición en el formulario).
+        $availableByValue = $existingValues
+          ->groupBy('value')
+          ->map(fn($items) => $items->values());
+
+        $availableForUpdate = $existingValues->keyBy('id');
+        $keptIds = [];
+        $keptValueCounts = [];
+
+        // Paso 1: reusar por coincidencia exacta de valor.
+        foreach ($incomingValues as $value) {
+          $bucket = $availableByValue->get($value);
+          if (!$bucket || $bucket->isEmpty()) {
+            continue;
           }
+
+          $matched = $bucket->shift();
+          $availableByValue->put($value, $bucket);
+          $availableForUpdate->forget($matched->id);
+          $keptIds[] = $matched->id;
+          $keptValueCounts[$value] = ($keptValueCounts[$value] ?? 0) + 1;
+        }
+
+        // Paso 2: para valores nuevos, reutilizar registros sobrantes.
+        foreach ($incomingValues as $value) {
+          if (($keptValueCounts[$value] ?? 0) > 0) {
+            $keptValueCounts[$value]--;
+            continue;
+          }
+
+          $current = $availableForUpdate->shift();
+
+          if ($current) {
+            $current->update(['value' => $value]);
+            $keptIds[] = $current->id;
+            continue;
+          }
+
+          $created = $attribute->values()->create([
+            'value' => $value,
+          ]);
+          $keptIds[] = $created->id;
+        }
+
+        // Si el usuario redujo la lista, eliminamos sobrantes no usados.
+        if (!empty($keptIds)) {
+          $attribute->values()->whereNotIn('id', $keptIds)->delete();
+        } else {
+          $attribute->values()->delete();
         }
       }
     });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Web\Services\Landings;
 
+use App\Enums\OgType;
 use App\Http\Web\Services\GcsService;
 use App\Models\Landings\Landing;
 use App\Models\Landings\LandingLead;
@@ -80,10 +81,10 @@ class LandingService
             'og_title' => $resolvedMetaTitle,
             'og_description' => $resolvedMetaDescription,
             'og_image' => $this->limitNullableString($ogImage, 500),
-            'og_type' => $this->limitNullableString($metadata['og_type'] ?? 'website', 50),
+            'og_type' => $this->resolveOgType($metadata['og_type'] ?? null),
             'canonical_url' => $this->limitNullableString($metadata['canonical_url'] ?? $defaultCanonical, 500),
-            'noindex' => false,
-            'nofollow' => false,
+            'noindex' => (bool) ($metadata['noindex'] ?? $existingMetadata?->noindex ?? false),
+            'nofollow' => (bool) ($metadata['nofollow'] ?? $existingMetadata?->nofollow ?? false),
         ];
 
         $landing->metadata()->updateOrCreate(
@@ -269,5 +270,18 @@ class LandingService
         }
 
         return mb_substr($stringValue, 0, $max);
+    }
+
+    private function resolveOgType(mixed $value): string
+    {
+        $normalized = $this->limitNullableString($value, 50);
+        if ($normalized === null) {
+            return OgType::WEBSITE->value;
+        }
+
+        $allowed = array_column(OgType::cases(), 'value');
+        return in_array($normalized, $allowed, true)
+            ? $normalized
+            : OgType::WEBSITE->value;
     }
 }

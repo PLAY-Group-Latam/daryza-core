@@ -2,6 +2,7 @@
 
 namespace App\Http\Web\Requests\JobsPortal;
 
+use App\Enums\OgType;
 use App\Enums\JobModality;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,7 @@ class StoreJobRequest extends FormRequest
             'metadata' => ['nullable', 'array'],
             'metadata.meta_title' => ['nullable', 'string', 'max:160'],
             'metadata.meta_description' => ['nullable', 'string', 'max:320'],
+            'metadata.og_type' => ['nullable', 'string', 'max:50', Rule::in(array_column(OgType::cases(), 'value'))],
             'metadata.canonical_url' => ['nullable', 'url', 'max:500'],
             'metadata.noindex' => ['nullable', 'boolean'],
             'metadata.nofollow' => ['nullable', 'boolean'],

@@ -21,9 +21,14 @@ class UpdateAttributeRequest extends FormRequest
                 'values' => [],
             ]);
         } else {
+            $normalizedValues = array_map(
+                fn($v) => is_string($v) ? trim($v) : $v,
+                $this->values ?? []
+            );
+
             $this->merge([
                 'values' => array_values(array_filter(
-                    $this->values ?? [],
+                    $normalizedValues,
                     fn($v) => is_string($v) && trim($v) !== ''
                 )),
             ]);
@@ -47,7 +52,7 @@ class UpdateAttributeRequest extends FormRequest
 
             // Solo obligatorio si el tipo es select
             'values'   => ['required_if:type,select', 'array'],
-            'values.*' => ['string', 'max:100'],
+            'values.*' => ['string', 'max:100', 'distinct'],
         ];
     }
 

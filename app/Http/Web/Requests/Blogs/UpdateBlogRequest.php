@@ -2,6 +2,7 @@
 
 namespace App\Http\Web\Requests\Blogs;
 
+use App\Enums\OgType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -108,7 +109,12 @@ class UpdateBlogRequest extends FormRequest
       'metadata.og_title' => 'nullable|string|max:255',
       'metadata.og_description' => 'nullable|string|max:500',
       'metadata.og_image' => 'nullable|string|max:255',
-      'metadata.og_type' => 'nullable|string|max:50',
+      'metadata.og_type' => [
+        'nullable',
+        'string',
+        'max:50',
+        Rule::in(array_column(OgType::cases(), 'value')),
+      ],
       'metadata.canonical_url' => 'nullable|string|max:255',
       'metadata.noindex' => 'boolean',
       'metadata.nofollow' => 'boolean',
