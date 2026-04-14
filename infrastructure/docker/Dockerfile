@@ -15,6 +15,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copiar proyecto
 COPY . /var/www
 
+RUN mkdir -p /var/www/bootstrap/cache /var/www/storage/framework/views /var/www/storage/framework/cache /var/www/storage/framework/sessions
+
 # Instalar dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
 
