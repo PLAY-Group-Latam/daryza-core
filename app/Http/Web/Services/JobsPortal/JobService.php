@@ -2,6 +2,7 @@
 
 namespace App\Http\Web\Services\JobsPortal;
 
+use App\Enums\OgType;
 use App\Http\Web\DTO\JobsPortal\JobData;
 use App\Http\Web\Services\GcsService;
 use App\Models\JobsPortal\Job;
@@ -99,18 +100,58 @@ class JobService
             return;
         }
 
+        $metaTitle = $this->limitNullableString($metadata['meta_title'] ?? null, 160)
+            ?? $this->limitNullableString($job->title, 160);
+        $metaDescription = $this->limitNullableString($metadata['meta_description'] ?? null, 320)
+            ?? $this->limitNullableString($job->description, 320);
+        $canonicalUrl = $this->limitNullableString($metadata['canonical_url'] ?? null, 500)
+            ?? (config('app.frontend_url') . '/trabajos/' . $job->slug);
+        $ogType = $this->resolveOgType($metadata['og_type'] ?? null);
+
         $job->metadata()->updateOrCreate(
             [
                 'metadatable_id' => $job->id,
                 'metadatable_type' => Job::class,
             ],
             [
-                'meta_title' => $metadata['meta_title'] ?? $job->title,
-                'meta_description' => $metadata['meta_description'] ?? $job->description,
-                'canonical_url' => $metadata['canonical_url'] ?? (config('app.frontend_url') . '/trabajos/' . $job->slug),
+                'meta_title' => $metaTitle,
+                'meta_description' => $metaDescription,
+                'og_title' => $metaTitle,
+                'og_description' => $metaDescription,
+                'og_type' => $ogType,
+                'canonical_url' => $canonicalUrl,
                 'noindex' => (bool) ($metadata['noindex'] ?? false),
                 'nofollow' => (bool) ($metadata['nofollow'] ?? false),
             ],
         );
+    }
+
+    private function limitNullableString(mixed $value, int $max): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        return function_exists('mb_substr')
+            ? mb_substr($text, 0, $max)
+            : substr($text, 0, $max);
+    }
+
+    private function resolveOgType(mixed $value): string
+    {
+        $normalized = $this->limitNullableString($value, 50);
+        if ($normalized === null) {
+            return OgType::ARTICLE->value;
+        }
+
+        $allowed = array_column(OgType::cases(), 'value');
+        return in_array($normalized, $allowed, true)
+            ? $normalized
+            : OgType::ARTICLE->value;
     }
 }

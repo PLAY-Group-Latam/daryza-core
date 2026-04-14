@@ -2,6 +2,7 @@
 
 namespace App\Http\Web\Services\Blog;
 
+use App\Enums\OgType;
 use App\Http\Web\Services\GcsService;
 use App\Models\Blogs\Blog;
 use Illuminate\Http\UploadedFile;
@@ -91,6 +92,15 @@ class BlogService
       $metadata['canonical_url'] = $baseUrl . '/blogs/' . ($data['slug'] ?? $blog->slug);
     }
 
+    // OgType es NOT NULL en metadata. Para blog debe ser article.
+    if (empty($metadata['og_type'])) {
+      $metadata['og_type'] = OgType::ARTICLE->value;
+    }
+
+    // Respetar flags recibidos; si no llegan, usar defaults seguros.
+    $metadata['noindex'] = (bool) ($metadata['noindex'] ?? false);
+    $metadata['nofollow'] = (bool) ($metadata['nofollow'] ?? false);
+
     $metadata = $this->normalizeSeoMetadataPayload($metadata);
 
     if ($blog->metadata) {
@@ -160,8 +170,6 @@ class BlogService
     if (array_key_exists('og_type', $metadata)) {
       $metadata['og_type'] = $this->truncateNullableString($metadata['og_type'], 50);
     }
-    $metadata['noindex'] = false;
-    $metadata['nofollow'] = false;
 
     return $metadata;
   }

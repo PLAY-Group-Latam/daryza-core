@@ -2,8 +2,10 @@
 
 namespace App\Http\Web\Requests\Landings;
 
+use App\Enums\OgType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Rule;
 
 class StoreLandingRequest extends FormRequest
 {
@@ -25,7 +27,7 @@ class StoreLandingRequest extends FormRequest
             'metadata.og_title' => ['nullable', 'string', 'max:160'],
             'metadata.og_description' => ['nullable', 'string', 'max:320'],
             'metadata.og_image' => ['nullable', $this->imageOrStringRule()],
-            'metadata.og_type' => ['nullable', 'string', 'max:50'],
+            'metadata.og_type' => ['nullable', 'string', 'max:50', Rule::in(array_column(OgType::cases(), 'value'))],
             'metadata.canonical_url' => ['nullable', 'string', 'max:500'],
             'metadata.noindex' => ['nullable', 'boolean'],
             'metadata.nofollow' => ['nullable', 'boolean'],
