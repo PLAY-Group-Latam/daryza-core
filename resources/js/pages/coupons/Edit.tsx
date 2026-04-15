@@ -1,20 +1,20 @@
 import { CouponForm } from '@/components/custom-ui/coupons/CouponForm';
 import AppLayout from '@/layouts/app-layout';
 import { CouponModel } from '@/types/coupons/coupon';
-import { BreadcrumbItem } from '@/types';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import { Head, usePage } from '@inertiajs/react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cupones', href: '/coupon' },
-    { title: 'Editar Cupón', href: '/coupon/editar' },
-];
+
 
 export default function Edit() {
     const { coupon } = usePage<{ coupon: CouponModel }>().props;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Editar Cupón" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <CouponForm coupon={coupon} />
             </div>

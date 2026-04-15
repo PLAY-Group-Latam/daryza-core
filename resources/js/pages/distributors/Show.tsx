@@ -51,12 +51,7 @@ export default function Show({ distributor }: Props) {
                                     </Badge>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">
-                                    Actualizado el {new Date(distributor.updated_at).toLocaleDateString()}
-                                </p>
-                            </div>
+                           
                         </div>
                     </div>
                     <Button asChild className="bg-[#44AC34] hover:bg-[#388e2a] w-full md:w-auto px-6 shrink-0 text-sm h-10 transition-colors">

@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Globe, Share2, Settings2, ArrowLeft, Edit3, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-// ✅ Movido fuera del componente — evita que React lo recree en cada render
+import { BackButton } from '@/components/custom-ui/PageHeader';
 function DataField({ label, value }: { label: string; value: string | null | undefined }) {
     return (
         <div className="space-y-1">
@@ -28,6 +28,9 @@ export default function SeoShow({ seo }: { seo: Seo }) {
     return (
         <AppLayout>
             <Head title={`SEO - ${seo.metadatable?.title || 'Detalle'}`} />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
 
             <div className=" p-4 space-y-6">
 
@@ -47,7 +50,7 @@ export default function SeoShow({ seo }: { seo: Seo }) {
                         </div>
                     </div>
                     <div className='flex gap-3'>
-                    <Button variant="outline" onClick={() => window.history.back()}>Volver</Button>
+          
                     <Link
                         href={`/seo/${seo.id}/edit`}
                         className={buttonVariants({ variant: 'default', className: 'min-w-[140px]' })}

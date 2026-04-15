@@ -1,14 +1,19 @@
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import FormProduct from '@/components/custom-ui/products/product/FormProduct';
 import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 import { ProductRecommendable } from '@/types/products/productEdit';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 
 export default function Create() {
-    const { categories, attributes, businessLines, recommendableSearchResults } =
-        usePage<{
+    const {
+        categories,
+        attributes,
+        businessLines,
+        recommendableSearchResults,
+    } = usePage<{
         categories: CategorySelect[];
         attributes: Attribute[];
         businessLines: BusinessLine[]; // <--- Agregado
@@ -23,13 +28,9 @@ export default function Create() {
                     <h1 className="text-lg font-bold lg:text-2xl">
                         Crear Producto
                     </h1>
-
-                    <Link
-                        href="/productos/items"
-                        className="text-sm text-muted-foreground hover:underline"
-                    >
-                        ← Volver a la lista
-                    </Link>
+                    <div className=" flex items-center gap-4">
+                        <BackButton></BackButton>
+                    </div>
                 </div>
                 <FormProduct
                     categories={categories}

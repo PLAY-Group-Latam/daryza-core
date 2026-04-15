@@ -2,7 +2,7 @@
 
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Edit2, Eye, Globe } from 'lucide-react';
+import { Edit, Edit2, Eye, Globe } from 'lucide-react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
@@ -82,7 +82,7 @@ export const columns = (
 
                     <Button variant="outline" size="icon" asChild title="Editar">
                         <Link href={`/seo/${seo.id}/edit`}>
-                            <Edit2 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
                 </div>
