@@ -8,6 +8,6 @@ enum CouponScope: string
     case Product      = 'product';
     case Category     = 'category';
     case Pack         = 'pack';
-    case BusinessLine = 'business_line';
-    case Customer     = 'customer';
+    case BusinessDynamic = 'business_dynamic';
+    case Customer        = 'customer';
 }

@@ -4,7 +4,7 @@ namespace App\Models\Coupons;
 
 use App\Models\Customers\Customer;
 use App\Models\Orders\Order;
-use App\Models\Products\BusinessLine;
+use App\Models\Products\DynamicCategory;
 use App\Models\Products\Product;
 use App\Models\Products\ProductCategory;
 use App\Models\Products\ProductPack;
@@ -63,9 +63,9 @@ class Coupon extends Model
         return $this->belongsToMany(ProductPack::class, 'coupon_packs', 'coupon_id', 'pack_id');
     }
 
-    public function businessLines()
+    public function businessDynamics()
     {
-        return $this->belongsToMany(BusinessLine::class, 'coupon_business_lines', 'coupon_id', 'business_line_id');
+        return $this->belongsToMany(DynamicCategory::class, 'coupon_business_dynamics', 'coupon_id', 'dynamic_category_id');
     }
 
     public function customers()
