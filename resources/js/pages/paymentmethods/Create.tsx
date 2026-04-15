@@ -12,14 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-
-/* ------------------------------------------------------------------
-    BREADCRUMBS, PROPS Y SCHEMA
-------------------------------------------------------------------- */
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Métodos de Pago', href: '/metodos-de-pago' },
-    { title: 'Nueva cuenta bancaria', href: '/metodos-de-pago/crear' },
-];
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 interface Props {
     currencies: string[]; // Recibido desde el Controller via Inertia
@@ -67,8 +60,11 @@ export default function Create({ currencies }: Props) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Crear nueva cuenta bancaria" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             
             <div className="flex justify-center p-4">
                 <div className="w-full max-w-xl space-y-6 rounded-xl border bg-card p-6 shadow-sm">
@@ -96,7 +92,7 @@ export default function Create({ currencies }: Props) {
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="daryza">Daryza</SelectItem>
-                                                    <SelectItem value="itp">ITP</SelectItem>
+                                                    <SelectItem value="rubbermaid">Rubbermaid</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

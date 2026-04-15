@@ -5,11 +5,7 @@ import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TableList } from '@/components/custom-ui/paymentmethods/TableList';
-import { useFlashMessage } from '@/hooks/use-flash-message';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Métodos de Pago', href: '/metodos-de-pago' },
-];
 
 interface Props {
     paymentMethods: PaymentMethod[];
@@ -18,7 +14,7 @@ interface Props {
 export default function PaymentMethodsList({ paymentMethods }: Props) {
   
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Métodos de Pago" />
             
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">

@@ -4,6 +4,7 @@ import { DynamicCategory } from '@/types/products/dynamicCategories';
 import { VariantSearchResult } from '@/types/products/search';
 import { PageProps } from '@inertiajs/core';
 import { Head, usePage } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 interface EditProps extends PageProps {
     category: DynamicCategory; // CAMBIO: Debe ser 'category' porque así lo nombras en el Controller
@@ -16,6 +17,9 @@ export default function Edit() {
 
     return (
         <AppLayout>
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <Head title={`Editar Categoría: ${category.name}`} />
             <div>
                 <CreateDynamicCategoryForm

@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 type AreaOption = { id: string; name: string };
 
@@ -51,6 +52,9 @@ export default function Create() {
     return (
         <AppLayout>
             <Head title="Crear Sede" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <h1 className="text-xl font-bold">Crear Sede</h1>
 

@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-
+import { BackButton } from '@/components/custom-ui/PageHeader';
 type Department = { id: string; name: string; is_active: boolean };
 
 const schema = z.object({
@@ -44,6 +44,9 @@ export default function Edit() {
     return (
         <AppLayout>
             <Head title="Editar Área" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <h1 className="text-xl font-bold">Editar Área</h1>
 

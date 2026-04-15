@@ -3,13 +3,8 @@ import { BreadcrumbItem } from "@/types";
 import { Head } from "@inertiajs/react";
 import { TableDetail } from "@/components/custom-ui/intention/TableDetail";
 import { UserAvatar } from '@/components/custom-ui/UserAvatar'; 
+import { BackButton } from "@/components/custom-ui/PageHeader";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Historial de Intenciones de Compra',
-        href: '/intencion-de-compra',
-    },
-];
 
 export default function PurchaseIntentDetail({ paginatedEvents }: { paginatedEvents: any }) {
     const events = paginatedEvents?.data ?? [];
@@ -17,9 +12,11 @@ export default function PurchaseIntentDetail({ paginatedEvents }: { paginatedEve
     const customer = firstEvent?.customer;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Historial de Intenciones de Compra" />
-
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-0">
                 <div className="flex justify-between items-center">
                     <div className="text-xl font-bold lg:text-2xl text-slate-900">

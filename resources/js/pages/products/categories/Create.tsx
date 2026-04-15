@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import FormCategory from '@/components/custom-ui/products/categories/FormCategory';
 import AppLayout from '@/layouts/app-layout';
 import { CategorySelect } from '@/types/products/categories';
@@ -14,6 +15,9 @@ export default function Create() {
         <AppLayout>
             <Head title="Crear Categoría" />
 
+            <div className="mb-6 flex items-center gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <div>

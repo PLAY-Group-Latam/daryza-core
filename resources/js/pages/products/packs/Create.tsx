@@ -2,7 +2,7 @@ import CreatePackForm from '@/components/custom-ui/products/packs/CreatePackForm
 import AppLayout from '@/layouts/app-layout';
 import { VariantSearchResult } from '@/types/products/search';
 import { Head, usePage } from '@inertiajs/react';
-
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import { PageProps } from '@inertiajs/core';
 
 interface CreateProps extends PageProps {
@@ -14,6 +14,9 @@ export default function Create() {
     return (
         <AppLayout>
             <Head title="Crear Pack de Productos" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <CreatePackForm
                     searchResults={searchResults || []}

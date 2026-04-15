@@ -7,12 +7,16 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/login';
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react'; // Importar useState
+import { Eye, EyeOff } from 'lucide-react'; // Importar iconos
 
 interface LoginProps {
     status?: string;
 }
 
 export default function Login({ status }: LoginProps) {
+    const [showPassword, setShowPassword] = useState(false); // Estado para el ojo
+
     return (
         <AuthLayout
             title="Iniciar Sesión"
@@ -46,15 +50,29 @@ export default function Login({ status }: LoginProps) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Contraseña</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
+                                <div className="relative"> {/* Contenedor relativo para el ojo */}
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'} // Cambio dinámico de tipo
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="Password"
+                                        className="pr-10" // Espacio para que el texto no choque con el icono
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
                                 <InputError message={errors.password} />
                             </div>
 

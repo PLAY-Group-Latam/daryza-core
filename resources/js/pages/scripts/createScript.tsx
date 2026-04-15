@@ -1,12 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
 import scripts from '@/routes/scripts';
-import { BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -23,14 +23,6 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-
-/* ------------------------------------------------------------------
-   BREADCRUMBS
-------------------------------------------------------------------- */
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Lista de Scripts', href: '/scripts' },
-    { title: 'Nuevo Script', href: '/scripts/create' },
-];
 
 /* ------------------------------------------------------------------
    SCHEMA
@@ -73,9 +65,11 @@ export default function CreateScript() {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Nuevo Script" />
-
+            <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="mx-auto w-full max-w-6xl p-4 lg:p-6">
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
@@ -87,19 +81,13 @@ export default function CreateScript() {
                             funcionalidades externas.
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => router.visit('/scripts')}
-                        >
-                            Cancelar
-                        </Button>
+                    <div className="flex-center">
+                       
                         <Button
                             form="script-form"
                             type="submit"
                             disabled={isSubmitting}
-                            className="min-w-[140px]"
+                            className="w-full]"
                         >
                             {isSubmitting ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -232,7 +220,6 @@ export default function CreateScript() {
                                                                 <span className="text-sm font-bold">
                                                                     Header
                                                                 </span>
-                                                               
                                                             </FormLabel>
                                                         </FormItem>
 
@@ -254,7 +241,6 @@ export default function CreateScript() {
                                                                 <span className="text-sm font-bold">
                                                                     Body
                                                                 </span>
-                                                               
                                                             </FormLabel>
                                                         </FormItem>
                                                     </RadioGroup>

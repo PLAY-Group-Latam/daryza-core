@@ -4,8 +4,10 @@ namespace App\Http\Web\Services\Dashboard;
 
 use App\Models\Events\EventLog;
 use App\Models\Orders\Order;
+use App\Models\Products\ProductCategory;
 use App\Models\Orders\OrderPayment;
 use Illuminate\Support\Carbon;
+
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -141,29 +143,34 @@ class DashboardService
         ]);
     }
 
-    public function getCategoryData($fromDate, $toDate)
-    {
-        $categories = DB::table('product_category as pc')
-            ->join('product_categories as c', 'pc.category_id', '=', 'c.id')
-            ->join('order_items as oi', 'pc.product_id', '=', 'oi.product_id')
-            ->join('order_payments as op', 'oi.order_id', '=', 'op.order_id')
-            ->where('op.status', 'approved')
-            ->whereBetween('op.paid_at', [$fromDate, $toDate])
-            ->select(
-                'c.name',
-                DB::raw('SUM(oi.quantity) as units'),
-                DB::raw('SUM(oi.line_total) as revenue')
-            )
-            ->groupBy('c.id', 'c.name')
-            ->orderByDesc('revenue')
-            ->get();
+   public function getCategoryData($fromDate, $toDate)
+{
+   
+    $rootCategoryIds = ProductCategory::roots()->pluck('id');
 
-        return collect($categories)->map(fn($item) => [
-            'name'    => $item->name,
-            'units'   => (int) $item->units,
-            'revenue' => (float) $item->revenue,
-        ]);
-    }
+  
+    $categories = DB::table('product_category as pc')
+        ->join('product_categories as c', 'pc.category_id', '=', 'c.id')
+        ->join('order_items as oi', 'pc.product_id', '=', 'oi.product_id')
+        ->join('order_payments as op', 'oi.order_id', '=', 'op.order_id')
+        ->where('op.status', 'approved')
+        ->whereBetween('op.paid_at', [$fromDate, $toDate])
+        ->whereIn('c.id', $rootCategoryIds) // Filtramos solo por las raíz
+        ->select(
+            'c.name',
+            DB::raw('SUM(oi.quantity) as units'),
+            DB::raw('SUM(oi.line_total) as revenue')
+        )
+        ->groupBy('c.id', 'c.name')
+        ->orderByDesc('revenue')
+        ->get();
+
+    return collect($categories)->map(fn($item) => [
+        'name'    => $item->name,
+        'units'   => (int) $item->units,
+        'revenue' => (float) $item->revenue,
+    ]);
+}
 
     private function calculateGrowth(float $current, float $previous): float
     {

@@ -257,23 +257,29 @@ class TrackApiEvents
     // ÓRDENES
     // ─────────────────────────────────────────────
 
-    private function formatOrderPlaced(Response $response): array
-    {
-        $content = json_decode($response->getContent(), true);
-        $order   = $content['data'] ?? $content['order'] ?? [];
+  private function formatOrderPlaced(Response $response): array
+{
+    $content = json_decode($response->getContent(), true);
+    
+    // En Laravel, si usas Resources o el Service, la data suele venir envuelta en 'data'
+    $order = $content['data'] ?? $content; 
 
-        return [
-            'order_id'       => $order['id']             ?? $order['order_id']   ?? null,
-            'order_code'     => $order['code']           ?? $order['order_code'] ?? null,
-            'total'          => (float) ($order['total']  ?? 0),
-            'payment_method' => $order['payment_method']  ?? null,
-            'items'          => collect($order['items'] ?? [])->map(fn($item) => [
-                'name'     => $item['name']     ?? 'N/A',
-                'quantity' => $item['quantity'] ?? 1,
-                'price'    => (float) ($item['price'] ?? 0),
-            ])->toArray(),
-        ];
-    }
+    if (empty($order)) return [];
+
+    return [
+        'order_id'       => $order['id'] ?? null,
+        'order_code'     => $order['code'] ?? null,
+        // Sincronización con buildPricingMeta del Service:
+        'total'          => (float) ($order['total'] ?? 0), 
+        'subtotal'       => (float) ($order['subtotal'] ?? 0),
+        'payment_method' => $order['payment_method_type'] ?? null, 
+        'items'          => collect($order['items'] ?? [])->map(fn($item) => [
+            'name'     => $item['product_name'] ?? $item['name'] ?? 'N/A', 
+            'quantity' => $item['quantity'] ?? 1,
+            'price'    => (float) ($item['unit_price'] ?? $item['price'] ?? 0), 
+        ])->toArray(),
+    ];
+}
 
     private function formatVoucherUpload(Request $request, Response $response): array
     {
@@ -290,20 +296,27 @@ class TrackApiEvents
     // ─────────────────────────────────────────────
 
     private function formatPaymentResult(Response $response): array
-    {
-        $content = json_decode($response->getContent(), true);
-        $data    = $content['data'] ?? [];
+{
+    $content = json_decode($response->getContent(), true);
+    // Buscamos la data real
+    $data = $content['data'] ?? $content;
 
-        return [
-            'success'    => $content['success']     ?? false,
-            'message'    => $content['message']      ?? '',
-            'order_id'   => $data['order_id']        ?? null,
-            'order_code' => $data['order_code']      ?? null,
-            'amount'     => (float) ($data['amount'] ?? 0),
-            'method'     => $data['payment_method']  ?? $data['method'] ?? null,
-            'status'     => $data['status']           ?? null,
-        ];
-    }
+    // Intentamos extraer la orden si viene anidada (frecuente en respuestas de éxito de pago)
+    $order = $data['order'] ?? $data;
+
+    return [
+        'success'    => $content['success'] ?? false,
+        'order_id'   => $order['id'] ?? $order['order_id'] ?? null,
+        'order_code' => $order['code'] ?? $order['order_code'] ?? null,
+        
+        // ⚡ AQUÍ ESTÁ EL TRUCO: 
+        // Buscamos 'total' primero, que es como Daryza guarda el precio en las órdenes.
+        'amount'     => (float) ($order['total'] ?? $order['amount'] ?? $order['grand_total'] ?? 0),
+        
+        'method'     => $order['payment_method_type'] ?? $order['method'] ?? null,
+        'status'     => $order['state'] ?? $order['status'] ?? null,
+    ];
+}
 
     // ─────────────────────────────────────────────
     // SESIÓN
