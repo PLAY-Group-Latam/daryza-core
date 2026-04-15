@@ -13,6 +13,7 @@ use Database\Seeders\Content\ContactContentSeeder;
 use Database\Seeders\Content\AboutUsContentSeeder;
 use Database\Seeders\Content\BlogContentSeeder;
 use Database\Seeders\Content\SystemAllContentSeeder;
+
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -25,7 +26,7 @@ class DatabaseSeeder extends Seeder
             UbigeoSeeder::class,
             DeliveryLimaOnlySeeder::class,
             CategoriesProductsSeeder::class,
-            CommercialCatalogCouponSeeder::class,
+            // CommercialCatalogCouponSeeder::class,
             PageSeeder::class,
             HomeContentSeeder::class,
             FooterContentSeeder::class,
@@ -42,7 +43,7 @@ class DatabaseSeeder extends Seeder
             // OrderDemoSeeder::class,
             // DashboardDemoSeeder::class,
             DistributorSeeder::class
-            
+
         ]);
     }
 }
