@@ -78,14 +78,15 @@ function MapController({ targetPosition }: { targetPosition: L.LatLng | null }) 
     return null
 }
 
-function MapEvents({ readOnly, onMapClick }: { readOnly: boolean; onMapClick: (latlng: L.LatLng) => void }) {
+function MapEvents({ readOnly, onMapClick }: { readOnly: boolean; onMapClick: (latlng: L.LatLng, skipReverse?: boolean) => void }) {
     useMapEvents({
         click(e) {
-            if (readOnly) return
-            onMapClick(e.latlng)
+            if (readOnly) return;
+            // Al hacer clic en el mapa, queremos que SÍ busque la dirección
+            onMapClick(e.latlng, false); 
         },
-    })
-    return null
+    });
+    return null;
 }
 
 export default function DistributorsMap({
@@ -95,7 +96,7 @@ export default function DistributorsMap({
     coverageRadius = 1500
 }: DistributorsMapProps) {
     const { mapPin } = usePage<InertiaPageProps>().props;
-
+    const [isManualSelection, setIsManualSelection] = useState(false);
     const [position, setPosition] = useState<L.LatLng | null>(null)
     const [search, setSearch] = useState<string>('')
     const [results, setResults] = useState<NominatimResult[]>([])
@@ -104,7 +105,7 @@ export default function DistributorsMap({
     const [flyTarget, setFlyTarget] = useState<L.LatLng | null>(null)
 
     const searchRef = useRef<HTMLDivElement>(null)
-    const debounceRef = useRef<NodeJS.Timeout | null>(null)
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         if (initialCoords) {
@@ -129,15 +130,17 @@ export default function DistributorsMap({
         }
     }
 
-    const updatePosition = (latlng: L.LatLng) => {
-        setPosition(latlng)
-        if (onPositionChange) {
-            onPositionChange({ lat: latlng.lat, lng: latlng.lng });
-        }
-        if (!readOnly) {
-            fetchAddressFromCoords(latlng.lat, latlng.lng);
-        }
+   const updatePosition = (latlng: L.LatLng, skipReverse = false) => {
+    setPosition(latlng);
+    if (onPositionChange) {
+        onPositionChange({ lat: latlng.lat, lng: latlng.lng });
     }
+    
+    // Solo busca la dirección si NO es una selección manual y no es de solo lectura
+    if (!readOnly && !skipReverse) {
+        fetchAddressFromCoords(latlng.lat, latlng.lng);
+    }
+}
 
     const handleUseCurrentLocation = () => {
         if (!navigator.geolocation) {
@@ -192,13 +195,16 @@ export default function DistributorsMap({
         }, 400)
     }, [])
 
-    const handleSelectResult = (result: NominatimResult) => {
-        const newPos = new L.LatLng(parseFloat(result.lat), parseFloat(result.lon))
-        updatePosition(newPos)
-        setFlyTarget(newPos)
-        setSearch(result.display_name.split(',').slice(0, 3).join(','))
-        setShowDropdown(false)
-    }
+  const handleSelectResult = (result: NominatimResult) => {
+    const newPos = new L.LatLng(parseFloat(result.lat), parseFloat(result.lon));
+    
+    // Pasamos 'true' para que NO ejecute fetchAddressFromCoords
+    updatePosition(newPos, true); 
+    
+    setFlyTarget(newPos);
+    setSearch(result.display_name.split(',').slice(0, 3).join(','));
+    setShowDropdown(false);
+};
 
     const clearSearch = () => {
         setSearch('');

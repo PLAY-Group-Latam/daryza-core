@@ -12,12 +12,16 @@ import {
 import { OrderDetail } from '@/components/orders/types';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 export default function OrdersShow() {
     const { order } = usePage<{ order: OrderDetail }>().props;
 
     return (
         <AppLayout>
+            <div className="mb-6 flex items-center gap-4">
+                <BackButton></BackButton>
+            </div>
             <Head title={`Orden ${order.code}`} />
 
             <div className="flex flex-1 flex-col gap-5 rounded-xl text-sm">

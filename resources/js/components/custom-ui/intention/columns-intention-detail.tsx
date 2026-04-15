@@ -99,9 +99,30 @@ const normalizeEventData = (eventType: string, raw: any) => {
         message:  data?.message ?? "",
       };
 
-    case "payment_result_success":
-      return { type: "payment", payment: data?.data ?? data };
+  case "payment_result_success":
+    // 1. Normalizamos la data
+    const orderData = data?.data ?? data;
+    
+    // 2. Intentamos buscar el total en diferentes posibles llaves
+    // A veces viene como 'total', a veces como 'amount', 
+    // y en Daryza a veces dentro del objeto de la orden.
+    const finalAmount = orderData.total 
+                     || orderData.amount 
+                     || orderData.order?.total 
+                     || orderData.payment?.amount 
+                     || 0;
 
+    return { 
+        type: "payment", 
+        payment: {
+            ...orderData,
+            amount: Number(finalAmount), 
+            order_id: orderData.id || orderData.order_id,
+            order_code: orderData.code || orderData.order_code,
+            method: orderData.payment_method_type || orderData.method || orderData.payment_method,
+            status: orderData.state || orderData.status
+        } 
+    };
     case "voucher_upload":
       return {
         type:     "voucher",

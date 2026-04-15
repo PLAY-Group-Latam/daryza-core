@@ -13,7 +13,7 @@ import { Upload } from '@/components/custom-ui/upload';
 import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
 import { Globe, Share2, Eye, Settings2, Edit3 } from 'lucide-react'; // Iconos sutiles para secciones
-
+import { BackButton } from '@/components/custom-ui/PageHeader';
 export default function SeoEdit({ seo }: { seo: Seo }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,6 +50,9 @@ export default function SeoEdit({ seo }: { seo: Seo }) {
     return (
         <AppLayout >
             <Head title="Editar Metadatos SEO" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
 
             <div className="p-4 space-y-6">
                 {/* Header Profesional */}
@@ -59,7 +62,6 @@ export default function SeoEdit({ seo }: { seo: Seo }) {
                         <p className="text-muted-foreground text-sm">Configure cómo se visualiza este contenido en internet.</p>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => window.history.back()}>Volver</Button>
                         
                         <Button  onClick={handleSubmit} disabled={isSubmitting} className="min-w-[140px]">
                             <Edit3 className="w-4 h-4 mr-2" />

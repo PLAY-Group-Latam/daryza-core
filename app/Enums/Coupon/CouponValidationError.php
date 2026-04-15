@@ -18,5 +18,5 @@ enum CouponValidationError: string
     case NO_MATCHING_CATEGORY_PRODUCTS    = 'no_matching_category_products';
     case NO_MATCHING_PRODUCT_COUPONS      = 'no_matching_product_coupons';
     case NO_MATCHING_PACK_PRODUCTS        = 'no_matching_pack_products';         // 👈 nuevo
-    case NO_MATCHING_BUSINESS_LINE        = 'no_matching_business_line';         // 👈 nuevo
+    case NO_MATCHING_BUSINESS_DYNAMIC     = 'no_matching_business_dynamic';
 }

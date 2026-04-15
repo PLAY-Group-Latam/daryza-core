@@ -102,9 +102,9 @@ class CouponController extends Controller
         return response()->json($this->couponService->searchPacks($request->get('q')));
     }
 
-    public function searchBusinessLines(Request $request): JsonResponse
+    public function searchBusinessDynamics(Request $request): JsonResponse
     {
-        return response()->json($this->couponService->searchBusinessLines($request->get('q')));
+        return response()->json($this->couponService->searchBusinessDynamics($request->get('q')));
     }
 
     public function searchCustomers(Request $request): JsonResponse

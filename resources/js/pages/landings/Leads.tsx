@@ -19,6 +19,7 @@ import { Landing } from '@/types/landings';
 import { Head, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { useState } from 'react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 type LandingLead = {
     id: string;
@@ -54,6 +55,9 @@ export default function Leads() {
     return (
         <AppLayout>
             <Head title={`Leads · ${landing.title}`} />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div>
                     <h1 className="text-lg font-bold lg:text-2xl">
@@ -82,7 +86,7 @@ export default function Leads() {
                                 <th className="p-3 text-left">Teléfono</th>
                                 <th className="p-3 text-left">RUC</th>
                                 <th className="p-3 text-left">Empresa</th>
-                                <th className="p-3 text-left">Comentarios</th>
+
                                 <th className="p-3 text-left">Acciones</th>
                             </tr>
                         </thead>
@@ -112,9 +116,6 @@ export default function Leads() {
                                         </td>
                                         <td className="p-3">
                                             {lead.data?.company_name ?? '-'}
-                                        </td>
-                                        <td className="p-3">
-                                            {lead.data?.comments ?? '-'}
                                         </td>
                                         <td className="p-3">
                                             <Button
@@ -272,7 +273,7 @@ export default function Leads() {
                         <p className="text-xs text-muted-foreground">
                             Comentarios
                         </p>
-                        <p className="mt-1 rounded-md border p-3 text-sm whitespace-pre-wrap">
+                        <p className="mt-1 overflow-hidden rounded-md border p-3 text-sm break-all whitespace-pre-wrap">
                             {selectedLead?.data?.comments ?? '-'}
                         </p>
                     </div>

@@ -7,7 +7,7 @@ use App\Models\Coupons\CouponRedemption;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use App\Models\Customers\Customer;
-use App\Models\Products\BusinessLine;
+use App\Models\Products\DynamicCategory;
 use App\Models\Products\Product;
 use App\Models\Products\ProductCategory;
 use App\Models\Products\ProductPack;
@@ -18,7 +18,7 @@ class CouponService
 
     public function getPaginatedCoupons(int $perPage = 10): LengthAwarePaginator
     {
-        return Coupon::with(['products', 'categories', 'packs', 'businessLines', 'customers'])
+        return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
             ->withCount('redemptions as usage_count')
             ->latest()
             ->paginate($perPage);
@@ -26,7 +26,7 @@ class CouponService
 
     public function getCouponById(string $id): Coupon
     {
-        return Coupon::with(['products', 'categories', 'packs', 'businessLines', 'customers'])
+        return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
             ->withCount('redemptions as usage_count')
             ->findOrFail($id);
     }
@@ -126,13 +126,15 @@ class CouponService
             ->toArray();
     }
 
-    public function searchBusinessLines(?string $query = null): array
+    public function searchBusinessDynamics(?string $query = null): array
     {
-        return BusinessLine::query()
+        return DynamicCategory::query()
             ->when($query && str_contains($query, ','),
                 fn($q) => $q->whereIn('id', explode(',', $query)))
             ->when($query && !str_contains($query, ','),
-                fn($q) => $q->where('name', 'ilike', '%' . $query . '%'))
+                fn($q) => $q
+                    ->where('is_active', true)
+                    ->where('name', 'ilike', '%' . $query . '%'))
             ->limit(50)
             ->get()
             ->map(fn($b) => [
@@ -146,20 +148,24 @@ class CouponService
 
     public function searchCustomers(?string $query = null): array
     {
+        $query = trim((string) $query);
+        $ids = array_values(array_filter(array_map('trim', explode(',', $query))));
+        $isSingleId = count($ids) === 1 && preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/i', $ids[0]);
+
         return Customer::query()
-            ->when($query && str_contains($query, ','),
-                fn($q) => $q->whereIn('id', explode(',', $query)))
-            ->when($query && !str_contains($query, ','),
+            ->when($query !== '' && count($ids) > 1,
+                fn($q) => $q->whereIn('id', $ids))
+            ->when($query !== '' && $isSingleId,
+                fn($q) => $q->where('id', $ids[0]))
+            ->when($query !== '' && !$isSingleId && count($ids) <= 1,
                 fn($q) => $q
-                    ->where('full_name', 'ilike', '%' . $query . '%')
-                    ->orWhere('email', 'ilike', '%' . $query . '%'))
+                    ->where('full_name', 'ilike', '%' . $query . '%'))
             ->limit(50)
             ->get()
             ->map(fn($c) => [
                 'id'    => $c->id,
                 'name'  => $c->full_name,
                 'email' => $c->email,
-                'phone' => $c->phone ?? null,
                 'photo' => $c->photo ?? null,
             ])
             ->toArray();
@@ -191,7 +197,7 @@ class CouponService
             'product'       => ['relation' => 'products',      'key' => 'product_ids'],
             'category'      => ['relation' => 'categories',    'key' => 'category_ids'],
             'pack'          => ['relation' => 'packs',         'key' => 'pack_ids'],
-            'business_line' => ['relation' => 'businessLines', 'key' => 'business_line_ids'],
+            'business_dynamic' => ['relation' => 'businessDynamics', 'key' => 'business_dynamic_ids'],
             'customer'      => ['relation' => 'customers',     'key' => 'customer_ids'],
         ];
 

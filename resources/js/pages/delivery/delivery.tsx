@@ -9,12 +9,7 @@ import { DeliveryZoneInfo } from '@/components/delivery-zone-info';
 import { ZoneColumns } from './components/zone-column';
 import { DeliverySetting } from '@/models/DeliverySetting';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Lista de Zonas de Delivery',
-        href: '/delivery-zones',
-    },
-];
+
 
 interface DeliveryProps {
     departments: Department[];
@@ -29,7 +24,7 @@ export default function Delivery({ departments, settings }: DeliveryProps) {
     }, [departments]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Zonas de Delivery" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
 

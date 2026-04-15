@@ -49,7 +49,7 @@ export default function Index() {
         <AppLayout>
             <Head title="Lista de Contactos" />
 
-            <div className="flex flex-1 flex-col gap-6 rounded-xl p-4 lg:p-8">
+            <div className="flex flex-1 flex-col gap-6 rounded-xl ">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-lg font-bold lg:text-2xl">

@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 type Option = { id: string; name: string; city?: string; area_ids?: string[] };
 type Offer = {
@@ -152,6 +153,9 @@ export default function Edit() {
     return (
         <AppLayout>
             <Head title="Editar Oferta" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <h1 className="text-xl font-bold">Editar Oferta</h1>
 

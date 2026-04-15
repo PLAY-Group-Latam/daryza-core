@@ -4,20 +4,13 @@ import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { TableList } from '@/components/custom-ui/intention/TableList';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Intenciones de Compra',
-        href: '/intencion-de-compra',
-    },
-];
-
 
 export default function PurchaseIntentList({ paginatedIntents }: { paginatedIntents: any }) {
     
    
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Intenciones de Compra" />
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">

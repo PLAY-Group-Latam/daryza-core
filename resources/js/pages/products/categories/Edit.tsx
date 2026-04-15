@@ -2,6 +2,7 @@ import FormCategory from '@/components/custom-ui/products/categories/FormCategor
 import AppLayout from '@/layouts/app-layout';
 import { Category, CategorySelect } from '@/types/products/categories'; // Asegúrate de importar Category
 import { Head, usePage } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 export default function Edit() {
     // Extraemos tanto la categoría a editar como el árbol para el select
@@ -11,6 +12,9 @@ export default function Edit() {
     }>().props;
     return (
         <AppLayout>
+             <div className="mb-6 flex items-center gap-4">
+                <BackButton></BackButton>
+            </div>
             <Head title={`Editar Categoría: ${category.name}`} />
 
             <div className="flex flex-1 flex-col gap-6 rounded-xl">

@@ -16,7 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-
+import { BackButton } from '@/components/custom-ui/PageHeader';
 interface Script {
     id: string;
     name: string;
@@ -63,6 +63,9 @@ export default function EditScript({ script }: { script: Script }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Editar Script" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
 
             <div className="mx-auto w-full max-w-6xl p-4 lg:p-6">
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -70,11 +73,9 @@ export default function EditScript({ script }: { script: Script }) {
                         <h1 className="text-2xl font-bold tracking-tight">Editar Script</h1>
                         <p className="text-muted-foreground text-sm">Modifica la configuración de tu script.</p>
                     </div>
-                    <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={() => router.visit('/scripts')}>
-                            Cancelar
-                        </Button>
-                        <Button form="edit-script-form" type="submit" disabled={isSubmitting} className="min-w-[140px]">
+                    <div className="flex-start ">
+                       
+                        <Button form="edit-script-form" type="submit" disabled={isSubmitting} className="w-full">
                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Guardar Cambios
                         </Button>

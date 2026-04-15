@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('discount_amount', 10, 2)->default(0.00);
             $table->decimal('maximum_discount_amount', 10, 2)->nullable();
             $table->decimal('minimum_order_amount', 10, 2)->default(0.00);
-            $table->enum('scope', ['global', 'product', 'category', 'pack', 'business_line', 'customer'])->default('global');
+            $table->enum('scope', ['global', 'product', 'category', 'pack', 'business_dynamic', 'customer'])->default('global');
             $table->boolean('is_active')->default(true);
             $table->boolean('is_public')->default(true);
             $table->unsignedInteger('usage_limit')->nullable();
@@ -51,12 +51,12 @@ return new class extends Migration
             $table->primary(['coupon_id', 'pack_id']);
         });
 
-        Schema::create('coupon_business_lines', function (Blueprint $table) {
+        Schema::create('coupon_business_dynamics', function (Blueprint $table) {
             $table->ulid('coupon_id');
             $table->foreign('coupon_id')->references('id')->on('coupons')->cascadeOnDelete();
-            $table->ulid('business_line_id');
-            $table->foreign('business_line_id')->references('id')->on('business_lines')->cascadeOnDelete();
-            $table->primary(['coupon_id', 'business_line_id']);
+            $table->ulid('dynamic_category_id');
+            $table->foreign('dynamic_category_id')->references('id')->on('dynamic_categories')->cascadeOnDelete();
+            $table->primary(['coupon_id', 'dynamic_category_id']);
         });
 
         Schema::create('coupon_customers', function (Blueprint $table) {
@@ -71,7 +71,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('coupon_customers');
-        Schema::dropIfExists('coupon_business_lines');
+        Schema::dropIfExists('coupon_business_dynamics');
         Schema::dropIfExists('coupon_packs');
         Schema::dropIfExists('coupon_categories');
         Schema::dropIfExists('coupon_products');

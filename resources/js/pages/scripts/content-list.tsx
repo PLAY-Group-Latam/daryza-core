@@ -7,9 +7,6 @@ import { Script } from './components/ScriptForm';
 import { TableList } from './components/table-list';
 import { Button } from '@/components/ui/button';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Lista de Scripts', href: '/scripts' },
-];
 
 interface ScriptsListProps {
     scripts: Script[];
@@ -19,7 +16,7 @@ interface ScriptsListProps {
 export default function ScriptsList({ scripts, meta }: ScriptsListProps) {
    
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout >
             <Head title="Lista de Scripts" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-0">
                 <div className="flex justify-between">

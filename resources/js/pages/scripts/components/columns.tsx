@@ -7,7 +7,7 @@ import scripts from '@/routes/scripts';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit, Trash, Trash2 } from 'lucide-react';
 import { Script } from './ScriptForm';
 
 export const columns = (
@@ -80,7 +80,7 @@ export const columns = (
                             href={`/scripts/${script.id}/edit`}
                             title="Editar script"
                         >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
 
@@ -100,7 +100,7 @@ export const columns = (
                                 className="bg-red-700!"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         }
                     />

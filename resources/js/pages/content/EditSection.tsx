@@ -40,6 +40,7 @@ import ProductInformativeEditor from '@/components/custom-ui/content/editors/sys
 import CheckoutEditor from '@/components/custom-ui/content/editors/system-all/CheckoutEditor';
 import CartEditor from '@/components/custom-ui/content/editors/system-all/CartEditor';
 import FilterProductoEditor from '@/components/custom-ui/content/editors/system-all/FilterProductEditor';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 interface Props {
     section: {
         id: number;
@@ -129,40 +130,15 @@ export default function EditSection({ section , searchResults = []}: Props) {
             <div className="flex flex-1 flex-col gap-0">
 
                 {/* ── Topbar ──────────────────────────────────────────── */}
-                <div className="sticky top-0 z-20 flex items-center gap-3  bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8">
+              <div className="sticky top-0 z-20 flex items-center gap-4 bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8 ">
                     
-                    {/* Botón volver */}
-                    <Link
-                        href="/content/items"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                        <ArrowLeft size={15} />
-                    </Link>
+                    {/* Solo el botón de volver atrás */}
+                    <BackButton />
 
-                    {/* Breadcrumb */}
-                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
-                        <Link
-                            href="/content/items"
-                            className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground sm:block"
-                        >
-                            Contenido
-                        </Link>
-                        <ChevronRight size={13} className="hidden shrink-0 text-muted-foreground/50 sm:block" />
-                        {section.page?.title && (
-                            <>
-                                <span className="hidden shrink-0 text-muted-foreground sm:block">
-                                    {section.page.title}
-                                </span>
-                                <ChevronRight size={13} className="hidden shrink-0 text-muted-foreground/50 sm:block" />
-                            </>
-                        )}
-                        <span className="truncate font-semibold text-foreground">
-                            {section.name}
-                        </span>
-                    </div>
+                    {/* Separador visual sutil */}
+                    <div className="h-4 w-[1px]" />
 
-                    {/* Badge tipo */}
-                   
+                
                 </div>
 
                 {/* ── Contenido ───────────────────────────────────────── */}

@@ -2,7 +2,7 @@
 
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
 
 import { ConfirmDeleteAlert } from '@/components/custom-ui/ConfirmDeleteAlert';
 import { Button } from '@/components/ui/button';
@@ -88,7 +88,7 @@ export const columns = (
                         title="Editar"
                     >
                         <Link href={`/metodos-de-pago/${method.id}/editar`}>
-                            <Edit2 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
 
@@ -112,7 +112,7 @@ export const columns = (
                                 title="Eliminar"
                                 className="bg-red-700!"
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         }
                     />

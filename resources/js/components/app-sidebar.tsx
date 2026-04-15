@@ -22,6 +22,7 @@ import {
     Headset,
     LayoutGrid,
     LayoutTemplate,
+    PanelsTopLeft,
     Newspaper,
     User,
     MapPin,
@@ -137,7 +138,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Landing',
         href: '/landings/items',
-        icon: LayoutTemplate,
+        icon: PanelsTopLeft,
     },
     {
         title: 'Portal de Empleos',

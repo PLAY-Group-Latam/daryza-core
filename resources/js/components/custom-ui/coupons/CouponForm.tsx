@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
     Apple,
     Boxes,
-    CalendarIcon,
     DollarSign,
     DollarSignIcon,
     Layers,
@@ -19,7 +18,6 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
     Card,
     CardContent,
@@ -38,11 +36,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     Select,
@@ -53,12 +46,10 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 import { CouponModel } from '@/types/coupons/coupon';
 import { router } from '@inertiajs/react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { DatePicker } from '../DatePicker';
 import { AsyncMultiSelectCustomers } from './AsyncMultiSelectCustomers';
 import { AsyncMultiSelectProducts } from './AsyncMultiSelectProducts';
 
@@ -95,7 +86,7 @@ const couponSchema = z
                 'product',
                 'category',
                 'pack',
-                'business_line',
+                'business_dynamic',
                 'customer',
             ],
             {
@@ -141,7 +132,7 @@ const couponSchema = z
         product_ids: z.array(z.string()).optional(),
         category_ids: z.array(z.string()).optional(),
         pack_ids: z.array(z.string()).optional(),
-        business_line_ids: z.array(z.string()).optional(),
+        business_dynamic_ids: z.array(z.string()).optional(),
         customer_ids: z.array(z.string()).optional(),
     })
 
@@ -220,11 +211,11 @@ const couponSchema = z
     )
     .refine(
         (data) =>
-            data.scope !== 'business_line' ||
-            (data.business_line_ids && data.business_line_ids.length > 0),
+            data.scope !== 'business_dynamic' ||
+            (data.business_dynamic_ids && data.business_dynamic_ids.length > 0),
         {
-            message: 'Debe seleccionar al menos una línea de negocio',
-            path: ['business_line_ids'],
+            message: 'Debe seleccionar al menos una dinámica de negocio',
+            path: ['business_dynamic_ids'],
         },
     )
     .refine(
@@ -291,7 +282,8 @@ export function CouponForm({ coupon }: CouponFormProps) {
             product_ids: coupon?.products?.map((p) => p.id) ?? [],
             category_ids: coupon?.categories?.map((c) => c.id) ?? [],
             pack_ids: coupon?.packs?.map((p) => p.id) ?? [],
-            business_line_ids: coupon?.business_lines?.map((b) => b.id) ?? [],
+            business_dynamic_ids:
+                coupon?.business_dynamics?.map((b) => b.id) ?? [],
             customer_ids: coupon?.customers?.map((c) => c.id) ?? [],
         },
     });
@@ -311,8 +303,8 @@ export function CouponForm({ coupon }: CouponFormProps) {
             product_ids: data.scope === 'product' ? data.product_ids : [],
             category_ids: data.scope === 'category' ? data.category_ids : [],
             pack_ids: data.scope === 'pack' ? data.pack_ids : [],
-            business_line_ids:
-                data.scope === 'business_line' ? data.business_line_ids : [],
+            business_dynamic_ids:
+                data.scope === 'business_dynamic' ? data.business_dynamic_ids : [],
             customer_ids: data.scope === 'customer' ? data.customer_ids : [],
             maximum_discount_amount:
                 data.discount_type === 'percentage'
@@ -568,10 +560,10 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                                         Pack
                                                     </div>
                                                 </SelectItem>
-                                                <SelectItem value="business_line">
+                                                <SelectItem value="business_dynamic">
                                                     <div className="flex items-center gap-2">
                                                         <Layers className="h-4 w-4" />
-                                                        Línea de Negocio
+                                                        Dinámicas de Negocio
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="customer">
@@ -689,24 +681,24 @@ export function CouponForm({ coupon }: CouponFormProps) {
                             />
                         )}
 
-                        {scope === 'business_line' && (
+                        {scope === 'business_dynamic' && (
                             <FormField
                                 control={form.control}
-                                name="business_line_ids"
+                                name="business_dynamic_ids"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Líneas de Negocio *
+                                            Dinámicas de negocio *
                                         </FormLabel>
                                         <FormDescription>
-                                            Busque y seleccione las líneas de
-                                            negocio aplicables
+                                            Busque y seleccione las dinámicas
+                                            de negocio aplicables
                                         </FormDescription>
                                         <AsyncMultiSelectProducts
                                             value={field.value || []}
                                             onChange={field.onChange}
-                                            placeholder="Buscar línea de negocio por nombre"
-                                            requestPath="/coupon/search-business-lines"
+                                            placeholder="Buscar dinámica de negocio por nombre"
+                                            requestPath="/coupon/search-business-dynamics"
                                         />
                                         <FormMessage />
                                     </FormItem>
@@ -745,45 +737,13 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel>Válido Desde</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button
-                                                        variant="outline"
-                                                        className={cn(
-                                                            'w-full pl-3 text-left font-normal',
-                                                            !field.value &&
-                                                                'text-muted-foreground',
-                                                        )}
-                                                    >
-                                                        {field.value ? (
-                                                            format(
-                                                                field.value,
-                                                                'PPP',
-                                                                { locale: es },
-                                                            )
-                                                        ) : (
-                                                            <span>
-                                                                Seleccionar
-                                                                fecha
-                                                            </span>
-                                                        )}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="w-auto p-0"
-                                                align="start"
-                                            >
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value}
-                                                    onSelect={field.onChange}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                        <FormControl>
+                                            <DatePicker
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Seleccionar fecha"
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -795,45 +755,13 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel>Válido Hasta</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button
-                                                        variant="outline"
-                                                        className={cn(
-                                                            'w-full pl-3 text-left font-normal',
-                                                            !field.value &&
-                                                                'text-muted-foreground',
-                                                        )}
-                                                    >
-                                                        {field.value ? (
-                                                            format(
-                                                                field.value,
-                                                                'PPP',
-                                                                { locale: es },
-                                                            )
-                                                        ) : (
-                                                            <span>
-                                                                Seleccionar
-                                                                fecha
-                                                            </span>
-                                                        )}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="w-auto p-0"
-                                                align="start"
-                                            >
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value}
-                                                    onSelect={field.onChange}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                        <FormControl>
+                                            <DatePicker
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Seleccionar fecha"
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

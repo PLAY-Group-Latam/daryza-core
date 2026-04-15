@@ -63,8 +63,8 @@ class CouponRequest extends FormRequest
             'pack_ids'          => [Rule::requiredIf($this->input('scope') === 'pack'), 'array'],
             'pack_ids.*'        => ['exists:product_packs,id'],
 
-            'business_line_ids'     => [Rule::requiredIf($this->input('scope') === 'business_line'), 'array'],
-            'business_line_ids.*'   => ['exists:business_lines,id'],
+            'business_dynamic_ids'     => [Rule::requiredIf($this->input('scope') === 'business_dynamic'), 'array'],
+            'business_dynamic_ids.*'   => ['exists:dynamic_categories,id'],
 
             'customer_ids'      => [Rule::requiredIf($this->input('scope') === 'customer'), 'array'],
             'customer_ids.*'    => ['exists:customers,id'],
@@ -115,8 +115,8 @@ class CouponRequest extends FormRequest
             'category_ids.*.exists'       => 'Una categoría seleccionada no es válida.',
             'pack_ids.required'           => 'Debes seleccionar al menos un pack.',
             'pack_ids.*.exists'           => 'Un pack seleccionado no es válido.',
-            'business_line_ids.required'  => 'Debes seleccionar al menos una línea de negocio.',
-            'business_line_ids.*.exists'  => 'Una línea de negocio seleccionada no es válida.',
+            'business_dynamic_ids.required'  => 'Debes seleccionar al menos una dinámica de negocio.',
+            'business_dynamic_ids.*.exists'  => 'Una dinámica de negocio seleccionada no es válida.',
             'customer_ids.required'       => 'Debes seleccionar al menos un cliente.',
             'customer_ids.*.exists'       => 'Un cliente seleccionado no es válido.',
         ];
@@ -148,7 +148,7 @@ class CouponRequest extends FormRequest
             'product_ids'             => $this->parseArray($data['product_ids'] ?? null),
             'category_ids'            => $this->parseArray($data['category_ids'] ?? null),
             'pack_ids'                => $this->parseArray($data['pack_ids'] ?? null),
-            'business_line_ids'       => $this->parseArray($data['business_line_ids'] ?? null),
+            'business_dynamic_ids'    => $this->parseArray($data['business_dynamic_ids'] ?? null),
             'customer_ids'            => $this->parseArray($data['customer_ids'] ?? null),
         ]);
     }

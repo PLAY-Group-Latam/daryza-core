@@ -1,6 +1,7 @@
 import FormImport from '@/components/custom-ui/products/product/FormImport';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 type ImportStatus = 'pending' | 'processing' | 'done' | 'failed';
 
@@ -17,12 +18,9 @@ export default function Import() {
 
             <div className="flex flex-col gap-6 rounded-xl p-4">
                 <div className="flex items-center justify-between">
-                    <Link
-                        href="/productos/items"
-                        className="text-sm text-muted-foreground hover:underline"
-                    >
-                        ← Volver a la lista
-                    </Link>
+                    <div className=" flex items-center gap-4">
+                        <BackButton></BackButton>
+                    </div>
                 </div>
 
                 {/* Formulario */}

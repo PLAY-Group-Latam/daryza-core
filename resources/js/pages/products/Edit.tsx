@@ -5,6 +5,7 @@ import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 import { ProductEdit, ProductRecommendable } from '@/types/products/productEdit';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { BackButton } from '@/components/custom-ui/PageHeader';
 
 export default function Edit() {
     const { categories, attributes, product, businessLines, recommendableSearchResults } =
@@ -25,12 +26,9 @@ export default function Edit() {
                         Editar Producto
                     </h1>
 
-                    <Link
-                        href="/productos/items"
-                        className="text-sm text-muted-foreground hover:underline"
-                    >
-                        ← Volver a la lista
-                    </Link>
+                    <div className=" flex items-center gap-4">
+                <BackButton></BackButton>
+            </div>
                 </div>
                 <FormProduct
                     categories={categories}

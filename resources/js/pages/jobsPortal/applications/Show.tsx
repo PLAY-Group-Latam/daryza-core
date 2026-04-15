@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Briefcase, Download, Mail, Phone, User } from 'lucide-react';
-
+import { BackButton } from '@/components/custom-ui/PageHeader';
 type Application = {
     id: string;
     first_name: string;
@@ -39,6 +39,9 @@ export default function Show() {
     return (
         <AppLayout>
             <Head title="Detalle de Postulación" />
+             <div className="mb-6 flex items-end gap-4">
+                <BackButton></BackButton>
+            </div>
             <div className="mt-6 flex flex-1 flex-col gap-5 rounded-xl">
                 <div className="rounded-xl border p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -58,15 +61,7 @@ export default function Show() {
                             </div>
                         </div>
                         <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
-                            <Link href="/admin/jobs/applications">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full sm:w-auto"
-                                >
-                                    Volver
-                                </Button>
-                            </Link>
+                            
                             <Button
                                 size="sm"
                                 className="flex-1 sm:flex-none"

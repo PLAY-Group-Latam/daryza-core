@@ -10,7 +10,6 @@ interface Customer {
     id: string;
     name: string;
     email: string;
-    phone?: string;
     photo?: string;
 }
 
@@ -27,7 +26,7 @@ const getInitials = (name: string) =>
 export function AsyncMultiSelectCustomers({
     value,
     onChange,
-    placeholder = 'Buscar cliente por nombre, email o teléfono',
+    placeholder = 'Buscar cliente por nombre',
     requestPath = '/coupon/search-customers'
 }: AsyncMultiSelectCustomersProps) {
     const [open, setOpen] = useState(false);
@@ -90,9 +89,8 @@ export function AsyncMultiSelectCustomers({
         value: c.id,
         name: c.name,
         email: c.email,
-        phone: c.phone,
         photo: c.photo,
-        label: `${c.name} (${c.email})${c.phone ? ' - ' + c.phone : ''}`,
+        label: `${c.name} (${c.email})`,
     }));
 
     const handleSelect = (customerId: string) => {
@@ -104,10 +102,13 @@ export function AsyncMultiSelectCustomers({
         onChange(value.filter((v) => v !== id));
     };
 
-    const selectedLabels = value.map((id) => results.find((c) => c.id === id)?.name || id);
+    const selectedItems = value.map((id) => ({
+        id,
+        label: results.find((c) => c.id === id)?.name ?? 'Cargando...',
+    }));
     const maxDisplayItems = 3;
-    const displayItems = selectedLabels.slice(0, maxDisplayItems);
-    const overflowCount = selectedLabels.length > maxDisplayItems ? selectedLabels.length - maxDisplayItems : 0;
+    const displayItems = selectedItems.slice(0, maxDisplayItems);
+    const overflowCount = selectedItems.length > maxDisplayItems ? selectedItems.length - maxDisplayItems : 0;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -120,12 +121,12 @@ export function AsyncMultiSelectCustomers({
                 >
                     <div className="flex flex-1 flex-wrap items-center gap-1 overflow-hidden text-left">
                         {displayItems.length > 0 ? (
-                            displayItems.map((label, i) => (
-                                <Badge key={value[i]} variant="secondary" className="flex items-center gap-1 pr-1">
-                                    {label}
+                            displayItems.map((item) => (
+                                <Badge key={item.id} variant="secondary" className="flex items-center gap-1 pr-1">
+                                    {item.label}
                                     <button
                                         type="button"
-                                        onClick={(e) => handleRemove(value[i], e)}
+                                        onClick={(e) => handleRemove(item.id, e)}
                                         className="rounded-full p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
                                     >
                                         <X className="h-3 w-3" />
