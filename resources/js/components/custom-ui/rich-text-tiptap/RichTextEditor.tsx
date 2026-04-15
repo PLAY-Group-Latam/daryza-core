@@ -17,7 +17,9 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit,
-            ImageExtension,
+            ImageExtension.configure({
+                allowBase64: true,
+            }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             Placeholder.configure({
                 placeholder: 'Escribe aquí...',

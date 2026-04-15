@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             UbigeoSeeder::class,
             DeliveryLimaOnlySeeder::class,
             CategoriesProductsSeeder::class,
+            CommercialCatalogCouponSeeder::class,
             PageSeeder::class,
             HomeContentSeeder::class,
             FooterContentSeeder::class,

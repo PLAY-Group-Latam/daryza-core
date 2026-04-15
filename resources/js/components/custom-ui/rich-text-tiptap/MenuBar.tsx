@@ -29,6 +29,7 @@ import {
     Underline as UnderlineIcon,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // Componente reutilizable para cada botón del toolbar
 interface IconButtonProps {
@@ -81,6 +82,8 @@ interface MenuBarProps {
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
+    const MAX_INLINE_IMAGE_MB = 5;
+    const MAX_INLINE_IMAGE_BYTES = MAX_INLINE_IMAGE_MB * 1024 * 1024;
     const [url, setUrl] = useState('');
     const [activePopover, setActivePopover] = useState<'link' | 'image' | null>(
         null,
@@ -241,6 +244,26 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
 
+                                if (!file.type.startsWith('image/')) {
+                                    toast.error(
+                                        'El archivo seleccionado no es una imagen válida.',
+                                    );
+                                    e.currentTarget.value = '';
+                                    return;
+                                }
+
+                                if (file.size > MAX_INLINE_IMAGE_BYTES) {
+                                    const currentSizeMb = (
+                                        file.size /
+                                        (1024 * 1024)
+                                    ).toFixed(2);
+                                    toast.error(
+                                        `La imagen pesa ${currentSizeMb}MB. Máximo ${MAX_INLINE_IMAGE_MB}MB para el editor enriquecido.`,
+                                    );
+                                    e.currentTarget.value = '';
+                                    return;
+                                }
+
                                 const reader = new FileReader();
                                 reader.onload = () => {
                                     editor
@@ -251,8 +274,14 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
                                         })
                                         .run();
                                 };
+                                reader.onerror = () => {
+                                    toast.error(
+                                        'No se pudo leer la imagen. Intenta con otra.',
+                                    );
+                                };
                                 reader.readAsDataURL(file);
                                 setActivePopover(null); // cerrar popover
+                                e.currentTarget.value = '';
                             }}
                         />
                         <label

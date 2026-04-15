@@ -36,13 +36,14 @@ export function CopyButton({
             type="button"
             aria-label={ariaLabel}
             onClick={handleClick}
+            title="copiar"
             className="relative rounded p-1 transition hover:bg-gray-100 active:bg-gray-200"
         >
             <Clipboard className="h-4 w-4 text-gray-600" />
 
             {/* Tooltip visual */}
             <span
-                className={`tooltip pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-black px-2 py-1 text-xs whitespace-nowrap text-white transition-opacity ${
+                className={`tooltip pointer-events-none absolute -top-7 left-1/2 z-40 -translate-x-1/2 rounded bg-black px-2 py-1 text-xs whitespace-nowrap text-white transition-opacity ${
                     copied ? 'opacity-100' : 'opacity-0'
                 }`}
                 aria-hidden={!copied}

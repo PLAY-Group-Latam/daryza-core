@@ -4,6 +4,7 @@ namespace App\Http\Api\v1\Services\Coupons;
 
 use App\Enums\Coupon\CouponScope;
 use App\Models\Coupons\Coupon;
+use App\Models\Products\DynamicCategoryItem;
 use App\Models\Products\ProductPackItem;
 use App\Models\Products\ProductVariant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -113,7 +114,7 @@ class CouponService
 
         $couponQuery = Coupon::query()
             ->whereRaw('UPPER(code) = ?', [$normalizedCode])
-            ->with(['products:id', 'categories:id', 'packs:id', 'businessLines:id', 'customers:id']);
+            ->with(['products:id', 'categories:id', 'packs:id', 'businessDynamics:id', 'customers:id']);
 
         if ($lockCoupon) {
             $couponQuery->lockForUpdate();
@@ -195,7 +196,7 @@ class CouponService
             CouponScope::Global->value, CouponScope::Customer->value => $this->calculateSubtotal($variants, $items),
             CouponScope::Product->value => $this->subtotalByProductScope($coupon, $variants, $items),
             CouponScope::Category->value => $this->subtotalByCategoryScope($coupon, $variants, $items),
-            CouponScope::BusinessLine->value => $this->subtotalByBusinessLineScope($coupon, $variants, $items),
+            CouponScope::BusinessDynamic->value => $this->subtotalByBusinessDynamicScope($coupon, $variants, $items),
             CouponScope::Pack->value => $this->subtotalByPackScope($coupon, $variants, $items),
             default => 0.0,
         };
@@ -220,13 +221,28 @@ class CouponService
         });
     }
 
-    private function subtotalByBusinessLineScope(Coupon $coupon, Collection $variants, array $items): float
+    private function subtotalByBusinessDynamicScope(Coupon $coupon, Collection $variants, array $items): float
     {
-        $allowedBusinessLineIds = $coupon->businessLines->pluck('id')->all();
+        $allowedDynamicCategoryIds = $coupon->businessDynamics->pluck('id')->all();
 
-        return $this->subtotalMatching($variants, $items, function (ProductVariant $variant) use ($allowedBusinessLineIds) {
-            $businessLineIds = $variant->product?->businessLines?->pluck('id')->all() ?? [];
-            return count(array_intersect($businessLineIds, $allowedBusinessLineIds)) > 0;
+        if (empty($allowedDynamicCategoryIds)) {
+            return 0.0;
+        }
+
+        $allowedProductIds = DynamicCategoryItem::query()
+            ->whereIn('dynamic_category_id', $allowedDynamicCategoryIds)
+            ->pluck('product_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($allowedProductIds)) {
+            return 0.0;
+        }
+
+        return $this->subtotalMatching($variants, $items, function (ProductVariant $variant) use ($allowedProductIds) {
+            return in_array($variant->product_id, $allowedProductIds, true);
         });
     }
 
