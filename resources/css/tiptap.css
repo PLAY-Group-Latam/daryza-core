@@ -4,6 +4,9 @@
     font-family: inherit;
     padding: 0.5rem;
 }
+.rich-editor .ProseMirror {
+    overflow-wrap: anywhere;
+}
 
 /* enlaces */
 .rich-editor a {

@@ -19,17 +19,21 @@ import {
     Apple,
     Briefcase,
     ClipboardList,
+    CreditCard,
+    FileCode,
     Headset,
     LayoutGrid,
     LayoutTemplate,
-    PanelsTopLeft,
-    Newspaper,
-    User,
     MapPin,
-    Users, Store, Truck, CreditCard, SearchCheck, FileCode,
+    Newspaper,
+    PanelsTopLeft,
+    SearchCheck,
+    Store,
     Tags,
-    TrendingUp
-
+    TrendingUp,
+    Truck,
+    User,
+    Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -145,13 +149,14 @@ const mainNavItems: NavItem[] = [
         icon: Briefcase,
         children: [
             {
-                title: 'Sedes',
-                href: '/admin/jobs/places',
-            },
-            {
                 title: 'Áreas',
                 href: '/admin/jobs/departments',
             },
+            {
+                title: 'Sedes',
+                href: '/admin/jobs/places',
+            },
+
             {
                 title: 'Ofertas',
                 href: '/admin/jobs/offers',

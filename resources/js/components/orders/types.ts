@@ -19,6 +19,11 @@ export interface OrderItem {
     quantity: number;
     unit_price: string;
     line_total: string;
+    metadata?: {
+        is_on_promo?: boolean;
+        regular_price?: number | string | null;
+        variant_attributes?: string[] | null;
+    } | null;
 }
 
 export interface OrderPayment {
