@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { es } from 'date-fns/locale';
 import { formatDistanceToNow, isValid } from "date-fns";
 import { TrendingUp, ClipboardList } from "lucide-react";
-// ✅ Importamos el componente de Avatar que usas en tus otras tablas
+import { Link } from '@inertiajs/react';
 import { UserAvatar } from '../UserAvatar'; 
 
 // 1. Diccionario basado en tu Middleware de Laravel + Evento de Packs
@@ -100,16 +100,16 @@ export const columns: ColumnDef<any>[] = [
     
     // ── 5. ACCIONES (Link al historial) ──────────────────────
     {
-        id: "actions",
-        header: "Acciones",
-        cell: ({ row }) => (
-            <a
-                href={`/intention-purchase/${row.original.customer_id}`}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-black hover:text-gray-600 transition-colors"
-            >
-                <ClipboardList className="h-4 w-4" />
-                Ver historial
-            </a>
-        ),
-    }
+    id: "actions",
+    header: "Acciones",
+    cell: ({ row }) => (
+        <Link
+            href={`/intention-purchase/${row.original.customer_id}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-black hover:text-gray-600 transition-colors"
+        >
+            <ClipboardList className="h-4 w-4" />
+            Ver historial
+        </Link>
+    ),
+}
 ];

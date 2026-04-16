@@ -309,7 +309,6 @@ public function searchProductsByName(?string $search, int $limit = 10): array
     $existingById = [];
     if (isset($sectionContent->content['items'])) {
         foreach ($sectionContent->content['items'] as $existingItem) {
-            // Usamos product_id si existe, de lo contrario id
             $idKey = isset($existingItem['product_id']) ? 'product_id' : 'id';
             if (isset($existingItem[$idKey])) {
                 $existingById[$existingItem[$idKey]] = $existingItem;
@@ -320,28 +319,27 @@ public function searchProductsByName(?string $search, int $limit = 10): array
     $processed = [];
 
     foreach ($content['items'] as $item) {
-        // DETECCION DINÁMICA DE LA LLAVE DE IDENTIFICACIÓN
         $idKey = isset($item['product_id']) ? 'product_id' : 'id';
-
-        if (!isset($item[$idKey])) {
-            // Si por alguna razón no hay ninguna de las dos, saltamos o manejamos error
-            continue; 
-        }
+        if (!isset($item[$idKey])) continue; 
 
         $itemId   = $item[$idKey];
         $existing = $existingById[$itemId] ?? [];
         $result   = [$idKey => $itemId];
 
         foreach ($item as $field => $value) {
-            // Saltamos la llave de identificación para no procesarla dos veces
             if ($field === 'id' || $field === 'product_id') continue;
 
             if ($value instanceof UploadedFile) {
                 $result[$field] = $this->uploadFile($value, $sectionId);
-            } elseif (empty($value) && isset($existing[$field])) {
-                $result[$field] = $existing[$field];
+            } 
+            // CAMBIO AQUÍ: 
+            // Solo rescatamos lo existente si el campo NI SIQUIERA viene en el request.
+            // Si el campo viene pero es null o "null" string, lo guardamos como null (borrado).
+            elseif (!array_key_exists($field, $item)) {
+                $result[$field] = $existing[$field] ?? null;
             } else {
-                $result[$field] = $value;
+                // Si el valor es "null" (string que a veces manda FormData) o null real, guardamos null
+                $result[$field] = ($value === 'null' || empty($value)) ? null : $value;
             }
         }
 
