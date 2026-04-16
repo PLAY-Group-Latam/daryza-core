@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from '@inertiajs/react';
-import { Save, Phone, Plus, Trash2 } from 'lucide-react';
+import { Save, Phone, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import { ContactContent, ConsultaCard, BannerContent } from '@/types/content/con
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 
-// ─── Tipos y Constantes ───────────────────────────────────────────────────────
+// ─── Constantes ──────────────────────────────────────────────────────────────
 
 const DEFAULT_CARD: ConsultaCard = {
     titulo_normal: '',
@@ -40,12 +40,16 @@ function UploadFixed({
     className?: string;
 }) {
     return (
-        <div className={`rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden ${className ?? ''}`}>
+        <div className={`relative rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden group ${className ?? ''}`}>
+           
+            
+            {/* Contenedor del Upload */}
             <div className="w-full h-full [&>*]:!w-full [&>*]:!h-full [&_img]:!w-full [&_img]:!h-full [&_img]:!object-cover [&_img]:!rounded-none">
                 <Upload
                     value={value}
                     onFileChange={onChange}
                     accept="image/*"
+                    // Asegúrate de que el componente Upload no tenga un botón de borrar interno que choque
                     previewClassName="!w-full !h-full !object-cover !rounded-none !border-0 !bg-transparent"
                 />
             </div>
@@ -80,43 +84,40 @@ function CardEditor({
     };
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-all hover:border-slate-300">
+            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
             </div>
 
-            {/* Layout Responsivo: Columna en móvil, Fila en escritorio */}
             <div className="p-5 flex flex-col sm:flex-row gap-6">
-                
-                {/* Contenedor de Imagen ajustable */}
+                {/* Imagen opcional con botón de reset */}
                 <div className="flex-shrink-0 w-full sm:w-40 space-y-2">
-                    <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Imagen</Label>
+                    <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Imagen (Opcional)</Label>
                     <UploadFixed
                         value={card.imagen}
                         onChange={(file) => onUpdate({ imagen: file })}
-                        className="w-full aspect-square max-w-[160px] mx-auto sm:mx-0"
+                        className="w-full aspect-square max-w-[140px] mx-auto sm:mx-0"
                     />
                 </div>
 
-                {/* Títulos e Ítems */}
                 <div className="flex-1 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Título</Label>
                             <Input
-                                value={card.titulo_normal}
+                                value={card.titulo_normal || ''}
                                 onChange={(e) => onUpdate({ titulo_normal: e.target.value })}
-                                placeholder="Centro de"
-                                className="text-sm w-full"
+                                placeholder="Ej: Centro de"
+                                className="text-sm"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Título resaltado</Label>
+                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Resaltado</Label>
                             <Input
-                                value={card.titulo_bold}
+                                value={card.titulo_bold || ''}
                                 onChange={(e) => onUpdate({ titulo_bold: e.target.value })}
-                                placeholder="ayuda"
-                                className="text-sm font-bold text-primary w-full"
+                                placeholder="Ej: Ayuda"
+                                className="text-sm font-bold text-primary"
                             />
                         </div>
                     </div>
@@ -124,42 +125,27 @@ function CardEditor({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Ítems</Label>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={addItem}
-                                            disabled={card.items.length >= 4}
-                                            className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/70 disabled:text-slate-300 transition-colors"
-                                        >
-                                            <Plus size={12} /> Agregar ítem
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs">
-                                        {card.items.length >= 4 ? 'Máximo 4' : `Agregar (${card.items.length}/4)`}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                            <button
+                                type="button"
+                                onClick={addItem}
+                                disabled={card.items.length >= 4}
+                                className="text-[10px] font-bold text-primary hover:opacity-70 disabled:text-slate-300"
+                            >
+                                + Agregar
+                            </button>
                         </div>
-
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 gap-2">
                             {card.items.map((item, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <span className="text-slate-300 text-sm flex-shrink-0">•</span>
+                                <div key={i} className="flex gap-2">
                                     <Input
-                                        value={item.texto}
+                                        value={item.texto || ''}
                                         onChange={(e) => updateItem(i, e.target.value)}
-                                        placeholder={`Ítem ${i + 1}`}
-                                        className="text-sm flex-1"
+                                        placeholder="Texto del ítem"
+                                        className="text-xs h-8"
                                     />
                                     {card.items.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => removeItem(i)}
-                                            className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0 p-1"
-                                        >
-                                            <Trash2 size={16} />
+                                        <button type="button" onClick={() => removeItem(i)} className="text-slate-300 hover:text-red-400">
+                                            <Trash2 size={14} />
                                         </button>
                                     )}
                                 </div>
@@ -179,40 +165,32 @@ export default function ContactIndexEditor({ section }: Props) {
     const { data, setData, put, processing } = useForm<{ content: ContactContent }>({
         content: {
             banner: {
-                // Aseguramos que los campos coincidan con lo que espera el componente
                 type: rawBanner?.type ?? 'image',
                 src_desktop: rawBanner?.src_desktop ?? null,
                 src_mobile: rawBanner?.src_mobile ?? null,
                 link_url: rawBanner?.link_url ?? '',
             },
+            // Inicializamos siempre con 4 slots para evitar errores de mapeo
             cards: [
-                rawContent?.cards?.[0] ?? DEFAULT_CARD,
-                rawContent?.cards?.[1] ?? DEFAULT_CARD,
-                rawContent?.cards?.[2] ?? DEFAULT_CARD,
-                rawContent?.cards?.[3] ?? DEFAULT_CARD,
+                rawContent?.cards?.[0] || { ...DEFAULT_CARD },
+                rawContent?.cards?.[1] || { ...DEFAULT_CARD },
+                rawContent?.cards?.[2] || { ...DEFAULT_CARD },
+                rawContent?.cards?.[3] || { ...DEFAULT_CARD },
             ],
         },
     });
 
-    // ── Lógica de actualización igual a Imagen Promocional ──
     const handleBannerChange = (updates: Partial<BannerContent>) => {
-        const translatedUpdates: Partial<BannerContent> = {};
-        
-        if ('src_desktop' in updates) translatedUpdates.src_desktop = updates.src_desktop;
-        if ('src_mobile' in updates) translatedUpdates.src_mobile = updates.src_mobile;
-        if ('link_url' in updates) translatedUpdates.link_url = updates.link_url;
-        if ('type' in updates) translatedUpdates.type = updates.type;
-
         setData('content', {
             ...data.content,
-            banner: { ...data.content.banner, ...translatedUpdates }
+            banner: { ...data.content.banner, ...updates }
         });
     };
 
     const updateCard = (index: number, patch: Partial<ConsultaCard>) => {
-        const updated = [...data.content.cards] as ContactContent['cards'];
-        updated[index] = { ...updated[index], ...patch };
-        setData('content', { ...data.content, cards: updated });
+        const newCards = [...data.content.cards] as ContactContent['cards'];
+        newCards[index] = { ...newCards[index], ...patch };
+        setData('content', { ...data.content, cards: newCards });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -220,42 +198,32 @@ export default function ContactIndexEditor({ section }: Props) {
         put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => toast.success('¡Página de contacto actualizada!'),
+            onSuccess: () => toast.success('¡Cambios guardados!'),
             onError: () => toast.error('Error al guardar'),
         });
     };
 
     return (
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6 pb-20">
-            {/* Ahora es idéntico al comportamiento de Imagen Promocional */}
             <ResponsiveBannerEditor
-                title="Banner Principal"
-                description="Hero principal de la Página de Contacto."
+                title="Banner de Contacto"
+                description="Imagen principal de la cabecera."
                 allowedType="image"
-                data={{
-                    src_desktop: data.content.banner.src_desktop,
-                    src_mobile: data.content.banner.src_mobile,
-                    link_url: data.content.banner.link_url ?? '',
-                    type: data.content.banner.type,
-                }}
+                data={data.content.banner}
                 onChange={handleBannerChange}
                 showTypeTabs={false} 
             />
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
-                            <Phone size={22} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 tracking-tight">Tarjetas de consulta</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">Configura las 4 tarjetas de la sección.</p>
-                        </div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary"><Phone size={22} /></div>
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900">Tarjetas de consulta</h3>
+                        <p className="text-xs text-slate-500 font-medium">Puedes dejar campos vacíos o eliminar imágenes si no son necesarias.</p>
                     </div>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-6">
+                <div className="p-6 space-y-6">
                     {data.content.cards.map((card, index) => (
                         <CardEditor
                             key={index}
@@ -268,11 +236,7 @@ export default function ContactIndexEditor({ section }: Props) {
             </div>
 
             <div className="fixed bottom-6 right-6 sm:static flex justify-end">
-                <Button
-                    type="submit"
-                    disabled={processing}
-                    className="w-full sm:w-auto px-10 py-6 rounded-xl shadow-lg gap-2 text-base font-bold"
-                >
+                <Button type="submit" disabled={processing} className="w-full sm:w-auto px-10 py-6 rounded-xl shadow-xl gap-2 text-base font-bold transition-transform active:scale-95">
                     <Save size={20} />
                     {processing ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>

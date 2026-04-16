@@ -350,36 +350,47 @@ public function searchProductsByName(?string $search, int $limit = 10): array
     return $content;
 }
 
-    private function processCardsArray(array $content, int $sectionId, SectionContent $sectionContent): array
-    {
-        if (!isset($content['cards']) || !is_array($content['cards'])) {
-            return $content;
-        }
-
-        $existingCards = $sectionContent->content['cards'] ?? [];
-        $processed     = [];
-
-        foreach ($content['cards'] as $index => $card) {
-            $existing = $existingCards[$index] ?? [];
-            $result   = [];
-
-            foreach ($card as $field => $value) {
-                if ($field === 'imagen') continue;
-                $result[$field] = $value ?? $existing[$field] ?? null;
-            }
-
-            if (isset($card['imagen']) && $card['imagen'] instanceof UploadedFile) {
-                $result['imagen'] = $this->uploadFile($card['imagen'], $sectionId);
-            } else {
-                $result['imagen'] = !empty($card['imagen']) ? $card['imagen'] : ($existing['imagen'] ?? null);
-            }
-
-            $processed[] = $result;
-        }
-
-        $content['cards'] = $processed;
+   private function processCardsArray(array $content, int $sectionId, SectionContent $sectionContent): array
+{
+    if (!isset($content['cards']) || !is_array($content['cards'])) {
         return $content;
     }
+
+    $existingCards = $sectionContent->content['cards'] ?? [];
+    $processed = [];
+
+    foreach ($content['cards'] as $index => $card) {
+        $existing = $existingCards[$index] ?? [];
+        $result = [];
+        
+        foreach ($card as $field => $value) {
+            if ($field === 'imagen' || $field === 'items') continue;
+            
+           
+            $result[$field] = array_key_exists($field, $card) ? $value : ($existing[$field] ?? null);
+        }
+
+        if (isset($card['imagen']) && $card['imagen'] instanceof UploadedFile) {
+           
+            $result['imagen'] = $this->uploadFile($card['imagen'], $sectionId);
+        } else {
+           
+            if (array_key_exists('imagen', $card) && ($card['imagen'] === 'null' || empty($card['imagen']))) {
+                $result['imagen'] = null;
+            } else {
+                $result['imagen'] = $existing['imagen'] ?? null;
+            }
+        }
+
+        // 3. Procesar los ítems de la card (mantener estructura)
+        $result['items'] = $card['items'] ?? ($existing['items'] ?? []);
+
+        $processed[] = $result;
+    }
+
+    $content['cards'] = $processed;
+    return $content;
+}
 
     private function mergeWithExisting(array $existing, array $content): array
     {

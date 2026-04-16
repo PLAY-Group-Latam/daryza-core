@@ -22,17 +22,17 @@ export default function ImagePromotionalEditor({ section }: Props) {
 
     const items = data.content.items;
 
-    const updateItem = (index: number, updates: any) => {
-        const updated = [...items];
-        // Solo actualizamos los campos que corresponden a PromotionalItem
-        updated[index] = {
-            ...updated[index],
-            src_desktop: updates.src_desktop,
-            src_mobile: updates.src_mobile,
-            link_url: updates.link_url,
-        };
-        setData('content', { items: updated });
+   const updateItem = (index: number, updates: any) => {
+    const updated = [...items];
+    
+    // CORRECCIÓN: Hacemos spread del item existente para NO perder lo que ya tenía
+    updated[index] = {
+        ...updated[index], // Mantenemos id, src_desktop anterior, src_mobile anterior, etc.
+        ...updates,        // Sobrescribimos solo lo que cambió (src_desktop o src_mobile o link_url)
     };
+
+    setData('content', { items: updated });
+};
 
     const addItem = () => {
         if (items.length >= 3) return;
@@ -119,14 +119,10 @@ export default function ImagePromotionalEditor({ section }: Props) {
                                 </button>
                             </div>
 
-                            {/* Envolvemos en un div con las clases de limpieza 
-          para no pasarle 'className' directamente al componente 
-        */}
                             <div className="contents-wrapper !border-0 !p-0 !shadow-none">
                                 <ResponsiveBannerEditor
-                                    // Agregamos title y description para satisfacer a TS
                                     title="Imagen promocional"
-                                    description="Imagen promocional para la vista."
+                                    description="Imagen promocional para la vista de blog."
                                     data={{
                                         src_desktop: item.src_desktop,
                                         src_mobile: item.src_mobile,
