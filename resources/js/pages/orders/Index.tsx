@@ -9,10 +9,14 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Ordenes', href: '/ordenes' }];
 
 interface OrdersIndexProps {
     paginatedOrders: Paginated<OrderRow>;
+    filters?: {
+        state?: string;
+        search?: string;
+    };
 }
 
 export default function OrdersIndex() {
-    const { paginatedOrders } = usePage().props as unknown as OrdersIndexProps;
+    const { paginatedOrders, filters } = usePage().props as unknown as OrdersIndexProps;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -33,7 +37,7 @@ export default function OrdersIndex() {
                         Exportar Ordenes
                     </button>
                 </div>
-                <OrdersTableList data={paginatedOrders} />
+                <OrdersTableList data={paginatedOrders} filters={filters} />
             </div>
         </AppLayout>
     );

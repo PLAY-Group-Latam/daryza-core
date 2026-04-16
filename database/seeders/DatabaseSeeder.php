@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
             ContactContentSeeder::class,
             AboutUsContentSeeder::class,
             BlogContentSeeder::class,
-            BlogSeeder::class,
+            // BlogSeeder::class,
             LandingSeeder::class,
             LandingLeadSeeder::class,
             SystemAllContentSeeder::class,

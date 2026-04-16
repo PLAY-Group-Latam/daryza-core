@@ -50,7 +50,10 @@ export const BlogSchema = z.object({
             .optional(),
         meta_description: z
             .string()
-            .max(500, 'La meta descripción no puede superar los 500 caracteres.')
+            .max(
+                500,
+                'La meta descripción no puede superar los 500 caracteres.',
+            )
             .optional(),
         meta_keywords: z
             .string()
@@ -221,7 +224,7 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                                             <Textarea
                                                 {...field}
                                                 placeholder="Escribe una breve descripción del blog"
-                                                className="min-h-[100px] rounded-xl border p-4 text-sm"
+                                                className="min-h-25 rounded-xl border p-4 text-sm"
                                             />
                                         </div>
                                     )}

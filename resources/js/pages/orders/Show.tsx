@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/custom-ui/PageHeader';
 import {
     OrderCustomerCard,
     OrderHistoryTable,
@@ -12,24 +13,30 @@ import {
 import { OrderDetail } from '@/components/orders/types';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
-import { BackButton } from '@/components/custom-ui/PageHeader';
 
 export default function OrdersShow() {
     const { order } = usePage<{ order: OrderDetail }>().props;
 
+    console.log('ordenes', order);
     return (
         <AppLayout>
             <div className="mb-6 flex items-center gap-4">
-                <BackButton></BackButton>
+                <BackButton />
             </div>
             <Head title={`Orden ${order.code}`} />
 
             <div className="flex flex-1 flex-col gap-5 rounded-xl text-sm">
                 <div className="flex flex-col gap-3 rounded-lg border p-5 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Detalles del pedido</p>
-                        <h1 className="text-2xl font-bold">Orden {order.code}</h1>
-                        <p className="text-xs text-muted-foreground">ID: {order.id}</p>
+                        <p className="text-sm text-muted-foreground">
+                            Detalles del pedido
+                        </p>
+                        <h1 className="text-2xl font-bold">
+                            Orden {order.code}
+                        </h1>
+                        <p className="text-xs text-muted-foreground">
+                            ID: {order.id}
+                        </p>
                     </div>
 
                     <OrderStateGuideDialog />

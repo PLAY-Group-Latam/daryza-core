@@ -167,8 +167,23 @@ class OrderService
                     'unit_price' => $unitPrice,
                     'line_total' => $unitPrice * $quantity,
                     'metadata' => [
+                        // Snapshot comercial para auditoria del item al momento de compra.
                         'is_on_promo' => (bool) $variant->is_on_promo,
-                        'promo_price' => $variant->promo_price,
+                        'regular_price' => (float) $variant->price,
+                        'variant_attributes' => $variant->attributes
+                            ->map(function ($attributeValue) {
+                                $attributeName = trim((string) data_get($attributeValue, 'attribute.name'));
+                                $value = trim((string) data_get($attributeValue, 'value'));
+
+                                if ($attributeName === '' && $value === '') {
+                                    return null;
+                                }
+
+                                return $attributeName !== '' ? "{$attributeName}: {$value}" : $value;
+                            })
+                            ->filter()
+                            ->values()
+                            ->all(),
                     ],
                 ]);
 
@@ -709,6 +724,7 @@ class OrderService
                 'product:id,name',
                 'product.categories:id',
                 'product.businessLines:id',
+                'attributes.attribute:id,name',
             ]);
 
         if ($lockForUpdate) {
