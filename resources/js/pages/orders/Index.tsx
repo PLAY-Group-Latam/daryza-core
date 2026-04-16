@@ -1,5 +1,5 @@
-import { OrdersTableList } from '@/components/orders';
-import { OrderRow } from '@/components/orders/types';
+import { OrdersTableList } from '@/components/custom-ui/orders';
+import { OrderRow } from '@/components/custom-ui/orders/types';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
@@ -16,7 +16,8 @@ interface OrdersIndexProps {
 }
 
 export default function OrdersIndex() {
-    const { paginatedOrders, filters } = usePage().props as unknown as OrdersIndexProps;
+    const { paginatedOrders, filters } = usePage()
+        .props as unknown as OrdersIndexProps;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

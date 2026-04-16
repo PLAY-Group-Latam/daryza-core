@@ -9,8 +9,8 @@ import {
     OrderStateGuideDialog,
     OrderStatusManager,
     OrderTotalsCard,
-} from '@/components/orders';
-import { OrderDetail } from '@/components/orders/types';
+} from '@/components/custom-ui/orders';
+import { OrderDetail } from '@/components/custom-ui/orders/types';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
 
