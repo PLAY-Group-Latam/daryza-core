@@ -53,7 +53,7 @@ class CouponController extends Controller
                 (string) auth('api')->id()
             );
 
-            return $this->success('Cupón válido.', collect($result)->except(['coupon'])->all());
+            return $this->success('Cupon validado correctamente.', collect($result)->except(['coupon'])->all());
         } catch (\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), null, 422);
         }
