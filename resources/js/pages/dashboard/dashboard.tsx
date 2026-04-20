@@ -61,7 +61,7 @@ const chartConfig = {
     revenue: { label: 'Ingresos', color: '#6366f1' },
 } satisfies ChartConfig;
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
+
 
 function EmptyState({ message = "No hay datos en este periodo", compact = false }) {
     return (
@@ -138,7 +138,7 @@ export default function Dashboard({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Dashboard Ecommerce" />
 
             <div className="flex min-h-screen flex-col gap-4 p-0">

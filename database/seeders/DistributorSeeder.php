@@ -15,7 +15,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'P & S PROFESSIONAL E.I.R.L.',
                 'region' => 'Arequipa',
-                'ruc' => '20612994511',
                 'address' => 'URB LAS BEGONIAS MZ G LOTE 6 JOSE LUIS BUSTAMANTE Y RIVERO',
                 'email' => 'peterflores@pysprofessional.com',
                 'phone' => '932600621',
@@ -31,7 +30,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'MUMAZ DISTRIBUCIONES S.A.C.',
                 'region' => 'Arequipa',
-                'ruc' => '20609814102',
                 'address' => 'MZA I LOTE 9 URB LOS ZAFIROS - PAUCARPATA',
                 'email' => 'lucho.munoz.ma@gmail.com',
                 'phone' => '959637693',
@@ -46,7 +44,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'COMERCIAL LA GOLOSINA S.A.C.',
                 'region' => 'Arequipa',
-                'ruc' => '20129973880',
                 'address' => 'CAL SAN PEDRO 275',
                 'email' => 'valeria.fernandez@lagolosina.com.pe',
                 'phone' => '994287414',
@@ -63,7 +60,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'DISTRIBUCIONES ABRAHAM INVERSIONES Y NEGOCIOS E.I.R.L.',
                 'region' => 'Tumbes',
-                'ruc' => '20610631704',
                 'address' => 'AV 28 DE JULIO LOS PINOS – ZORRITOS',
                 'email' => 'ramirezlopezguianella@gmail.com',
                 'phone' => '967103974',
@@ -78,7 +74,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'SOLUCIONES INTEGRALES EL SIAR E.I.R.L.',
                 'region' => 'Tumbes',
-                'ruc' => '20525558682',
                 'address' => 'AV PANAMERICANA NORTE 132 CANOAS DE PUNTA SAL',
                 'email' => 'siarbodega@gmail.com',
                 'phone' => '936417610',
@@ -95,7 +90,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'LUVAL EMPRESAS E.I.R.L.',
                 'region' => 'La Libertad',
-                'ruc' => '20612899895',
                 'address' => 'MZA X LOTE 5 URB COVICORTI',
                 'email' => 'medical59@outlook.com',
                 'phone' => '942270618',
@@ -110,7 +104,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'EUROQUIMICOS PERU S.A.C.',
                 'region' => 'La Libertad',
-                'ruc' => '20600316754',
                 'address' => 'Av. España 1246',
                 'email' => 'industriaselprincipe@hotmail.com',
                 'phone' => '956527651',
@@ -127,7 +120,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'VENTAS Y SERVICIOS ADRIANA NICOL S.R.L.',
                 'region' => 'Piura',
-                'ruc' => '20529727101',
                 'address' => 'MZA J LOTE 05 A.H JOSE OLAYA',
                 'email' => 'ventasyserviciosnicolsrl@hotmail.com',
                 'phone' => '905473343',
@@ -144,7 +136,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'SOFER DIAGNOSTICS E.I.R.L.',
                 'region' => 'Ica',
-                'ruc' => '20534929081',
                 'address' => 'Mza M Lote 08 C.P. El Tigre',
                 'email' => 'sofer.diagnostics@gmail.com',
                 'phone' => '950136987',
@@ -159,7 +150,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'HUERTAS CHAPILLIQUEN AMBAR MILUSKA',
                 'region' => 'Ica',
-                'ruc' => '10425330379',
                 'address' => 'URB CIUDADELA MAGISTERIAL H-15',
                 'email' => 'atencion@californiamail.com',
                 'phone' => '959592056',
@@ -176,7 +166,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'INVERSIONES SAN JORGE S.R.L.',
                 'region' => 'Junín',
-                'ruc' => '20486697947',
                 'address' => 'JR HUÁNUCO 445',
                 'email' => 'inversiones.sanjorge22@gmail.com',
                 'phone' => '978145000',
@@ -193,7 +182,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'PAPA DE AMERICA S.A.',
                 'region' => 'Cusco',
-                'ruc' => null,
                 'address' => null,
                 'email' => 'orion.areacomercial@gmail.com',
                 'phone' => '931061296',
@@ -208,7 +196,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'DISTRIBUCIONES LIP E.I.R.L.',
                 'region' => 'Cusco',
-                'ruc' => '20606178434',
                 'address' => 'MZA V LOTE 2 URB SANTA ROSA',
                 'email' => 'distribucioneslip7@gmail.com',
                 'phone' => '986815639',
@@ -223,7 +210,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'BYOCLEAN INVERSIONES E.I.R.L.',
                 'region' => 'Cusco',
-                'ruc' => '20603133995',
                 'address' => 'Av Tullumayo 545',
                 'email' => 'byocleanlimpieza@hotmail.com',
                 'phone' => '984957125',
@@ -238,7 +224,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'PLASTIQUERIA PAZ SUR S.A.C.',
                 'region' => 'Cusco',
-                'ruc' => '20527551154',
                 'address' => 'Cl Tres Cruces de Oro 284A',
                 'email' => 'pazsursac@hotmail.com',
                 'phone' => '958507175',
@@ -253,7 +238,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'HUILLCA SALAS LUCY',
                 'region' => 'Cusco',
-                'ruc' => '10076239741',
                 'address' => 'URB NACIONES UNIDAS LL-1',
                 'email' => 'Lucy9001@hotmail.es',
                 'phone' => '946587084',
@@ -270,7 +254,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'DISTRIBUIDORA JOBARO E.I.R.L.',
                 'region' => 'Loreto',
-                'ruc' => '20611453290',
                 'address' => 'MZA H LOTE 1 URB VIRGEN DE LORETO',
                 'email' => 'jbarciar@hotmail.com',
                 'phone' => '941983415',
@@ -285,7 +268,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'SERVICIOS GENERALES L & L E.I.R.L.',
                 'region' => 'Loreto',
-                'ruc' => '20600180976',
                 'address' => 'Calle Yavari 467',
                 'email' => 'larsvela@gmail.com',
                 'phone' => '948664568',
@@ -302,7 +284,6 @@ class DistributorSeeder extends Seeder
             [
                 'name' => 'DERO SERV.GENERALES S.R.L.',
                 'region' => 'Cajamarca',
-                'ruc' => '20560082411',
                 'address' => 'JR AYACUCHO 1235 BARRIO LA COLMENA',
                 'email' => 'serviciosgeneralesdero@gmail.com',
                 'phone' => '944534911',

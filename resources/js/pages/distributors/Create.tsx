@@ -110,23 +110,11 @@ export default function Create() {
                                         </p>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-1">
+                                    
                                     <div className="space-y-1.5">
                                         <Label className="text-[11px] font-semibold text-slate-600">
-                                            RUC
-                                        </Label>
-                                        <Input
-                                            value={data.ruc}
-                                            onChange={(e) =>
-                                                setData('ruc', e.target.value)
-                                            }
-                                            placeholder="20XXXXXXXXX"
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-600">
-                                            Ciudad / Región
+                                            Departamento / Región
                                         </Label>
                                         <Input
                                             value={data.region}
