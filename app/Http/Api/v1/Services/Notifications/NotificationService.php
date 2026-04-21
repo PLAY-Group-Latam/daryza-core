@@ -7,64 +7,69 @@ use App\Models\Customers\NotificationRead;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
+use Illuminate\Support\Collection;
 
 class NotificationService
 {
     const DEFAULT_IMAGE = '/images/daryza-default.png';
-
-
-   private function identifierQuery($query, $customerId, ?string $visitorId)
-    {
-        return $query->where(function ($q) use ($customerId, $visitorId) {
-            if ($customerId) {
-                $q->where('customer_id', $customerId);
-            } else {
-                $q->where('visitor_id', $visitorId);
-            }
-        });
-    }
 
     private function resolveImage(?string $image): string
     {
         return $image ?? self::DEFAULT_IMAGE;
     }
 
-   
-
-    public function getNotifications(?string $customerId, ?string $visitorId, int $perPage = 5): array
+    private function isPromotionActive($isOnPromo, $startAt, $endAt): bool
     {
+        if (!(bool)$isOnPromo) return false;
+        if ($startAt && $startAt->isFuture()) return false;
+        if ($endAt && $endAt->isPast()) return false;
 
-        $deletedIds = $this->identifierQuery(
-            NotificationRead::where('is_deleted', true),
-            $customerId,
-            $visitorId
-        )->pluck('notification_id')->toArray();
+        return true;
+    }
 
-  
-        $readMap = $this->identifierQuery(
-            NotificationRead::where('is_deleted', false),
-            $customerId,
-            $visitorId
-        )->pluck('read_at', 'notification_id');
+   
+    public function getNotifications(?string $customerId, int $perPage = 5): array
+    {
+        $dismissedIds = [];
+        $readMap = collect([]);
 
+        if ($customerId) {
+           
+            $dismissedIds = NotificationRead::where('customer_id', $customerId)
+                ->where('is_deleted', true)
+                ->pluck('notification_id')
+                ->toArray();
 
-        $paginator = Notification::whereNotIn('id', $deletedIds)
+          
+            $readMap = NotificationRead::where('customer_id', $customerId)
+                ->where('is_deleted', false)
+                ->pluck('read_at', 'notification_id');
+        }
+
+        $paginator = Notification::query()
+            ->when($customerId, fn($q) => $q->whereNotIn('id', $dismissedIds))
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        $data = $paginator->getCollection()->map(fn(Notification $n) => [
-            'id'      => $n->id,
-            'data'    => array_merge($n->data, [
-                'productImage' => $this->resolveImage($n->data['productImage'] ?? null),
-            ]),
-            'read_at' => $readMap[$n->id] ?? null,
-        ]);
+        $collection = $paginator->getCollection();
 
+        $data = $collection->map(function (Notification $n) use ($readMap) {
+            return [
+                'id' => $n->id,
+                'data' => array_merge($n->data, [
+                    'productImage' => $this->resolveImage($n->data['productImage'] ?? null),
+                ]),
+                'read_at' => $readMap[$n->id] ?? null,
+            ];
+        });
 
-        $unreadTotal = Notification::whereNotIn('id', array_merge(
-            $deletedIds,
-            $readMap->keys()->toArray()
-        ))->count();
+     
+     $unreadTotal = $customerId
+    ? Notification::whereNotIn('id', array_merge(
+        $dismissedIds,
+        $readMap->keys()->toArray()
+    ))->count()
+    : Notification::count();// ← guest ve el total real
 
         return [
             'data'        => $data,
@@ -74,63 +79,103 @@ class NotificationService
         ];
     }
 
-
-
-    public function markAsRead(string $id, ?string $customerId, ?string $visitorId): void
+   
+    public function markAsRead(string $id, string $customerId): void
     {
         NotificationRead::updateOrCreate(
             [
                 'notification_id' => $id,
                 'customer_id'     => $customerId,
-                'visitor_id'      => $visitorId,
             ],
-            ['read_at' => now(), 'is_deleted' => false]
+            [
+                'read_at' => now(),
+                'is_deleted' => false 
+            ]
+        );
+    }
+
+  
+    public function markAllAsRead(string $customerId): void
+    {
+        $dismissedIds = NotificationRead::where('customer_id', $customerId)
+            ->where('is_deleted', true)
+            ->pluck('notification_id');
+
+        $ids = Notification::whereNotIn('id', $dismissedIds)->pluck('id');
+
+        $now = now();
+
+        $rows = $ids->map(fn($id) => [
+            'notification_id' => $id,
+            'customer_id'     => $customerId,
+            'read_at'         => $now,
+            'is_deleted'      => false,
+        ])->toArray();
+
+        // 🔥 evita N queries
+        NotificationRead::upsert(
+            $rows,
+            ['notification_id', 'customer_id'],
+            ['read_at', 'is_deleted']
+        );
+    }
+
+    public function dismissNotification(string $id, string $customerId): void
+    {
+        NotificationRead::updateOrCreate(
+            [
+                'notification_id' => $id,
+                'customer_id'     => $customerId,
+            ],
+            [
+                'is_deleted' => true, // 🔥 ahora es "dismiss"
+                'read_at'    => now()
+            ]
         );
     }
 
 
+    public function syncNotifications(
+        string $customerId,
+        array $readIds = [],
+        array $dismissedIds = []
+    ): void {
 
-  public function markAllAsRead(?string $customerId, ?string $visitorId): void
-    {
-        $deletedIds = $this->identifierQuery(
-            NotificationRead::where('is_deleted', true),
-            $customerId,
-            $visitorId
-        )->pluck('notification_id')->toArray();
+        $now = now();
 
-        $pendingIds = Notification::whereNotIn('id', $deletedIds)->pluck('id');
+        if (!empty($readIds)) {
+            $readRows = collect($readIds)->map(fn($id) => [
+                'notification_id' => $id,
+                'customer_id'     => $customerId,
+                'read_at'         => $now,
+                'is_deleted'      => false,
+            ])->toArray();
 
-        foreach ($pendingIds as $notifId) {
-            NotificationRead::updateOrCreate(
-                [
-                    'notification_id' => $notifId,
-                    'customer_id'     => $customerId,
-                    'visitor_id'      => $visitorId,
-                ],
-                ['read_at' => now(), 'is_deleted' => false]
+            NotificationRead::upsert(
+                $readRows,
+                ['notification_id', 'customer_id'],
+                ['read_at', 'is_deleted']
+            );
+        }
+
+        if (!empty($dismissedIds)) {
+            $dismissRows = collect($dismissedIds)->map(fn($id) => [
+                'notification_id' => $id,
+                'customer_id'     => $customerId,
+                'read_at'         => $now,
+                'is_deleted'      => true,
+            ])->toArray();
+
+            NotificationRead::upsert(
+                $dismissRows,
+                ['notification_id', 'customer_id'],
+                ['read_at', 'is_deleted']
             );
         }
     }
 
-
-
-   public function deleteNotification(string $id, ?string $customerId, ?string $visitorId): void
-    {
-        NotificationRead::updateOrCreate(
-            [
-                'notification_id' => $id,
-                'customer_id'     => $customerId,
-                'visitor_id'      => $visitorId,
-            ],
-            ['is_deleted' => true, 'read_at' => now()]
-        );
-    }
-
-
-
     public function notifyNewProduct(Product $product): void
     {
-   
         $variant = $product->variants()
             ->where('is_main', true)
             ->where('is_active', true)
@@ -154,14 +199,17 @@ class NotificationService
                 'productImage' => $this->resolveImage($variant->mainImage?->file_path ?? null),
                 'timestamp'    => now()->toIso8601String(),
                 'url'          => $product->slug,
-                'inPromotion'  => (bool) $variant->is_on_promo,
+                'inPromotion'  => $this->isPromotionActive(
+                    $variant->is_on_promo,
+                    $variant->promo_start_at,
+                    $variant->promo_end_at
+                ),
             ],
         ]);
     }
 
     public function notifyNewPack(ProductPack $pack): void
     {
-     
         if (!$pack->is_active) return;
 
         $pack->loadMissing('mainImage');
@@ -179,40 +227,48 @@ class NotificationService
                 'productImage' => $this->resolveImage($pack->mainImage?->file_path ?? null),
                 'timestamp'    => now()->toIso8601String(),
                 'url'          => $pack->slug ?? '',
-                'inPromotion'  => (bool) $pack->is_on_promotion,
+                'inPromotion'  => $this->isPromotionActive(
+                    $pack->is_on_promotion,
+                    $pack->promo_start_at,
+                    $pack->promo_end_at
+                ),
             ],
         ]);
     }
 
     public function notifyPromotion(Product $product, ?ProductVariant $variant = null): void
-{
-    $variant ??= $product->variants()
-        ->where('is_main', true)
-        ->where('is_active', true)
-        ->first()
-        ?? $product->variants()->where('is_active', true)->first();
+    {
+        $variant ??= $product->variants()
+            ->where('is_main', true)
+            ->where('is_active', true)
+            ->first()
+            ?? $product->variants()->where('is_active', true)->first();
 
-    if (!$variant || !$product->is_active) return;
+        if (!$variant || !$product->is_active) return;
 
-    $variant->loadMissing('mainImage');
+        $variant->loadMissing('mainImage');
 
-    Notification::create([
-        'type'    => 'promotion',
-        'title'   => '¡Producto en promoción!',
-        'message' => 'Este producto ahora tiene descuento.',
-        'data'    => [
-            'type'         => 'promotion',
-            'title'        => '¡Producto en promoción!',
-            'message'      => 'Este producto ahora tiene descuento.',
-            'product_id'   => $product->id,
-            'productName'  => $product->name,
-            'productImage' => $this->resolveImage($variant->mainImage?->file_path ?? null),
-            'timestamp'    => now()->toIso8601String(),
-            'url'          => $product->slug,
-            'inPromotion'  => true,
-        ],
-    ]);
-}
+        Notification::create([
+            'type'    => 'promotion',
+            'title'   => '¡Producto en promoción!',
+            'message' => 'Este producto ahora tiene descuento.',
+            'data'    => [
+                'type'         => 'promotion',
+                'title'        => '¡Producto en promoción!',
+                'message'      => 'Este producto ahora tiene descuento.',
+                'product_id'   => $product->id,
+                'productName'  => $product->name,
+                'productImage' => $this->resolveImage($variant->mainImage?->file_path ?? null),
+                'timestamp'    => now()->toIso8601String(),
+                'url'          => $product->slug,
+                'inPromotion'  => $this->isPromotionActive(
+                    $variant->is_on_promo,
+                    $variant->promo_start_at,
+                    $variant->promo_end_at
+                ),
+            ],
+        ]);
+    }
 
     public function notifyOrderCreated($order): void
     {

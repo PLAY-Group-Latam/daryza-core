@@ -121,19 +121,10 @@ export default function Edit({ distributor }: Props) {
                                     {errors.name && <p className="text-[10px] text-red-500">{errors.name}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+                                   
                                     <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-600">RUC</Label>
-                                        <Input
-                                            value={data.ruc}
-                                            onChange={e => setData('ruc', e.target.value)}
-                                            placeholder="20XXXXXXXXX"
-                                            className="h-9 rounded-lg"
-                                        />
-                                        {errors.ruc && <p className="text-[10px] text-red-500">{errors.ruc}</p>}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-600">Ciudad / Región</Label>
+                                        <Label className="text-[11px] font-semibold text-slate-600">Departamento / Región</Label>
                                         <Input
                                             value={data.region}
                                             onChange={e => setData('region', e.target.value)}

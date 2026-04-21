@@ -33,7 +33,6 @@ export default function TableList({ data, filters }: TableListProps) {
             cell: ({ row }) => (
                 <div className="flex flex-col">
                     <span className="font-bold text-[#44AC34]">{row.original.name}</span>
-                    <span className="text-xs text-muted-foreground">RUC: {row.original.ruc || 'N/A'}</span>
                 </div>
             ),
         },

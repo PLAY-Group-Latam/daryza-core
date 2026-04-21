@@ -5,7 +5,7 @@ import { BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Ordenes', href: '/ordenes' }];
+
 
 interface OrdersIndexProps {
     paginatedOrders: Paginated<OrderRow>;
@@ -20,7 +20,7 @@ export default function OrdersIndex() {
         .props as unknown as OrdersIndexProps;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Ordenes" />
 
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
