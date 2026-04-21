@@ -19,10 +19,10 @@ class ValidateOrderRequest extends FormRequest
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
 
-            'shipping_info' => ['required', 'array'],
-            'shipping_info.department_id' => ['required', 'exists:departments,id'],
-            'shipping_info.province_id' => ['required', 'exists:provinces,id'],
-            'shipping_info.district_id' => ['required', 'exists:districts,id'],
+            'shipping_info' => ['nullable', 'array'],
+            'shipping_info.department_id' => ['nullable', 'string', 'exists:departments,id'],
+            'shipping_info.province_id' => ['nullable', 'string', 'exists:provinces,id'],
+            'shipping_info.district_id' => ['nullable', 'string', 'exists:districts,id'],
         ];
     }
 
