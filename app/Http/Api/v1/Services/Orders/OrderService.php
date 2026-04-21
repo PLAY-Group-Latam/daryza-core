@@ -46,20 +46,32 @@ class OrderService
             $discountTotal = (float) $couponData['discount_total'];
         }
 
+        $thresholds = $this->resolveOrderThresholds($subtotal);
+        $shipping = null;
+        $deliveryCost = 0.0;
         $shippingInput = $this->extractShippingInput($payload);
 
-        $shipping = $this->resolveShippingQuote(
-            $shippingInput['department_id'],
-            $shippingInput['province_id'],
-            $shippingInput['district_id'],
-            $subtotal
-        );
+        if ($shippingInput) {
+            $shipping = $this->resolveShippingQuote(
+                $shippingInput['department_id'],
+                $shippingInput['province_id'],
+                $shippingInput['district_id'],
+                $subtotal,
+                false
+            );
+            $deliveryCost = (float) $shipping['delivery_cost'];
+        }
 
         return [
+            'currency' => 'PEN',
+            'minimum_purchase_amount' => $thresholds['minimum_purchase_amount'],
+            'amount_missing_for_minimum_purchase' => $thresholds['amount_missing_for_minimum_purchase'],
+            'free_delivery_threshold' => $thresholds['free_delivery_threshold'],
+            'amount_to_free_delivery' => $thresholds['amount_to_free_delivery'],
             'subtotal' => round($subtotal, 2),
-            'delivery_cost' => round($shipping['delivery_cost'], 2),
+            'delivery_cost' => round($deliveryCost, 2),
             'discount_total' => round($discountTotal, 2),
-            'total' => round(($subtotal - $discountTotal) + $shipping['delivery_cost'], 2),
+            'total' => round(($subtotal - $discountTotal) + $deliveryCost, 2),
             'shipping' => $shipping,
             'coupon' => $couponData ? Arr::except($couponData, ['coupon']) : null,
             'items' => $this->previewItemsPayload($items, $variants),
@@ -648,7 +660,13 @@ class OrderService
         ];
     }
 
-    private function resolveShippingQuote(string $departmentId, string $provinceId, string $districtId, float $subtotal): array
+    private function resolveShippingQuote(
+        string $departmentId,
+        string $provinceId,
+        string $districtId,
+        float $subtotal,
+        bool $enforceMinimumOrder = true
+    ): array
     {
         $department = Department::query()->findOrFail($departmentId);
         $province = Province::query()->findOrFail($provinceId);
@@ -676,26 +694,46 @@ class OrderService
             throw new \InvalidArgumentException('No hay cobertura de delivery para la zona seleccionada.');
         }
 
-        $settings = DeliverySetting::query()->first();
-        $minimumOrder = (float) ($settings?->order_amount_threshold ?? 0);
-        $freeDeliveryThreshold = (float) ($settings?->minimum_order_amount ?? 0);
+        $thresholds = $this->resolveOrderThresholds($subtotal);
+        $minimumOrder = $thresholds['minimum_purchase_amount'];
+        $freeDeliveryThreshold = $thresholds['free_delivery_threshold'];
 
-        if ($subtotal < $minimumOrder) {
+        if ($enforceMinimumOrder && $subtotal < $minimumOrder) {
             throw new \InvalidArgumentException("El monto mínimo para comprar es S/ {$minimumOrder}.");
         }
 
-        $deliveryCost = $subtotal >= $freeDeliveryThreshold ? 0 : (float) $zone->delivery_cost;
+        $deliveryCost = !is_null($freeDeliveryThreshold) && $subtotal >= $freeDeliveryThreshold
+            ? 0
+            : (float) $zone->delivery_cost;
 
         return [
             'zone_type' => $zone->zone_type,
             'zone_id' => $zone->zone_id,
             'delivery_cost' => round($deliveryCost, 2),
-            'minimum_order_threshold' => $minimumOrder,
-            'free_delivery_threshold' => $freeDeliveryThreshold,
-            'amount_to_free_delivery' => max(0, round($freeDeliveryThreshold - $subtotal, 2)),
+            'minimum_order_threshold' => $thresholds['minimum_purchase_amount'],
+            'amount_missing_for_minimum_purchase' => $thresholds['amount_missing_for_minimum_purchase'],
+            'free_delivery_threshold' => $thresholds['free_delivery_threshold'],
+            'amount_to_free_delivery' => $thresholds['amount_to_free_delivery'],
             'department_name' => $department->name,
             'province_name' => $province->name,
             'district_name' => $district->name,
+        ];
+    }
+
+    private function resolveOrderThresholds(float $subtotal): array
+    {
+        $settings = DeliverySetting::query()->first();
+        $minimumPurchaseAmount = round((float) ($settings?->order_amount_threshold ?? 0), 2);
+        $rawFreeDeliveryThreshold = $settings?->minimum_order_amount;
+        $freeDeliveryThreshold = is_null($rawFreeDeliveryThreshold) ? null : round((float) $rawFreeDeliveryThreshold, 2);
+
+        return [
+            'minimum_purchase_amount' => $minimumPurchaseAmount,
+            'amount_missing_for_minimum_purchase' => max(0, round($minimumPurchaseAmount - $subtotal, 2)),
+            'free_delivery_threshold' => $freeDeliveryThreshold,
+            'amount_to_free_delivery' => is_null($freeDeliveryThreshold)
+                ? 0.0
+                : max(0, round($freeDeliveryThreshold - $subtotal, 2)),
         ];
     }
 
@@ -790,12 +828,26 @@ class OrderService
             ->all();
     }
 
-    private function extractShippingInput(array $payload): array
+    private function extractShippingInput(array $payload): ?array
     {
-        return $payload['shipping_info'] ?? [
-            'department_id' => $payload['department_id'],
-            'province_id' => $payload['province_id'],
-            'district_id' => $payload['district_id'],
+        $shippingInfo = $payload['shipping_info'] ?? [
+            'department_id' => data_get($payload, 'department_id'),
+            'province_id' => data_get($payload, 'province_id'),
+            'district_id' => data_get($payload, 'district_id'),
+        ];
+
+        $departmentId = trim((string) data_get($shippingInfo, 'department_id'));
+        $provinceId = trim((string) data_get($shippingInfo, 'province_id'));
+        $districtId = trim((string) data_get($shippingInfo, 'district_id'));
+
+        if ($departmentId === '' || $provinceId === '' || $districtId === '') {
+            return null;
+        }
+
+        return [
+            'department_id' => $departmentId,
+            'province_id' => $provinceId,
+            'district_id' => $districtId,
         ];
     }
 

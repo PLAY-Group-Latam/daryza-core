@@ -3,8 +3,11 @@
 use App\Http\Api\v1\Controllers\Orders\OrderController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('orders')->middleware('auth:api')->group(function () {
+Route::prefix('orders')->group(function () {
     Route::post('validate_order', [OrderController::class, 'validateOrder']);
+});
+
+Route::prefix('orders')->middleware('auth:api')->group(function () {
     Route::get('/', [OrderController::class, 'index']);
     Route::post('/', [OrderController::class, 'store']);
     Route::get('{order}', [OrderController::class, 'show']);
