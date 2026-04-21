@@ -4,7 +4,9 @@ import { OrderDetail } from './types';
 
 export default function OrderTotalsCard({ order }: { order: OrderDetail }) {
     const subtotal = Number(order.subtotal ?? 0);
-    const couponDiscount = Number(order.coupon_discount_total ?? order.discount_total ?? 0);
+    const couponDiscount = Number(
+        order.coupon_discount_total ?? order.discount_total ?? 0,
+    );
     const deliveryCost = Number(order.delivery_cost ?? 0);
     const deliveryDiscount = Number(order.delivery_discount_total ?? 0);
     const total = Number(order.total ?? 0);
@@ -35,7 +37,7 @@ export default function OrderTotalsCard({ order }: { order: OrderDetail }) {
                     </div>
                 )}
                 <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Envio</span>
+                    <span className="text-muted-foreground">Delivery</span>
                     <span>S/ {deliveryCost.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-2 font-semibold">

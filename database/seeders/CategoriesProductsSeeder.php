@@ -69,7 +69,6 @@ class CategoriesProductsSeeder extends Seeder
                 'Virucidas',
             ],
 
-            'Packs' => [],
         ];
 
 

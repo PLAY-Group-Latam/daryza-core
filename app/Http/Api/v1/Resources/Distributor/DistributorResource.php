@@ -12,7 +12,6 @@ class DistributorResource extends JsonResource
         return [
             'id'                => $this->id,
             'name'              => $this->name,
-            'ruc'               => $this->ruc,
             'region'            => $this->region,
             'address'           => $this->address,
             'email'             => $this->email,

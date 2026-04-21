@@ -1,13 +1,15 @@
 'use client';
 
 import { useForm } from '@inertiajs/react';
-import { Save, Monitor, Smartphone, Link2, ImagePlus } from 'lucide-react';
+import { Save, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
 import { Upload } from '@/components/custom-ui/upload';
+// Importamos el editor responsivo
+import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 
 interface SingleImage {
   src_desktop: File | string | null;
@@ -71,8 +73,9 @@ export default function FilterProductEditor({ section }: Props) {
     },
   }));
 
-  const updateBanner = (patch: Partial<SingleImage>) =>
-    setData('content', { ...data.content, banner: { ...data.content.banner, ...patch } });
+  // Handlers de actualización
+  const updateBanner = (updates: Partial<SingleImage>) =>
+    setData('content', { ...data.content, banner: { ...data.content.banner, ...updates } });
 
   const updatePromo = (patch: Partial<SingleImage>) =>
     setData('content', { ...data.content, promo: { ...data.content.promo, ...patch } });
@@ -88,61 +91,29 @@ export default function FilterProductEditor({ section }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6 pb-10">
 
-      {/* ── Banner Estático ─────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg text-primary">
-            <ImagePlus size={20} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Banner Principal</h3>
-            <p className="text-sm text-slate-500">Formato horizontal para la cabecera del listado.</p>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-                <Monitor size={12} /> Desktop (Horizontal)
-              </Label>
-              <UploadFixed
-                value={data.content.banner.src_desktop}
-                onChange={(file) => updateBanner({ src_desktop: file })}
-                className="w-full aspect-[3/1]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-                <Smartphone size={12} /> Móvil
-              </Label>
-              <UploadFixed
-                value={data.content.banner.src_mobile}
-                onChange={(file) => updateBanner({ src_mobile: file })}
-                className="w-[120px] aspect-[9/16]"
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-              <Link2 size={12} /> URL destino
-            </Label>
-            <Input
-              value={data.content.banner.link_url}
-              onChange={(e) => updateBanner({ link_url: e.target.value })}
-              placeholder="https://ejemplo.com"
-            />
-          </div>
-        </div>
+      {/* ── SECCIÓN BANNER PRINCIPAL (Usando el componente responsivo) ── */}
+      <div className="relative">
+        <ResponsiveBannerEditor
+          title="Banner Principal"
+          description="Este banner aparecera en la página de productos."
+          data={{
+            src_desktop: data.content.banner.src_desktop,
+            src_mobile: data.content.banner.src_mobile,
+            link_url: data.content.banner.link_url,
+            type: 'url',
+          }}
+          onChange={(updates) => updateBanner(updates)}
+          showTypeTabs={false}
+        />
       </div>
 
-      {/* ── Imagen Promocional (Ajustada) ──────────────────────── */}
+      {/* ── SECCIÓN PROMOCIONAL LATERAL (Sin cambios, como pediste) ── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-          <div className="p-2 bg-orange-500/10 rounded-lg text-orange-600">
-            <ImagePlus size={20} />
+          <div className="p-2  bg-primary/10 rounded-lg">
+            <Image size={20} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900">Imagen Promocional Lateral</h3>
@@ -152,10 +123,9 @@ export default function FilterProductEditor({ section }: Props) {
 
         <div className="p-6 space-y-6">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Contenedor de imagen con ancho fijo y alto proporcional */}
             <div className="space-y-2 shrink-0">
-              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-                <Monitor size={12} /> Imagen Vertical
+              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400 font-bold">
+                Imagen Vertical
               </Label>
               <UploadFixed
                 value={data.content.promo.src_desktop}
@@ -164,20 +134,18 @@ export default function FilterProductEditor({ section }: Props) {
               />
             </div>
             
-            {/* Nota pegada a la imagen para eliminar espacio sobrante */}
             <div className="flex-1 space-y-6 pt-6">
-              <div className="bg-amber-50 border border-amber-100 p-5 rounded-xl">
-                <h4 className="text-sm font-bold text-amber-800 mb-1 leading-none">Información de diseño</h4>
-                <p className="text-xs text-amber-700 leading-relaxed">
+              <div className="bg-slate-50 border  p-5 rounded-xl">
+                <h4 className="text-sm font-bold mb-1 leading-none">Información de diseño</h4>
+                <p className="text-xs  leading-relaxed">
                   Esta sección requiere una <strong>imagen vertical (proporción 9:16)</strong>. 
-                  En la tienda se ubicará de forma fija en la columna lateral o intercalada entre las tarjetas de producto. 
-                  Asegúrese de que los textos sean legibles en este formato.
+                  En la tienda se ubicará de forma fija en la columna lateral. 
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1 text-xs uppercase text-slate-400 font-bold">
-                  <Link2 size={12} /> URL destino de promoción
+                  URL destino de promoción
                 </Label>
                 <Input
                   value={data.content.promo.link_url}
@@ -191,13 +159,13 @@ export default function FilterProductEditor({ section }: Props) {
         </div>
       </div>
 
+      {/* BOTÓN GUARDAR */}
       <div className="flex justify-end pt-4">
         <Button type="submit" disabled={processing} className="px-12 py-6 rounded-xl shadow-lg gap-2 text-base font-black uppercase tracking-tight">
           <Save size={20} />
           {processing ? 'Guardando...' : 'Guardar Cambios'}
         </Button>
       </div>
-
     </form>
   );
 }

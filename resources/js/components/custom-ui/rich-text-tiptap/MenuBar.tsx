@@ -190,7 +190,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                    className="w-[250px] rounded-t-none"
+                    className="w-62.5 rounded-t-none"
                     sideOffset={8}
                 >
                     <div className="flex flex-col gap-2">
@@ -217,10 +217,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
                         <ImageIcon className="h-4 w-4" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent
-                    className="w-[300px] rounded-t-none"
-                    sideOffset={8}
-                >
+                <PopoverContent className="w-75 rounded-t-none" sideOffset={8}>
                     <div className="flex flex-col gap-2">
                         {/* Input de URL */}
                         <Input

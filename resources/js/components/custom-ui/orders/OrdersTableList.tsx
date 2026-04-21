@@ -23,12 +23,17 @@ import {
     getAdminActionLabel,
     getUnifiedOrderStatus,
     isAdminActionAvailable,
+    stateOptions,
     UnifiedStatusBadge,
 } from './status';
 import { OrderRow } from './types';
 
 interface OrdersTableListProps {
     data: Paginated<OrderRow>;
+    filters?: {
+        state?: string;
+        search?: string;
+    };
 }
 
 function RowActions({ order }: { order: OrderRow }) {
@@ -49,7 +54,7 @@ function RowActions({ order }: { order: OrderRow }) {
     );
 }
 
-export default function OrdersTableList({ data }: OrdersTableListProps) {
+export default function OrdersTableList({ data, filters }: OrdersTableListProps) {
     const pageIds = useMemo(
     () => data.data.map((order) => order.id),
     [data.data]
@@ -57,6 +62,31 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isApplying, setIsApplying] = useState(false);
     const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+    const currentStateFilter = filters?.state ?? 'all';
+    const currentSearch = filters?.search ?? '';
+
+    const applyTableFilters = useCallback(
+        (next: { state?: string; search?: string }) => {
+            const nextState = next.state ?? currentStateFilter;
+            const nextSearch = next.search ?? currentSearch;
+
+            router.get(
+                '/ordenes',
+                {
+                    state: nextState !== 'all' ? nextState : undefined,
+                    search: nextSearch || undefined,
+                    page: 1,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    only: ['paginatedOrders', 'filters'],
+                },
+            );
+        },
+        [currentSearch, currentStateFilter],
+    );
 
     const allSelected =
         pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
@@ -204,11 +234,51 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
             },
             {
                 id: 'unified_status',
-                header: 'Estado',
+                header: () => (
+                    <div className="w-[190px]">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-8 w-full justify-start px-2 font-medium"
+                                >
+                                    Estado
+                                    <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56">
+                                <DropdownMenuItem
+                                    onClick={() => applyTableFilters({ state: 'all' })}
+                                    className={currentStateFilter === 'all' ? 'font-semibold' : ''}
+                                >
+                                    Todos
+                                </DropdownMenuItem>
+                                {stateOptions.map((option) => (
+                                    <DropdownMenuItem
+                                        key={option.value}
+                                        onClick={() =>
+                                            applyTableFilters({ state: option.value })
+                                        }
+                                        className={
+                                            currentStateFilter === option.value
+                                                ? 'font-semibold'
+                                                : ''
+                                        }
+                                    >
+                                        {option.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                ),
                 cell: ({ row }) => (
-                    <UnifiedStatusBadge
-                        status={getUnifiedOrderStatus(row.original)}
-                    />
+                    <div className="w-[190px]">
+                        <UnifiedStatusBadge
+                            status={getUnifiedOrderStatus(row.original)}
+                        />
+                    </div>
                 ),
             },
             {
@@ -235,7 +305,7 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 cell: ({ row }) => <RowActions order={row.original} />,
             },
         ],
-        [allSelected, selectedIds, toggleAll, toggleOne],
+        [allSelected, selectedIds, toggleAll, toggleOne, currentStateFilter, applyTableFilters],
     );
 
     const selectedOrders = data.data.filter((order) =>
@@ -297,6 +367,8 @@ export default function OrdersTableList({ data }: OrdersTableListProps) {
                 columns={columns}
                 data={data}
                 toolbarRight={toolbarRight}
+                initialSearch={currentSearch}
+                onSearch={(value) => applyTableFilters({ search: value })}
             />
         </div>
     );

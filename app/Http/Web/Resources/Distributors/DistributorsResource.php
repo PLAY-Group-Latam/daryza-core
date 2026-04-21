@@ -15,7 +15,6 @@ class DistributorsResource extends JsonResource
             'id'                => $this->id,
             'name'              => $this->name,
             'region'            => $this->region,
-            'ruc'               => $this->ruc,
             'address'           => $this->address,
             'email'             => $this->email,
             'phone'             => $this->phone,

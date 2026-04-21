@@ -1,41 +1,14 @@
 'use client';
 
 import { useForm } from '@inertiajs/react';
-import { Save, Monitor, Smartphone, Link2, ImagePlus } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
-import { Upload } from '@/components/custom-ui/upload';
-import {BannerContentAll} from '@/types/content/content-types';
-
-
-function UploadFixed({
-  value,
-  onChange,
-  className,
-}: {
-  value: File | string | null;
-  onChange: (f: File | string | null) => void;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden ${className ?? ''}`}>
-      <div className="w-full h-full [&>*]:!w-full [&>*]:!h-full [&_img]:!object-cover">
-        <Upload
-          value={value}
-          onFileChange={onChange}
-          accept="image/*"
-          previewClassName="!w-full !h-full !object-cover !border-0 !bg-transparent"
-        />
-      </div>
-    </div>
-  );
-}
+import { BannerContentAll } from '@/types/content/content-types';
+import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 
 export default function CheckoutEditor({ section }: Props) {
-
   const rawContent = section.content?.content as BannerContentAll;
 
   const { data, setData, put, processing } = useForm<{ content: BannerContentAll }>({
@@ -59,67 +32,31 @@ export default function CheckoutEditor({ section }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-6">
+      
+      <ResponsiveBannerEditor
+        title="Banner Principal"
+        description="Este banner aparecerá en la pantalla de finalización de compra."
+        data={{
+          src_desktop: data.content.src_desktop,
+          src_mobile: data.content.src_mobile,
+          link_url: data.content.link_url ?? '',
+          type: 'url',
+        }}
+        onChange={(updates) => setData('content', { 
+            ...data.content, 
+            ...updates 
+        })}
+        showTypeTabs={false}
+      />
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg text-primary">
-            <ImagePlus size={20} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Banner de Checkout</h3>
-            <p className="text-sm text-slate-500">
-              Imagen desktop, móvil y enlace de destino para la página de checkout.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-                <Monitor size={12} /> Desktop
-              </Label>
-              <UploadFixed
-                value={data.content.src_desktop}
-                onChange={(file) => setData('content', { ...data.content, src_desktop: file })}
-                className="w-full aspect-[3/1]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-                <Smartphone size={12} /> Móvil
-              </Label>
-              <UploadFixed
-                value={data.content.src_mobile}
-                onChange={(file) => setData('content', { ...data.content, src_mobile: file })}
-                className="w-[120px] aspect-[9/16]"
-              />
-            </div>
-
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1 text-xs uppercase text-slate-400">
-              <Link2 size={12} /> URL destino
-            </Label>
-            <Input
-              value={data.content.link_url}
-              onChange={(e) => setData('content', { ...data.content, link_url: e.target.value })}
-              placeholder="https://ejemplo.com"
-            />
-          </div>
-
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={processing} className="px-10 py-6 rounded-xl shadow-md gap-2 text-base font-bold">
+      <div className="flex justify-end pt-2">
+        <Button 
+          type="submit" 
+          disabled={processing} 
+          className="px-12 py-6 rounded-xl shadow-lg gap-2 text-base font-black uppercase tracking-tight"
+        >
           <Save size={20} />
-          {processing ? 'Guardando...' : 'Guardar Cambios'}
+          {processing ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
         </Button>
       </div>
 

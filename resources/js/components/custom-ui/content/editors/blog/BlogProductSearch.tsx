@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import {
@@ -13,11 +12,25 @@ import debounce from 'lodash/debounce';
 import { Loader2, Plus } from 'lucide-react';
 import * as React from 'react';
 
-// Define aquí la URL de tu imagen por defecto
-const DEFAULT_IMAGE =
-    'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
+// --- Interfaces ---
 
-export function BlogProductSearch({ searchResults = [], onSelect }: any) {
+interface ProductResult {
+    product_id: number | string;
+    product_name: string;
+    sku: string;
+    image?: string | null;
+    active_price: number | string;
+    [key: string]: unknown; // Para compatibilidad con otras props del backend
+}
+
+interface BlogProductSearchProps {
+    searchResults?: ProductResult[];
+    onSelect: (product: ProductResult) => void;
+}
+
+const DEFAULT_IMAGE = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
+
+export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductSearchProps) {
     const [open, setOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false);
@@ -26,7 +39,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
         if (!searchTerm || searchTerm.length < 1) return searchResults;
         const lower = searchTerm.toLowerCase();
         return searchResults.filter(
-            (r: any) =>
+            (r) =>
                 r.product_name?.toLowerCase().includes(lower) ||
                 r.sku?.toLowerCase().includes(lower),
         );
@@ -60,6 +73,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
     };
 
     const containerRef = React.useRef<HTMLDivElement>(null);
+
     React.useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (
@@ -100,7 +114,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                 </div>
 
                 {showDropdown && (
-                    <div className="absolute top-full left-0 z-100 mt-2 max-h-100 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                    <div className="absolute top-full left-0 z-[100] mt-2 max-h-100 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                         <CommandList className="max-h-100 overflow-y-auto">
                             {filteredResults.length === 0 ? (
                                 <div className="p-8 text-center text-sm text-slate-500 italic">
@@ -113,7 +127,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                     heading={`${filteredResults.length} resultado${filteredResults.length !== 1 ? 's' : ''}`}
                                     className="p-2"
                                 >
-                                    {filteredResults.map((res: any) => (
+                                    {filteredResults.map((res) => (
                                         <CommandItem
                                             key={res.product_id}
                                             value={`${res.product_name}-${res.product_id}`}
@@ -122,22 +136,15 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                                 setOpen(false);
                                                 setSearchTerm('');
                                             }}
-                                            className="group mb-1 flex cursor-pointer items-center gap-4 rounded-xl border-b border-slate-100 p-3 last:border-0 hover:bg-slate-50"
+                                            className="group mb-1 flex cursor-pointer items-center gap-4 rounded-xl border-b border-slate-100 p-3 last:border-0 hover:bg-slate-50 transition-colors"
                                         >
-                                            {/* CONTENEDOR DE IMAGEN MODIFICADO */}
                                             <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                                 <img
-                                                    src={
-                                                        res.image ||
-                                                        DEFAULT_IMAGE
-                                                    }
+                                                    src={res.image || DEFAULT_IMAGE}
                                                     alt={res.product_name}
                                                     className="h-full w-full object-cover"
-                                                    // Manejo de error por si la URL de la imagen está rota
                                                     onError={(e) => {
-                                                        (
-                                                            e.target as HTMLImageElement
-                                                        ).src = DEFAULT_IMAGE;
+                                                        (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
                                                     }}
                                                 />
                                             </div>
@@ -150,7 +157,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                                     />
                                                 </span>
                                                 <span className="text-xs font-bold text-primary">
-                                                    ${res.active_price}
+                                                    S/ {res.active_price}
                                                 </span>
                                                 <span className="font-mono text-[10px] text-slate-400 uppercase">
                                                     SKU:{' '}
@@ -159,13 +166,11 @@ export function BlogProductSearch({ searchResults = [], onSelect }: any) {
                                                         query={searchTerm}
                                                     />
                                                 </span>
-                                                <span className="text-xs font-bold text-primary">
-                                                    ${res.active_price}
-                                                </span>
                                             </div>
 
-                                            <div className="flex-shrink-0 rounded-full bg-primary/10 p-2 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                                                <Plus size={16} />
+                                            {/* CIRCULO DE PLUS MODIFICADO: Fondo negro y plus blanco al hacer hover */}
+                                            <div className="flex-shrink-0 rounded-full bg-slate-100 p-2 text-white transition-all duration-200 group-hover:bg-slate-900 group-hover:text-white">
+                                                <Plus size={16} strokeWidth={3} />
                                             </div>
                                         </CommandItem>
                                     ))}

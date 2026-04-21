@@ -122,7 +122,7 @@ class SeoPageSeeder extends Seeder
             // --- BLOG ---
             [
                 'slug' => 'blog',
-                'title' => 'Blog de Limpieza',
+                'title' => 'Blog Daryza',
                 'path' => '/blog',
                 'meta_title' => "Tips de Limpieza y Novedades | $brand",
                 'meta_description' => 'Guías prácticas, noticias del sector y consejos para mantener tus espacios impecables.',

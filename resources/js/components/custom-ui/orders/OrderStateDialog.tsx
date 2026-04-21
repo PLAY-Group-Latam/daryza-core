@@ -66,7 +66,7 @@ export default function OrderStateDialog({
     inline = false,
 }: OrderStateDialogProps) {
     const [open, setOpen] = useState(false);
-    const [action, setAction] = useState<AdminOrderAction>('accept_payment');
+    const [action, setAction] = useState<AdminOrderAction | ''>('');
     const [note, setNote] = useState('');
     const [updating, setUpdating] = useState(false);
     const [errors, setErrors] = useState<Record<string, string | undefined>>(
@@ -88,12 +88,16 @@ export default function OrderStateDialog({
     const previousState = useMemo(() => getPreviousState(order), [order]);
 
     useEffect(() => {
-        if (availableActions.length > 0) {
-            setAction(availableActions[0].value);
-        }
-    }, [order.id, availableActions]);
+        setAction('');
+    }, [order.id, open]);
 
     const patchAction = () => {
+        if (!action) {
+            setErrors({ action: 'Selecciona un estado antes de continuar.' });
+            toast.error('Selecciona un estado antes de continuar.');
+            return;
+        }
+
         setUpdating(true);
         setErrors({});
         router.patch(
@@ -158,7 +162,9 @@ export default function OrderStateDialog({
                 </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                    {rollbackAction === action && previousState
+                    {!action
+                        ? 'Selecciona el estado al que quieres mover la orden.'
+                        : rollbackAction === action && previousState
                         ? `Devuelve la orden a ${getStateLabel(previousState)}.`
                         : ACTION_HELP[action]}
                 </p>
@@ -184,7 +190,7 @@ export default function OrderStateDialog({
                 type="button"
                 size="sm"
                 className="w-full"
-                disabled={updating || availableActions.length === 0}
+                disabled={updating || availableActions.length === 0 || !action}
                 onClick={patchAction}
             >
                 {updating ? 'Guardando...' : 'Aplicar acción'}

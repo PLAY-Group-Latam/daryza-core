@@ -96,15 +96,10 @@ export default function Show({ distributor }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+                                   
                                     <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-400">RUC</Label>
-                                        <div className="text-sm font-mono font-bold text-slate-700 bg-slate-50/50 p-2 rounded-md border border-slate-100">
-                                            {distributor.ruc || '---'}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-400">Ciudad / Región</Label>
+                                        <Label className="text-[11px] font-semibold text-slate-400">Departamento / Región</Label>
                                         <div className="text-sm font-semibold text-slate-700 bg-slate-50/50 p-2 rounded-md border border-slate-100">
                                             {distributor.region}
                                         </div>

@@ -284,6 +284,7 @@ export interface ConsultaCard {
   titulo_bold:   string;
   imagen:        FileOrString;
   items:         ConsultaItem[];
+ 
 }
 
 export interface ContactGeneralContent {
