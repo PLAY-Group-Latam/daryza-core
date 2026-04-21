@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'footer_logo_header' => [
-        'image' => 'https://storage.googleapis.com/daryza_dev/sections/8/images/699d59584229d.svg',
+        'image' => 'https://storage.googleapis.com/daryza_dev/sections/8/images/69e630a13c487.webp',
     ],
 
     /*
@@ -17,7 +17,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'footer_logo_footer' => [
-        'image' => 'https://storage.googleapis.com/daryza_dev/sections/9/images/699d59683722c.svg',
+        'image' => 'https://storage.googleapis.com/daryza_dev/sections/9/images/69e630d3ca85a.webp',
     ],
 
     /*
