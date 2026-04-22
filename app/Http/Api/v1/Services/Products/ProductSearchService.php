@@ -9,6 +9,7 @@ use App\Models\Products\AttributesValue;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\DynamicCategory;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ProductSearchService
 {
@@ -31,6 +32,40 @@ class ProductSearchService
             'products'    => $products->map(fn($p) => $this->formatProductResponse($p))->values(),
             'suggestions' => $suggestions->values()->take($limit),
         ];
+    }
+
+    // =========================================================================
+    // Lógica de "Intención" (Smart Routing)
+    // =========================================================================
+
+    /**
+     * Detecta si la búsqueda del usuario coincide exactamente con una entidad.
+     * Esto permite "saltar" directo a la categoría/marca en lugar de buscar productos.
+     */
+    private function resolveSmartRedirect(string $q): string
+    {
+        $lowQ = mb_strtolower($q);
+
+        // 1. Línea de Negocio
+        $bl = BusinessLine::where('is_active', true)->whereRaw('LOWER(name) = ?', [$lowQ])->first();
+        if ($bl) return "/productos?business_lines[]={$bl->slug}";
+
+        // 2. Categoría (Standard)
+        $cat = ProductCategory::active()->whereRaw('LOWER(name) = ?', [$lowQ])->first();
+        if ($cat) {
+            return $cat->parent_id 
+                ? "/productos?categories[]={$cat->parent->slug}&subcategories[]={$cat->slug}"
+                : "/productos?categories[]={$cat->slug}";
+        }
+
+        // 3. Marca (AttributeValue)
+        $brand = AttributesValue::whereHas('attribute', fn($q) => $q->where('name', 'ILIKE', '%Marca%'))
+            ->whereRaw('LOWER(value) = ?', [$lowQ])
+            ->first();
+        if ($brand) return "/productos?brands[]={$brand->id}";
+
+        // Fallback: Búsqueda normal de texto
+        return '/productos?q=' . urlencode($q);
     }
 
     // =========================================================================
@@ -70,9 +105,9 @@ class ProductSearchService
             ->concat($this->suggestDynamics($q))
             ->unique(fn($item) => mb_strtolower($item['text']));
 
-        $hasExactMatch = $entities->contains(
-            fn($item) => mb_strtolower($item['text']) === $lowQ
-        );
+        // Si ya tenemos una sugerencia exacta (ej: el usuario escribió "Zapatillas" y existe la categoría),
+        // no duplicamos la opción de búsqueda genérica al inicio.
+        $hasExactMatch = $entities->contains(fn($item) => mb_strtolower($item['text']) === $lowQ);
 
         $head = $hasExactMatch
             ? collect()
@@ -85,28 +120,47 @@ class ProductSearchService
         return $head->concat($entities);
     }
 
-    private function suggestCategories(string $q): Collection
+    private function generalSearchUrl(string $q, string $lowQ): string
     {
-        return ProductCategory::active()
-            ->where('name', 'ILIKE', "%{$q}%")
-            ->with('parent:id,slug')
-            ->limit(3)
-            ->get()
-            ->map(fn($c) => [
-                'text' => $c->name,
-                'url'  => $c->parent_id
-                    ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}"
-                    : "/productos?categories[]={$c->slug}",
-                'type' => 'category',
-            ]);
+        if (in_array($lowQ, ['pack', 'packs'])) {
+            return '/productos?is_pack=true';
+        }
+
+        // Aquí usamos la lógica "God"
+        return $this->resolveSmartRedirect($q);
     }
+
+    // =========================================================================
+    // Helpers de Búsqueda (Live Data)
+    // =========================================================================
+
+   private function suggestCategories(string $q): Collection
+{
+    return ProductCategory::active()
+        ->where('name', 'ILIKE', "%{$q}%")
+        ->with('parent:id,slug')
+        
+        ->orderByRaw('CASE 
+            WHEN name ILIKE ? THEN 1    -- 1. Exact match (ej: "Papel")
+            WHEN name ILIKE ? THEN 2    -- 2. Empieza con (ej: "Papel...")
+            ELSE 3                      -- 3. Contiene en medio (ej: "Subcategoría Papel")
+        END ASC', [$q, $q . '%'])
+        ->orderByRaw('parent_id IS NULL DESC') 
+        ->orderByRaw('LENGTH(name) ASC')      
+        ->limit(3)
+        ->get()
+        ->map(fn($c) => [
+            'text' => $c->name,
+            'url'  => $c->parent_id
+                ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}"
+                : "/productos?categories[]={$c->slug}",
+            'type' => 'category',
+        ]);
+}
 
     private function suggestBrands(string $q): Collection
     {
-        return AttributesValue::whereHas(
-                'attribute',
-                fn($query) => $query->where('name', 'ILIKE', '%Marca%')
-            )
+        return AttributesValue::whereHas('attribute', fn($query) => $query->where('name', 'ILIKE', '%Marca%'))
             ->where('value', 'ILIKE', "%{$q}%")
             ->limit(2)
             ->get()
@@ -143,17 +197,8 @@ class ProductSearchService
             ]);
     }
 
-    private function generalSearchUrl(string $q, string $lowQ): string
-    {
-        if (in_array($lowQ, ['pack', 'packs'])) {
-            return '/productos?is_pack=true';
-        }
-
-        return '/productos?q=' . urlencode($q);
-    }
-
     // =========================================================================
-    // Formato de respuesta
+    // Formato de respuesta (Formatting)
     // =========================================================================
 
     private function formatProductResponse(mixed $item): array
@@ -180,7 +225,6 @@ class ProductSearchService
     private function formatProduct(Product $product): array
     {
         $v = $product->mainVariant;
-
         $isPromo = $v?->is_on_promo
             && (!$v->promo_start_at || $v->promo_start_at->isPast())
             && (!$v->promo_end_at   || $v->promo_end_at->isFuture());
