@@ -51,10 +51,9 @@ class ProductController extends Controller
         return $this->success('Productos listados correctamente', $products);
     }
 
-    public function home(Request $request)
+    public function home()
     {
-        $limit = min($request->input('limit', 5), 10);
-
+        $limit = 10;
         $products = Product::query()
             ->select('id', 'name', 'slug')
             ->home()
@@ -75,9 +74,9 @@ class ProductController extends Controller
         return $this->success('Productos para Home listados correctamente', $products);
     }
 
-    public function homePacks(Request $request)
+    public function homePacks()
     {
-        $limit = min($request->input('limit', 5), 10);
+        $limit = 10;
 
         $packs = ProductPack::query()
             ->select('id', 'name', 'slug', 'brief_description', 'price', 'promo_price', 'is_on_promotion', 'promo_start_at', 'promo_end_at', 'stock')
