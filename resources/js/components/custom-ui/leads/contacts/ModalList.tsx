@@ -110,11 +110,7 @@ export const CONTACT_CONFIG: ContactConfigMap = {
             keys: ['ruc_or_dni'],
             icon: <Hash size={18} />, 
         },
-        {
-            label: 'N° Doc. Compra',
-            keys: ['purchase_document_number'],
-            icon: <FileText size={18} />, isFullWidthCard: true
-        },
+       
         { label: 'Comentarios', keys: ['comments'], isFullWidth: true },
     ],
     sales_advisor: [

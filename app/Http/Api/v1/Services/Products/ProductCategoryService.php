@@ -7,6 +7,7 @@ use App\Models\Products\DynamicCategory;
 use App\Models\Products\ProductPack;
 use App\Models\Products\Product;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductCategoryService
 {
@@ -47,21 +48,20 @@ class ProductCategoryService
             });
     }
 
-    private function getDynamicCategories()
-    {
-        return DynamicCategory::where('is_active', true)
-            ->with(['items.product' => fn($q) => $q->active()->select('id', 'name', 'slug')])
-            ->get(['id', 'name', 'slug'])
-            ->map(fn($dyn) => [
-                'id' => $dyn->id,
-                'name' => $dyn->name,
-                'slug' => $dyn->slug,
-                'menu_type' => 'dynamic',
-                'target_route' => "/productos?dinamica={$dyn->slug}",
-                'products' => $dyn->items->map(fn($item) => $item->product)->filter()
-            ]);
-    }
-
+   private function getDynamicCategories()
+{
+    return DynamicCategory::activeNow() // 👈 reemplaza where('is_active', true)
+        ->with(['items.product' => fn($q) => $q->active()->select('id', 'name', 'slug')])
+        ->get(['id', 'name', 'slug'])
+        ->map(fn($dyn) => [
+            'id' => $dyn->id,
+            'name' => $dyn->name,
+            'slug' => $dyn->slug,
+            'menu_type' => 'dynamic',
+            'target_route' => "/productos?dinamica={$dyn->slug}",
+            'products' => $dyn->items->map(fn($item) => $item->product)->filter()
+        ]);
+}
     private function getPacks()
     {
         return [
@@ -80,36 +80,36 @@ class ProductCategoryService
     }
 
     private function getPromotions()
-    {
-        return [
-            'id' => 'group-promos',
-            'name' => 'Promociones',
-            'slug' => 'promociones',
-            'menu_type' => 'special_promo',
-            'target_route' => '/ofertas',
-            'sections' => [
-                [
-                    'title' => 'Productos en Promoción',
-                    'items' => Product::active()
-                        ->whereHas('variants', fn($v) => $v->onPromo())
-                        ->select('id', 'name', 'slug')
-                        ->take(10)
-                        ->get()
-                        ->map(fn($p) => [
-                            'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug, 'type' => 'product', 'target_route' => "/producto/{$p->slug}"
-                        ])
-                ],
-                [
-                    'title' => 'Packs en Promoción',
-                    'items' => ProductPack::where('is_active', true)
-                        ->where('is_on_promotion', true)
-                        ->select('id', 'name', 'slug')
-                        ->get()
-                        ->map(fn($p) => [
-                            'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug, 'type' => 'pack', 'target_route' => "/producto/{$p->slug}"
-                        ])
-                ]
+{
+    return [
+        'id' => 'group-promos',
+        'name' => 'Promociones',
+        'slug' => 'promociones',
+        'menu_type' => 'special_promo',
+        'target_route' => '/ofertas',
+        'sections' => [
+            [
+                'title' => 'Productos en Promoción',
+                'items' => Product::active()
+                    ->whereHas('variants', fn($v) => $v->onPromoActive()) // 👈 cambia onPromo por onPromoActive
+                    ->select('id', 'name', 'slug')
+                    ->take(10)
+                    ->get()
+                    ->map(fn($p) => [
+                        'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug, 'type' => 'product', 'target_route' => "/producto/{$p->slug}"
+                    ])
+            ],
+            [
+                'title' => 'Packs en Promoción',
+                'items' => ProductPack::where('is_active', true)
+                    ->onPromoActive() // 👈 reemplaza where('is_on_promotion', true)
+                    ->select('id', 'name', 'slug')
+                    ->get()
+                    ->map(fn($p) => [
+                        'id' => $p->id, 'name' => $p->name, 'slug' => $p->slug, 'type' => 'pack', 'target_route' => "/producto/{$p->slug}"
+                    ])
             ]
-        ];
-    }
+        ]
+    ];
+}
 }
