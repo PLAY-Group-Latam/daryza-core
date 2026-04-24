@@ -25,9 +25,14 @@ return new class extends Migration
                 ->constrained('product_variants')
                 ->nullOnDelete();
 
-            $table->enum('item_type', ['product_variant'])->default('product_variant');
+            $table->foreignUlid('pack_id')
+                ->nullable()
+                ->constrained('product_packs')
+                ->nullOnDelete();
+
+            $table->enum('item_type', ['product_variant', 'product_pack'])->default('product_variant');
             $table->string('product_name');
-            $table->string('variant_sku');
+            $table->string('variant_sku')->nullable();
             $table->unsignedInteger('quantity');
             $table->decimal('unit_price', 12, 2);
             $table->decimal('line_total', 12, 2);
@@ -36,6 +41,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['order_id', 'variant_id'], 'order_items_order_variant_idx');
+            $table->index(['order_id', 'pack_id'], 'order_items_order_pack_idx');
         });
     }
 

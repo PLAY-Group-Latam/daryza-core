@@ -16,6 +16,7 @@ class Script extends Model
     protected $fillable = [
         'name',
         'placement',
+        'consent_type',
         'active',
         'content',
     ];
