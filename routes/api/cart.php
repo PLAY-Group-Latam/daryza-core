@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Api\v1\Controllers\Customers\Cart\CartController;
+use App\Http\Api\v1\Controllers\Customers\Cart\RecommendProductController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/recommendations/complementary', [RecommendProductController::class, 'complementary']);
 
 Route::prefix('cart')->middleware('auth:api')->group(function () {
     Route::get('/', [CartController::class, 'index']);
@@ -11,4 +14,3 @@ Route::prefix('cart')->middleware('auth:api')->group(function () {
     Route::delete('/items/{cartItem}', [CartController::class, 'remove']);
     Route::delete('/clear', [CartController::class, 'clear']);
 });
-

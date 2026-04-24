@@ -72,6 +72,13 @@ class ProductPack extends Model
         $query->where('is_active', true)
             ->where('show_on_home', true);
     }
+    public function scopeOnPromoActive(Builder $query): void
+{
+    $query
+        ->where('is_on_promotion', true)
+        ->where(fn($q) => $q->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
+        ->where(fn($q) => $q->whereNull('promo_end_at')->orWhere('promo_end_at', '>', now()));
+}
 
     /**
      * Accesor para obtener el precio actual (normal o promo)

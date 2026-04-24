@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class DynamicCategory extends Model
 {
@@ -34,4 +35,12 @@ class DynamicCategory extends Model
   {
     return $this->hasMany(DynamicCategoryItem::class, 'dynamic_category_id');
   }
+
+   public function scopeActiveNow(Builder $query): void
+{
+    $query
+        ->where('is_active', true)
+        ->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+        ->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()));
+}
 }

@@ -52,5 +52,9 @@ class AppServiceProvider extends ServiceProvider
         BusinessLine::observe(BusinessLineObserver::class);
         AttributesValue::observe(AttributeValueObserver::class);
         Product::observe(NavigationObserver::class);
+        ProductCategory::observe(NavigationObserver::class);   // 👈 falta
+        ProductPack::observe(NavigationObserver::class);        // 👈 falta
+        ProductVariant::observe(NavigationObserver::class);     // 👈 falta para promos
+        DynamicCategory::observe(NavigationObserver::class);    // 👈 falta
     }
 }
