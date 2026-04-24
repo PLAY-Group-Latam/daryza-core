@@ -109,15 +109,39 @@ class NiubizService
             ->acceptJson()
             ->post($endpoint, $authorizationPayload);
 
+        $payload = $response->json() ?? [];
+        $responseCode = $this->extractResponseCode($payload);
+        $responseMessage = $this->extractResponseMessage($payload);
+        $isApproved = $this->isApproved($payload);
+
         if (!$response->successful()) {
             $this->warningLog('confirm_transaction_failed', $endpoint, $response);
+
+            // Algunos rechazos de tarjeta llegan con HTTP 400 pero con ACTION_CODE/ACTION_DESCRIPTION.
+            if ($responseCode !== '' || $responseMessage !== '' || $this->hasBusinessStatus($payload)) {
+                Log::info('niubiz.confirm_with_transaction_token_declined_http_error', [
+                    'order_id' => $orderId,
+                    'purchase_number' => $purchaseNumber,
+                    'http_status' => $response->status(),
+                    'response_code' => $responseCode,
+                    'response_message' => $responseMessage,
+                    'is_approved' => false,
+                ]);
+
+                return [
+                    'raw' => $payload,
+                    'is_approved' => false,
+                    'authorization_code' => $this->extractAuthorizationCode($payload),
+                    'transaction_id' => $this->extractTransactionId($payload, $purchaseNumber),
+                    'brand' => $this->extractBrand($payload),
+                    'masked_card' => $this->extractMaskedCard($payload),
+                    'response_code' => $responseCode !== '' ? $responseCode : (string) $response->status(),
+                    'response_message' => $responseMessage !== '' ? $responseMessage : 'Transacción rechazada por Niubiz.',
+                ];
+            }
+
             throw new \RuntimeException('No se pudo confirmar la transacción en Niubiz.');
         }
-
-        $payload = $response->json();
-        $responseCode = (string) data_get($payload, 'dataMap.ACTION_CODE', data_get($payload, 'actionCode', ''));
-        $responseMessage = (string) data_get($payload, 'dataMap.ACTION_DESCRIPTION', data_get($payload, 'actionDescription', ''));
-        $isApproved = $this->isApproved($payload);
 
         Log::info('niubiz.confirm_with_transaction_token_result', [
             'order_id' => $orderId,
@@ -263,9 +287,9 @@ class NiubizService
 
     private function isApproved(array $payload): bool
     {
-        $actionCode = trim((string) data_get($payload, 'dataMap.ACTION_CODE', data_get($payload, 'actionCode', '')));
-        $transactionStatus = strtoupper(trim((string) data_get($payload, 'transactionStatus', data_get($payload, 'dataMap.TRANSACTION_STATUS', ''))));
-        $status = strtoupper(trim((string) data_get($payload, 'dataMap.STATUS', '')));
+        $actionCode = trim($this->extractResponseCode($payload));
+        $transactionStatus = strtoupper(trim((string) data_get($payload, 'transactionStatus', data_get($payload, 'dataMap.TRANSACTION_STATUS', data_get($payload, 'data.TRANSACTION_STATUS', '')))));
+        $status = strtoupper(trim((string) data_get($payload, 'dataMap.STATUS', data_get($payload, 'status', data_get($payload, 'data.STATUS', '')))));
 
         if ($actionCode !== '' && str_starts_with($actionCode, '000')) {
             return true;
@@ -277,30 +301,46 @@ class NiubizService
 
     private function extractAuthorizationCode(array $payload): ?string
     {
-        $code = (string) data_get($payload, 'dataMap.AUTHORIZATION_CODE', data_get($payload, 'authorizationCode', ''));
+        $code = (string) data_get($payload, 'dataMap.AUTHORIZATION_CODE', data_get($payload, 'authorizationCode', data_get($payload, 'data.AUTHORIZATION_CODE', '')));
 
         return $code !== '' ? $code : null;
     }
 
     private function extractTransactionId(array $payload, string $fallback): string
     {
-        $transactionId = (string) data_get($payload, 'dataMap.TRANSACTION_ID', data_get($payload, 'transactionId', ''));
+        $transactionId = (string) data_get($payload, 'dataMap.TRANSACTION_ID', data_get($payload, 'transactionId', data_get($payload, 'data.TRANSACTION_ID', '')));
 
         return $transactionId !== '' ? $transactionId : $fallback;
     }
 
     private function extractBrand(array $payload): ?string
     {
-        $brand = (string) data_get($payload, 'dataMap.BRAND', data_get($payload, 'card.brand', ''));
+        $brand = (string) data_get($payload, 'dataMap.BRAND', data_get($payload, 'card.brand', data_get($payload, 'data.BRAND', '')));
 
         return $brand !== '' ? $brand : null;
     }
 
     private function extractMaskedCard(array $payload): ?string
     {
-        $maskedCard = (string) data_get($payload, 'dataMap.CARD', data_get($payload, 'card.cardNumber', ''));
+        $maskedCard = (string) data_get($payload, 'dataMap.CARD', data_get($payload, 'card.cardNumber', data_get($payload, 'data.CARD', '')));
 
         return $maskedCard !== '' ? $maskedCard : null;
+    }
+
+    private function extractResponseCode(array $payload): string
+    {
+        return trim((string) data_get($payload, 'dataMap.ACTION_CODE', data_get($payload, 'actionCode', data_get($payload, 'data.ACTION_CODE', data_get($payload, 'errorCode', '')))));
+    }
+
+    private function extractResponseMessage(array $payload): string
+    {
+        return trim((string) data_get($payload, 'dataMap.ACTION_DESCRIPTION', data_get($payload, 'actionDescription', data_get($payload, 'data.ACTION_DESCRIPTION', data_get($payload, 'errorMessage', '')))));
+    }
+
+    private function hasBusinessStatus(array $payload): bool
+    {
+        $status = strtoupper(trim((string) data_get($payload, 'dataMap.STATUS', data_get($payload, 'status', data_get($payload, 'data.STATUS', '')))));
+        return $status !== '';
     }
 
     private function debugLog(string $event, array $context): void

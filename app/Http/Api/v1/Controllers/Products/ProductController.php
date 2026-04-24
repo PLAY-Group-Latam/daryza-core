@@ -210,7 +210,7 @@ class ProductController extends Controller
             'name' => $product->name,
             'slug' => $product->slug,
             'main_variant' => $mainVariant ? array_merge(
-                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku],
+                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku,                 'stock' => $mainVariant->stock,],
                 $this->variantResolver->resolvePriceData($mainVariant)
             ) : null,
             'main_image' => $mainVariant?->mainImage ? [

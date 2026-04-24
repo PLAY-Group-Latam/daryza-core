@@ -3,6 +3,7 @@
 namespace App\Models\Orders;
 
 use App\Models\Products\Product;
+use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,7 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'variant_id',
+        'pack_id',
         'item_type',
         'product_name',
         'variant_sku',
@@ -48,5 +50,10 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function pack(): BelongsTo
+    {
+        return $this->belongsTo(ProductPack::class, 'pack_id');
     }
 }

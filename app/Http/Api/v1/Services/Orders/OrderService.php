@@ -6,6 +6,7 @@ use App\Http\Api\v1\Services\Coupons\CouponService;
 use App\Http\Api\v1\Services\GcsService;
 use App\Models\Coupons\CouponRedemption;
 use App\Models\Orders\Order;
+use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use App\Models\Customers\Customer;
 use App\Models\Settings\DeliverySetting;
@@ -31,7 +32,8 @@ class OrderService
     {
         $items = $this->normalizeItems($payload['items']);
         $variants = $this->resolveVariants($items);
-        $subtotal = $this->calculateSubtotal($items, $variants);
+        $packs = $this->resolvePacks($items);
+        $subtotal = $this->calculateSubtotal($items, $variants, $packs);
         $couponCode = trim((string) ($payload['coupon_code'] ?? ''));
         $discountTotal = 0.0;
         $couponData = null;
@@ -41,7 +43,9 @@ class OrderService
                 $couponCode,
                 collect($variants),
                 $items,
-                (string) auth('api')->id()
+                (string) auth('api')->id(),
+                false,
+                collect($packs)
             );
             $discountTotal = (float) $couponData['discount_total'];
         }
@@ -74,7 +78,7 @@ class OrderService
             'total' => round(($subtotal - $discountTotal) + $deliveryCost, 2),
             'shipping' => $shipping,
             'coupon' => $couponData ? Arr::except($couponData, ['coupon']) : null,
-            'items' => $this->previewItemsPayload($items, $variants),
+            'items' => $this->previewItemsPayload($items, $variants, $packs),
         ];
     }
 
@@ -83,7 +87,8 @@ class OrderService
         return DB::transaction(function () use ($customer, $payload) {
             $items = $this->normalizeItems($payload['items']);
             $variants = $this->resolveVariants($items, true);
-            $subtotal = $this->calculateSubtotal($items, $variants);
+            $packs = $this->resolvePacks($items, true);
+            $subtotal = $this->calculateSubtotal($items, $variants, $packs);
             $couponCode = trim((string) ($payload['coupon_code'] ?? ''));
             $couponData = null;
             $discountTotal = 0.0;
@@ -94,7 +99,8 @@ class OrderService
                     collect($variants),
                     $items,
                     $customer->id,
-                    true
+                    true,
+                    collect($packs)
                 );
                 $discountTotal = (float) $couponData['discount_total'];
             }
@@ -160,10 +166,47 @@ class OrderService
             ]);
 
             foreach ($items as $item) {
+                $quantity = (int) $item['quantity'];
+                if ($item['item_type'] === 'product_pack') {
+                    /** @var ProductPack $pack */
+                    $pack = $packs[$item['pack_id']];
+                    $unitPrice = (float) $pack->active_price;
+                    $isPromoActive = (bool) $pack->is_on_promotion
+                        && (!$pack->promo_start_at || $pack->promo_start_at->isPast())
+                        && (!$pack->promo_end_at || $pack->promo_end_at->isFuture());
+
+                    if ($pack->stock < $quantity) {
+                        throw new \InvalidArgumentException("Stock insuficiente para el pack {$pack->name}.");
+                    }
+
+                    $order->items()->create([
+                        'product_id' => null,
+                        'variant_id' => null,
+                        'pack_id' => $pack->id,
+                        'item_type' => 'product_pack',
+                        'product_name' => $pack->name,
+                        'variant_sku' => $pack->code ? "PACK-{$pack->code}" : "PACK-{$pack->id}",
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'line_total' => $unitPrice * $quantity,
+                        'metadata' => [
+                            'is_on_promo' => $isPromoActive,
+                            'regular_price' => (float) $pack->price,
+                            'pack_image' => $pack->mainImage?->file_path,
+                            'pack_description' => $pack->brief_description,
+                        ],
+                    ]);
+
+                    $pack->decrement('stock', $quantity);
+                    continue;
+                }
+
                 /** @var ProductVariant $variant */
                 $variant = $variants[$item['variant_id']];
                 $unitPrice = (float) $variant->active_price;
-                $quantity = (int) $item['quantity'];
+                $isPromoActive = (bool) $variant->is_on_promo
+                    && (!$variant->promo_start_at || $variant->promo_start_at->isPast())
+                    && (!$variant->promo_end_at || $variant->promo_end_at->isFuture());
 
                 if ($variant->stock < $quantity) {
                     throw new \InvalidArgumentException("Stock insuficiente para SKU {$variant->sku}.");
@@ -172,6 +215,7 @@ class OrderService
                 $order->items()->create([
                     'product_id' => $variant->product_id,
                     'variant_id' => $variant->id,
+                    'pack_id' => null,
                     'item_type' => 'product_variant',
                     'product_name' => $variant->product?->name ?? 'Producto',
                     'variant_sku' => $variant->sku,
@@ -180,8 +224,9 @@ class OrderService
                     'line_total' => $unitPrice * $quantity,
                     'metadata' => [
                         // Snapshot comercial para auditoria del item al momento de compra.
-                        'is_on_promo' => (bool) $variant->is_on_promo,
+                        'is_on_promo' => $isPromoActive,
                         'regular_price' => (float) $variant->price,
+                        'variant_image' => $variant->mainImage?->file_path,
                         'variant_attributes' => $variant->attributes
                             ->map(function ($attributeValue) {
                                 $attributeName = trim((string) data_get($attributeValue, 'attribute.name'));
@@ -753,7 +798,16 @@ class OrderService
 
     private function resolveVariants(array $items, bool $lockForUpdate = false): array
     {
-        $ids = collect($items)->pluck('variant_id')->unique()->values();
+        $ids = collect($items)
+            ->where('item_type', 'product_variant')
+            ->pluck('variant_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
 
         $query = ProductVariant::query()
             ->whereIn('id', $ids)
@@ -763,6 +817,7 @@ class OrderService
                 'product.categories:id',
                 'product.businessLines:id',
                 'attributes.attribute:id,name',
+                'mainImage:id,mediable_id,mediable_type,file_path',
             ]);
 
         if ($lockForUpdate) {
@@ -778,11 +833,57 @@ class OrderService
         return $variants->all();
     }
 
-    private function calculateSubtotal(array $items, array $variants): float
+    private function resolvePacks(array $items, bool $lockForUpdate = false): array
+    {
+        $ids = collect($items)
+            ->where('item_type', 'product_pack')
+            ->pluck('pack_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $query = ProductPack::query()
+            ->whereIn('id', $ids)
+            ->where('is_active', true)
+            ->with([
+                'mainImage:id,mediable_id,mediable_type,file_path',
+            ]);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        $packs = $query->get()->keyBy('id');
+
+        if ($packs->count() !== $ids->count()) {
+            throw new \InvalidArgumentException('Uno o más packs no son válidos o no están activos.');
+        }
+
+        return $packs->all();
+    }
+
+    private function calculateSubtotal(array $items, array $variants, array $packs = []): float
     {
         $subtotal = 0;
 
         foreach ($items as $item) {
+            if ($item['item_type'] === 'product_pack') {
+                /** @var ProductPack $pack */
+                $pack = $packs[$item['pack_id']];
+                $quantity = (int) $item['quantity'];
+
+                if ($pack->stock < $quantity) {
+                    throw new \InvalidArgumentException("Stock insuficiente para el pack {$pack->name}.");
+                }
+
+                $subtotal += (float) $pack->active_price * $quantity;
+                continue;
+            }
+
             /** @var ProductVariant $variant */
             $variant = $variants[$item['variant_id']];
             $quantity = (int) $item['quantity'];
@@ -797,13 +898,29 @@ class OrderService
         return $subtotal;
     }
 
-    private function previewItemsPayload(array $items, array $variants): array
+    private function previewItemsPayload(array $items, array $variants, array $packs = []): array
     {
-        return collect($items)->map(function ($item) use ($variants) {
+        return collect($items)->map(function ($item) use ($variants, $packs) {
+            if ($item['item_type'] === 'product_pack') {
+                /** @var ProductPack $pack */
+                $pack = $packs[$item['pack_id']];
+
+                return [
+                    'item_type' => 'product_pack',
+                    'pack_id' => $pack->id,
+                    'product_name' => $pack->name,
+                    'quantity' => (int) $item['quantity'],
+                    'unit_price' => (float) $pack->active_price,
+                    'line_total' => (float) $pack->active_price * (int) $item['quantity'],
+                    'stock_available' => (int) $pack->stock,
+                ];
+            }
+
             /** @var ProductVariant $variant */
             $variant = $variants[$item['variant_id']];
 
             return [
+                'item_type' => 'product_variant',
                 'variant_id' => $variant->id,
                 'sku' => $variant->sku,
                 'product_name' => $variant->product?->name,
@@ -818,11 +935,29 @@ class OrderService
     private function normalizeItems(array $items): array
     {
         return collect($items)
-            ->groupBy('variant_id')
-            ->map(fn($group, $variantId) => [
-                'variant_id' => (string) $variantId,
-                'quantity' => $group->sum(fn($item) => (int) ($item['quantity'] ?? 0)),
-            ])
+            ->map(function ($item) {
+                $type = ((string) data_get($item, 'type', 'product')) === 'pack'
+                    ? 'product_pack'
+                    : 'product_variant';
+
+                return [
+                    'item_type' => $type,
+                    'variant_id' => $type === 'product_variant' ? (string) data_get($item, 'variant_id') : null,
+                    'pack_id' => $type === 'product_pack' ? (string) data_get($item, 'pack_id') : null,
+                    'quantity' => (int) data_get($item, 'quantity', 0),
+                ];
+            })
+            ->groupBy(fn($item) => $item['item_type'] . ':' . ($item['variant_id'] ?? $item['pack_id']))
+            ->map(function ($group) {
+                $first = $group->first();
+
+                return [
+                    'item_type' => $first['item_type'],
+                    'variant_id' => $first['variant_id'],
+                    'pack_id' => $first['pack_id'],
+                    'quantity' => $group->sum(fn($item) => (int) ($item['quantity'] ?? 0)),
+                ];
+            })
             ->filter(fn($item) => $item['quantity'] > 0)
             ->values()
             ->all();
@@ -867,26 +1002,54 @@ class OrderService
     private function restoreStockForOrder(Order $order): void
     {
         foreach ($order->items as $item) {
-            if (!$item->variant_id) {
+            if ($item->item_type === 'product_pack' && $item->pack_id) {
+                $pack = ProductPack::query()
+                    ->where('id', $item->pack_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($pack) {
+                    $pack->increment('stock', (int) $item->quantity);
+                }
                 continue;
             }
 
-            $variant = ProductVariant::query()
-                ->where('id', $item->variant_id)
-                ->lockForUpdate()
-                ->first();
+            if ($item->variant_id) {
+                $variant = ProductVariant::query()
+                    ->where('id', $item->variant_id)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$variant) {
-                continue;
+                if ($variant) {
+                    $variant->increment('stock', (int) $item->quantity);
+                }
             }
-
-            $variant->increment('stock', (int) $item->quantity);
         }
     }
 
     private function reserveStockForOrder(Order $order): void
     {
         foreach ($order->items as $item) {
+            $quantity = (int) $item->quantity;
+
+            if ($item->item_type === 'product_pack' && $item->pack_id) {
+                $pack = ProductPack::query()
+                    ->where('id', $item->pack_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$pack) {
+                    throw new \InvalidArgumentException("No existe el pack {$item->pack_id} para reactivar la orden.");
+                }
+
+                if ($pack->stock < $quantity) {
+                    throw new \InvalidArgumentException("No hay stock suficiente para reactivar la orden en pack {$pack->name}.");
+                }
+
+                $pack->decrement('stock', $quantity);
+                continue;
+            }
+
             if (!$item->variant_id) {
                 continue;
             }
@@ -900,7 +1063,6 @@ class OrderService
                 throw new \InvalidArgumentException("No existe la variante {$item->variant_id} para reactivar la orden.");
             }
 
-            $quantity = (int) $item->quantity;
             if ($variant->stock < $quantity) {
                 throw new \InvalidArgumentException("No hay stock suficiente para reactivar la orden en SKU {$variant->sku}.");
             }

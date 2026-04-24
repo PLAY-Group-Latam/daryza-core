@@ -5,7 +5,7 @@ namespace App\Http\Api\v1\Services\Coupons;
 use App\Enums\Coupon\CouponScope;
 use App\Models\Coupons\Coupon;
 use App\Models\Products\DynamicCategoryItem;
-use App\Models\Products\ProductPackItem;
+use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -104,8 +104,10 @@ class CouponService
         Collection $variants,
         array $items,
         ?string $customerId = null,
-        bool $lockCoupon = false
+        bool $lockCoupon = false,
+        ?Collection $packs = null
     ): array {
+        $packs ??= collect();
         $normalizedCode = strtoupper(trim($couponCode));
 
         if ($normalizedCode === '') {
@@ -151,13 +153,13 @@ class CouponService
             throw new \InvalidArgumentException('Este cupón no está disponible para este cliente.');
         }
 
-        $subtotal = $this->calculateSubtotal($variants, $items);
+        $subtotal = $this->calculateSubtotal($variants, $packs, $items);
 
         if ((float) $coupon->minimum_order_amount > $subtotal) {
             throw new \InvalidArgumentException('No se alcanzó el monto mínimo para aplicar el cupón.');
         }
 
-        $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $items);
+        $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $packs, $items);
 
         if ($discountableSubtotal <= 0) {
             throw new \InvalidArgumentException('El cupón no aplica a los productos de la orden.');
@@ -177,27 +179,49 @@ class CouponService
         ];
     }
 
-    private function calculateSubtotal(Collection $variants, array $items): float
+    private function calculateSubtotal(Collection $variants, Collection $packs, array $items): float
     {
         $subtotal = 0.0;
 
         foreach ($items as $item) {
-            /** @var ProductVariant $variant */
-            $variant = $variants->get($item['variant_id']);
-            $subtotal += ((float) $variant->active_price) * (int) $item['quantity'];
+            $quantity = (int) ($item['quantity'] ?? 0);
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            $itemType = (string) ($item['item_type'] ?? '');
+
+            if ($itemType === 'product_pack') {
+                /** @var ProductPack|null $pack */
+                $pack = $packs->get((string) ($item['pack_id'] ?? ''));
+                if (!$pack) {
+                    continue;
+                }
+
+                $subtotal += ((float) $pack->active_price) * $quantity;
+                continue;
+            }
+
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get((string) ($item['variant_id'] ?? ''));
+            if (!$variant) {
+                continue;
+            }
+
+            $subtotal += ((float) $variant->active_price) * $quantity;
         }
 
         return round($subtotal, 2);
     }
 
-    private function resolveDiscountableSubtotal(Coupon $coupon, Collection $variants, array $items): float
+    private function resolveDiscountableSubtotal(Coupon $coupon, Collection $variants, Collection $packs, array $items): float
     {
         return match ($coupon->scope) {
-            CouponScope::Global->value, CouponScope::Customer->value => $this->calculateSubtotal($variants, $items),
+            CouponScope::Global->value, CouponScope::Customer->value => $this->calculateSubtotal($variants, $packs, $items),
             CouponScope::Product->value => $this->subtotalByProductScope($coupon, $variants, $items),
             CouponScope::Category->value => $this->subtotalByCategoryScope($coupon, $variants, $items),
             CouponScope::BusinessDynamic->value => $this->subtotalByBusinessDynamicScope($coupon, $variants, $items),
-            CouponScope::Pack->value => $this->subtotalByPackScope($coupon, $variants, $items),
+            CouponScope::Pack->value => $this->subtotalByPackScope($coupon, $packs, $items),
             default => 0.0,
         };
     }
@@ -246,24 +270,36 @@ class CouponService
         });
     }
 
-    private function subtotalByPackScope(Coupon $coupon, Collection $variants, array $items): float
+    private function subtotalByPackScope(Coupon $coupon, Collection $packs, array $items): float
     {
         $packIds = $coupon->packs->pluck('id')->all();
         if (empty($packIds)) {
             return 0.0;
         }
 
-        $variantIdsInCouponPacks = ProductPackItem::query()
-            ->whereIn('product_pack_id', $packIds)
-            ->pluck('variant_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $subtotal = 0.0;
+        $allowedPackIds = array_map('strval', $packIds);
 
-        return $this->subtotalMatching($variants, $items, function (ProductVariant $variant) use ($variantIdsInCouponPacks) {
-            return in_array($variant->id, $variantIdsInCouponPacks, true);
-        });
+        foreach ($items as $item) {
+            if (($item['item_type'] ?? null) !== 'product_pack') {
+                continue;
+            }
+
+            $packId = (string) ($item['pack_id'] ?? '');
+            if (!in_array($packId, $allowedPackIds, true)) {
+                continue;
+            }
+
+            /** @var ProductPack|null $pack */
+            $pack = $packs->get($packId);
+            if (!$pack) {
+                continue;
+            }
+
+            $subtotal += ((float) $pack->active_price) * (int) ($item['quantity'] ?? 0);
+        }
+
+        return round($subtotal, 2);
     }
 
     private function subtotalMatching(Collection $variants, array $items, callable $predicate): float

@@ -145,6 +145,22 @@ class PaymentController extends Controller
                 'timestamp' => now()->toDateTimeString(),
             ]);
 
+            if (!(bool) $confirmation['is_approved']) {
+                return $this->error('Pago rechazado por Niubiz.', [
+                    'failure_type' => 'declined',
+                    'is_approved' => false,
+                    'authorization_code' => $confirmation['authorization_code'],
+                    'transaction_id' => $confirmation['transaction_id'],
+                    'brand' => $confirmation['brand'],
+                    'masked_card' => $confirmation['masked_card'],
+                    'response_code' => $confirmation['response_code'],
+                    'response_message' => $confirmation['response_message'],
+                    'order_state' => $order?->state,
+                    'order' => $order,
+                    'raw' => $confirmation['raw'],
+                ], 402);
+            }
+
             return $this->success('Confirmación de Niubiz procesada correctamente.', [
                 'is_approved' => (bool) $confirmation['is_approved'],
                 'authorization_code' => $confirmation['authorization_code'],
@@ -159,11 +175,25 @@ class PaymentController extends Controller
         } catch (\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), null, 422);
         } catch (\RuntimeException $exception) {
-            return $this->error($exception->getMessage(), null, 502);
+            return $this->error('Niubiz no pudo confirmar el pago por un problema técnico.', [
+                'failure_type' => 'technical',
+                'is_approved' => null,
+                'response_code' => null,
+                'response_message' => $exception->getMessage(),
+                'order_state' => $order->state ?? null,
+                'retryable' => true,
+            ], 502);
         } catch (\Throwable $exception) {
             report($exception);
 
-            return $this->error('No se pudo confirmar el pago.', null, 500);
+            return $this->error('No se pudo confirmar el pago.', [
+                'failure_type' => 'unexpected',
+                'is_approved' => null,
+                'response_code' => null,
+                'response_message' => 'Error inesperado al confirmar con Niubiz.',
+                'order_state' => $order->state ?? null,
+                'retryable' => false,
+            ], 500);
         }
     }
 

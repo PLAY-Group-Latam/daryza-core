@@ -20,6 +20,9 @@ return new class extends Migration
         // Ubicación donde se renderiza
         $table->enum('placement', ['head', 'body'])->default('head');
 
+        // Tipo de consentimiento requerido para ejecutar el script
+        $table->enum('consent_type', ['necessary', 'analytics', 'marketing'])->default('necessary');
+
         // Permite activar / desactivar sin borrar
         $table->boolean('active')->default(true);
 

@@ -143,9 +143,10 @@ class ProductVariantResolver
                 'id' => $variant->id,
                 'is_main' => (bool) $variant->is_main,
                 'selections' => $variant->selections
-                    ->filter(fn($selection) => 
-                        $selection->attributeValue && 
-                        $selection->attributeValue->attribute
+                    ->filter(
+                        fn($selection) =>
+                        $selection->attributeValue &&
+                            $selection->attributeValue->attribute
                     )
                     ->map(fn($selection) => [
                         'attribute_id' => $selection->attributeValue->attribute_id,
