@@ -142,6 +142,7 @@ class ProductController extends Controller
                 'id' => $pack->id,
                 'name' => $pack->name,
                 'slug' => $pack->slug,
+                'brief_description' => $pack->brief_description,
                 'description' => $pack->description,
                 'stock' => $pack->stock,
                 'main_image' => $pack->mainImage,

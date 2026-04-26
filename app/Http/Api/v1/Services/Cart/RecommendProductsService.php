@@ -5,18 +5,23 @@ namespace App\Http\Api\v1\Services\Cart;
 use App\Models\Products\Product;
 use App\Models\Products\ProductVariant;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 
 class RecommendProductsService
 {
-    public function get(array $itemIds = [], string $type = 'variant'): Collection
+    public function get(array $ids = []): Collection
     {
-        
-        if (empty($itemIds)) {
+        if (empty($ids)) {
             return collect();
         }
+        
+        $productIdsFromVariants = ProductVariant::whereIn('id', $ids)
+            ->pluck('product_id');
 
-        $productIds = $this->resolveProductIds($itemIds, $type);
+        $productIds = collect($ids)
+            ->merge($productIdsFromVariants)
+            ->unique()
+            ->values()
+            ->toArray();
 
         if (empty($productIds)) {
             return collect();
@@ -25,27 +30,45 @@ class RecommendProductsService
         $products = Product::query()
             ->withoutGlobalScopes()
             ->whereIn('id', $productIds)
-            ->with(['recommendedProducts' => function ($q) {
-                $q->active()->with([
-                    'mainVariant' => fn($v) => $v->select('id', 'product_id', 'price', 'promo_price', 'sku', 'is_on_promo'),
-                    'mainVariant.mainImage' => fn($i) => $i->select('id', 'mediable_id', 'mediable_type', 'file_path'),
-                ]);
-            }])
+            ->with([
+                'recommendedProducts' => function ($q) {
+                    $q->active() 
+                        ->with([
+                            'mainVariant' => fn($v) => $v->select(
+                                'id',
+                                'product_id',
+                                'price',
+                                'promo_price',
+                                'sku',
+                                'is_on_promo'
+                            ),
+                            'mainVariant.mainImage' => fn($i) => $i->select(
+                                'id',
+                                'mediable_id',
+                                'mediable_type',
+                                'file_path'
+                            ),
+                        ]);
+                }
+            ])
             ->get();
+        $seen = collect();
 
-       return $products->flatMap(fn($p) => ($p->recommendedProducts ?? collect())->take(2))
-    ->unique('id')
-    ->reject(fn($product) => in_array($product->id, $productIds))
-    ->take(10)
-    ->values();
-    }
+        return $products
+            ->flatMap(function ($product) use ($productIds, $seen) {
 
-    protected function resolveProductIds(array $ids, string $type): array
-    {
-        if ($type === 'product') return $ids;
-        return ProductVariant::whereIn('id', $ids)
-            ->pluck('product_id')
-            ->unique()
-            ->toArray();
+                return collect($product->recommendedProducts)
+                   
+                    ->reject(fn($rec) => in_array($rec->id, $productIds))
+                    ->reject(function ($rec) use ($seen) {
+                        if ($seen->contains($rec->id)) {
+                            return true;
+                        }
+                        $seen->push($rec->id);
+                        return false;
+                    })
+                    ->take(2);
+            })
+            ->values();
     }
 }
