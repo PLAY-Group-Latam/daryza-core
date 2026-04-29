@@ -46,13 +46,32 @@ trait ApiTrait
   public function jwtCookie($token, $minutes = 60)
   {
     $isProd = config('app.env') === 'production';
+    $cookieName = config('jwt.access_cookie_name', 'jwt');
 
     return cookie(
-      name: 'jwt',
+      name: $cookieName,
       value: $token,
       minutes: $minutes,
       path: '/',
       domain: $isProd ? '.playgrouplatam.com' : null, // dominio en prod, null en local
+      secure: $isProd,
+      httpOnly: true,
+      raw: false,
+      sameSite: $isProd ? 'None' : 'Lax'
+    );
+  }
+
+  public function forgetJwtCookie()
+  {
+    $isProd = config('app.env') === 'production';
+    $cookieName = config('jwt.access_cookie_name', 'jwt');
+
+    return cookie(
+      name: $cookieName,
+      value: null,
+      minutes: -1,
+      path: '/',
+      domain: $isProd ? '.playgrouplatam.com' : null,
       secure: $isProd,
       httpOnly: true,
       raw: false,

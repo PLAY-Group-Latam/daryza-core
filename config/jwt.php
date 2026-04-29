@@ -11,6 +11,8 @@
 
 return [
 
+    'access_cookie_name' => env('AUTH_ACCESS_COOKIE_NAME', 'jwt'),
+
     /*
     |--------------------------------------------------------------------------
     | JWT Authentication Secret
