@@ -32,7 +32,7 @@ export default function TableList({ data, filters }: TableListProps) {
             header: 'Distribuidor',
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-[#44AC34]">{row.original.name}</span>
+                    <span className="font-bold text-[#13a538]">{row.original.name}</span>
                 </div>
             ),
         },
