@@ -7,8 +7,8 @@ import scripts from '@/routes/scripts';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Edit, Trash, Trash2 } from 'lucide-react';
-import { Script } from './ScriptForm';
+import { Edit, Trash } from 'lucide-react';
+import { Script } from '../types';
 
 export const columns = (
     onDelete: (id: string) => void,
@@ -31,6 +31,27 @@ export const columns = (
                     className="capitalize"
                 >
                     {placement}
+                </Badge>
+            );
+        },
+    },
+    {
+        accessorKey: 'consent_type',
+        header: 'Consentimiento',
+        cell: ({ row }) => {
+            const consentType = row.getValue<
+                'necessary' | 'analytics' | 'marketing'
+            >('consent_type');
+
+            const consentTypeLabels = {
+                necessary: 'Necesario',
+                analytics: 'Analítica',
+                marketing: 'Marketing',
+            } as const;
+
+            return (
+                <Badge variant="secondary">
+                    {consentTypeLabels[consentType] ?? consentType}
                 </Badge>
             );
         },

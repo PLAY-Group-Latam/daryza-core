@@ -3,7 +3,7 @@
 use App\Http\Api\v1\Middleware\JwtFromCookie;
 use App\Http\Web\Middleware\HandleAppearance;
 use App\Http\Web\Middleware\HandleInertiaRequests;
-use App\Http\Api\v1\Middleware\TrackApiEvents; 
+use App\Http\Api\v1\Middleware\TrackApiEvents;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             JwtFromCookie::class,
         ]);
         $middleware->api(append: [
-            TrackApiEvents::class, 
+            TrackApiEvents::class,
         ]);
 
         $middleware->api(append: [
@@ -49,7 +49,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 422);
             }
         });
-
+        $exceptions->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+        });
         $exceptions->renderable(function (\Throwable $e, $request) {
             if ($request->is('api/*')) {
                 $status = (int) $e->getCode();

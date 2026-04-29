@@ -100,7 +100,8 @@ class CustomerAuthController extends Controller
       $token
     );
   }
- public function refresh()
+ 
+  public function refresh()
 {
     try {
         $oldToken = JWTAuth::getToken();
@@ -109,67 +110,69 @@ class CustomerAuthController extends Controller
             return $this->error('Token no encontrado', 401);
         }
 
-        $newToken = JWTAuth::setToken($oldToken)->refresh(false, true);
+        $newToken = JWTAuth::setToken($oldToken)->refresh(true, false);
 
         return $this->successWithCookie(
             'Token renovado correctamente',
             [],
             $newToken
         );
-
     } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-        return $this->error('Sesión expirada, inicia sesión nuevamente', 401);
+        return $this->error('Sesión expirada, inicia sesión nuevamente', 401)
+            ->withCookie($this->forgetJwtCookie());
     } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-        return $this->error('Token inválido', 401);
+        return $this->error('Token inválido', 401)
+            ->withCookie($this->forgetJwtCookie());
     } catch (JWTException $e) {
-        return $this->error('No se pudo renovar el token', 401);
+        return $this->error('No se pudo renovar el token', 401)
+            ->withCookie($this->forgetJwtCookie());
     }
 }
 
 
- // Funciones de Recuperar contraseña
-    public function forgotPassword(ForgotPasswordRequest $request)
-{
+  // Funciones de Recuperar contraseña
+  public function forgotPassword(ForgotPasswordRequest $request)
+  {
     Password::broker('customers')->sendResetLink(
-        $request->only('email'),
-        function ($customer, $token) {
-            $url = config('app.frontend_url')
-                . '/recuperar-contrasena?token=' . $token
-                . '&email=' . urlencode($customer->email);
+      $request->only('email'),
+      function ($customer, $token) {
+        $url = config('app.frontend_url')
+          . '/recuperar-contrasena?token=' . $token
+          . '&email=' . urlencode($customer->email);
 
-            SendEmailJob::dispatch(
-                new RecoveryPassword($customer->email, $url),
-                $customer->email
-            );
-        }
+        SendEmailJob::dispatch(
+          new RecoveryPassword($customer->email, $url),
+          $customer->email
+        );
+      }
     );
 
- 
+
     return $this->success('Si este correo está registrado, recibirás un enlace en breve.');
-}
+  }
 
-    public function resetPassword(ResetPasswordRequest $request)
-    {
-        $status = Password::broker('customers')->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($customer, $password) {
-                $customer->forceFill([
-                    'password' => bcrypt($password),
-                ])->save();
+  public function resetPassword(ResetPasswordRequest $request)
+  {
+    $status = Password::broker('customers')->reset(
+      $request->only('email', 'password', 'password_confirmation', 'token'),
+      function ($customer, $password) {
+        $customer->forceFill([
+          'password' => bcrypt($password),
+        ])->save();
 
-                SendEmailJob::dispatch(
-                    new SuccessReset($customer->full_name ?? 'Usuario'),
-                    $customer->email
-                );
-            }
+        SendEmailJob::dispatch(
+          new SuccessReset($customer->full_name ?? 'Usuario'),
+          $customer->email
         );
+      }
+    );
 
-        if ($status !== Password::PASSWORD_RESET) {
-            return $this->error('Token inválido o expirado.', 400);
-        }
-
-        return $this->success('Contraseña actualizada correctamente.');
+    if ($status !== Password::PASSWORD_RESET) {
+      return $this->error('Token inválido o expirado.', 400);
     }
+
+    return $this->success('Contraseña actualizada correctamente.');
+  }
 
 
 
@@ -184,7 +187,7 @@ class CustomerAuthController extends Controller
     }
 
     return $this->success('Cerró sesión exitosamente')
-      ->withCookie(cookie()->forget('jwt'));
+      ->withCookie($this->forgetJwtCookie());
   }
 
 

@@ -121,6 +121,14 @@ class ProductVariant extends Model
         return $query->where('stock', '>', 0);
     }
 
+    public function scopeOnPromoActive($query)
+{
+    return $query
+        ->where('is_on_promo', true)
+        ->where(fn($q) => $q->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
+        ->where(fn($q) => $q->whereNull('promo_end_at')->orWhere('promo_end_at', '>', now()));
+}
+
 
     /**
      * Precio activo (promo o normal)

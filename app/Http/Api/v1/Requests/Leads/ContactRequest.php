@@ -87,7 +87,7 @@ class ContactRequest extends FormRequest
     protected function customerServiceRules(): array
     {
         return [
-            'purchase_document_number' => ['required_if:type,customer_service', 'string', 'max:50'],
+            'purchase_document_number' => ['nullable_if:type,customer_service', 'string', 'max:50'],
         ];
     }
 

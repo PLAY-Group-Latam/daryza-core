@@ -4,8 +4,8 @@ import { DataTable } from '@/components/data-table';
 import { DataTablePagination } from '@/components/data-table-pagination';
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
+import { Script } from '../types';
 import { columns } from './columns';
-import { Script } from './ScriptForm';
 
 export function TableList({ data: defaultData, meta }: { data: Script[]; meta: any }) {
     const [data, setData] = useState(() => [...defaultData]);

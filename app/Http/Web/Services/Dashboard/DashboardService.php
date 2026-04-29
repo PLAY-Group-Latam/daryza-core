@@ -7,45 +7,50 @@ use App\Models\Orders\Order;
 use App\Models\Products\ProductCategory;
 use App\Models\Orders\OrderPayment;
 use Illuminate\Support\Carbon;
-
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    // Definimos los estados que NO deben contabilizarse como ventas
+    private array $excludedStates = ['cancelled', 'pending_payment'];
+
     public function getKPIData($fromDate, $toDate): array
     {
         $from = Carbon::parse($fromDate);
         $to = Carbon::parse($toDate);
-
         $days = $from->diffInDays($to);
 
         $previousFrom = $from->copy()->subDays($days + 1);
         $previousTo = $to->copy()->subDays($days + 1);
 
         // Periodo actual
-        $currentSales = OrderPayment::where('status', 'approved')
+        $currentSales = OrderPayment::whereHas('order', function ($query) {
+                $query->whereNotIn('state', $this->excludedStates);
+            })
             ->whereBetween('paid_at', [$fromDate, $toDate])
             ->sum('amount');
 
-        $currentOrders = Order::whereHas('payments', function ($query) use ($fromDate, $toDate) {
-            $query->where('status', 'approved')
-                ->whereBetween('paid_at', [$fromDate, $toDate]);
-        })->count();
+        $currentOrders = Order::whereNotIn('state', $this->excludedStates)
+            ->whereHas('payments', function ($query) use ($fromDate, $toDate) {
+                $query->whereBetween('paid_at', [$fromDate, $toDate]);
+            })->count();
 
         // Periodo anterior
-        $previousSales = OrderPayment::where('status', 'approved')
+        $previousSales = OrderPayment::whereHas('order', function ($query) {
+                $query->whereNotIn('state', $this->excludedStates);
+            })
             ->whereBetween('paid_at', [$previousFrom, $previousTo])
             ->sum('amount');
 
-        $previousOrders = Order::whereHas('payments', function ($query) use ($previousFrom, $previousTo) {
-            $query->where('status', 'approved')
-                ->whereBetween('paid_at', [$previousFrom, $previousTo]);
-        })->count();
+        $previousOrders = Order::whereNotIn('state', $this->excludedStates)
+            ->whereHas('payments', function ($query) use ($previousFrom, $previousTo) {
+                $query->whereBetween('paid_at', [$previousFrom, $previousTo]);
+            })->count();
 
         $averageTicket = $currentOrders > 0 ? $currentSales / $currentOrders : 0;
         $previousTicket = $previousOrders > 0 ? $previousSales / $previousOrders : 0;
 
-        // Conversión actual: add_to_cart → payment_result_success (por customer_id único)
+        // Conversión actual
         $currentCartsStarted = EventLog::where('event_type', 'add_to_cart')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereNotNull('customer_id')
@@ -83,11 +88,9 @@ class DashboardService
             'totalSales'       => (float) round($currentSales, 2),
             'totalOrders'      => (int) $currentOrders,
             'averageTicket'    => (float) round($averageTicket, 2),
-
             'salesGrowth'      => $this->calculateGrowth($currentSales, $previousSales),
             'ordersGrowth'     => $this->calculateGrowth($currentOrders, $previousOrders),
             'ticketGrowth'     => $this->calculateGrowth($averageTicket, $previousTicket),
-
             'conversionRate'   => $conversionRate,
             'conversionGrowth' => $this->calculateGrowth($conversionRate, $previousConversionRate),
         ];
@@ -97,7 +100,9 @@ class DashboardService
     {
         $year = Carbon::parse($fromDate)->year;
 
-        $rawData = OrderPayment::where('status', 'approved')
+        $rawData = OrderPayment::whereHas('order', function ($query) {
+                $query->whereNotIn('state', $this->excludedStates);
+            })
             ->whereYear('paid_at', $year)
             ->selectRaw('EXTRACT(MONTH FROM paid_at) as month_num, SUM(amount) as sales, COUNT(DISTINCT order_id) as orders')
             ->groupBy('month_num')
@@ -123,9 +128,9 @@ class DashboardService
         $topProducts = DB::table('products as p')
             ->join('product_variants as pv', 'p.id', '=', 'pv.product_id')
             ->join('order_items as oi', 'pv.id', '=', 'oi.variant_id')
-            ->join('order_payments as op', 'oi.order_id', '=', 'op.order_id')
-            ->where('op.status', 'approved')
-            ->whereBetween('op.paid_at', [$fromDate, $toDate])
+            ->join('orders as o', 'oi.order_id', '=', 'o.id') // Unimos orders
+            ->whereNotIn('o.state', $this->excludedStates)    // Filtramos por estado
+            ->whereBetween('o.created_at', [$fromDate, $toDate]) // Usamos fecha de orden para mejor precisión
             ->select(
                 'p.name as product',
                 DB::raw('SUM(oi.line_total) as revenue'),
@@ -143,34 +148,32 @@ class DashboardService
         ]);
     }
 
-   public function getCategoryData($fromDate, $toDate)
-{
-   
-    $rootCategoryIds = ProductCategory::roots()->pluck('id');
+    public function getCategoryData($fromDate, $toDate)
+    {
+        $rootCategoryIds = ProductCategory::roots()->pluck('id');
 
-  
-    $categories = DB::table('product_category as pc')
-        ->join('product_categories as c', 'pc.category_id', '=', 'c.id')
-        ->join('order_items as oi', 'pc.product_id', '=', 'oi.product_id')
-        ->join('order_payments as op', 'oi.order_id', '=', 'op.order_id')
-        ->where('op.status', 'approved')
-        ->whereBetween('op.paid_at', [$fromDate, $toDate])
-        ->whereIn('c.id', $rootCategoryIds) // Filtramos solo por las raíz
-        ->select(
-            'c.name',
-            DB::raw('SUM(oi.quantity) as units'),
-            DB::raw('SUM(oi.line_total) as revenue')
-        )
-        ->groupBy('c.id', 'c.name')
-        ->orderByDesc('revenue')
-        ->get();
+        $categories = DB::table('product_category as pc')
+            ->join('product_categories as c', 'pc.category_id', '=', 'c.id')
+            ->join('order_items as oi', 'pc.product_id', '=', 'oi.product_id')
+            ->join('orders as o', 'oi.order_id', '=', 'o.id') // Unimos orders
+            ->whereNotIn('o.state', $this->excludedStates)    // Filtramos por estado
+            ->whereBetween('o.created_at', [$fromDate, $toDate])
+            ->whereIn('c.id', $rootCategoryIds)
+            ->select(
+                'c.name',
+                DB::raw('SUM(oi.quantity) as units'),
+                DB::raw('SUM(oi.line_total) as revenue')
+            )
+            ->groupBy('c.id', 'c.name')
+            ->orderByDesc('revenue')
+            ->get();
 
-    return collect($categories)->map(fn($item) => [
-        'name'    => $item->name,
-        'units'   => (int) $item->units,
-        'revenue' => (float) $item->revenue,
-    ]);
-}
+        return collect($categories)->map(fn($item) => [
+            'name'    => $item->name,
+            'units'   => (int) $item->units,
+            'revenue' => (float) $item->revenue,
+        ]);
+    }
 
     private function calculateGrowth(float $current, float $previous): float
     {

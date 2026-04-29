@@ -14,81 +14,54 @@ class NotificationController extends Controller
 
     public function __construct(protected NotificationService $service) {}
 
-   
     public function notifications(Request $request): JsonResponse
     {
-        $user = auth('api')->user();
-
-        if (!$user) {
-            return $this->error('No autorizado', 401);
-        }
+        // Obtenemos el ID del dispositivo del header
+        $visitorId = $request->header('X-Device-ID');
 
         $data = $this->service->getNotifications(
-            customerId: $user->id,
-            perPage: min((int) $request->get('per_page', 5), 5),
+            customerId: auth('api')->user()?->id,
+            visitorId: $visitorId,
+            perPage: (int) $request->get('per_page', 5),
         );
 
         return $this->success('Notificaciones obtenidas correctamente', $data);
     }
 
-   
     public function publicNotifications(Request $request): JsonResponse
     {
-        $data = $this->service->getNotifications(
-            customerId: null, 
-            perPage: min((int) $request->get('per_page', 5), 5),
-        );
-
-        return $this->success('Notificaciones públicas obtenidas', $data);
+        return $this->notifications($request);
     }
 
-   
-    public function markAsRead(string $id): JsonResponse
+    public function markAsRead(Request $request, string $id): JsonResponse
     {
-        $user = auth('api')->user();
-        if (!$user) return $this->error('No autorizado', 401);
-
-        $this->service->markAsRead($id, $user->id);
+        $this->service->markAsRead(
+            id: $id, 
+            customerId: auth('api')->user()?->id,
+            visitorId: $request->header('X-Device-ID')
+        );
 
         return $this->success('Notificación marcada como leída.');
     }
 
-  
-    public function markAllAsRead(): JsonResponse
+    public function markAllAsRead(Request $request): JsonResponse
     {
-        $user = auth('api')->user();
-        if (!$user) return $this->error('No autorizado', 401);
-
-        $this->service->markAllAsRead($user->id);
-
-        return $this->success('Todas las notificaciones marcadas como leídas.');
-    }
-
-    public function dismissNotification(string $id): JsonResponse
-    {
-        $user = auth('api')->user();
-        if (!$user) return $this->error('No autorizado', 401);
-
-        $this->service->dismissNotification($id, $user->id);
-
-        return $this->success('Notificación ocultada.');
-    }
-
-
-    public function sync(Request $request): JsonResponse
-    {
-        $user = auth('api')->user();
-        if (!$user) return $this->error('No autorizado', 401);
-
-        $readIds = $request->input('readIds', []);
-        $dismissedIds = $request->input('dismissedIds', []);
-
-        $this->service->syncNotifications(
-            customerId: $user->id,
-            readIds: $readIds,
-            dismissedIds: [] 
+        $this->service->markAllAsRead(
+            customerId: auth('api')->user()?->id,
+            visitorId: $request->header('X-Device-ID')
         );
 
-        return $this->success('Notificaciones sincronizadas correctamente.');
+        return $this->success('Todas las notificaciones marcadas.');
+    }
+
+    public function deleteNotification(Request $request, string $id): JsonResponse
+    {
+        $this->service->deleteNotification(
+            id: $id, 
+            customerId: auth('api')->user()?->id,
+            visitorId: $request->header('X-Device-ID')
+        );
+
+        return $this->success('Notificación eliminada.');
     }
 }

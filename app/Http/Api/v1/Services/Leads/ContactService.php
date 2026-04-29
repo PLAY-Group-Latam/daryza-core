@@ -80,7 +80,6 @@ class ContactService
 
             Lead::TYPE_CUSTOMER_SERVICE => array_merge($base, [
                 'ruc_or_dni'               => $data['ruc_or_dni'] ?? null,
-                'purchase_document_number' => $data['purchase_document_number'] ?? null,
                 'comments'                 => $data['comments'] ?? null,
             ]),
      

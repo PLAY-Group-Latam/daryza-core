@@ -37,6 +37,7 @@ class ScriptController extends Controller
         $data = $request->validate([
             'name'      => 'required|string|max:255',
             'placement' => 'required|in:head,body',
+            'consent_type' => 'required|in:necessary,analytics,marketing',
             'active'    => 'required|boolean',
             'content'   => 'required|string',
         ]);
@@ -58,6 +59,7 @@ class ScriptController extends Controller
     $data = $request->validate([
         'name'      => 'required|string|max:255',
         'placement' => 'required|in:head,body',
+        'consent_type' => 'required|in:necessary,analytics,marketing',
         'active'    => 'required|boolean',
         'content'   => 'required|string',
     ]);

@@ -51,10 +51,9 @@ class ProductController extends Controller
         return $this->success('Productos listados correctamente', $products);
     }
 
-    public function home(Request $request)
+    public function home()
     {
-        $limit = min($request->input('limit', 5), 10);
-
+        $limit = 10;
         $products = Product::query()
             ->select('id', 'name', 'slug')
             ->home()
@@ -75,9 +74,9 @@ class ProductController extends Controller
         return $this->success('Productos para Home listados correctamente', $products);
     }
 
-    public function homePacks(Request $request)
+    public function homePacks()
     {
-        $limit = min($request->input('limit', 5), 10);
+        $limit = 10;
 
         $packs = ProductPack::query()
             ->select('id', 'name', 'slug', 'brief_description', 'price', 'promo_price', 'is_on_promotion', 'promo_start_at', 'promo_end_at', 'stock')
@@ -143,6 +142,7 @@ class ProductController extends Controller
                 'id' => $pack->id,
                 'name' => $pack->name,
                 'slug' => $pack->slug,
+                'brief_description' => $pack->brief_description,
                 'description' => $pack->description,
                 'stock' => $pack->stock,
                 'main_image' => $pack->mainImage,
@@ -211,7 +211,7 @@ class ProductController extends Controller
             'name' => $product->name,
             'slug' => $product->slug,
             'main_variant' => $mainVariant ? array_merge(
-                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku],
+                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku,                 'stock' => $mainVariant->stock,],
                 $this->variantResolver->resolvePriceData($mainVariant)
             ) : null,
             'main_image' => $mainVariant?->mainImage ? [

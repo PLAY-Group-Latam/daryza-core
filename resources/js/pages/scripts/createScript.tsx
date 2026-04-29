@@ -19,6 +19,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -30,6 +37,7 @@ import { Loader2 } from 'lucide-react';
 const scriptSchema = z.object({
     name: z.string().min(1, 'Debe ingresar un nombre'),
     placement: z.enum(['head', 'body']),
+    consent_type: z.enum(['necessary', 'analytics', 'marketing']),
     active: z.boolean(),
     content: z.string().min(1, 'El contenido no puede estar vacío'),
 });
@@ -47,6 +55,7 @@ export default function CreateScript() {
         defaultValues: {
             name: '',
             placement: 'head',
+            consent_type: 'necessary',
             active: true,
             content: '',
         },
@@ -184,6 +193,42 @@ export default function CreateScript() {
 
                             <Card>
                                 <CardContent className="pt-0">
+                                    <FormField
+                                        control={form.control}
+                                        name="consent_type"
+                                        render={({ field }) => (
+                                            <FormItem className="mb-4 space-y-2">
+                                                <FormLabel>
+                                                    Tipo de consentimiento
+                                                </FormLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-11">
+                                                            <SelectValue placeholder="Selecciona tipo" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="necessary">
+                                                            Necesario (siempre activo)
+                                                        </SelectItem>
+                                                        <SelectItem value="analytics">
+                                                            Analytics (Google Analytics, etc)
+                                                        </SelectItem>
+                                                        <SelectItem value="marketing">
+                                                            Marketing (Meta Pixel, etc)
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
                                     <FormField
                                         control={form.control}
                                         name="placement"
