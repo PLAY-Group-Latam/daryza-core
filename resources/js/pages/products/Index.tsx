@@ -6,8 +6,11 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 export default function Index() {
-    const { products } = usePage<{
+    const { products, filters } = usePage<{
         products: Paginated<Product>;
+        filters?: {
+            search?: string;
+        };
     }>().props;
 
     return (
@@ -51,7 +54,7 @@ export default function Index() {
                     </div>
                 </div>
 
-                <TableList data={products} />
+                <TableList data={products} filters={filters} />
             </div>
         </AppLayout>
     );

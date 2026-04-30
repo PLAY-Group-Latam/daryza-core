@@ -34,11 +34,12 @@ class ProductController extends Controller
 
 
 
-  public function index()
+  public function index(Request $request)
   {
-    $perPage = request()->input('per_page', 10);
+    $perPage = $request->input('per_page', 10);
+    $search = trim((string) $request->input('search', ''));
 
-    $products = Product::with([
+    $products = Product::query()->with([
       'variants' => function ($q) {
         $q->orderBy('created_at', 'asc')
           ->orderBy('id', 'asc') // ← desempate estable
@@ -49,6 +50,17 @@ class ProductController extends Controller
       },
 
     ])
+      ->when($search !== '', function ($query) use ($search) {
+        $term = "%{$search}%";
+
+        $query->where(function ($q) use ($term) {
+          $q->where('name', 'ilike', $term)
+            ->orWhere('code', 'ilike', $term)
+            ->orWhereHas('variants', function ($variantQuery) use ($term) {
+              $variantQuery->where('sku', 'ilike', $term);
+            });
+        });
+      })
       ->orderBy('created_at', 'desc')  // ← explícito y estable
       ->orderBy('id', 'desc') // ← desempate estable
       ->paginate($perPage);
@@ -56,6 +68,9 @@ class ProductController extends Controller
 
     return Inertia::render('products/Index', [
       'products' => $products,
+      'filters' => [
+        'search' => $search,
+      ],
     ]);
   }
 

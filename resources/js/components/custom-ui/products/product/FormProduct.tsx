@@ -73,7 +73,7 @@ export default function FormProduct({
     const specificationAttributes = attributes.filter((a) => !a.is_variant);
 
     const onError = (errors: FieldErrors<ProductFormValues>) => {
-        void errors;
+        console.error('Errores de validacion del formulario de producto:', errors);
         setShowSubmitHelp(true);
     };
     return (

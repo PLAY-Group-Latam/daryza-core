@@ -8,7 +8,7 @@ import {
 } from '@/lib/helpers/GetMainVariant';
 import products from '@/routes/products';
 import { Product } from '@/types/products/product';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -17,6 +17,9 @@ import { DataTable } from '../../tables/DataTable';
 
 interface TableListProps {
     data: Paginated<Product>;
+    filters?: {
+        search?: string;
+    };
 }
 
 export const columns: ColumnDef<Product>[] = [
@@ -163,8 +166,26 @@ export const columns: ColumnDef<Product>[] = [
     },
 ];
 
-export default function TableList({ data }: TableListProps) {
+export default function TableList({ data, filters }: TableListProps) {
     if (!data) return null;
 
-    return <DataTable columns={columns} data={data} />;
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            onSearch={handleSearch}
+            initialSearch={filters?.search}
+        />
+    );
 }
