@@ -36,8 +36,7 @@ export function DataTable<T>({
     perPageOptions,
     toolbarRight,
 }: DataTableProps<T>) {
-   
-    const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? "");
+    const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? '');
 
     const isFirstRender = React.useRef(true);
     const lastSearchRef = React.useRef(initialSearch ?? "");
@@ -60,8 +59,27 @@ export function DataTable<T>({
         return () => clearTimeout(timer);
     }, [globalFilter, onSearch]);
 
+    const filteredData = React.useMemo(() => {
+        if (onSearch) return data.data;
+
+        const term = (globalFilter ?? '').trim().toLowerCase();
+        if (!term) return data.data;
+
+        return data.data.filter((row) => {
+            if (!row || typeof row !== 'object') return false;
+
+            return Object.values(row as Record<string, unknown>).some((value) => {
+                if (value == null) return false;
+                if (typeof value === 'string' || typeof value === 'number') {
+                    return String(value).toLowerCase().includes(term);
+                }
+                return false;
+            });
+        });
+    }, [data.data, globalFilter, onSearch]);
+
     const table = useReactTable({
-        data: data.data,
+        data: filteredData,
         columns,
         state: {
             globalFilter,
@@ -80,7 +98,7 @@ export function DataTable<T>({
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <Input
                     placeholder="Buscar..."
-                    value={globalFilter ?? ""} 
+                    value={globalFilter ?? ''}
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"
                 />

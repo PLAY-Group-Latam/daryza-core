@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,27 @@ export function SpecificationsAttributes({
         control,
         name: `variants.${variantIndex}.specifications`,
     });
+
+    const didBootstrapDefaults = useRef(false);
+
+    // Si la variante no tiene especificaciones, precarga todas para que
+    // el usuario solo complete los valores.
+    useEffect(() => {
+        if (didBootstrapDefaults.current) return;
+        if (!availableAttributes.length) return;
+        if (fields.length > 0) {
+            didBootstrapDefaults.current = true;
+            return;
+        }
+
+        append(
+            availableAttributes.map((attr) => ({
+                attribute_id: attr.id,
+                value: '',
+            })),
+        );
+        didBootstrapDefaults.current = true;
+    }, [append, availableAttributes, fields.length]);
 
     // Atributos que aún no fueron agregados como especificación
     const usedIds = fields.map((f) => f.attribute_id);

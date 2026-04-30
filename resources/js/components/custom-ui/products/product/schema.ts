@@ -47,7 +47,10 @@ const VariantSchema = z.object({
     price: z.coerce.number().min(0, 'El precio no puede ser negativo'),
     promo_price: z.preprocess(
         parseOptionalNumber,
-        z.coerce.number().min(0, 'El precio promocional no puede ser negativo').optional(),
+        z.coerce
+            .number()
+            .min(0, 'El precio promocional no puede ser negativo')
+            .optional(),
     ),
     stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo'),
     is_active: z.boolean(),
@@ -81,170 +84,194 @@ const MetadataSchema = z.object({
 
 // — Schema principal —
 
-export const ProductSchema = z.object({
-    name: z.string().trim().min(1, 'El nombre es obligatorio').max(255),
-    slug: z.string().trim().min(1, 'El slug es obligatorio').max(255),
-    brief_description: z.string().trim().max(500).optional(),
-    description: z.string().optional(),
-    is_active: z.boolean(),
-    is_home: z.boolean(),
-    parent_category_id: z.string().min(1, 'Selecciona una categoría padre'),
-    categories: z.array(z.string()).min(1, 'Selecciona al menos una subcategoría'),
-    business_lines: z.array(z.string()).optional(),
-    recommended_product_ids: z.array(z.string()).optional(),
-    variant_attribute_ids: z.array(z.string()),
-    variants: z
-        .array(VariantSchema)
-        .min(1, 'El producto debe tener al menos una variante'),
-    technicalSheets: z.array(z.union([FileSchema, ExistingMediaSchema])),
-    metadata: MetadataSchema,
-}).superRefine((data, ctx) => {
-    const canonicalUrl = data.metadata.canonical_url?.trim();
-    if (canonicalUrl) {
-        try {
-            const url = new URL(canonicalUrl);
-            if (!['http:', 'https:'].includes(url.protocol)) {
+export const ProductSchema = z
+    .object({
+        name: z.string().trim().min(1, 'El nombre es obligatorio').max(255),
+        slug: z.string().trim().min(1, 'El slug es obligatorio').max(255),
+        brief_description: z.string().trim().optional(),
+        description: z.string().optional(),
+        is_active: z.boolean(),
+        is_home: z.boolean(),
+        parent_category_id: z.string().min(1, 'Selecciona una categoría padre'),
+        categories: z
+            .array(z.string())
+            .min(1, 'Selecciona al menos una subcategoría'),
+        business_lines: z.array(z.string()).optional(),
+        recommended_product_ids: z.array(z.string()).optional(),
+        variant_attribute_ids: z.array(z.string()),
+        variants: z
+            .array(VariantSchema)
+            .min(1, 'El producto debe tener al menos una variante'),
+        technicalSheets: z.array(z.union([FileSchema, ExistingMediaSchema])),
+        metadata: MetadataSchema,
+    })
+    .superRefine((data, ctx) => {
+        const canonicalUrl = data.metadata.canonical_url?.trim();
+        if (canonicalUrl) {
+            try {
+                const url = new URL(canonicalUrl);
+                if (!['http:', 'https:'].includes(url.protocol)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['metadata', 'canonical_url'],
+                        message:
+                            'La URL canónica debe iniciar con http:// o https://',
+                    });
+                }
+            } catch {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ['metadata', 'canonical_url'],
-                    message: 'La URL canónica debe iniciar con http:// o https://',
+                    message: 'La URL canónica no tiene un formato válido.',
                 });
             }
-        } catch {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['metadata', 'canonical_url'],
-                message: 'La URL canónica no tiene un formato válido.',
-            });
-        }
-    }
-
-    data.variants.forEach((variant, index) => {
-        if (!variant.is_active && variant.is_main) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'is_main'],
-                message: 'Una variante inactiva no puede ser principal.',
-            });
-        }
-    });
-
-    const activeMainCount = data.variants.filter((v) => v.is_active && v.is_main).length;
-    if (activeMainCount !== 1) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['variants'],
-            message: 'Debe existir exactamente una variante principal activa.',
-        });
-    }
-
-    const skuMap = new Map<string, number>();
-    data.variants.forEach((variant, index) => {
-        const normalizedSku = variant.sku.trim().toLowerCase();
-        if (!normalizedSku) return;
-
-        if (skuMap.has(normalizedSku)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'sku'],
-                message: 'El SKU está repetido en el formulario.',
-            });
-        } else {
-            skuMap.set(normalizedSku, index);
-        }
-    });
-
-    data.variants.forEach((variant, index) => {
-        if (!variant.is_on_promo) return;
-
-        if (variant.promo_price === undefined) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'promo_price'],
-                message: 'Debes indicar precio promocional.',
-            });
         }
 
-        if (
-            variant.promo_price !== undefined &&
-            variant.promo_price > variant.price
-        ) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'promo_price'],
-                message: 'El precio promocional no puede ser mayor al precio base.',
-            });
-        }
-
-        if (
-            variant.promo_start_at &&
-            variant.promo_end_at &&
-            variant.promo_end_at <= variant.promo_start_at
-        ) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'promo_end_at'],
-                message: 'La fecha fin debe ser posterior a la fecha inicio.',
-            });
-        }
-    });
-
-    const selectedAttributeIds = new Set(data.variant_attribute_ids);
-    const combinationSignatures = new Map<string, number>();
-
-    data.variants.forEach((variant, index) => {
-        const uniqueAttributeIds = new Set<string>();
-        const selectedValues: string[] = [];
-
-        variant.attributes.forEach((attr, attrIndex) => {
-            if (uniqueAttributeIds.has(attr.attribute_id)) {
+        data.variants.forEach((variant, index) => {
+            if (!variant.is_active && variant.is_main) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ['variants', index, 'attributes', attrIndex, 'attribute_id'],
-                    message: 'El atributo está repetido en la variante.',
+                    path: ['variants', index, 'is_main'],
+                    message: 'Una variante inactiva no puede ser principal.',
                 });
             }
-            uniqueAttributeIds.add(attr.attribute_id);
+        });
+
+        const activeMainCount = data.variants.filter(
+            (v) => v.is_active && v.is_main,
+        ).length;
+        if (activeMainCount !== 1) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['variants'],
+                message:
+                    'Debe existir exactamente una variante principal activa.',
+            });
+        }
+
+        const skuMap = new Map<string, number>();
+        data.variants.forEach((variant, index) => {
+            const normalizedSku = variant.sku.trim().toLowerCase();
+            if (!normalizedSku) return;
+
+            if (skuMap.has(normalizedSku)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['variants', index, 'sku'],
+                    message: 'El SKU está repetido en el formulario.',
+                });
+            } else {
+                skuMap.set(normalizedSku, index);
+            }
+        });
+
+        data.variants.forEach((variant, index) => {
+            if (!variant.is_on_promo) return;
+
+            if (variant.promo_price === undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['variants', index, 'promo_price'],
+                    message: 'Debes indicar precio promocional.',
+                });
+            }
 
             if (
-                selectedAttributeIds.has(attr.attribute_id) &&
-                !attr.attribute_value_id
+                variant.promo_price !== undefined &&
+                variant.promo_price > variant.price
             ) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ['variants', index, 'attributes', attrIndex, 'attribute_value_id'],
-                    message: 'Debes seleccionar un valor para este atributo.',
+                    path: ['variants', index, 'promo_price'],
+                    message:
+                        'El precio promocional no puede ser mayor al precio base.',
                 });
             }
 
-            if (attr.attribute_value_id) {
-                selectedValues.push(attr.attribute_value_id);
+            if (
+                variant.promo_start_at &&
+                variant.promo_end_at &&
+                variant.promo_end_at <= variant.promo_start_at
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['variants', index, 'promo_end_at'],
+                    message:
+                        'La fecha fin debe ser posterior a la fecha inicio.',
+                });
             }
         });
 
-        for (const requiredAttributeId of selectedAttributeIds) {
-            if (!uniqueAttributeIds.has(requiredAttributeId)) {
+        const selectedAttributeIds = new Set(data.variant_attribute_ids);
+        const combinationSignatures = new Map<string, number>();
+
+        data.variants.forEach((variant, index) => {
+            const uniqueAttributeIds = new Set<string>();
+            const selectedValues: string[] = [];
+
+            variant.attributes.forEach((attr, attrIndex) => {
+                if (uniqueAttributeIds.has(attr.attribute_id)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [
+                            'variants',
+                            index,
+                            'attributes',
+                            attrIndex,
+                            'attribute_id',
+                        ],
+                        message: 'El atributo está repetido en la variante.',
+                    });
+                }
+                uniqueAttributeIds.add(attr.attribute_id);
+
+                if (
+                    selectedAttributeIds.has(attr.attribute_id) &&
+                    !attr.attribute_value_id
+                ) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [
+                            'variants',
+                            index,
+                            'attributes',
+                            attrIndex,
+                            'attribute_value_id',
+                        ],
+                        message:
+                            'Debes seleccionar un valor para este atributo.',
+                    });
+                }
+
+                if (attr.attribute_value_id) {
+                    selectedValues.push(attr.attribute_value_id);
+                }
+            });
+
+            for (const requiredAttributeId of selectedAttributeIds) {
+                if (!uniqueAttributeIds.has(requiredAttributeId)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['variants', index, 'attributes'],
+                        message: 'Faltan atributos de variante obligatorios.',
+                    });
+                    break;
+                }
+            }
+
+            const signature =
+                selectedValues.sort().join('|') || '__no_variant_attributes__';
+            if (combinationSignatures.has(signature)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ['variants', index, 'attributes'],
-                    message: 'Faltan atributos de variante obligatorios.',
+                    message: 'La combinación de atributos está duplicada.',
                 });
-                break;
+            } else {
+                combinationSignatures.set(signature, index);
             }
-        }
-
-        const signature = selectedValues.sort().join('|') || '__no_variant_attributes__';
-        if (combinationSignatures.has(signature)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants', index, 'attributes'],
-                message: 'La combinación de atributos está duplicada.',
-            });
-        } else {
-            combinationSignatures.set(signature, index);
-        }
+        });
     });
-});
 
 // — Tipos —
 

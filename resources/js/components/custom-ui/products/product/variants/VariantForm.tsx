@@ -79,9 +79,7 @@ export function VariantForm({
         activeAttributes,
         selectedIds,
     } = useVariantForm(variantAttributes);
-    const [isSingleProduct, setIsSingleProduct] = useState(
-        (selectedIds?.length ?? 0) === 0,
-    );
+    const [isSingleProduct, setIsSingleProduct] = useState(false);
     const watchedVariants = useWatch({
         control,
         name: 'variants',
@@ -575,7 +573,9 @@ export function VariantForm({
                 >
                     <SheetHeader className="border-b border-slate-200 px-5 py-4">
                         <SheetTitle>
-                            {editingVariantIndex !== null
+                            {isSingleProduct
+                                ? 'Producto único'
+                                : editingVariantIndex !== null
                                 ? `Editar Variante ${editingVariantIndex + 1}`
                                 : 'Editar Variante'}
                         </SheetTitle>

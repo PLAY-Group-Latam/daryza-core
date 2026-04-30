@@ -47,7 +47,7 @@ class StoreProductRequest extends FormRequest
             // — Producto base —
             'name'              => ['required', 'string', 'max:255'],
             'slug'              => ['required', 'string', 'max:255', 'unique:products,slug'],
-            'brief_description' => ['nullable', 'string', 'max:500'],
+            'brief_description' => ['nullable', 'string'],
             'description'       => ['nullable', 'string'],
             'is_active'         => ['required', 'boolean'],
             'is_home'           => ['required', 'boolean'],
@@ -114,7 +114,7 @@ class StoreProductRequest extends FormRequest
             'slug.required'              => 'El slug es obligatorio.',
             'slug.unique'                => 'Este slug ya está en uso, elige otro.',
             'slug.max'                   => 'El slug no puede superar los 255 caracteres.',
-            'brief_description.max'      => 'La descripción corta no puede superar los 500 caracteres.',
+            // 'brief_description.max'      => 'La descripción corta no puede superar los 500 caracteres.',
             'is_active.required'         => 'Debes indicar si el producto está activo.',
             'is_home.required'           => 'Debes indicar si el producto se muestra en el home.',
 

@@ -1,16 +1,23 @@
-/* estilos para el editor */
+/* contenedor general */
 .rich-editor {
     min-height: 300px;
     font-family: inherit;
-    padding: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: inherit;
 }
+
+/* área editable */
 .rich-editor .ProseMirror {
+    outline: none;
     overflow-wrap: anywhere;
+    word-break: break-word;
+    padding: 0.75rem;
 }
 
 /* enlaces */
 .rich-editor a {
-    color: #2563eb; /* azul */
+    color: #2563eb;
     text-decoration: underline;
     cursor: pointer;
 }
@@ -20,42 +27,83 @@
     font-style: italic;
 }
 
+/* negrita */
+.rich-editor strong {
+    font-weight: 700;
+}
+
 /* encabezados */
 .rich-editor h1 {
-    font-size: 2rem; /* 32px */
-    margin: 0.5em 0;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0.75em 0 0.4em;
 }
 
 .rich-editor h2 {
-    font-size: 1.5rem; /* 24px */
-    margin: 0.5em 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0.75em 0 0.4em;
 }
 
-/* listas */
-.rich-editor ul {
-    list-style-type: disc;
-    margin-left: 1.5em;
-}
-
-.rich-editor ol {
-    list-style-type: decimal;
-    margin-left: 1.5em;
+.rich-editor h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0.75em 0 0.4em;
 }
 
 /* párrafos */
 .rich-editor p {
-    margin: 0.5em 0;
+    margin: 0.4em 0;
+    line-height: 1.6;
 }
 
-/* negrita */
-.rich-editor strong {
-    font-weight: bold;
+/* listas */
+.rich-editor ul,
+.rich-editor ol {
+    margin: 0.4em 0;
+    padding-left: 1.5rem;
 }
 
-.ProseMirror p.is-empty::before {
+.rich-editor ul {
+    list-style-type: disc;
+}
+
+.rich-editor ol {
+    list-style-type: decimal;
+}
+
+.rich-editor li {
+    margin: 0.15em 0;
+    line-height: 1.5;
+}
+
+/* evita dobles márgenes dentro de listas */
+.rich-editor li p {
+    margin: 0;
+}
+
+/* listas anidadas */
+.rich-editor ul ul,
+.rich-editor ol ol,
+.rich-editor ul ol,
+.rich-editor ol ul {
+    margin: 0.2em 0;
+    padding-left: 1.25rem;
+}
+
+/* placeholder */
+.rich-editor .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
-    color: #999;
+    color: #9ca3af;
     float: left;
     height: 0;
     pointer-events: none;
 }
+
+/* selección de texto */
+/* .rich-editor .ProseMirror ::selection {
+    background: #bfdbfe;
+} */
