@@ -33,6 +33,7 @@ class CustomerController extends Controller
         [
           'ruc' => $data['ruc'],
           'social_reason' => $data['social_reason'],
+          'fiscal_address' => $data['fiscal_address'],
         ]
       );
     }

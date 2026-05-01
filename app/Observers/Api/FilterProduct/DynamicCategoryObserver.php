@@ -13,6 +13,7 @@ class DynamicCategoryObserver
     private function clearCache(): void
     {
         Cache::forget('sidebar_static_data');
+        Cache::forget('mega_menu_data');
     }
 
     /**
