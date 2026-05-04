@@ -29,7 +29,7 @@ class DeliveryLimaOnlySeeder extends Seeder
             [],
             [
                 'minimum_order_amount' => 100.00,
-                'order_amount_threshold' => 0.00,
+                'order_amount_threshold' => 50.00,
             ]
         );
     }

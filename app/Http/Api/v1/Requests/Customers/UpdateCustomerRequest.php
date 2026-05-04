@@ -49,6 +49,12 @@ class UpdateCustomerRequest extends FormRequest
         'max:255',
         Rule::unique('billing_profiles', 'social_reason')->ignore($this->user()->billingProfile?->id ?? null),
       ],
+      'fiscal_address' => [
+        'nullable',
+        'string',
+        'max:255',
+        Rule::unique('billing_profiles', 'fiscal_address')->ignore($this->user()->billingProfile?->id ?? null),
+      ],
     ];
   }
 
@@ -68,6 +74,7 @@ class UpdateCustomerRequest extends FormRequest
       'ruc.size' => 'El RUC debe tener 11 dígitos.',
       'ruc.unique' => 'Este RUC ya está registrado.',
       'social_reason.unique' => 'Esta razón social ya está registrada.',
+      'fiscal_address.unique' => 'Esta dirección fiscal ya está registrada.',
     ];
   }
 }

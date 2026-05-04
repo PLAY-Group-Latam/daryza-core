@@ -28,6 +28,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('ruc', 11)->unique(); 
             $table->string('social_reason');
+            $table->string('fiscal_address', 100);
             $table->foreignUlid('customer_id')
                 ->constrained('customers')
                 ->cascadeOnDelete();

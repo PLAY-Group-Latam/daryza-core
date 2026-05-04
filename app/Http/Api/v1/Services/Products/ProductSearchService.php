@@ -34,14 +34,6 @@ class ProductSearchService
         ];
     }
 
-    // =========================================================================
-    // Lógica de "Intención" (Smart Routing)
-    // =========================================================================
-
-    /**
-     * Detecta si la búsqueda del usuario coincide exactamente con una entidad.
-     * Esto permite "saltar" directo a la categoría/marca en lugar de buscar productos.
-     */
     private function resolveSmartRedirect(string $q): string
     {
         $lowQ = mb_strtolower($q);
@@ -186,7 +178,7 @@ class ProductSearchService
 
     private function suggestDynamics(string $q): Collection
     {
-        return DynamicCategory::where('is_active', true)
+        return DynamicCategory::activeNow()
             ->where('name', 'ILIKE', "%{$q}%")
             ->limit(2)
             ->get()

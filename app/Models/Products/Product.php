@@ -62,6 +62,15 @@ class Product extends Model
     {
         return $this->hasMany(ProductVariant::class, 'product_id');
     }
+    public function dynamicCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DynamicCategory::class,
+            'dynamic_category_items',  // tabla pivot
+            'product_id',
+            'dynamic_category_id'
+        )->withTimestamps();
+    }
 
     public function mainVariant()
     {

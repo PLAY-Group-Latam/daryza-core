@@ -13,6 +13,7 @@ class BillingProfile extends Model
     protected $fillable = [
         'ruc',
         'social_reason',
+        'fiscal_address',
         'customer_id',
     ];
     
