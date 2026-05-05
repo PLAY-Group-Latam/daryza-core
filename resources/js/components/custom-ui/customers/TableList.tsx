@@ -32,6 +32,11 @@ export const columns: ColumnDef<Customer>[] = [
     },
     { accessorKey: 'email', header: 'Email' },
     {
+        accessorKey: 'google_id',
+        header: 'Google ID',
+        cell: ({ row }) => <span>{row.original.google_id || '-'}</span>,
+    },
+    {
         accessorKey: 'phone',
         header: 'Teléfono',
         cell: ({ row }) => <span>{row.original.phone || '-'}</span>,

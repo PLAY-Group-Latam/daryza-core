@@ -2,6 +2,7 @@ import { BackButton } from '@/components/custom-ui/PageHeader';
 import FormProduct from '@/components/custom-ui/products/product/FormProduct';
 import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
+import { Brand } from '@/types/products/brands';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 import { ProductRecommendable } from '@/types/products/productEdit';
@@ -12,11 +13,13 @@ export default function Create() {
         categories,
         attributes,
         businessLines,
+        brands,
         recommendableSearchResults,
     } = usePage<{
         categories: CategorySelect[];
         attributes: Attribute[];
-        businessLines: BusinessLine[]; // <--- Agregado
+        businessLines: BusinessLine[];
+        brands: Brand[];
         recommendableSearchResults: ProductRecommendable[];
     }>().props;
     return (
@@ -36,6 +39,7 @@ export default function Create() {
                     categories={categories}
                     attributes={attributes}
                     businessLines={businessLines}
+                    brands={brands}
                     recommendableSearchResults={recommendableSearchResults}
                 />
             </div>

@@ -1,6 +1,7 @@
 import FormProduct from '@/components/custom-ui/products/product/FormProduct';
 import AppLayout from '@/layouts/app-layout';
 import { Attribute } from '@/types/products/attributes';
+import { Brand } from '@/types/products/brands';
 import { BusinessLine } from '@/types/products/businessLines';
 import { CategorySelect } from '@/types/products/categories';
 import { ProductEdit, ProductRecommendable } from '@/types/products/productEdit';
@@ -8,12 +9,19 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { BackButton } from '@/components/custom-ui/PageHeader';
 
 export default function Edit() {
-    const { categories, attributes, product, businessLines, recommendableSearchResults } =
-        usePage<{
+    const {
+        categories,
+        attributes,
+        product,
+        businessLines,
+        brands,
+        recommendableSearchResults,
+    } = usePage<{
         product: ProductEdit;
         categories: CategorySelect[];
         attributes: Attribute[];
         businessLines: BusinessLine[];
+        brands: Brand[];
         recommendableSearchResults: ProductRecommendable[];
     }>().props;
     return (
@@ -35,6 +43,7 @@ export default function Edit() {
                     attributes={attributes}
                     product={product}
                     businessLines={businessLines}
+                    brands={brands}
                     recommendableSearchResults={recommendableSearchResults}
                 />
             </div>

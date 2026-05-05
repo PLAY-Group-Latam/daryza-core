@@ -28,6 +28,7 @@ interface Props {
     categories: CategorySelect[];
     attributes: Attribute[];
     businessLines: BusinessLine[];
+    brands?: { id: string; name: string }[];
     recommendableSearchResults: ProductRecommendable[];
     product?: ProductEdit; // undefined = crear, definido = editar
 }
@@ -36,6 +37,7 @@ export default function FormProduct({
     categories,
     attributes,
     businessLines,
+    brands = [],
     recommendableSearchResults,
     product,
 }: Props) {
@@ -105,6 +107,7 @@ export default function FormProduct({
                     <SidebarSection
                         categories={categories}
                         businessLines={businessLines}
+                        brands={brands}
                         initialRecommendedProducts={
                             product?.recommended_products ?? []
                         }

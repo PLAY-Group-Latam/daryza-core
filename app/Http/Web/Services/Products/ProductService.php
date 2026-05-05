@@ -59,6 +59,7 @@ class ProductService
             'description',
             'is_active',
             'is_home',
+            'brand_id',
         ])->toArray());
 
         if (isset($data['categories']) || isset($data['parent_category_id'])) {

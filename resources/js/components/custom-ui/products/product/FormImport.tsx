@@ -849,7 +849,7 @@ export default function FormImport() {
                                     </div>
                                 )}
 
-                            {isQueueRunning && (
+                            {liveSession.status === 'importing' && (
                                 <p className="mt-3 text-xs text-slate-500">
                                     Puedes seguir usando el sistema. Esta
                                     importación se procesa en cola y el estado
