@@ -20,6 +20,8 @@ use App\Observers\Api\FilterProduct\ProductCategoryObserver as ApiProductCategor
 use App\Observers\Api\FilterProduct\DynamicCategoryObserver;
 use App\Observers\Api\FilterProduct\BusinessLineObserver;
 use App\Observers\Api\FilterProduct\AttributeValueObserver;
+use App\Observers\Api\Products\InventoryLowStockObserver;
+use App\Observers\Api\Products\PackLowStockObserver;
 use App\Observers\Api\NavigationObserver;
 
 class AppServiceProvider extends ServiceProvider
@@ -52,9 +54,11 @@ class AppServiceProvider extends ServiceProvider
         BusinessLine::observe(BusinessLineObserver::class);
         AttributesValue::observe(AttributeValueObserver::class);
         Product::observe(NavigationObserver::class);
-        ProductCategory::observe(NavigationObserver::class);   // 👈 falta
-        ProductPack::observe(NavigationObserver::class);        // 👈 falta
-        ProductVariant::observe(NavigationObserver::class);     // 👈 falta para promos
-        DynamicCategory::observe(NavigationObserver::class);    // 👈 falta
+        ProductCategory::observe(NavigationObserver::class);  
+        ProductPack::observe(NavigationObserver::class);        
+        ProductVariant::observe(NavigationObserver::class);     
+        DynamicCategory::observe(NavigationObserver::class);  
+        ProductVariant::observe(InventoryLowStockObserver::class);
+        ProductPack::observe(PackLowStockObserver::class);  
     }
 }

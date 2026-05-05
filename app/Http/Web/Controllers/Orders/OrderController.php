@@ -57,7 +57,7 @@ class OrderController extends Controller
             'items',
             'payments',
             'statusHistory',
-            'customer:id,full_name,email,phone,photo,dni',
+            'customer:id,full_name,full_last_name,email,phone,photo,dni,document_type',
         ]);
 
         return Inertia::render('orders/Show', [
