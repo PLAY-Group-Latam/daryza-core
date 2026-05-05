@@ -99,6 +99,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      * @var array<string, string|null>
      */
     private array $productIdByCodeCache = [];
+    /**
+     * @var array<string, string>
+     */
+    private array $canonicalBrandByCode = [];
     private int $lastProgressPersistedAt = 0;
     private int $processedOffset = 0;
 
@@ -220,6 +224,25 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             $childCategories = $mapped['categories']['children'] ?? '';
             $recommendedCodes = $this->parseRecommendedCodes($row);
             $ctx = $this->buildRowContext($mapped);
+
+            // Marca canónica por producto: la primera no vacía del bloque se replica
+            // a todas las variantes para persistir especificación real "Marca".
+            $currentBrand = trim((string) ($mapped['product']['brand'] ?? ''));
+            $brandOwnerCode = $code ?: $this->lastCode;
+            if ($brandOwnerCode) {
+                if ($currentBrand !== '') {
+                    if (!isset($this->canonicalBrandByCode[$brandOwnerCode])) {
+                        $this->canonicalBrandByCode[$brandOwnerCode] = $currentBrand;
+                    }
+                }
+
+                $canonicalBrand = $this->canonicalBrandByCode[$brandOwnerCode] ?? '';
+                if ($canonicalBrand !== '') {
+                    $mapped['product']['brand'] = $canonicalBrand;
+                    $mapped['specifications']['Marca'] = $canonicalBrand;
+                }
+            }
+
 
             $rowValidationErrors = $this->validateMappedRow($mapped, $this->lastCode);
             if (!empty($rowValidationErrors)) {

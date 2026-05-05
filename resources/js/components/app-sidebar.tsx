@@ -75,6 +75,10 @@ const mainNavItems: NavItem[] = [
                 href: '/productos/lineas-de-negocio',
             },
             {
+                title: 'Marcas',
+                href: '/productos/marcas',
+            },
+            {
                 title: 'Dinámicas de Negocio',
                 href: '/productos/categorias-dinamicas',
             },

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Http\Api\Traits\HasSeo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
@@ -24,7 +25,8 @@ class Product extends Model
         'brief_description',
         'description',
         'is_active',
-        'is_home', // ✅ Agregado aquí
+        'is_home',
+        'brand_id',
     ];
 
     protected $casts = [
@@ -62,6 +64,11 @@ class Product extends Model
     {
         return $this->hasMany(ProductVariant::class, 'product_id');
     }
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
     public function dynamicCategories(): BelongsToMany
     {
         return $this->belongsToMany(

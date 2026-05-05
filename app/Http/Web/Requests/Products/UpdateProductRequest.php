@@ -64,6 +64,7 @@ class UpdateProductRequest extends FormRequest
       'categories.*'      => ['required', 'string', 'exists:product_categories,id'],
       'parent_category_id' => ['required', 'exists:product_categories,id'],
       'business_lines'    => ['nullable', 'array'],
+      'brand_id' => ['nullable', 'exists:brands,id'],
       'business_lines.*'  => ['exists:business_lines,id'],
       'recommended_product_ids'   => ['nullable', 'array'],
       'recommended_product_ids.*' => ['distinct', 'exists:products,id'],

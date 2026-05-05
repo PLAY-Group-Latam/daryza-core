@@ -85,6 +85,19 @@ export function VariantForm({
         name: 'variants',
         defaultValue: [],
     });
+
+    // Auto-sincroniza el modo "producto único" al cargar/editar:
+    // si hay exactamente una variante y no hay atributos de variante seleccionados,
+    // se considera único para pintar correctamente importados.
+    useEffect(() => {
+        const variantsCount = watchedVariants?.length ?? 0;
+        const hasVariantAttributes = (selectedIds?.length ?? 0) > 0;
+        const shouldBeSingle = variantsCount === 1 && !hasVariantAttributes;
+
+        setIsSingleProduct((prev) =>
+            prev === shouldBeSingle ? prev : shouldBeSingle,
+        );
+    }, [watchedVariants, selectedIds]);
     // Regla de negocio: si existen atributos de variante seleccionados,
     // no puede considerarse "producto único".
     useEffect(() => {

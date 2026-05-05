@@ -8,6 +8,7 @@ use App\Http\Web\Support\Products\UniqueSlugResolver;
 use App\Models\Products\{
   Attribute,
   AttributesValue,
+  Brand,
   BusinessLine,
   Product,
   ProductCategory,
@@ -20,6 +21,28 @@ class ProductImportService
   public function __construct(
     protected UniqueSlugResolver $slugResolver
   ) {}
+
+  protected function resolveBrandId(?string $brandName): ?string
+  {
+    $name = trim((string) $brandName);
+    if ($name === '') {
+      return null;
+    }
+
+    $slug = Str::slug($name);
+    $brand = Brand::where('slug', $slug)->first();
+
+    if (!$brand) {
+      $brand = Brand::create([
+        'id' => Str::ulid(),
+        'name' => $name,
+        'slug' => $slug,
+        'is_active' => true,
+      ]);
+    }
+
+    return $brand->id;
+  }
 
   /**
    * Crear producto base (una sola vez por código)
@@ -40,6 +63,7 @@ class ProductImportService
         'name' => $data['name'],
         'brief_description' => $data['brief_description'] ?? $product->brief_description,
         'description' => $data['description'] ?? $product->description,
+        'brand_id' => $this->resolveBrandId($data['brand'] ?? null),
       ]);
       $wasDirty = $product->isDirty();
       if ($wasDirty) {
@@ -66,6 +90,7 @@ class ProductImportService
       'slug' => $slug,
       'brief_description' => $data['brief_description'] ?? null,
       'description' => $data['description'] ?? null,
+      'brand_id' => $this->resolveBrandId($data['brand'] ?? null),
       'is_active' => $data['is_active'] ?? true,
       'is_home' => $data['is_home'] ?? false,
     ]);

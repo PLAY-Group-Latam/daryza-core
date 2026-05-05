@@ -12,6 +12,7 @@ export function mapProductToForm(product: ProductEdit): ProductFormValues {
         parent_category_id: product.parent_category_id ?? '',
         categories: product.categories ?? [],
         business_lines: product.business_lines ?? [],
+        brand_id: product.brand_id ?? null,
         recommended_product_ids: product.recommended_product_ids ?? [],
         variant_attribute_ids: product.variant_attribute_ids ?? [],
 

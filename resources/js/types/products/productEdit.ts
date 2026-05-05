@@ -29,6 +29,7 @@ export interface ProductRecommendable {
 }
 
 export interface ProductEdit extends ProductBase {
+    brand_id?: string | null;
     is_home: boolean;
     parent_category_id?: string | null;
     categories: string[];

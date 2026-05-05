@@ -10,6 +10,7 @@ use App\Http\Web\Services\Products\ProductCategoryService;
 use App\Http\Web\Services\Products\ProductService;
 use App\Models\Products\Attribute;
 use App\Models\Products\BusinessLine;
+use App\Models\Products\Brand;
 use App\Models\Products\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -116,6 +117,7 @@ class ProductController extends Controller
       'parent_category_id' => $inferredParentId,
       'categories' => $subcategories->pluck('id')->values()->toArray(),
       'business_lines' => $product->businessLines->pluck('id')->toArray(),
+      'brand_id' => $product->brand_id,
       'recommended_product_ids' => $product->recommendedProducts->pluck('id')->toArray(),
       'recommended_products' => $product->recommendedProducts->map(fn($item) => [
         'id' => $item->id,
@@ -197,6 +199,7 @@ class ProductController extends Controller
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
       'businessLines' => $businessLines, // <--- Pasar a la vista
+      'brands' => Brand::where('is_active', true)->latest()->get(['id', 'name']),
       'recommendableSearchResults' => $recommendableSearchResults,
       'filters' => [
         'recommended_q' => $recommendedSearch,
@@ -229,6 +232,7 @@ class ProductController extends Controller
       'categories' => $categoriesForSelect,
       'attributes' => $attributes,
       'businessLines' => $businessLines, // Las pasamos a la vista
+      'brands' => Brand::where('is_active', true)->latest()->get(['id', 'name']),
       'recommendableSearchResults' => $recommendableSearchResults,
       'filters' => [
         'recommended_q' => $recommendedSearch,
