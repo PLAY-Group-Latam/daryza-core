@@ -14,12 +14,14 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('full_name');
+            $table->string('full_last_name')->nullable();
             $table->string('email')->unique();
             $table->string('phone')->unique()->nullable();
             $table->string('password')->nullable();
             $table->string('google_id')->nullable();
             $table->string('photo')->nullable();
-            $table->string('dni', 8)->unique()->nullable();
+            $table->string('document_type',3)->nullable();
+            $table->string('dni', 15)->unique()->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

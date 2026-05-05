@@ -15,7 +15,7 @@ interface TableListProps {
 export const columns: ColumnDef<Customer>[] = [
     {
         accessorKey: 'full_name',
-        header: 'Nombre',
+        header: 'Nombre Completo',
         cell: ({ row }) => {
             const customer = row.original;
 
@@ -25,7 +25,7 @@ export const columns: ColumnDef<Customer>[] = [
                         image={customer.photo} // avatar del usuario
                         name={customer.full_name ?? 'Usuario'}
                     />
-                    <span>{customer.full_name}</span>
+                    <span>{customer.full_name}, {customer.full_last_name}</span>
                 </div>
             );
         },

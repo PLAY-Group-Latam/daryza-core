@@ -2,6 +2,7 @@
 export interface BillingProfile {
     ruc: string;
     social_reason: string;
+    fiscal_address: string;
 }
 
 export interface CustomerMetrics {
@@ -27,11 +28,13 @@ export interface Address {
 export interface Customer {
     id: string;
     full_name: string;
+    full_last_name?: string | null;  // ✅
     email: string;
     phone?: string | null;
     password?: string | null;
     google_id?: string | null;
-    photo?: string | null;
+    photo?: string | null
+    document_type?: string | null;  
     dni?: string | null;
     created_at?: string;
     updated_at?: string;

@@ -14,54 +14,49 @@ class UpdateCustomerRequest extends FormRequest
   }
 
   public function rules(): array
-  {
-    $customerId = auth('api')->id(); // ID del usuario logueado
+{
+    $customerId = auth('api')->id();
 
     return [
-      'full_name' => ['required', 'string', 'max:255'],
-      'email' => [
-        'required',
-        'email',
-        Rule::unique('customers', 'email')->ignore($customerId),
-      ],
-      'dni' => [
-        'required',
-        'string',
-        'size:8',
-        Rule::unique('customers', 'dni')->ignore($customerId),
-      ],
-      'phone' => [
-        'required',
-        'string',
-        'size:9',
-        Rule::unique('customers', 'phone')->ignore($customerId),
-      ],
-      'is_company' => ['boolean'],
-      'ruc' => [
-        'nullable',
-        'string',
-        'size:11',
-        Rule::unique('billing_profiles', 'ruc')->ignore($this->user()->billingProfile?->id ?? null),
-      ],
-      'social_reason' => [
-        'nullable',
-        'string',
-        'max:255',
-        Rule::unique('billing_profiles', 'social_reason')->ignore($this->user()->billingProfile?->id ?? null),
-      ],
-      'fiscal_address' => [
-        'nullable',
-        'string',
-        'max:255',
-        Rule::unique('billing_profiles', 'fiscal_address')->ignore($this->user()->billingProfile?->id ?? null),
-      ],
+        'full_name'      => ['required', 'string', 'max:255'],
+        'full_last_name' => ['required', 'string', 'max:255'], // ✅
+        'document_type'  => ['nullable', 'string', 'in:DNI,CE'], // ✅
+        'email' => [
+            'required',
+            'email',
+            Rule::unique('customers', 'email')->ignore($customerId),
+        ],
+        'dni' => [
+            'nullable', // ✅ nullable porque CE tiene otro formato
+            'string',
+            'max:15',
+            Rule::unique('customers', 'dni')->ignore($customerId),
+        ],
+        'phone' => [
+            'required',
+            'string',
+            'size:9',
+            Rule::unique('customers', 'phone')->ignore($customerId),
+        ],
+        'is_company'     => ['boolean'],
+        'ruc'            => ['nullable', 'string', 'size:11',
+            Rule::unique('billing_profiles', 'ruc')->ignore($this->user()->billingProfile?->id ?? null),
+        ],
+        'social_reason'  => ['nullable', 'string', 'max:255',
+            Rule::unique('billing_profiles', 'social_reason')->ignore($this->user()->billingProfile?->id ?? null),
+        ],
+        'fiscal_address' => ['nullable', 'string', 'max:255',
+            Rule::unique('billing_profiles', 'fiscal_address')->ignore($this->user()->billingProfile?->id ?? null),
+        ],
     ];
-  }
+}
 
   public function messages(): array
   {
     return [
       'full_name.required' => 'El nombre completo es obligatorio.',
+      'full_last_name.required' => 'El apellido completo es obligatorio.',
+      'document_type.in'        => 'El tipo de documento debe ser DNI o CE.',
       'email.required' => 'El correo es obligatorio.',
       'email.email' => 'El correo debe ser válido.',
       'email.unique' => 'Este correo ya está registrado.',

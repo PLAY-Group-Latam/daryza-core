@@ -21,11 +21,13 @@ class CustomerController extends Controller
     // Log::info('Datos recibidos en updateCustomer:', $data);
 
     $customer->update([
-      'full_name' => $data['full_name'],
-      'email' => $data['email'],
-      'dni' => $data['dni'],
-      'phone' => $data['phone'],
-    ]);
+    'full_name'      => $data['full_name'],
+    'full_last_name' => $data['full_last_name'],
+    'document_type'  => $data['document_type'] ?? null,
+    'email'          => $data['email'],
+    'dni'            => $data['dni'],
+    'phone'          => $data['phone'],
+]);
 
     if (!empty($data['is_company'])) {
       $customer->billingProfile()->updateOrCreate(

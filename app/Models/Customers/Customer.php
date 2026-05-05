@@ -17,15 +17,17 @@ class Customer extends Authenticatable implements JWTSubject, CanResetPassword
 {
     use HasFactory, HasUlids, SoftDeletes, Notifiable, CanResetPasswordTrait;
 
-    protected $fillable = [
-        'full_name',
-        'email',
-        'phone',
-        'password',
-        'google_id',
-        'photo',
-        'dni',
-    ];
+  protected $fillable = [
+    'full_name',
+    'full_last_name',  
+    'email',
+    'phone',
+    'password',
+    'google_id',
+    'photo',
+    'dni',
+    'document_type',  
+];
 
 
     protected $hidden = [
@@ -40,6 +42,13 @@ class Customer extends Authenticatable implements JWTSubject, CanResetPassword
     {
         return $this->hasOne(BillingProfile::class);
     }
+
+    protected function fullLastName(): Attribute
+{
+    return Attribute::make(
+        get: fn($value) => ucwords(strtolower($value ?? '')),
+    );
+}
 
 
     public function addresses()

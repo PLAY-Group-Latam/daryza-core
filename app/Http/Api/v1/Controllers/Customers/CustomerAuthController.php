@@ -83,13 +83,15 @@ class CustomerAuthController extends Controller
     if ($googleUser['aud'] !== config('services.google.client_id')) {
       return $this->error('Token no válido para esta aplicación', 401);
     }
+    $nameParts = explode(' ', $googleUser['name'] ?? '', 2);
 
-    $customer = $this->customerService->findOrCreateFromGoogle([
-      'email'     => $googleUser['email'],
-      'full_name' => $googleUser['name'] ?? $googleUser['email'],
-      'google_id' => $googleUser['sub'],
-      'photo'     => $googleUser['picture'] ?? null,
-    ]);
+  $customer = $this->customerService->findOrCreateFromGoogle([
+  'email'          => $googleUser['email'],
+  'full_name'      => $nameParts[0] ?? $googleUser['email'],
+  'full_last_name' => $nameParts[1] ?? '',
+  'google_id'      => $googleUser['sub'],
+  'photo'          => $googleUser['picture'] ?? null,
+]);
 
     $token = JWTAuth::fromUser($customer);
     $this->dispatchSuccessLoginEmail($customer);
