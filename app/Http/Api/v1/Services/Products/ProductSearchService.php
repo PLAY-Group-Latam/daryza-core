@@ -5,12 +5,10 @@ namespace App\Http\Api\v1\Services\Products;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductCategory;
-use App\Models\Products\AttributesValue;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\Brand;
 use App\Models\Products\DynamicCategory;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class ProductSearchService
 {
@@ -55,55 +53,58 @@ class ProductSearchService
         $brand = Brand::where('is_active', true)->whereRaw('LOWER(name) = ?', [$lowQ])->first();
         if ($brand) return "/productos?brands[]={$brand->slug}";
 
-        // Fallback: Búsqueda normal de texto
+        // Fallback
         return '/productos?q=' . urlencode($q);
     }
 
-    // =========================================================================
-    // Helpers internos
-    // =========================================================================
-
-    private function sanitizeQuery(string $q): string
-    {
-        $clean = preg_replace('/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/u', '', $q);
-        return trim($clean);
-    }
-
-    // =========================================================================
-    // Productos + Packs
-    // =========================================================================
+  private function sanitizeQuery(string $q): string
+{
+    // Permitir números para que el SKU no sea ignorado
+    $clean = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]/u', '', $q);
+    return trim($clean);
+}
 
     private function fetchProductsRaw(string $q, int $limit): Collection
-    {
-        $qClean = $this->sanitizeQuery($q);
+{
+    $qClean = $this->sanitizeQuery($q);
 
-        $products = Product::active()
-            ->where(fn($query) =>
-                $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
-                      ->orWhereHas('variants', fn($v) =>
-                          $v->where('sku', 'ILIKE', "%{$q}%")
-                      )
-            )
-            ->with(['mainVariant.mainImage'])
-            ->limit($limit)
-            ->get();
+    // 1. PRIORIDAD MÁXIMA: Coincidencia exacta de SKU
+    $productBySku = Product::active()
+        ->whereHas('variants', fn($v) => $v->where('sku', 'ILIKE', $q))
+        ->with(['mainVariant.mainImage'])
+        ->get();
 
+    if ($productBySku->isNotEmpty()) {
+        return $productBySku; // Si es SKU, devolvemos solo esto (relevancia total)
+    }
+
+    // 2. PRODUCTOS por nombre (Query original y limpia)
+    $products = Product::active()
+        ->where(fn($query) =>
+            $query->where('name', 'ILIKE', "%{$q}%")
+                  ->orWhere('name', 'ILIKE', "%{$qClean}%")
+        )
+        ->with(['mainVariant.mainImage'])
+        ->limit($limit)
+        ->get();
+
+    // 3. PACKS (Solo si aún hay espacio en el limite)
+    $remainingLimit = $limit - $products->count();
+    $packs = collect();
+    
+    if ($remainingLimit > 0) {
         $packs = ProductPack::where('is_active', true)
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
                       ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->with('mainImage')
-            ->limit(2)
+            ->limit($remainingLimit)
             ->get();
-
-        return $products->concat($packs)->take($limit);
     }
 
-    // =========================================================================
-    // Sugerencias
-    // =========================================================================
+    return $products->concat($packs)->take($limit);
+}
 
     private function buildSuggestions(string $q, string $lowQ, int $limit): Collection
     {
@@ -111,7 +112,7 @@ class ProductSearchService
             ->concat($this->suggestCategories($q))
             ->concat($this->suggestBrands($q))
             ->concat($this->suggestBusinessLines($q))
-            ->concat($this->suggestDynamics($q))
+            ->concat($this->suggestDynamics($q)) // Aquí ya usa el scope ActiveNow
             ->unique(fn($item) => mb_strtolower($item['text']));
 
         $hasExactMatch = $entities->contains(fn($item) => mb_strtolower($item['text']) === $lowQ);
@@ -132,31 +133,19 @@ class ProductSearchService
         if (in_array($lowQ, ['pack', 'packs'])) {
             return '/productos?is_pack=true';
         }
-
         return $this->resolveSmartRedirect($q);
     }
 
-    // =========================================================================
-    // Helpers de Búsqueda (Live Data)
-    // =========================================================================
-
+    // Sugerencias de Entidades con validación de vigencia
     private function suggestCategories(string $q): Collection
     {
         $qClean = $this->sanitizeQuery($q);
-
         return ProductCategory::active()
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
                       ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->with('parent:id,slug')
-            ->orderByRaw('CASE
-                WHEN name ILIKE ? THEN 1
-                WHEN name ILIKE ? THEN 2
-                ELSE 3
-            END ASC', [$q, $q . '%'])
-            ->orderByRaw('parent_id IS NULL DESC')
-            ->orderByRaw('LENGTH(name) ASC')
             ->limit(3)
             ->get()
             ->map(fn($c) => [
@@ -171,17 +160,11 @@ class ProductSearchService
     private function suggestBrands(string $q): Collection
     {
         $qClean = $this->sanitizeQuery($q);
-
         return Brand::where('is_active', true)
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
                       ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
-            ->orderByRaw('CASE
-                WHEN name ILIKE ? THEN 1
-                WHEN name ILIKE ? THEN 2
-                ELSE 3
-            END ASC', [$q, $q . '%'])
             ->limit(3)
             ->get()
             ->map(fn($b) => [
@@ -194,7 +177,6 @@ class ProductSearchService
     private function suggestBusinessLines(string $q): Collection
     {
         $qClean = $this->sanitizeQuery($q);
-
         return BusinessLine::where('is_active', true)
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
@@ -213,6 +195,7 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
 
+        // ✅ USANDO SCOPE ACTIVENOW (Filtra fechas de inicio y fin)
         return DynamicCategory::activeNow()
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
@@ -228,7 +211,7 @@ class ProductSearchService
     }
 
     // =========================================================================
-    // Formato de respuesta (Formatting)
+    // Lógica de Formateo y Precios con Validación de Vigencia Temporal
     // =========================================================================
 
     private function formatProductResponse(mixed $item): array
@@ -240,34 +223,45 @@ class ProductSearchService
 
     private function formatPack(ProductPack $pack): array
     {
+        // ✅ VALIDACIÓN DE VIGENCIA PARA PACK
+        $isPromoActive = $pack->is_on_promotion &&
+            (!$pack->promo_start_at || $pack->promo_start_at->isPast()) &&
+            (!$pack->promo_end_at || $pack->promo_end_at->isFuture());
+
         return [
-            'id'         => "pk-{$pack->id}",
-            'name'       => $pack->name,
-            'sku'        => 'PACK-' . $pack->id,
-            'slug'       => $pack->slug,
-            'price'      => (float) $pack->final_price,
-            'is_promo'   => (bool) $pack->is_on_promotion,
-            'image'      => $pack->mainImage?->file_path,
-            'target_url' => "/producto/{$pack->slug}",
-        ];
+        'id'         => "pk-{$pack->id}",
+        'name'       => $pack->name,
+        'sku'        => 'PACK-' . $pack->id, // Mantener para el buscador, pero lo ignoraremos en el visual
+        'type'       => 'pack', // <--- AGREGAR ESTO
+        'slug'       => $pack->slug,
+        'price'      => (float) ($isPromoActive ? ($pack->promo_price ?? $pack->price) : $pack->price),
+        'is_promo'   => $isPromoActive,
+        'image'      => $pack->mainImage?->file_path,
+        'target_url' => "/producto/{$pack->slug}",
+    ];
     }
 
     private function formatProduct(Product $product): array
     {
         $v = $product->mainVariant;
-        $isPromo = $v?->is_on_promo
-            && (!$v->promo_start_at || $v->promo_start_at->isPast())
-            && (!$v->promo_end_at   || $v->promo_end_at->isFuture());
+        
+        // ✅ VALIDACIÓN DE VIGENCIA PARA PRODUCTO/VARIANTE
+        $isPromoActive = false;
+        if ($v && $v->is_on_promo) {
+            $isPromoActive = (!$v->promo_start_at || $v->promo_start_at->isPast()) &&
+                             (!$v->promo_end_at || $v->promo_end_at->isFuture());
+        }
 
         return [
-            'id'         => $product->id,
-            'name'       => $product->name,
-            'sku'        => $v?->sku,
-            'slug'       => $product->slug,
-            'price'      => (float) ($isPromo ? $v->promo_price : $v?->price),
-            'is_promo'   => $isPromo,
-            'image'      => $v?->mainImage?->file_path,
-            'target_url' => "/producto/{$product->slug}",
-        ];
+        'id'         => $product->id,
+        'name'       => $product->name,
+        'sku'        => $v?->sku,
+        'type'       => 'product', // <--- AGREGAR ESTO
+        'slug'       => $product->slug,
+        'price'      => (float) ($isPromoActive ? $v->promo_price : ($v?->price ?? 0)),
+        'is_promo'   => $isPromoActive,
+        'image'      => $v?->mainImage?->file_path,
+        'target_url' => "/producto/{$product->slug}",
+    ];
     }
 }
