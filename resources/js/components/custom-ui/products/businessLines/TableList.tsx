@@ -105,5 +105,12 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['name', 'slug']}
+            placeholder="Buscar por nombre o slug..."
+        />
+    );
 }

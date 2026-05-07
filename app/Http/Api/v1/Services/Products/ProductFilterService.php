@@ -8,6 +8,7 @@ use App\Models\Products\ProductCategory;
 use App\Models\Products\DynamicCategory;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\AttributesValue;
+use App\Models\Products\Brand;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -213,7 +214,7 @@ class ProductFilterService
         $catSlugs = $this->slugArray($params, 'categories');
         $subSlugs = $this->slugArray($params, 'subcategories');
         $dynSlugs = $this->slugArray($params, 'dynamics');
-        $brandIds = $this->idArray($params, 'brands');
+        $brandSlugs = $this->slugArray($params, 'brands');
         $blSlugs  = $this->slugArray($params, 'business_lines');
 
         return [
@@ -261,13 +262,13 @@ class ProductFilterService
                 },
             ],
 
-            'brands' => [
-                'active' => !empty($brandIds),
-                'apply'  => fn(Builder $q) => $q->whereHas(
-                    'variants.specifications',
-                    fn(Builder $s) => $s->whereIn('attribute_value_id', $brandIds)
-                ),
-            ],
+       'brands' => [
+    'active' => !empty($brandSlugs),
+    'apply'  => fn(Builder $q) => $q->whereHas(
+        'brand',
+        fn(Builder $b) => $b->whereIn('brands.slug', $brandSlugs)
+    ),
+],
 
             'offers' => [
                 'active' => $this->bool($params, 'on_offer'),
@@ -353,22 +354,19 @@ class ProductFilterService
         return $next ?? now()->addHours(6);
     }
 
-    private function getNormalizedBrands()
-    {
-        return AttributesValue::whereHas('attribute', fn($q) => $q->where('name', 'ILIKE', '%Marca%'))
-            ->get(['id', 'value as name'])
-            ->map(function ($brand) {
-                $brand->normalized = strtolower(trim($brand->name));
-                return $brand;
-            })
-            ->unique('normalized')
-            ->map(fn($brand) => [
-                'id'   => $brand->id,
-                'name' => trim($brand->name),
-                'type' => 'brand',
-            ])
-            ->values();
-    }
+private function getNormalizedBrands()
+{
+    return Brand::where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name', 'slug'])
+        ->map(fn($brand) => [
+            'id'   => $brand->slug,  
+            'name' => $brand->name,
+            'slug' => $brand->slug,
+            'type' => 'brand',
+        ])
+        ->values();
+}
 
     private function resolveSubcategories(array $slugs): \Illuminate\Support\Collection
     {

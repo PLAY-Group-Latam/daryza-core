@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { router } from '@inertiajs/react'; 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Claim } from '@/types/leads/claim';
+import { router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye } from 'lucide-react';
+import { useState } from 'react';
 import { DataTable } from '../../tables/DataTable';
 import { ModalClaimList } from './ModalList';
 
@@ -27,9 +27,9 @@ export default function TableList({ data, filters }: TableListProps) {
             window.location.pathname,
             { search: value },
             {
-                preserveState: true, 
-                replace: true,       
-            }
+                preserveState: true,
+                replace: true,
+            },
         );
     };
 
@@ -53,14 +53,19 @@ export default function TableList({ data, filters }: TableListProps) {
         {
             accessorKey: 'email',
             header: 'Correo',
-            cell: ({ row }) => <span className="text-slate-600 dark:text-slate-400">{row.original.email}</span>,
+            cell: ({ row }) => (
+                <span className="text-slate-600 dark:text-slate-400">
+                    {row.original.email}
+                </span>
+            ),
         },
         {
             id: 'document',
             header: 'Documento',
             cell: ({ row }) => (
-                <span className="text-slate-700 dark:text-slate-300 font-mono text-x">
-                    {row.original.data.document_type_id}: {row.original.data.document_number}
+                <span className="text-x font-mono text-slate-700 dark:text-slate-300">
+                    {row.original.data.document_type_id}:{' '}
+                    {row.original.data.document_number}
                 </span>
             ),
         },
@@ -68,7 +73,10 @@ export default function TableList({ data, filters }: TableListProps) {
             id: 'product_service',
             header: 'Producto/Servicio',
             cell: ({ row }) => (
-                <Badge variant="outline" className="border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <Badge
+                    variant="outline"
+                    className="border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                >
                     {row.original.data.well_hired_id}
                 </Badge>
             ),
@@ -80,7 +88,9 @@ export default function TableList({ data, filters }: TableListProps) {
                 const type = row.original.data.type_of_claim_id.toLowerCase();
                 const isClaim = type === 'reclamo';
                 return (
-                    <span className={`text-xs font-bold uppercase tracking-wider ${isClaim ? "text-amber-600 dark:text-amber-500" : "text-blue-600 dark:text-blue-500"}`}>
+                    <span
+                        className={`text-xs font-bold tracking-wider uppercase ${isClaim ? 'text-amber-600 dark:text-amber-500' : 'text-blue-600 dark:text-blue-500'}`}
+                    >
                         {row.original.data.type_of_claim_id}
                     </span>
                 );
@@ -90,7 +100,7 @@ export default function TableList({ data, filters }: TableListProps) {
             accessorKey: 'date',
             header: 'Fecha Reclamo',
             cell: ({ row }) => (
-                <span className="text-slate-600 dark:text-slate-400 text-xs">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                     {formatDate(row.original.data.created_at_form)}
                 </span>
             ),
@@ -99,10 +109,10 @@ export default function TableList({ data, filters }: TableListProps) {
             id: 'actions',
             header: 'Acciones',
             cell: ({ row }) => (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-slate-500 transition-all hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                     onClick={() => handleViewDetails(row.original)}
                 >
                     <Eye className="h-5 w-5" />
@@ -113,17 +123,18 @@ export default function TableList({ data, filters }: TableListProps) {
 
     return (
         <div className="w-full">
-            <DataTable 
-                columns={columns} 
-                data={data} 
-                onSearch={handleSearch}           
-                initialSearch={filters?.search}    
+            <DataTable
+                columns={columns}
+                data={data}
+                onSearch={handleSearch}
+                initialSearch={filters?.search}
+                placeholder="Buscar por nombre, correo o documento..."
             />
-            
-            <ModalClaimList 
-                claim={selectedClaim} 
-                isOpen={isModalOpen} 
-                onClose={setIsModalOpen} 
+
+            <ModalClaimList
+                claim={selectedClaim}
+                isOpen={isModalOpen}
+                onClose={setIsModalOpen}
             />
         </div>
     );

@@ -65,19 +65,24 @@ export function buildFormData(
         // — Media —
         // El índice `mi` representa la posición tras el drag & drop.
         // El array ya viene reordenado desde el estado del form.
-        variant.media.forEach((item, mi) => {
-            if (item instanceof File) {
-                // Archivo nuevo: se envía como binario
-                fd.append(`${p}[media][${mi}]`, item);
-            } else {
-                // Imagen/video ya existente: se envía como objeto con metadatos
-                const media = item as Media;
-                if (media.id) fd.append(`${p}[media][${mi}][id]`, media.id);
-                fd.append(`${p}[media][${mi}][file_path]`, media.file_path);
-                fd.append(`${p}[media][${mi}][type]`, media.type);
-                fd.append(`${p}[media][${mi}][position]`, String(mi)); // ← posición drag & drop
-            }
-        });
+        if (variant.media.length === 0) {
+            // Array vacío: señal explícita al backend para borrar todo
+            fd.append(`${p}[media]`, '');
+        } else {
+            variant.media.forEach((item, mi) => {
+                if (item instanceof File) {
+                    // Archivo nuevo: se envía como binario
+                    fd.append(`${p}[media][${mi}]`, item);
+                } else {
+                    // Imagen/video ya existente: se envía como objeto con metadatos
+                    const media = item as Media;
+                    if (media.id) fd.append(`${p}[media][${mi}][id]`, media.id);
+                    fd.append(`${p}[media][${mi}][file_path]`, media.file_path);
+                    fd.append(`${p}[media][${mi}][type]`, media.type);
+                    fd.append(`${p}[media][${mi}][position]`, String(mi)); // ← posición drag & drop
+                }
+            });
+        }
 
         // — Atributos —
         variant.attributes.forEach((attr, ai) => {

@@ -39,8 +39,8 @@ class BrandService
     {
         if ($brand->products()->exists()) {
             throw ValidationException::withMessages([
-                'business_line' => 'No se puede eliminar una línea con productos asociados.',
-            ]);
+    'brand' => 'No se puede eliminar una marca con productos asociados.',
+]);
         }
         if ($brand->image) {
             $this->gcsService->deleteFromPublicUrl($brand->image);

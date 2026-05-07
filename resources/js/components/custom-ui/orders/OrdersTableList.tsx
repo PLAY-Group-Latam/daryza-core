@@ -54,11 +54,14 @@ function RowActions({ order }: { order: OrderRow }) {
     );
 }
 
-export default function OrdersTableList({ data, filters }: OrdersTableListProps) {
+export default function OrdersTableList({
+    data,
+    filters,
+}: OrdersTableListProps) {
     const pageIds = useMemo(
-    () => data.data.map((order) => order.id),
-    [data.data]
-);
+        () => data.data.map((order) => order.id),
+        [data.data],
+    );
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isApplying, setIsApplying] = useState(false);
     const [bulkMessage, setBulkMessage] = useState<string | null>(null);
@@ -185,7 +188,7 @@ export default function OrdersTableList({ data, filters }: OrdersTableListProps)
         );
     };
 
-   const columns = useMemo<ColumnDef<OrderRow>[]>(
+    const columns = useMemo<ColumnDef<OrderRow>[]>(
         () => [
             {
                 id: 'select',
@@ -249,8 +252,14 @@ export default function OrdersTableList({ data, filters }: OrdersTableListProps)
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56">
                                 <DropdownMenuItem
-                                    onClick={() => applyTableFilters({ state: 'all' })}
-                                    className={currentStateFilter === 'all' ? 'font-semibold' : ''}
+                                    onClick={() =>
+                                        applyTableFilters({ state: 'all' })
+                                    }
+                                    className={
+                                        currentStateFilter === 'all'
+                                            ? 'font-semibold'
+                                            : ''
+                                    }
                                 >
                                     Todos
                                 </DropdownMenuItem>
@@ -258,7 +267,9 @@ export default function OrdersTableList({ data, filters }: OrdersTableListProps)
                                     <DropdownMenuItem
                                         key={option.value}
                                         onClick={() =>
-                                            applyTableFilters({ state: option.value })
+                                            applyTableFilters({
+                                                state: option.value,
+                                            })
                                         }
                                         className={
                                             currentStateFilter === option.value
@@ -305,7 +316,14 @@ export default function OrdersTableList({ data, filters }: OrdersTableListProps)
                 cell: ({ row }) => <RowActions order={row.original} />,
             },
         ],
-        [allSelected, selectedIds, toggleAll, toggleOne, currentStateFilter, applyTableFilters],
+        [
+            allSelected,
+            selectedIds,
+            toggleAll,
+            toggleOne,
+            currentStateFilter,
+            applyTableFilters,
+        ],
     );
 
     const selectedOrders = data.data.filter((order) =>
@@ -369,6 +387,7 @@ export default function OrdersTableList({ data, filters }: OrdersTableListProps)
                 toolbarRight={toolbarRight}
                 initialSearch={currentSearch}
                 onSearch={(value) => applyTableFilters({ search: value })}
+                placeholder="Buscar por # de orden o cliente..."
             />
         </div>
     );

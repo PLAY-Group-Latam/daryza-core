@@ -3,10 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import productsNamespace from '@/routes/products';
-import {
-    Brand,
-    PaginatedBrands,
-} from '@/types/products/brands';
+import { Brand, PaginatedBrands } from '@/types/products/brands';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
@@ -67,9 +64,7 @@ const columns: ColumnDef<Brand>[] = [
                         title="Editar atributo"
                         asChild
                     >
-                        <Link
-                            href={productsNamespace.brands.edit(brand.id)}
-                        >
+                        <Link href={productsNamespace.brands.edit(brand.id)}>
                             <Edit />
                         </Link>
                     </Button>
@@ -105,5 +100,12 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['name', 'slug']}
+            placeholder="Buscar por nombre o slug..."
+        />
+    );
 }

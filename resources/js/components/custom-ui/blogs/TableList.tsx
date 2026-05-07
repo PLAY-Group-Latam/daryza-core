@@ -21,7 +21,9 @@ export const columns: ColumnDef<Blog>[] = [
         header: 'Artículo',
         cell: ({ row }) => {
             const blog = row.original;
-            const frontendUrl = String(import.meta.env.VITE_FRONTEND_URL ?? '').replace(/\/$/, '');
+            const frontendUrl = String(
+                import.meta.env.VITE_FRONTEND_URL ?? '',
+            ).replace(/\/$/, '');
             const publicUrl = `${frontendUrl}/blog/${encodeURIComponent(blog.slug)}`;
 
             return (
@@ -114,5 +116,12 @@ export const columns: ColumnDef<Blog>[] = [
 export default function TableList({ data }: TableListProps) {
     if (!data) return null;
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['title', 'author']}
+            placeholder="Buscar por título o autor..."
+        />
+    );
 }

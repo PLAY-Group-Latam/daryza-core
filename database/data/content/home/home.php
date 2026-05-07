@@ -47,29 +47,6 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | HOME BRANDS
-    |--------------------------------------------------------------------------
-    */
-    'home_brands' => [
-        'brands' => [
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42a97ae09.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ab09fa5.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ab8101f.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42abf22b5.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ac74b55.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ace781f.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ad71a4e.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42add909f.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42ae6745f.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42aedbb8e.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42af61348.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42afd0d19.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42b054e51.png'],
-            ['name' => '', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/3/images/699d42b0c92f7.png'],
-        ],
-    ],
 
     /*
     |--------------------------------------------------------------------------

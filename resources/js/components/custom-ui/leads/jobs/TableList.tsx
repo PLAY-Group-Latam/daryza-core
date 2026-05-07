@@ -130,11 +130,12 @@ export default function JobTableList({ data, filters }: JobTableListProps) {
         <div className="w-full ">
             <div>
                 <DataTable
-                    columns={columns}
-                    data={data}
-                    onSearch={handleSearch}
-                    initialSearch={filters?.search ?? ''}
-                />
+    columns={columns}
+    data={data}
+    onSearch={handleSearch}
+    initialSearch={filters?.search ?? ''}
+    placeholder="Buscar por nombre o email..."
+/>
             </div>
 
             {/* Modal específico para ver los detalles del trabajo y el CV */}

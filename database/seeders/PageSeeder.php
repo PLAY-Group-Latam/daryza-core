@@ -33,7 +33,6 @@ class PageSeeder extends Seeder
             $this->createSections($home, [
                 ['home_modal',         'Modal',                  ['max_images' => 1, 'has_dates' => true, 'has_visibility' => true]],
                 ['home_banner',        'Banner Dinámico',        []],
-                ['home_brands',        'Marcas',                 []],
                 ['home_promo_image',   'Imagen Promocional',     []],
                 ['home_promo_dynamic', 'Imágenes Promocionales', ['dynamic' => true]],
                 ['home_attributes',    'Items de Atributos',     ['max_items' => 4]],

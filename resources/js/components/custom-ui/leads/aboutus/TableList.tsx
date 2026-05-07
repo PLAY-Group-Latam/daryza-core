@@ -1,15 +1,15 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
 import { router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, Mail, Calendar, Building2 } from 'lucide-react';
+import { Building2, Calendar, Eye, Mail } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { AboutUs } from '@/types/leads/about';
 import { DataTable } from '../../tables/DataTable';
-import { ModalAboutUs } from './ModalList'; 
+import { ModalAboutUs } from './ModalList';
 
 interface TableListProps {
     data: Paginated<AboutUs>;
@@ -22,13 +22,16 @@ export default function TableList({ data, filters }: TableListProps) {
     const [selectedItem, setSelectedItem] = useState<AboutUs | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleSearch = useCallback((value: string) => {
-        router.get(
-            window.location.pathname,
-            { ...filters, search: value },
-            { preserveState: true, replace: true },
-        );
-    }, [filters]);
+    const handleSearch = useCallback(
+        (value: string) => {
+            router.get(
+                window.location.pathname,
+                { ...filters, search: value },
+                { preserveState: true, replace: true },
+            );
+        },
+        [filters],
+    );
 
     const handleViewDetails = useCallback((item: AboutUs) => {
         setSelectedItem(item);
@@ -48,7 +51,7 @@ export default function TableList({ data, filters }: TableListProps) {
                                 {/* CORRECCIÓN: last_name está en item.data */}
                                 {item.full_name} {item.data?.last_name || ''}
                             </span>
-                            <span className="text-[10px] uppercase font-bold text-darysa-azul-600 tracking-tight">
+                            <span className="text-darysa-azul-600 text-[10px] font-bold tracking-tight uppercase">
                                 Solicitud de Información
                             </span>
                         </div>
@@ -57,7 +60,7 @@ export default function TableList({ data, filters }: TableListProps) {
             },
             {
                 // Usamos un id único porque company_name no existe en la raíz
-                id: 'company', 
+                id: 'company',
                 header: 'Empresa',
                 cell: ({ row }) => {
                     const item = row.original;
@@ -78,7 +81,7 @@ export default function TableList({ data, filters }: TableListProps) {
                 cell: ({ row }) => (
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                         <Mail size={12} className="shrink-0 opacity-70" />
-                        <span className="text-xs truncate max-w-[180px]">
+                        <span className="max-w-[180px] truncate text-xs">
                             {row.original.email}
                         </span>
                     </div>
@@ -100,9 +103,9 @@ export default function TableList({ data, filters }: TableListProps) {
             },
             {
                 id: 'actions',
-                header: () => <div className="text-right pr-4">Acciones</div>,
+                header: () => <div className="pr-4 text-right">Acciones</div>,
                 cell: ({ row }) => (
-                    <div className="text-right pr-2">
+                    <div className="pr-2 text-right">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -115,7 +118,7 @@ export default function TableList({ data, filters }: TableListProps) {
                 ),
             },
         ],
-        [handleViewDetails] 
+        [handleViewDetails],
     );
 
     if (!data?.data) return null;
@@ -128,6 +131,7 @@ export default function TableList({ data, filters }: TableListProps) {
                     data={data}
                     onSearch={handleSearch}
                     initialSearch={filters?.search ?? ''}
+                    placeholder="Buscar por nombre, email o empresa..."
                 />
             </div>
 

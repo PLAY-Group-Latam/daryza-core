@@ -42,7 +42,7 @@ class PackLowStockObserver
         $data = [
             'type'        => 'Pack',
             'name'        => $pack->name, // Atributo 'name' de ProductPack
-            'sku_or_code' => $pack->code, // Atributo 'code' de ProductPack
+            'slug'        => $pack->slug, // Atributo 'slug' de ProductPack
             'stock'       => $pack->stock // Atributo 'stock' de ProductPack
         ];
 

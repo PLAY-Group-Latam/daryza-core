@@ -19,12 +19,16 @@ interface Props {
     index: number;
     variantAttributes: Attribute[];
     specificationAttributes: Attribute[];
+    brands?: { id: string; name: string }[];
+    brandId?: string;
 }
 
 export function VariantRow({
     index,
     variantAttributes,
     specificationAttributes,
+    brands = [],
+    brandId,
 }: Props) {
     const {
         control,
@@ -36,15 +40,15 @@ export function VariantRow({
     const isMainError = errors.variants?.[index]?.is_main;
     const hasBasicError = Boolean(
         errors.variants?.[index]?.sku ||
-            errors.variants?.[index]?.sku_supplier ||
-            errors.variants?.[index]?.price ||
-            errors.variants?.[index]?.stock,
+        errors.variants?.[index]?.sku_supplier ||
+        errors.variants?.[index]?.price ||
+        errors.variants?.[index]?.stock,
     );
     const hasStatusError = Boolean(errors.variants?.[index]?.is_main);
     const hasPromoError = Boolean(
         errors.variants?.[index]?.promo_price ||
-            errors.variants?.[index]?.promo_start_at ||
-            errors.variants?.[index]?.promo_end_at,
+        errors.variants?.[index]?.promo_start_at ||
+        errors.variants?.[index]?.promo_end_at,
     );
     const hasAttributesError = Boolean(errors.variants?.[index]?.attributes);
     const hasSpecificationsError = Boolean(
@@ -362,6 +366,8 @@ export function VariantRow({
                         availableAttributes={specificationAttributes}
                         selectorValue={specSelector}
                         onSelectorChange={setSpecSelector}
+                        brands={brands}
+                        brandId={brandId}
                     />
                 </div>
             )}
