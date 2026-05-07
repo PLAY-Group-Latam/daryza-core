@@ -14,6 +14,8 @@ use App\Models\Products\ProductPack;
 
 class CouponService
 {
+    private const ULID_REGEX = '/^[0-9A-HJKMNP-TV-Z]{26}$/i';
+
     // ─── Queries ──────────────────────────────────────────────
 
     public function getPaginatedCoupons(int $perPage = 10): LengthAwarePaginator
@@ -90,13 +92,17 @@ class CouponService
         Coupon::findOrFail($id)->delete();
     }
 
-      public function searchProducts(?string $query = null): array
+    public function searchProducts(?string $query = null): array
     {
+        [$term, $ids, $isSingleId] = $this->parseSearchInput($query);
+
         return Product::query()
-            ->when($query && str_contains($query, ','),
-                fn($q) => $q->whereIn('id', explode(',', $query)))
-            ->when($query && !str_contains($query, ','),
-                fn($q) => $q->where('name', 'ilike', '%' . $query . '%'))
+            ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
+            ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
+            ->when(
+                $term !== '' && !$isSingleId && count($ids) <= 1,
+                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+            )
             ->limit(50)
             ->get()
             ->map(fn($p) => [
@@ -110,11 +116,15 @@ class CouponService
 
     public function searchPacks(?string $query = null): array
     {
+        [$term, $ids, $isSingleId] = $this->parseSearchInput($query);
+
         return ProductPack::query()
-            ->when($query && str_contains($query, ','),
-                fn($q) => $q->whereIn('id', explode(',', $query)))
-            ->when($query && !str_contains($query, ','),
-                fn($q) => $q->where('name', 'ilike', '%' . $query . '%'))
+            ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
+            ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
+            ->when(
+                $term !== '' && !$isSingleId && count($ids) <= 1,
+                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+            )
             ->limit(50)
             ->get()
             ->map(fn($p) => [
@@ -128,13 +138,17 @@ class CouponService
 
     public function searchBusinessDynamics(?string $query = null): array
     {
+        [$term, $ids, $isSingleId] = $this->parseSearchInput($query);
+
         return DynamicCategory::query()
-            ->when($query && str_contains($query, ','),
-                fn($q) => $q->whereIn('id', explode(',', $query)))
-            ->when($query && !str_contains($query, ','),
+            ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
+            ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
+            ->when(
+                $term !== '' && !$isSingleId && count($ids) <= 1,
                 fn($q) => $q
                     ->where('is_active', true)
-                    ->where('name', 'ilike', '%' . $query . '%'))
+                    ->where('name', 'ilike', '%' . $term . '%')
+            )
             ->limit(50)
             ->get()
             ->map(fn($b) => [
@@ -148,18 +162,14 @@ class CouponService
 
     public function searchCustomers(?string $query = null): array
     {
-        $query = trim((string) $query);
-        $ids = array_values(array_filter(array_map('trim', explode(',', $query))));
-        $isSingleId = count($ids) === 1 && preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/i', $ids[0]);
+        [$term, $ids, $isSingleId] = $this->parseSearchInput($query);
 
         return Customer::query()
-            ->when($query !== '' && count($ids) > 1,
-                fn($q) => $q->whereIn('id', $ids))
-            ->when($query !== '' && $isSingleId,
-                fn($q) => $q->where('id', $ids[0]))
-            ->when($query !== '' && !$isSingleId && count($ids) <= 1,
+            ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
+            ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
+            ->when($term !== '' && !$isSingleId && count($ids) <= 1,
                 fn($q) => $q
-                    ->where('full_name', 'ilike', '%' . $query . '%'))
+                    ->where('full_name', 'ilike', '%' . $term . '%'))
             ->limit(50)
             ->get()
             ->map(fn($c) => [
@@ -173,11 +183,15 @@ class CouponService
 
     public function searchCategories(?string $query = null): array
     {
+        [$term, $ids, $isSingleId] = $this->parseSearchInput($query);
+
         return ProductCategory::query()
-            ->when($query && str_contains($query, ','),
-                fn($q) => $q->whereIn('id', explode(',', $query)))
-            ->when($query && !str_contains($query, ','),
-                fn($q) => $q->where('name', 'ilike', '%' . $query . '%'))
+            ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
+            ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
+            ->when(
+                $term !== '' && !$isSingleId && count($ids) <= 1,
+                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+            )
             ->limit(50)
             ->get()
             ->map(fn($c) => [
@@ -213,5 +227,12 @@ class CouponService
         }
     }
 
-    
+    private function parseSearchInput(?string $query): array
+    {
+        $term = trim((string) $query);
+        $ids = array_values(array_filter(array_map('trim', explode(',', $term))));
+        $isSingleId = count($ids) === 1 && preg_match(self::ULID_REGEX, $ids[0]) === 1;
+
+        return [$term, $ids, $isSingleId];
+    }
 }

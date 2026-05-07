@@ -100,5 +100,12 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['name']}
+            placeholder="Buscar por nombre del pack..."
+        />
+    );
 }

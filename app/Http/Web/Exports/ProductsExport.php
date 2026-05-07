@@ -23,6 +23,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
     return ProductVariant::with([
       'product.categories',
       'product.businessLines',
+      'product.brand',
       'product.recommendedProducts',
       'attributes.attribute',
       'specifications.attribute'
@@ -119,7 +120,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
       $attributes->get('Talla'),
       $variant->sku_supplier,
       $variant->sku, // SKU Daryza
-      $specs->get('Marca'),
+      $product->brand?->name,
       $variant->stock,
       $variant->is_active ? 'D' : 'ND',
       str_replace(' kg', '', $specs->get('Peso')),

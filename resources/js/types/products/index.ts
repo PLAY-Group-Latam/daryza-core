@@ -1,5 +1,6 @@
 export * from './attributes';
 export * from './businessLines';
+export * from './brands';
 export * from './categories';
 export * from './dynamicCategories';
 export * from './media';

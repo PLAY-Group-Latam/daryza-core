@@ -52,6 +52,7 @@ export interface OrderDetail {
     customer_first_name: string;
     customer_last_name: string;
     customer_document_number: string;
+    customer_document_type?: string | null;
     customer_mobile_phone: string;
     payment_method_type: 'bank_transfer' | 'niubiz';
     allowed_actions?: string[];
@@ -78,6 +79,8 @@ export interface OrderDetail {
     customer?: {
         id: string;
         full_name: string;
+        full_last_name?: string | null;
+        document_type?: string | null;
         email?: string | null;
         phone?: string | null;
         photo?: string | null;

@@ -75,5 +75,12 @@ export const columns: ColumnDef<User>[] = [
 
 export default function TableList({ data }: TableListProps) {
     if (!data) return null;
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['name', 'email']}
+            placeholder="Buscar por nombre o email..."
+        />
+    );
 }

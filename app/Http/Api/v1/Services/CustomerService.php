@@ -35,17 +35,18 @@ class CustomerService
   }
 
   public function findOrCreateFromGoogle(array $data): Customer
-  {
+{
     return Customer::updateOrCreate(
-      [
-        'email' => $data['email'], // el email manda
-      ],
-      [
-        'full_name' => $data['full_name'],
-        'google_id' => $data['google_id'],
-        'photo'     => $data['photo'] ?? null,
-        'password'  => null, // usuario Google NO usa password
-      ]
+        [
+            'email' => $data['email'],
+        ],
+        [
+            'full_name'      => $data['full_name'],
+            'full_last_name' => $data['full_last_name'] ?? '', 
+            'google_id'      => $data['google_id'],
+            'photo'          => $data['photo'] ?? null,
+            'password'       => null,
+        ]
     );
-  }
+}
 }

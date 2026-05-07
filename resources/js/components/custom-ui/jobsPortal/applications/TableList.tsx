@@ -27,7 +27,8 @@ export const columns: ColumnDef<Application>[] = [
     {
         id: 'candidate',
         header: 'Candidato',
-        cell: ({ row }) => `${row.original.first_name} ${row.original.last_name}`,
+        cell: ({ row }) =>
+            `${row.original.first_name} ${row.original.last_name}`,
     },
     { accessorKey: 'email', header: 'Correo' },
     { accessorKey: 'phone', header: 'Teléfono' },
@@ -53,7 +54,10 @@ export const columns: ColumnDef<Application>[] = [
             return (
                 <div className="flex gap-2">
                     <Button type="button" variant="outline" size="icon" asChild>
-                        <Link href={`/admin/jobs/applications/${application.id}`} title="Ver postulación">
+                        <Link
+                            href={`/admin/jobs/applications/${application.id}`}
+                            title="Ver postulación"
+                        >
                             <Eye />
                         </Link>
                     </Button>
@@ -100,6 +104,7 @@ export default function TableList({ data, filters }: TableListProps) {
                     { preserveState: true, preserveScroll: true },
                 )
             }
+            placeholder="Buscar por nombre, correo o teléfono..."
         />
     );
 }

@@ -8,9 +8,11 @@ use App\Models\Products\ProductCategory;
 use App\Models\Products\DynamicCategory;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\AttributesValue;
+use App\Models\Products\Brand;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ProductFilterService
 {
@@ -65,16 +67,10 @@ class ProductFilterService
             ->with(['mainVariant.mainImage']);
 
         if ($needsPriceSort) {
-            // Añadimos effective_price como columna calculada en el SELECT mediante
-            // un subquery correlacionado. Al estar en el SELECT, PostgreSQL acepta
-            // ordenar por ella incluso con DISTINCT — sin necesitar GROUP BY ni JOIN.
-            //
-            // Lógica del precio efectivo (idéntica a getActivePriceAttribute del modelo):
-            //   - promo activa (is_on_promo=true, promo_price no nulo, dentro de fechas) → promo_price
-            //   - cualquier otro caso → price
+
             $query->selectRaw('products.*')
                 ->selectSub(
-                    \DB::table('product_variants as pv')
+                    DB::table('product_variants as pv')
                         ->selectRaw("
                             CASE
                                 WHEN pv.is_on_promo = true
@@ -115,14 +111,14 @@ class ProductFilterService
         match ($sort) {
             'price-asc', 'price-low',
             'price-desc', 'price-high' => $query->orderBy('effective_price', $direction)
-                                                 ->orderBy('products.id', $direction),
+                ->orderBy('products.id', $direction),
             'name-asc'                 => $query->orderBy('products.name', 'asc')
-                                                ->orderBy('products.id', 'asc'),
+                ->orderBy('products.id', 'asc'),
             'name-desc'                => $query->orderBy('products.name', 'desc')
-                                                ->orderBy('products.id', 'desc'),
+                ->orderBy('products.id', 'desc'),
             'newest'                   => $query->orderBy('products.created_at', 'desc'),
             default                    => $query->orderBy('products.is_home', 'desc')
-                                                ->orderBy('products.created_at', 'desc'),
+                ->orderBy('products.created_at', 'desc'),
         };
     }
 
@@ -149,18 +145,18 @@ class ProductFilterService
                 // Rama promo activa
                 $q->where(function (Builder $promo) use ($priceMin, $priceMax) {
                     $promo->where('is_on_promotion', true)
-                          ->whereNotNull('promo_price')
-                          ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
-                          ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()));
+                        ->whereNotNull('promo_price')
+                        ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
+                        ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()));
                     if ($priceMin !== null) $promo->where('promo_price', '>=', $priceMin);
                     if ($priceMax !== null) $promo->where('promo_price', '<=', $priceMax);
                 })
-                // Rama precio normal
-                ->orWhere(function (Builder $normal) use ($priceMin, $priceMax) {
-                    $normal->where(fn($x) => $x->where('is_on_promotion', false)->orWhereNull('promo_price'));
-                    if ($priceMin !== null) $normal->where('price', '>=', $priceMin);
-                    if ($priceMax !== null) $normal->where('price', '<=', $priceMax);
-                });
+                    // Rama precio normal
+                    ->orWhere(function (Builder $normal) use ($priceMin, $priceMax) {
+                        $normal->where(fn($x) => $x->where('is_on_promotion', false)->orWhereNull('promo_price'));
+                        if ($priceMin !== null) $normal->where('price', '>=', $priceMin);
+                        if ($priceMax !== null) $normal->where('price', '<=', $priceMax);
+                    });
             });
         }
 
@@ -182,7 +178,7 @@ class ProductFilterService
             'name-desc'                => $query->orderBy('name', 'desc'),
             'newest'                   => $query->orderBy('created_at', 'desc'),
             default                    => $query->orderBy('show_on_home', 'desc')
-                                                ->orderBy('created_at', 'desc'),
+                ->orderBy('created_at', 'desc'),
         };
     }
 
@@ -218,7 +214,7 @@ class ProductFilterService
         $catSlugs = $this->slugArray($params, 'categories');
         $subSlugs = $this->slugArray($params, 'subcategories');
         $dynSlugs = $this->slugArray($params, 'dynamics');
-        $brandIds = $this->idArray($params, 'brands');
+        $brandSlugs = $this->slugArray($params, 'brands');
         $blSlugs  = $this->slugArray($params, 'business_lines');
 
         return [
@@ -254,27 +250,35 @@ class ProductFilterService
                 'active' => !empty($dynSlugs),
                 'apply'  => function (Builder $q) use ($dynSlugs) {
                     $ids = $this->dynamicIdsBySlugs($dynSlugs);
-                    if (!empty($ids)) {
-                        $q->whereHas('dynamicCategories', fn($d) => $d->whereIn('dynamic_categories.id', $ids));
+                    if (empty($ids)) {
+                        $q->whereRaw('1 = 0');
+                        return;
                     }
+                    $q->whereHas(
+                        'dynamicCategories',
+                        fn($d) =>
+                        $d->activeNow()->whereIn('dynamic_categories.id', $ids)
+                    );
                 },
             ],
 
-            'brands' => [
-                'active' => !empty($brandIds),
-                'apply'  => fn(Builder $q) => $q->whereHas(
-                    'variants.specifications',
-                    fn(Builder $s) => $s->whereIn('attribute_value_id', $brandIds)
-                ),
-            ],
+       'brands' => [
+    'active' => !empty($brandSlugs),
+    'apply'  => fn(Builder $q) => $q->whereHas(
+        'brand',
+        fn(Builder $b) => $b->whereIn('brands.slug', $brandSlugs)
+    ),
+],
 
             'offers' => [
                 'active' => $this->bool($params, 'on_offer'),
-                'apply'  => fn(Builder $q) => $q->whereHas('mainVariant', fn(Builder $v) =>
+                'apply'  => fn(Builder $q) => $q->whereHas(
+                    'mainVariant',
+                    fn(Builder $v) =>
                     $v->where('is_on_promo', true)
-                      ->whereNotNull('promo_price')
-                      ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
-                      ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()))
+                        ->whereNotNull('promo_price')
+                        ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
+                        ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()))
                 ),
             ],
 
@@ -290,7 +294,8 @@ class ProductFilterService
                 'active' => $priceMin !== null || $priceMax !== null,
                 'apply'  => fn(Builder $q) => $q->whereHas(
                     'mainVariant',
-                    fn(Builder $v) => $v->where(fn($sub) =>
+                    fn(Builder $v) => $v->where(
+                        fn($sub) =>
                         $sub->where(fn($promo) => $this->applyPromoPrice($promo, $priceMin, $priceMax))
                             ->orWhere(fn($normal) => $this->applyNormalPrice($normal, $priceMin, $priceMax))
                     )
@@ -322,12 +327,12 @@ class ProductFilterService
 
     private function staticSidebar(): array
     {
-        return Cache::rememberForever(self::SIDEBAR_CACHE_KEY, function () {
+        return Cache::remember(self::SIDEBAR_CACHE_KEY, $this->nextDynamicExpiry(), function () {
             $categories = ProductCategory::roots()->active()
                 ->get(['id', 'name', 'slug'])
                 ->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'slug' => $c->slug, 'type' => 'category']);
 
-            $dynamics = DynamicCategory::where('is_active', true)
+            $dynamics = DynamicCategory::activeNow()
                 ->get(['id', 'name', 'slug'])
                 ->map(fn($d) => ['id' => $d->id, 'name' => $d->name, 'slug' => $d->slug, 'type' => 'dynamic']);
 
@@ -339,22 +344,29 @@ class ProductFilterService
         });
     }
 
-    private function getNormalizedBrands()
+    private function nextDynamicExpiry(): \Carbon\Carbon
     {
-        return AttributesValue::whereHas('attribute', fn($q) => $q->where('name', 'ILIKE', '%Marca%'))
-            ->get(['id', 'value as name'])
-            ->map(function ($brand) {
-                $brand->normalized = strtolower(trim($brand->name));
-                return $brand;
-            })
-            ->unique('normalized')
-            ->map(fn($brand) => [
-                'id'   => $brand->id,
-                'name' => trim($brand->name),
-                'type' => 'brand',
-            ])
-            ->values();
+        $next = DynamicCategory::activeNow()
+            ->whereNotNull('ends_at')
+            ->orderBy('ends_at', 'asc')
+            ->value('ends_at');
+
+        return $next ?? now()->addHours(6);
     }
+
+private function getNormalizedBrands()
+{
+    return Brand::where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name', 'slug'])
+        ->map(fn($brand) => [
+            'id'   => $brand->slug,  
+            'name' => $brand->name,
+            'slug' => $brand->slug,
+            'type' => 'brand',
+        ])
+        ->values();
+}
 
     private function resolveSubcategories(array $slugs): \Illuminate\Support\Collection
     {
@@ -392,15 +404,18 @@ class ProductFilterService
 
     private function dynamicIdsBySlugs(array $slugs): array
     {
-        return DynamicCategory::whereIn('slug', $slugs)->pluck('id')->toArray();
+        return DynamicCategory::whereIn('slug', $slugs)
+            ->activeNow()
+            ->pluck('id')
+            ->toArray();
     }
 
     private function applyPromoPrice(Builder $q, ?float $min, ?float $max): void
     {
         $q->where('is_on_promo', true)
-          ->whereNotNull('promo_price')
-          ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
-          ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()));
+            ->whereNotNull('promo_price')
+            ->where(fn($d) => $d->whereNull('promo_start_at')->orWhere('promo_start_at', '<=', now()))
+            ->where(fn($d) => $d->whereNull('promo_end_at')->orWhere('promo_end_at', '>=', now()));
         if ($min !== null) $q->where('promo_price', '>=', $min);
         if ($max !== null) $q->where('promo_price', '<=', $max);
     }

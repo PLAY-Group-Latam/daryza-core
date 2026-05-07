@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('code')->nullable()->index(); // código interno
             $table->string('name');
             $table->string('slug')->unique();
+            $table->foreignUlid('brand_id')->nullable()->constrained('brands')->nullOnDelete();
 
             $table->text('brief_description')->nullable();
             $table->longText('description')->nullable();

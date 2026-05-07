@@ -51,7 +51,11 @@ export const columns: ColumnDef<Landing>[] = [
         accessorKey: 'is_active',
         header: 'Estado',
         cell: ({ row }) =>
-            row.original.is_active ? <Badge>Activo</Badge> : <Badge variant="outline">Inactivo</Badge>,
+            row.original.is_active ? (
+                <Badge>Activo</Badge>
+            ) : (
+                <Badge variant="outline">Inactivo</Badge>
+            ),
     },
     {
         accessorKey: 'created_at',
@@ -77,14 +81,20 @@ export const columns: ColumnDef<Landing>[] = [
             return (
                 <div className="flex items-center gap-2">
                     <Button type="button" variant="outline" asChild>
-                        <Link href={`/landings/items/${landing.id}/leads`} title="Ver leads">
+                        <Link
+                            href={`/landings/items/${landing.id}/leads`}
+                            title="Ver leads"
+                        >
                             <Users className="mr-2 h-4 w-4" />
                             Ver leads
                         </Link>
                     </Button>
 
                     <Button type="button" variant="outline" size="icon" asChild>
-                        <Link href={`/landings/items/${landing.id}/edit`} title="Editar landing">
+                        <Link
+                            href={`/landings/items/${landing.id}/edit`}
+                            title="Editar landing"
+                        >
                             <Edit />
                         </Link>
                     </Button>
@@ -112,5 +122,12 @@ export const columns: ColumnDef<Landing>[] = [
 ];
 
 export default function TableList({ data }: Props) {
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['title', 'slug']}
+            placeholder="Buscar por título o slug..."
+        />
+    );
 }

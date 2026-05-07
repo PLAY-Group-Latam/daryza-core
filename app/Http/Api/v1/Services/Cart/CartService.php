@@ -186,7 +186,7 @@ protected function loadCart(Cart $cart): Cart
     $cart->items->each(function($cartItem) {
         if ($cartItem->item_type === \App\Models\Products\ProductVariant::class) {
             $count = $cartItem->item->product?->recommendedProducts->count() ?? 0;
-            \Log::info("CartService: Item {$cartItem->id} (Producto: {$cartItem->item->product?->name}) tiene {$count} recomendaciones.");
+            Log::info("CartService: Item {$cartItem->id} (Producto: {$cartItem->item->product?->name}) tiene {$count} recomendaciones.");
         }
     });
 

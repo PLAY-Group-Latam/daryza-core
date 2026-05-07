@@ -97,6 +97,7 @@ export const ProductSchema = z
             .array(z.string())
             .min(1, 'Selecciona al menos una subcategoría'),
         business_lines: z.array(z.string()).optional(),
+        brand_id: z.string().nullable().optional(),
         recommended_product_ids: z.array(z.string()).optional(),
         variant_attribute_ids: z.array(z.string()),
         variants: z

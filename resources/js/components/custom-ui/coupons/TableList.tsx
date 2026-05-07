@@ -155,5 +155,12 @@ export const columns: ColumnDef<CouponModel>[] = [
 export default function TableList({ data }: TableListProps) {
     if (!data) return null;
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['code', 'scope']}
+            placeholder="Buscar por código o alcance..."
+        />
+    );
 }

@@ -17,6 +17,7 @@ import { SeoMetadataSection } from './SeoMetadataSection';
 interface Props {
     categories: CategorySelect[];
     businessLines: BusinessLine[];
+    brands?: { id: string; name: string }[];
     initialRecommendedProducts: ProductRecommendable[];
     recommendableSearchResults: ProductRecommendable[];
     recommendedSearchUrl: string;
@@ -73,6 +74,7 @@ function ProductSwitch({
 export function SidebarSection({
     categories,
     businessLines,
+    brands = [],
     initialRecommendedProducts,
     recommendableSearchResults,
     recommendedSearchUrl,
@@ -185,6 +187,19 @@ export function SidebarSection({
                 )}
             />
 
+            <Controller
+                name="brand_id"
+                control={control}
+                render={({ field }) => (
+                    <div className="space-y-2">
+                        <SectionTitle>Marca</SectionTitle>
+                        <select value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} className="h-10 w-full rounded-xl border bg-background px-3 text-sm">
+                            <option value="">Seleccionar marca...</option>
+                            {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                        </select>
+                    </div>
+                )}
+            />
             {/* Categorías */}
             <Controller
                 name="parent_category_id"

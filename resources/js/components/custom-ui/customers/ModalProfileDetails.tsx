@@ -55,7 +55,8 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                     />
                     <DialogHeader className="gap-1">
                         <DialogTitle>
-                            Detalle del cliente {customer.full_name}
+                            Detalle del cliente {customer.full_name}{' '}
+                            {customer.full_last_name ?? ''}
                         </DialogTitle>
                         <DialogDescription>
                             Puedes ver la información de este cliente y cambiar
@@ -100,9 +101,10 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
 
                             <div className="space-y-3">
                                 {/* Nombre */}
+                        
                                 <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground">
-                                        Nombre
+                                        Nombre Completo
                                     </p>
                                     <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
                                         {customer.full_name}
@@ -111,6 +113,35 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                         />
                                     </p>
                                 </div>
+
+                                {/* Apellido */}
+                                {customer.full_last_name && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-muted-foreground">
+                                            Apellido Completo
+                                        </p>
+                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                            {customer.full_last_name}
+                                            <CopyButton
+                                                textToCopy={
+                                                    customer.full_last_name
+                                                }
+                                            />
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Tipo de documento */}
+                                {customer.document_type && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-muted-foreground">
+                                            Tipo de Documento
+                                        </p>
+                                        <p className="rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                            {customer.document_type.toUpperCase()}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Email */}
                                 <div className="space-y-1">
@@ -185,6 +216,25 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                                 textToCopy={
                                                     customer.billing_profile
                                                         ?.social_reason
+                                                }
+                                            />
+                                        </p>
+                                    </div>
+                                )}
+                                 {customer.billing_profile?.fiscal_address && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-muted-foreground">
+                                            Dirección Fiscal
+                                        </p>
+                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                            {
+                                                customer.billing_profile
+                                                    ?.fiscal_address
+                                            }
+                                            <CopyButton
+                                                textToCopy={
+                                                    customer.billing_profile
+                                                        ?.fiscal_address
                                                 }
                                             />
                                         </p>

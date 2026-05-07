@@ -76,5 +76,12 @@ export const columns: ColumnDef<BlogCategory>[] = [
 export default function TableList({ data }: TableCategoryProps) {
     if (!data) return null;
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={['name']}
+            placeholder="Buscar por nombre..."
+        />
+    );
 }

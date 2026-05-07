@@ -59,6 +59,7 @@ class ProductImportRowMapper
                 'name' => $name,
                 'brief_description' => $this->normalizeText($get(self::HEADER_BRIEF)),
                 'description' => $this->normalizeText($get(self::HEADER_DESCRIPTION)),
+                'brand' => $this->normalizeText($get(self::HEADER_BRAND)),
                 'is_active' => $isActive,
                 'is_home' => false,
             ],

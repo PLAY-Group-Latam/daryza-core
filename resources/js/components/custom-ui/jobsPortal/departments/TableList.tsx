@@ -1,7 +1,7 @@
 'use client';
 
-import { StatusBadge } from '@/components/custom-ui/StatusBadge';
 import { ConfirmDeleteAlert } from '@/components/custom-ui/ConfirmDeleteAlert';
+import { StatusBadge } from '@/components/custom-ui/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Link, router } from '@inertiajs/react';
@@ -54,7 +54,10 @@ export const columns: ColumnDef<Department>[] = [
             return (
                 <div className="flex gap-2">
                     <Button type="button" variant="outline" size="icon" asChild>
-                        <Link href={`/admin/jobs/departments/${department.id}/edit`} title="Editar área">
+                        <Link
+                            href={`/admin/jobs/departments/${department.id}/edit`}
+                            title="Editar área"
+                        >
                             <Edit />
                         </Link>
                     </Button>
@@ -101,6 +104,7 @@ export default function TableList({ data, filters }: TableListProps) {
                     { preserveState: true, preserveScroll: true },
                 )
             }
+            placeholder="Buscar por nombre..."
         />
     );
 }

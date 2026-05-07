@@ -2,21 +2,19 @@
 
 namespace App\Http\Api\v1\Services\Products;
 
-use App\Domain\Products\VariantSelectionEngine;
-use App\Models\Products\ProductVariant;
+use App\Domain\Products\AvailabilityResolver;
+use App\Domain\Products\VariantIndexBuilder;
 use App\Models\Products\ProductPack;
-use Illuminate\Http\Request;
+use App\Models\Products\ProductVariant;
 use Illuminate\Support\Collection;
 
 class ProductVariantResolver
 {
     public function __construct(
-        protected VariantSelectionEngine $engine
+        protected VariantIndexBuilder $indexBuilder,
+        protected AvailabilityResolver $availabilityResolver,
     ) {}
 
-    /**
-     * Lógica interna compartida para validar promociones por fecha.
-     */
     private function checkPromoValidity(?bool $isOnPromo, $promoPrice, $start, $end): bool
     {
         if (!$isOnPromo || empty($promoPrice)) {
@@ -30,9 +28,6 @@ class ProductVariantResolver
         return $hasStarted && $hasNotEnded;
     }
 
-    /**
-     * Determina si una variante tiene una promoción válida.
-     */
     public function isPromoActive(ProductVariant $variant): bool
     {
         return $this->checkPromoValidity(
@@ -43,9 +38,6 @@ class ProductVariantResolver
         );
     }
 
-    /**
-     * Determina si un pack tiene una promoción válida.
-     */
     public function isPackPromoActive(ProductPack $pack): bool
     {
         return $this->checkPromoValidity(
@@ -56,9 +48,6 @@ class ProductVariantResolver
         );
     }
 
-    /**
-     * Resuelve y estructura la información de precios para una variante.
-     */
     public function resolvePriceData(ProductVariant $variant): array
     {
         $hasPromo = $this->isPromoActive($variant);
@@ -73,9 +62,6 @@ class ProductVariantResolver
         ];
     }
 
-    /**
-     * Resuelve y estructura la información de precios para un Pack.
-     */
     public function resolvePackPriceData(ProductPack $pack): array
     {
         $hasPromo = $this->isPackPromoActive($pack);
@@ -92,50 +78,40 @@ class ProductVariantResolver
         ];
     }
 
-    /**
-     * Orquesta la resolución completa para el detalle de producto.
-     */
     public function resolveShowState(
         Collection $variants,
-        array $selectedValueIds,
-        ?string $focusValueId = null
+        ?string $requestedVariantId = null
     ): array {
-        $engineState = $this->engine->resolve(
-            $this->mapVariantsForEngine($variants),
-            $selectedValueIds,
-            $focusValueId
-        );
+        $mappedVariants = $this->mapVariantsForEngine($variants);
+        $index = $this->indexBuilder->build($mappedVariants);
 
-        $activeVariant = $engineState['active_variant_id']
-            ? $variants->firstWhere('id', $engineState['active_variant_id'])
+        $requestedVariantId = is_string($requestedVariantId) && $requestedVariantId !== '' ? $requestedVariantId : null;
+        $activeVariantId = ($requestedVariantId !== null && isset($index->variantsById[$requestedVariantId]))
+            ? $requestedVariantId
+            : $index->mainVariantId();
+
+        if ($activeVariantId !== null && isset($index->variantsById[$activeVariantId])) {
+            $normalizedSelected = $index->variantsById[$activeVariantId]['value_ids'];
+        } else {
+            $normalizedSelected = [];
+        }
+
+        $selectedByAttribute = $this->buildSelectedByAttribute($normalizedSelected, $index->attributeByValueId);
+
+        $activeVariant = $activeVariantId
+            ? $variants->firstWhere('id', $activeVariantId)
             : null;
+        $resolvedSelectedByAttribute = $activeVariantId && isset($index->variantsById[$activeVariantId])
+            ? $this->buildSelectedByAttribute($index->variantsById[$activeVariantId]['value_ids'], $index->attributeByValueId)
+            : $selectedByAttribute;
 
         return [
             'active_variant' => $activeVariant,
-            'variant_availability_matrix' => $engineState['variant_availability_matrix'],
-            'selection_state' => $engineState['selection_state'],
+            'primary_attribute_id' => $index->primaryAttributeId,
+            'variant_availability_matrix' => $this->availabilityResolver->buildMatrix($index, $resolvedSelectedByAttribute, $activeVariantId),
         ];
     }
 
-    /**
-     * Parsea attrs desde la query string: ?attrs=id1,id2
-     */
-    public function parseSelectedAttributeValueIds(Request $request): array
-    {
-        $raw = $request->query('attrs', []);
-        $values = is_string($raw)
-            ? explode(',', $raw)
-            : (is_array($raw) ? $raw : []);
-
-        return array_values(array_unique(array_filter(
-            array_map(fn($v) => is_string($v) ? trim($v) : '', $values),
-            fn($v) => $v !== ''
-        )));
-    }
-
-    /**
-     * Mapea variantes para el motor lógico de selección (Engine).
-     */
     private function mapVariantsForEngine(Collection $variants): array
     {
         return $variants->map(function (ProductVariant $variant) {
@@ -157,4 +133,20 @@ class ProductVariantResolver
             ];
         })->values()->all();
     }
+
+    /** @return array<string,string> */
+    private function buildSelectedByAttribute(array $selectedValueIds, array $attributeByValueId): array
+    {
+        $selectedByAttribute = [];
+
+        foreach ($selectedValueIds as $valueId) {
+            $attributeId = $attributeByValueId[$valueId] ?? null;
+            if ($attributeId !== null) {
+                $selectedByAttribute[$attributeId] = $valueId;
+            }
+        }
+
+        return $selectedByAttribute;
+    }
+
 }

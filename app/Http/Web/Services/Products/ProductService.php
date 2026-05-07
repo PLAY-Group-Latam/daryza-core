@@ -59,6 +59,7 @@ class ProductService
             'description',
             'is_active',
             'is_home',
+            'brand_id',
         ])->toArray());
 
         if (isset($data['categories']) || isset($data['parent_category_id'])) {
@@ -277,10 +278,12 @@ class ProductService
 
       $this->syncAttributes($variant, $variantData['attributes'] ?? []);
       $this->syncSpecifications($variant, $variantData['specifications'] ?? []);
+      
 
-      if (isset($variantData['media'])) {
-        $this->mediaService->sync($variant, $variantData['media']);
-      }
+ if (array_key_exists('media', $variantData)) {
+    $media = is_array($variantData['media']) ? $variantData['media'] : [];
+    $this->mediaService->sync($variant, $media);
+}
     }
 
     if (empty($keptVariantIds)) {

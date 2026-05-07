@@ -28,6 +28,7 @@ interface Props {
     categories: CategorySelect[];
     attributes: Attribute[];
     businessLines: BusinessLine[];
+    brands?: { id: string; name: string }[];
     recommendableSearchResults: ProductRecommendable[];
     product?: ProductEdit; // undefined = crear, definido = editar
 }
@@ -36,6 +37,7 @@ export default function FormProduct({
     categories,
     attributes,
     businessLines,
+    brands = [],
     recommendableSearchResults,
     product,
 }: Props) {
@@ -73,7 +75,10 @@ export default function FormProduct({
     const specificationAttributes = attributes.filter((a) => !a.is_variant);
 
     const onError = (errors: FieldErrors<ProductFormValues>) => {
-        console.error('Errores de validacion del formulario de producto:', errors);
+        console.error(
+            'Errores de validacion del formulario de producto:',
+            errors,
+        );
         setShowSubmitHelp(true);
     };
     return (
@@ -96,6 +101,8 @@ export default function FormProduct({
                         <VariantForm
                             variantAttributes={variantAttributes}
                             specificationAttributes={specificationAttributes}
+                            brands={brands}
+                            brandId={product?.brand_id ?? undefined}
                         />
 
                         <TechnicalSheetsForm />
@@ -105,6 +112,7 @@ export default function FormProduct({
                     <SidebarSection
                         categories={categories}
                         businessLines={businessLines}
+                        brands={brands}
                         initialRecommendedProducts={
                             product?.recommended_products ?? []
                         }

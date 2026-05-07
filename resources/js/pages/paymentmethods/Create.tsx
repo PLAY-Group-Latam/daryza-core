@@ -92,7 +92,7 @@ export default function Create({ currencies }: Props) {
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="daryza">Daryza</SelectItem>
-                                                    <SelectItem value="rubbermaid">Rubbermaid</SelectItem>
+                                                    
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
