@@ -125,5 +125,11 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
-    return <DataTableExpandable columns={columns} data={data} />;
+    return (
+        <DataTableExpandable
+            columns={columns}
+            data={data}
+            placeholder="Buscar por nombre o slug..."
+        />
+    );
 }

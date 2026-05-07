@@ -29,12 +29,12 @@ class DistributorsService
 
         return Distributor::query()
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('ruc', 'like', "%{$search}%")
-                      ->orWhere('region', 'like', "%{$search}%");
-                });
-            })
+    $query->where(function ($q) use ($search) {
+        $q->where('name', 'ilike', "%{$search}%")
+          ->orWhere('ruc', 'ilike', "%{$search}%")
+          ->orWhere('region', 'ilike', "%{$search}%");
+    });
+})
             // 🚀 CAMBIO AQUÍ: Primero priorizamos los activos (true = 1) y luego los inactivos (false = 0)
             ->orderBy('is_active', 'desc') 
             ->latest() // Luego los ordenamos por fecha de creación

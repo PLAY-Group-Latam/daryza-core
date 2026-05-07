@@ -180,5 +180,15 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={[
+                'name',
+                (row) => (row.is_variant ? 'Variante' : 'Especificación'),
+            ]}
+            placeholder="Buscar por nombre o uso..."
+        />
+    );
 }

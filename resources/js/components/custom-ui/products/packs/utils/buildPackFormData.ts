@@ -51,16 +51,23 @@ export function buildPackFormData(
         fd.append(`items[${i}][quantity]`, String(item.quantity));
     });
 
-    (data.media ?? []).forEach((item, i) => {
-        if (item instanceof File) {
-            fd.append(`media[${i}]`, item);
-            return;
-        }
-        fd.append(`media[${i}][id]`, item.id);
-        fd.append(`media[${i}][file_path]`, item.file_path);
-        fd.append(`media[${i}][type]`, item.type);
-        fd.append(`media[${i}][position]`, String(i));
-    });
+    // — Media —
+    const mediaList = data.media ?? [];
+    if (mediaList.length === 0) {
+        // Array vacío: señal explícita al backend para borrar todo
+        fd.append('media', '');
+    } else {
+        mediaList.forEach((item, i) => {
+            if (item instanceof File) {
+                fd.append(`media[${i}]`, item);
+                return;
+            }
+            fd.append(`media[${i}][id]`, item.id);
+            fd.append(`media[${i}][file_path]`, item.file_path);
+            fd.append(`media[${i}][type]`, item.type);
+            fd.append(`media[${i}][position]`, String(i));
+        });
+    }
 
     if (isEdit) fd.append('_method', 'PUT');
     return fd;

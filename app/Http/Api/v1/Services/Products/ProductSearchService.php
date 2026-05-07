@@ -7,6 +7,7 @@ use App\Models\Products\ProductPack;
 use App\Models\Products\ProductCategory;
 use App\Models\Products\AttributesValue;
 use App\Models\Products\BusinessLine;
+use App\Models\Products\Brand;
 use App\Models\Products\DynamicCategory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -45,19 +46,27 @@ class ProductSearchService
         // 2. Categoría (Standard)
         $cat = ProductCategory::active()->whereRaw('LOWER(name) = ?', [$lowQ])->first();
         if ($cat) {
-            return $cat->parent_id 
+            return $cat->parent_id
                 ? "/productos?categories[]={$cat->parent->slug}&subcategories[]={$cat->slug}"
                 : "/productos?categories[]={$cat->slug}";
         }
 
-        // 3. Marca (AttributeValue)
-        $brand = AttributesValue::whereHas('attribute', fn($q) => $q->where('name', 'ILIKE', '%Marca%'))
-            ->whereRaw('LOWER(value) = ?', [$lowQ])
-            ->first();
-        if ($brand) return "/productos?brands[]={$brand->id}";
+        // 3. Marca
+        $brand = Brand::where('is_active', true)->whereRaw('LOWER(name) = ?', [$lowQ])->first();
+        if ($brand) return "/productos?brands[]={$brand->slug}";
 
         // Fallback: Búsqueda normal de texto
         return '/productos?q=' . urlencode($q);
+    }
+
+    // =========================================================================
+    // Helpers internos
+    // =========================================================================
+
+    private function sanitizeQuery(string $q): string
+    {
+        $clean = preg_replace('/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/u', '', $q);
+        return trim($clean);
     }
 
     // =========================================================================
@@ -66,17 +75,25 @@ class ProductSearchService
 
     private function fetchProductsRaw(string $q, int $limit): Collection
     {
+        $qClean = $this->sanitizeQuery($q);
+
         $products = Product::active()
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhereHas('variants', fn($v) => $v->where('sku', 'ILIKE', "%{$q}%"))
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                      ->orWhereHas('variants', fn($v) =>
+                          $v->where('sku', 'ILIKE', "%{$q}%")
+                      )
             )
             ->with(['mainVariant.mainImage'])
             ->limit($limit)
             ->get();
 
         $packs = ProductPack::where('is_active', true)
-            ->where('name', 'ILIKE', "%{$q}%")
+            ->where(fn($query) =>
+                $query->where('name', 'ILIKE', "%{$q}%")
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+            )
             ->with('mainImage')
             ->limit(2)
             ->get();
@@ -97,8 +114,6 @@ class ProductSearchService
             ->concat($this->suggestDynamics($q))
             ->unique(fn($item) => mb_strtolower($item['text']));
 
-        // Si ya tenemos una sugerencia exacta (ej: el usuario escribió "Zapatillas" y existe la categoría),
-        // no duplicamos la opción de búsqueda genérica al inicio.
         $hasExactMatch = $entities->contains(fn($item) => mb_strtolower($item['text']) === $lowQ);
 
         $head = $hasExactMatch
@@ -118,7 +133,6 @@ class ProductSearchService
             return '/productos?is_pack=true';
         }
 
-        // Aquí usamos la lógica "God"
         return $this->resolveSmartRedirect($q);
     }
 
@@ -126,47 +140,66 @@ class ProductSearchService
     // Helpers de Búsqueda (Live Data)
     // =========================================================================
 
-   private function suggestCategories(string $q): Collection
-{
-    return ProductCategory::active()
-        ->where('name', 'ILIKE', "%{$q}%")
-        ->with('parent:id,slug')
-        
-        ->orderByRaw('CASE 
-            WHEN name ILIKE ? THEN 1    -- 1. Exact match (ej: "Papel")
-            WHEN name ILIKE ? THEN 2    -- 2. Empieza con (ej: "Papel...")
-            ELSE 3                      -- 3. Contiene en medio (ej: "Subcategoría Papel")
-        END ASC', [$q, $q . '%'])
-        ->orderByRaw('parent_id IS NULL DESC') 
-        ->orderByRaw('LENGTH(name) ASC')      
-        ->limit(3)
-        ->get()
-        ->map(fn($c) => [
-            'text' => $c->name,
-            'url'  => $c->parent_id
-                ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}"
-                : "/productos?categories[]={$c->slug}",
-            'type' => 'category',
-        ]);
-}
+    private function suggestCategories(string $q): Collection
+    {
+        $qClean = $this->sanitizeQuery($q);
+
+        return ProductCategory::active()
+            ->where(fn($query) =>
+                $query->where('name', 'ILIKE', "%{$q}%")
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+            )
+            ->with('parent:id,slug')
+            ->orderByRaw('CASE
+                WHEN name ILIKE ? THEN 1
+                WHEN name ILIKE ? THEN 2
+                ELSE 3
+            END ASC', [$q, $q . '%'])
+            ->orderByRaw('parent_id IS NULL DESC')
+            ->orderByRaw('LENGTH(name) ASC')
+            ->limit(3)
+            ->get()
+            ->map(fn($c) => [
+                'text' => $c->name,
+                'url'  => $c->parent_id
+                    ? "/productos?categories[]={$c->parent->slug}&subcategories[]={$c->slug}"
+                    : "/productos?categories[]={$c->slug}",
+                'type' => 'category',
+            ]);
+    }
 
     private function suggestBrands(string $q): Collection
     {
-        return AttributesValue::whereHas('attribute', fn($query) => $query->where('name', 'ILIKE', '%Marca%'))
-            ->where('value', 'ILIKE', "%{$q}%")
-            ->limit(2)
+        $qClean = $this->sanitizeQuery($q);
+
+        return Brand::where('is_active', true)
+            ->where(fn($query) =>
+                $query->where('name', 'ILIKE', "%{$q}%")
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+            )
+            ->orderByRaw('CASE
+                WHEN name ILIKE ? THEN 1
+                WHEN name ILIKE ? THEN 2
+                ELSE 3
+            END ASC', [$q, $q . '%'])
+            ->limit(3)
             ->get()
             ->map(fn($b) => [
-                'text' => $b->value,
-                'url'  => "/productos?brands[]={$b->id}",
+                'text' => $b->name,
+                'url'  => "/productos?brands[]={$b->slug}",
                 'type' => 'brand',
             ]);
     }
 
     private function suggestBusinessLines(string $q): Collection
     {
+        $qClean = $this->sanitizeQuery($q);
+
         return BusinessLine::where('is_active', true)
-            ->where('name', 'ILIKE', "%{$q}%")
+            ->where(fn($query) =>
+                $query->where('name', 'ILIKE', "%{$q}%")
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+            )
             ->limit(2)
             ->get()
             ->map(fn($bl) => [
@@ -178,8 +211,13 @@ class ProductSearchService
 
     private function suggestDynamics(string $q): Collection
     {
+        $qClean = $this->sanitizeQuery($q);
+
         return DynamicCategory::activeNow()
-            ->where('name', 'ILIKE', "%{$q}%")
+            ->where(fn($query) =>
+                $query->where('name', 'ILIKE', "%{$q}%")
+                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+            )
             ->limit(2)
             ->get()
             ->map(fn($d) => [
@@ -210,7 +248,7 @@ class ProductSearchService
             'price'      => (float) $pack->final_price,
             'is_promo'   => (bool) $pack->is_on_promotion,
             'image'      => $pack->mainImage?->file_path,
-            'target_url' => "/packs/{$pack->slug}",
+            'target_url' => "/producto/{$pack->slug}",
         ];
     }
 

@@ -27,11 +27,12 @@ import { DataTablePagination } from '../data-table-pagination';
 interface DataTableProps<T extends { children?: T[]; id: string | number }> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
+    placeholder?: string;
 }
 
 export function DataTableExpandable<
     T extends { children?: T[]; id: string | number },
->({ columns, data }: DataTableProps<T>) {
+>({ columns, data, placeholder }: DataTableProps<T>) {
     const [globalFilter, setGlobalFilter] = React.useState('');
     const [expanded, setExpanded] = React.useState<ExpandedState>({});
     const [rows, setRows] = React.useState<T[]>(data.data);
@@ -88,7 +89,7 @@ export function DataTableExpandable<
             {/* Filtro global */}
             <div>
                 <Input
-                    placeholder="Buscar..."
+                     placeholder={placeholder ?? 'Buscar...'}
                     value={globalFilter}
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"

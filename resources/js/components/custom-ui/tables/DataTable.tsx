@@ -26,6 +26,8 @@ interface DataTableProps<T> {
     initialSearch?: string;
     perPageOptions?: number[];
     toolbarRight?: React.ReactNode;
+    searchKeys?: (keyof T | ((row: T) => string))[];
+    placeholder?: string;
 }
 
 export function DataTable<T>({
@@ -35,11 +37,29 @@ export function DataTable<T>({
     initialSearch = '',
     perPageOptions,
     toolbarRight,
+    searchKeys,
+    placeholder,
 }: DataTableProps<T>) {
     const [globalFilter, setGlobalFilter] = React.useState(initialSearch ?? '');
 
     const isFirstRender = React.useRef(true);
-    const lastSearchRef = React.useRef(initialSearch ?? "");
+    const lastSearchRef = React.useRef(initialSearch ?? '');
+
+    // Auto-genera el placeholder desde los searchKeys
+    const resolvedPlaceholder = React.useMemo(() => {
+        if (placeholder) return placeholder;
+        if (searchKeys && searchKeys.length > 0) {
+            const labels = searchKeys
+                .filter((k) => typeof k !== 'function')
+                .map((k) =>
+                    String(k)
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c) => c.toUpperCase()),
+                );
+            return `Buscar por ${labels.join(', ')}...`;
+        }
+        return 'Buscar...';
+    }, [placeholder, searchKeys]);
 
     React.useEffect(() => {
         if (!onSearch) return;
@@ -68,7 +88,15 @@ export function DataTable<T>({
         return data.data.filter((row) => {
             if (!row || typeof row !== 'object') return false;
 
-            return Object.values(row as Record<string, unknown>).some((value) => {
+            // Si hay searchKeys, solo filtrar por esos campos
+            const entries = searchKeys
+                ? searchKeys.flatMap((k) => {
+                      if (typeof k === 'function') return [k(row)];
+                      return [(row as Record<keyof T, unknown>)[k]];
+                  })
+                : Object.values(row as Record<string, unknown>);
+
+            return entries.some((value) => {
                 if (value == null) return false;
                 if (typeof value === 'string' || typeof value === 'number') {
                     return String(value).toLowerCase().includes(term);
@@ -76,14 +104,12 @@ export function DataTable<T>({
                 return false;
             });
         });
-    }, [data.data, globalFilter, onSearch]);
+    }, [data.data, globalFilter, onSearch, searchKeys]);
 
     const table = useReactTable({
         data: filteredData,
         columns,
-        state: {
-            globalFilter,
-        },
+        state: { globalFilter },
         manualPagination: true,
         manualFiltering: true,
         pageCount: data.last_page,
@@ -97,13 +123,15 @@ export function DataTable<T>({
         <div className="w-full space-y-6">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <Input
-                    placeholder="Buscar..."
+                    placeholder={resolvedPlaceholder}
                     value={globalFilter ?? ''}
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className="max-w-sm"
                 />
                 {toolbarRight ? (
-                    <div className="flex items-center justify-end gap-2">{toolbarRight}</div>
+                    <div className="flex items-center justify-end gap-2">
+                        {toolbarRight}
+                    </div>
                 ) : null}
             </div>
 
@@ -155,7 +183,11 @@ export function DataTable<T>({
                 </Table>
             </div>
 
-            <DataTablePagination table={table} paginated={data} perPageOptions={perPageOptions} />
+            <DataTablePagination
+                table={table}
+                paginated={data}
+                perPageOptions={perPageOptions}
+            />
         </div>
     );
 }

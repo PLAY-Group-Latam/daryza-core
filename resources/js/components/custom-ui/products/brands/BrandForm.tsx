@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import productsNamespace from '@/routes/products';
 import { Brand } from '@/types/products/brands';
-import { useForm, router } from '@inertiajs/react'; // Importamos router
+import { useForm, router } from '@inertiajs/react';
 import { SlugInput } from '../../slug-text';
 import { Upload } from '../../upload';
 
@@ -20,11 +20,11 @@ export default function BrandForm({ brand }: Props) {
         slug: string;
         image: File | string | null;
         is_active: boolean;
-        _method?: string; 
+        _method?: string;
     }>({
         name: brand?.name || '',
         slug: brand?.slug || '',
-        image: brand?.image || null, 
+        image: brand?.image || null,
         is_active: brand?.is_active ?? true,
     });
 
@@ -36,28 +36,30 @@ export default function BrandForm({ brand }: Props) {
             : productsNamespace.brands.store().url;
 
         if (isEdit) {
-            // Usamos router.post para evadir el problema de PHP con PUT y archivos
-            router.post(action, {
-                ...data,
-                _method: 'PUT' // Engañamos a Laravel para que lo procese como actualización
-            }, {
-                preserveScroll: true,
-                forceFormData: true, // Forzamos el envío del archivo real
-            });
+            router.post(
+                action,
+                {
+                    ...data,
+                    _method: 'PUT',
+                },
+                {
+                    preserveScroll: true,
+                    forceFormData: true,
+                }
+            );
             return;
         }
-        
-        // El create funciona perfecto con el post tradicional
+
         post(action, { preserveScroll: true });
     };
 
     return (
         <form onSubmit={handleSubmit} className="max-w-5xl space-y-8">
-            {/* GRID PRINCIPAL */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                {/* COLUMNA IZQUIERDA: Inputs de texto */}
+                {/* IZQUIERDA */}
                 <div className="md:col-span-2 space-y-6">
+                    
                     {/* NOMBRE */}
                     <div className="flex flex-col gap-2">
                         <Label htmlFor="name">Nombre de la Marca *</Label>
@@ -65,7 +67,7 @@ export default function BrandForm({ brand }: Props) {
                             id="name"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
-                            placeholder="Ej. Salud e Higiene"
+                            placeholder="Ej. Daryza"
                         />
                         {errors.name && (
                             <p className="mt-1 text-sm text-red-500">
@@ -74,13 +76,13 @@ export default function BrandForm({ brand }: Props) {
                         )}
                     </div>
 
-                    {/* SLUG AUTO-GENERADO */}
+                    {/* SLUG */}
                     <SlugInput
                         id="slug"
                         label="Slug *"
                         source={data.name}
                         value={data.slug}
-                        placeholder="ej-salud-e-higiene"
+                        placeholder="ej-daryza"
                         onChange={(val) => setData('slug', val)}
                         error={errors.slug}
                     />
@@ -103,15 +105,15 @@ export default function BrandForm({ brand }: Props) {
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: Upload y especificaciones */}
+                {/* DERECHA */}
                 <div className="space-y-4">
                     <div className="flex flex-col gap-2">
                         <Label>Logo de la Marca *</Label>
                         <div className="max-w-[120px]">
                             <Upload
                                 value={data.image}
-                                placeholder="Subir SVG"
-                                accept="image/svg+xml"
+                                placeholder="Subir imagen"
+                                accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
                                 onFileChange={(file) => setData('image', file)}
                                 previewClassName="h-24 w-full"
                             />
@@ -122,16 +124,21 @@ export default function BrandForm({ brand }: Props) {
                             </p>
                         )}
                     </div>
+
+                    {/* ESPECIFICACIONES */}
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-2">
                         <p className="text-xs font-semibold text-slate-600">
                             Especificaciones recomendadas
                         </p>
                         <div className="grid grid-cols-1 gap-2">
                             {[
-                                { label: 'Formato', value: 'Solo SVG' },
-                                { label: 'Peso máximo', value: '500 KB' },
+                                { label: 'Formato', value: 'JPG, JPEG, PNG, SVG, WEBP' },
+                                { label: 'Peso máximo', value: '1 MB' },
                             ].map(({ label, value }) => (
-                                <div key={label} className="flex justify-between items-center text-xs border-b border-slate-100 pb-1">
+                                <div
+                                    key={label}
+                                    className="flex justify-between items-center text-xs border-b border-slate-100 pb-1"
+                                >
                                     <span className="font-semibold uppercase tracking-widest text-slate-400 text-[9px]">
                                         {label}
                                     </span>
@@ -142,13 +149,13 @@ export default function BrandForm({ brand }: Props) {
                             ))}
                         </div>
                         <p className="text-[10px] text-slate-400">
-                            Se recomienda fondo transparente para el svg y color negro.
+                            Se recomienda fondo transparente (cuando aplique) y buena resolución.
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* BOTÓN DE ACCIÓN */}
+            {/* BOTÓN */}
             <div className="flex justify-start gap-4">
                 <Button
                     type="submit"
@@ -158,8 +165,8 @@ export default function BrandForm({ brand }: Props) {
                     {processing
                         ? 'Guardando...'
                         : brand
-                          ? 'Actualizar Marca'
-                          : 'Crear Marca'}
+                        ? 'Actualizar Marca'
+                        : 'Crear Marca'}
                 </Button>
             </div>
         </form>

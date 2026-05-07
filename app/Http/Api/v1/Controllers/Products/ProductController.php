@@ -7,6 +7,7 @@ use App\Http\Api\v1\Services\Products\ProductVariantResolver;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
+use App\Models\Products\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -95,12 +96,17 @@ class ProductController extends Controller
         return $this->success('Packs para Home listados correctamente', $packs);
     }
 
-    public function showPack(string $slug)
+ public function showPack(string $slug)
     {
         $pack = ProductPack::query()
             ->where('slug', $slug)
             ->where('is_active', true)
-            ->with(['mainImage', 'media', 'items.product', 'items.variant.mainImage'])
+            ->with([
+                'mainImage',
+                'media',
+                'items.product.brand', // Cargamos la marca de cada producto del pack
+                'items.variant.mainImage',
+            ])
             ->firstOrFail();
 
         $items = $pack->items
@@ -127,11 +133,18 @@ class ProductController extends Controller
                         'id' => $item->product->id,
                         'name' => $item->product->name,
                         'slug' => $item->product->slug,
+                        'brand' => $item->product->brand, // Marca individual por producto
                     ],
                     'variant' => $variantData,
                     'subtotal' => (float) $variantData['active_price'] * (int) $item->quantity,
                 ];
             })
+            ->values();
+
+        // Extraer marcas únicas de todos los productos del pack
+        $brands = $items->map(fn($item) => $item['product']['brand'])
+            ->filter()
+            ->unique('id')
             ->values();
 
         $packPriceData = $this->variantResolver->resolvePackPriceData($pack);
@@ -147,6 +160,7 @@ class ProductController extends Controller
                 'stock' => $pack->stock,
                 'main_image' => $pack->mainImage,
                 'gallery' => $pack->media,
+                'brands' => $brands, // Lista de marcas únicas asociadas al pack
             ], $packPriceData),
             'items' => $items,
             'pricing' => [
@@ -157,13 +171,17 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show(Request $request, string $slug)
+   public function show(Request $request, string $slug)
     {
-
         $product = Product::query()
             ->active()
             ->where('slug', $slug)
-            ->with(['technicalSheets', 'recommendedProducts.mainVariant.mainImage'])
+            ->with([
+                'brand', // Cargamos la marca del producto
+                'technicalSheets', 
+                'recommendedProducts.brand', // Marca para las cards de recomendados
+                'recommendedProducts.mainVariant.mainImage'
+            ])
             ->firstOrFail();
 
         $activeVariants = $product->variants()
@@ -179,7 +197,6 @@ class ProductController extends Controller
         $activeVariant = $showState['active_variant'];
         if ($activeVariant) {
             $activeVariant->loadMissing(['media', 'specifications.attribute']);
-            // Inyectamos los precios validados en la variante activa
             $activeVariant->price_resolution = $this->variantResolver->resolvePriceData($activeVariant);
         }
 
@@ -191,25 +208,27 @@ class ProductController extends Controller
                 'brief_description' => $product->brief_description,
                 'description' => $product->description,
                 'technical_sheets' => $product->technicalSheets,
+                'brand' => $product->brand, // Marca enviada en el root del producto
                 'recommended_products' => $product->recommendedProducts
                     ->map(fn($rp) => $this->mapProductCard($rp))
                     ->values(),
             ],
             'active_variant' => $activeVariant,
-            'primary_attribute_id' => $showState['primary_attribute_id'],
+            'primary_attribute_id' => $showState['primary_attribute_id'] ?? null,
             'variant_availability_matrix' => $showState['variant_availability_matrix'],
         ]);
     }
 
-    private function mapProductCard(Product $product): array
+  private function mapProductCard(Product $product): array
     {
         $mainVariant = $product->mainVariant;
         return [
             'id' => $product->id,
             'name' => $product->name,
             'slug' => $product->slug,
+            'brand' => $product->brand, // Incluimos marca en la card
             'main_variant' => $mainVariant ? array_merge(
-                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku,                 'stock' => $mainVariant->stock,],
+                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku, 'stock' => $mainVariant->stock],
                 $this->variantResolver->resolvePriceData($mainVariant)
             ) : null,
             'main_image' => $mainVariant?->mainImage ? [
@@ -221,9 +240,12 @@ class ProductController extends Controller
 
     private function mapPackCard(ProductPack $pack): array
     {
-        $activeItemsCount = $pack->items->filter(
+        $activeItems = $pack->items->filter(
             fn($item) => $item->variant && $item->product && $item->product->is_active
-        )->count();
+        );
+
+        // Obtener marcas únicas para la card del pack
+        $brands = $activeItems->map(fn($item) => $item->product->brand)->filter()->unique('id')->values();
 
         return array_merge([
             'id' => $pack->id,
@@ -231,7 +253,8 @@ class ProductController extends Controller
             'slug' => $pack->slug,
             'brief_description' => $pack->brief_description,
             'stock' => $pack->stock,
-            'items_count' => $activeItemsCount,
+            'items_count' => $activeItems->count(),
+            'brands' => $brands,
             'main_image' => $pack->mainImage ? [
                 'id' => $pack->mainImage->id,
                 'file_path' => $pack->mainImage->file_path,

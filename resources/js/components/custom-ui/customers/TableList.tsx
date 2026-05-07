@@ -25,7 +25,9 @@ export const columns: ColumnDef<Customer>[] = [
                         image={customer.photo} // avatar del usuario
                         name={customer.full_name ?? 'Usuario'}
                     />
-                    <span>{customer.full_name}, {customer.full_last_name}</span>
+                    <span>
+                        {customer.full_name}, {customer.full_last_name}
+                    </span>
                 </div>
             );
         },
@@ -76,5 +78,16 @@ export const columns: ColumnDef<Customer>[] = [
 export default function TableList({ data }: TableListProps) {
     if (!data) return null;
 
-    return <DataTable columns={columns} data={data} />;
+    return (
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKeys={[
+                (c) => `${c.full_name} ${c.full_last_name}`,
+                'email',
+                'phone',
+            ]}
+            placeholder="Buscar por nombre, email o teléfono..."
+        />
+    );
 }

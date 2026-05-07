@@ -34,11 +34,15 @@ import { useVariantForm } from './hooks/useVariantForm';
 interface Props {
     variantAttributes: Attribute[];
     specificationAttributes: Attribute[];
+    brands?: { id: string; name: string }[];
+    brandId?: string;
 }
 
 export function VariantForm({
     variantAttributes,
     specificationAttributes,
+    brands = [],
+    brandId,
 }: Props) {
     const {
         control,
@@ -589,8 +593,8 @@ export function VariantForm({
                             {isSingleProduct
                                 ? 'Producto único'
                                 : editingVariantIndex !== null
-                                ? `Editar Variante ${editingVariantIndex + 1}`
-                                : 'Editar Variante'}
+                                  ? `Editar Variante ${editingVariantIndex + 1}`
+                                  : 'Editar Variante'}
                         </SheetTitle>
                         <SheetDescription>
                             Completa la información por bloques. Este panel
@@ -622,6 +626,8 @@ export function VariantForm({
                                     specificationAttributes={
                                         specificationAttributes
                                     }
+                                    brands={brands}
+                                    brandId={brandId}
                                 />
                             )}
                     </div>

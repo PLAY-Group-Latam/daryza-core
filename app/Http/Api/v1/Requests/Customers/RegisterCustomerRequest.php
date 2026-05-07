@@ -15,6 +15,7 @@ class RegisterCustomerRequest extends FormRequest
   {
     return [
       'full_name' => ['required', 'string', 'max:255'],
+      'full_last_name' => ['nullable', 'string', 'max:255'],
       'email'     => ['required', 'email', 'unique:customers,email'],
       'phone'     => ['nullable', 'string', 'unique:customers,phone'],
       'password'  => ['nullable', 'string', 'min:6'],
@@ -28,6 +29,7 @@ class RegisterCustomerRequest extends FormRequest
   {
     return [
       'full_name.required' => 'El nombre completo es obligatorio.',
+      'full_last_name.required' => 'El apellido completo debe ser una cadena de texto.',
       'email.required'     => 'El correo es obligatorio.',
       'email.email'        => 'El correo no es válido.',
       'email.unique'       => 'Este correo ya está registrado.',

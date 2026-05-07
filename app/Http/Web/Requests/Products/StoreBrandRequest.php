@@ -18,19 +18,19 @@ class StoreBrandRequest extends FormRequest
             'slug' => ['required', 'string', 'max:255', 'unique:brands,slug'],
             'is_active' => ['sometimes', 'boolean'],
             'image' => [
-                'nullable',
-                'file',
-                'mimetypes:image/svg+xml',
-                'max:1024', 
-            ],
+    'nullable',
+    'file',
+    'mimes:jpg,jpeg,png,svg,webp',
+    'max:1024',
+],
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'image.mimetypes' => 'El archivo debe ser exclusivamente en formato SVG.',
-            'image.max' => 'El archivo no debe pesar más de 1 MB.',
-        ];
-    }
+   public function messages(): array
+{
+    return [
+        'image.mimes' => 'El archivo debe ser JPG, JPEG, PNG, SVG o WEBP.',
+        'image.max' => 'El archivo no debe pesar más de 1 MB.',
+    ];
+}
 }
