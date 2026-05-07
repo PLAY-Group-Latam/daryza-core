@@ -159,7 +159,6 @@ class ProductController extends Controller
 
     public function show(Request $request, string $slug)
     {
-        $recommendedLimit = max(0, min((int) $request->input('recommended_limit', 8), 12));
 
         $product = Product::query()
             ->active()
@@ -174,8 +173,7 @@ class ProductController extends Controller
 
         $showState = $this->variantResolver->resolveShowState(
             $activeVariants,
-            $this->variantResolver->parseSelectedAttributeValueIds($request),
-            $request->query('focus')
+            $request->query('variant_id')
         );
 
         $activeVariant = $showState['active_variant'];
@@ -198,7 +196,7 @@ class ProductController extends Controller
                     ->values(),
             ],
             'active_variant' => $activeVariant,
-            'selection_state' => $showState['selection_state'],
+            'primary_attribute_id' => $showState['primary_attribute_id'],
             'variant_availability_matrix' => $showState['variant_availability_matrix'],
         ]);
     }
