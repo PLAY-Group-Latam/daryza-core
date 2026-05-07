@@ -7,6 +7,7 @@ use App\Http\Api\v1\Services\Products\ProductVariantResolver;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
+use App\Models\Products\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -95,250 +96,170 @@ class ProductController extends Controller
         return $this->success('Packs para Home listados correctamente', $packs);
     }
 
-  public function showPack(string $slug)
-{
-    $pack = ProductPack::query()
-        ->where('slug', $slug)
-        ->where('is_active', true)
-        ->with([
-            'mainImage',
-            'media',
-            'items.product.brand',
-            'items.variant.mainImage',
-        ])
-        ->firstOrFail();
+ public function showPack(string $slug)
+    {
+        $pack = ProductPack::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->with([
+                'mainImage',
+                'media',
+                'items.product.brand', // Cargamos la marca de cada producto del pack
+                'items.variant.mainImage',
+            ])
+            ->firstOrFail();
 
+        $items = $pack->items
+            ->filter(fn($item) => $item->product && $item->variant)
+            ->map(function ($item) {
+                $variantData = array_merge(
+                    [
+                        'id' => $item->variant->id,
+                        'sku' => $item->variant->sku,
+                        'stock' => $item->variant->stock,
+                        'is_active' => (bool) $item->variant->is_active,
+                        'main_image' => $item->variant->mainImage ? [
+                            'id' => $item->variant->mainImage->id,
+                            'file_path' => $item->variant->mainImage->file_path,
+                        ] : null,
+                    ],
+                    $this->variantResolver->resolvePriceData($item->variant)
+                );
 
-    $items = $pack->items
-        ->filter(fn($item) => $item->product && $item->variant)
-        ->map(function ($item) {
-            $variantData = array_merge(
-                [
-                    'id' => $item->variant->id,
-                    'sku' => $item->variant->sku,
-                    'stock' => $item->variant->stock,
-                    'is_active' => (bool) $item->variant->is_active,
-                    'main_image' => $item->variant->mainImage ? [
-                        'id' => $item->variant->mainImage->id,
-                        'file_path' => $item->variant->mainImage->file_path,
-                    ] : null,
-                ],
-                $this->variantResolver->resolvePriceData($item->variant)
-            );
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'brand' => $item->product->brand, // Marca individual por producto
+                    ],
+                    'variant' => $variantData,
+                    'subtotal' => (float) $variantData['active_price'] * (int) $item->quantity,
+                ];
+            })
+            ->values();
 
-            return [
-                'id' => $item->id,
-                'quantity' => $item->quantity,
-                'product' => [
-                    'id' => $item->product->id,
-                    'name' => $item->product->name,
-                    'slug' => $item->product->slug,
-                ],
-                'variant' => $variantData,
-                'subtotal' => (float) $variantData['active_price'] * (int) $item->quantity,
-            ];
-        })
-        ->values();
+        // Extraer marcas únicas de todos los productos del pack
+        $brands = $items->map(fn($item) => $item['product']['brand'])
+            ->filter()
+            ->unique('id')
+            ->values();
 
-    $brands = $pack->items
-        ->filter(fn($item) => $item->product && $item->product->brand)
-        ->map(fn($item) => $item->product->brand)
-        ->unique('id') // 👈 elimina duplicados
-        ->values()
-        ->map(fn($brand) => [
-            'id' => $brand->id,
-            'name' => $brand->name,
-            'slug' => $brand->slug,
-            'image' => $brand->image,
+        $packPriceData = $this->variantResolver->resolvePackPriceData($pack);
+        $itemsReferenceTotal = $items->sum('subtotal');
+
+        return $this->success('Pack obtenido correctamente', [
+            'pack' => array_merge([
+                'id' => $pack->id,
+                'name' => $pack->name,
+                'slug' => $pack->slug,
+                'brief_description' => $pack->brief_description,
+                'description' => $pack->description,
+                'stock' => $pack->stock,
+                'main_image' => $pack->mainImage,
+                'gallery' => $pack->media,
+                'brands' => $brands, // Lista de marcas únicas asociadas al pack
+            ], $packPriceData),
+            'items' => $items,
+            'pricing' => [
+                'pack_active_price' => $packPriceData['active_price'],
+                'items_reference_total' => $itemsReferenceTotal,
+                'discount_vs_items' => (float) $itemsReferenceTotal - (float) $packPriceData['final_price'],
+            ],
         ]);
+    }
 
-    
-    $packPriceData = $this->variantResolver->resolvePackPriceData($pack);
-    $itemsReferenceTotal = $items->sum('subtotal');
+   public function show(Request $request, string $slug)
+    {
+        $product = Product::query()
+            ->active()
+            ->where('slug', $slug)
+            ->with([
+                'brand', // Cargamos la marca del producto
+                'technicalSheets', 
+                'recommendedProducts.brand', // Marca para las cards de recomendados
+                'recommendedProducts.mainVariant.mainImage'
+            ])
+            ->firstOrFail();
 
-    return $this->success('Pack obtenido correctamente', [
-        'pack' => array_merge([
+        $activeVariants = $product->variants()
+            ->where('is_active', true)
+            ->with(['selections.attributeValue.attribute'])
+            ->get();
+
+        $showState = $this->variantResolver->resolveShowState(
+            $activeVariants,
+            $request->query('variant_id')
+        );
+
+        $activeVariant = $showState['active_variant'];
+        if ($activeVariant) {
+            $activeVariant->loadMissing(['media', 'specifications.attribute']);
+            $activeVariant->price_resolution = $this->variantResolver->resolvePriceData($activeVariant);
+        }
+
+        return $this->success('Producto obtenido correctamente', [
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'brief_description' => $product->brief_description,
+                'description' => $product->description,
+                'technical_sheets' => $product->technicalSheets,
+                'brand' => $product->brand, // Marca enviada en el root del producto
+                'recommended_products' => $product->recommendedProducts
+                    ->map(fn($rp) => $this->mapProductCard($rp))
+                    ->values(),
+            ],
+            'active_variant' => $activeVariant,
+            'primary_attribute_id' => $showState['primary_attribute_id'] ?? null,
+            'variant_availability_matrix' => $showState['variant_availability_matrix'],
+        ]);
+    }
+
+  private function mapProductCard(Product $product): array
+    {
+        $mainVariant = $product->mainVariant;
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'brand' => $product->brand, // Incluimos marca en la card
+            'main_variant' => $mainVariant ? array_merge(
+                ['id' => $mainVariant->id, 'sku' => $mainVariant->sku, 'stock' => $mainVariant->stock],
+                $this->variantResolver->resolvePriceData($mainVariant)
+            ) : null,
+            'main_image' => $mainVariant?->mainImage ? [
+                'id' => $mainVariant->mainImage->id,
+                'file_path' => $mainVariant->mainImage->file_path,
+            ] : null,
+        ];
+    }
+
+    private function mapPackCard(ProductPack $pack): array
+    {
+        $activeItems = $pack->items->filter(
+            fn($item) => $item->variant && $item->product && $item->product->is_active
+        );
+
+        // Obtener marcas únicas para la card del pack
+        $brands = $activeItems->map(fn($item) => $item->product->brand)->filter()->unique('id')->values();
+
+        return array_merge([
             'id' => $pack->id,
             'name' => $pack->name,
             'slug' => $pack->slug,
             'brief_description' => $pack->brief_description,
-            'description' => $pack->description,
             'stock' => $pack->stock,
-            'main_image' => $pack->mainImage,
-            'gallery' => $pack->media,
-
-           'brands' => $brands->values()->all(),
-
-        ], $packPriceData),
-
-        'items' => $items,
-
-        'pricing' => [
-            'pack_active_price' => $packPriceData['active_price'],
-            'items_reference_total' => $itemsReferenceTotal,
-            'discount_vs_items' => (float) $itemsReferenceTotal - (float) $packPriceData['final_price'],
-        ],
-    ]);
-}
-
-  public function show(Request $request, string $slug)
-{
-    $recommendedLimit = max(0, min((int) $request->input('recommended_limit', 8), 12));
-
-    $product = Product::query()
-        ->active()
-        ->where('slug', $slug)
-        ->with([
-            'brand', 
-            'technicalSheets',
-            'recommendedProducts.brand', 
-            'recommendedProducts.mainVariant.mainImage',
-        ])
-        ->firstOrFail();
-
-    $activeVariants = $product->variants()
-        ->where('is_active', true)
-        ->with(['selections.attributeValue.attribute'])
-        ->get();
-
-    $showState = $this->variantResolver->resolveShowState(
-        $activeVariants,
-        $this->variantResolver->parseSelectedAttributeValueIds($request),
-        $request->query('focus')
-    );
-
-    $activeVariant = $showState['active_variant'];
-
-    if ($activeVariant) {
-       $activeVariant->loadMissing(['media', 'specifications.attribute']);
-
-// 🔥 1. Filtrar spec "Marca" antigua
-$filteredSpecs = $activeVariant->specifications
-    ->filter(fn($spec) => $spec->attribute->name !== 'Marca')
-    ->values();
-
-// 🔥 2. Inyectar marca desde relación real
-if ($product->brand) {
-    $filteredSpecs->prepend((object) [
-        'id' => 'brand_virtual', // 👈 fake id
-        'product_variant_id' => $activeVariant->id,
-        'attribute_id' => null,
-        'attribute_value_id' => null,
-        'value' => $product->brand->name,
-        'attribute' => (object) [
-            'id' => 'brand_virtual',
-            'name' => 'Marca',
-            'type' => 'text',
-            'is_variant' => false,
-            'is_filterable' => false,
-        ],
-    ]);
-}
-
-// 🔥 3. Reasignar
-$activeVariant->setRelation('specifications', $filteredSpecs);
-
-// 🔥 precio
-$activeVariant->price_resolution = $this->variantResolver->resolvePriceData($activeVariant);
-    }
-
-    return $this->success('Producto obtenido correctamente', [
-        'product' => [
-            'id' => $product->id,
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'brief_description' => $product->brief_description,
-            'description' => $product->description,
-            'technical_sheets' => $product->technicalSheets,
-
-           
-            'brand' => $product->brand ? [
-                'id' => $product->brand->id,
-                'name' => $product->brand->name,
-                'slug' => $product->brand->slug,
-                'image' => $product->brand->image,
+            'items_count' => $activeItems->count(),
+            'brands' => $brands,
+            'main_image' => $pack->mainImage ? [
+                'id' => $pack->mainImage->id,
+                'file_path' => $pack->mainImage->file_path,
             ] : null,
-
-           
-            'recommended_products' => $product->recommendedProducts
-                ->take($recommendedLimit) 
-                ->map(fn($rp) => $this->mapProductCard($rp))
-                ->values(),
-        ],
-
-        'active_variant' => $activeVariant,
-        'selection_state' => $showState['selection_state'],
-        'variant_availability_matrix' => $showState['variant_availability_matrix'],
-    ]);
-}
-
-private function mapProductCard(Product $product): array
-{
-    $mainVariant = $product->mainVariant;
-
-    return [
-        'id' => $product->id,
-        'name' => $product->name,
-        'slug' => $product->slug,
-
-        'brand' => $product->brand ? [
-            'id' => $product->brand->id,
-            'name' => $product->brand->name,
-            'slug' => $product->brand->slug,
-            'image' => $product->brand->image,
-        ] : null,
-
-        'main_variant' => $mainVariant ? array_merge(
-            [
-                'id' => $mainVariant->id,
-                'sku' => $mainVariant->sku,
-                'stock' => $mainVariant->stock,
-            ],
-            $this->variantResolver->resolvePriceData($mainVariant)
-        ) : null,
-
-        'main_image' => $mainVariant?->mainImage ? [
-            'id' => $mainVariant->mainImage->id,
-            'file_path' => $mainVariant->mainImage->file_path,
-        ] : null,
-    ];
-}
-
- private function mapPackCard(ProductPack $pack): array
-{
-    $activeItems = $pack->items->filter(
-        fn($item) => $item->variant && $item->product && $item->product->is_active
-    );
-
-    $brands = $activeItems
-        ->filter(fn($item) => $item->product->brand)
-        ->map(fn($item) => $item->product->brand)
-        ->unique('id')
-        ->values()
-        ->map(fn($brand) => [
-            'id' => $brand->id,
-            'name' => $brand->name,
-            'slug' => $brand->slug,
-            'image' => $brand->image,
-        ]);
-
-    return array_merge([
-        'id' => $pack->id,
-        'name' => $pack->name,
-        'slug' => $pack->slug,
-        'brief_description' => $pack->brief_description,
-        'stock' => $pack->stock,
-        'items_count' => $activeItems->count(),
-
-       'brands' => $brands->values()->all() ?? [],
-
-        'main_image' => $pack->mainImage ? [
-            'id' => $pack->mainImage->id,
-            'file_path' => $pack->mainImage->file_path,
-        ] : null,
-
-        'gallery' => $pack->media,
-
-    ], $this->variantResolver->resolvePackPriceData($pack));
-}
+            'gallery' => $pack->media,
+        ], $this->variantResolver->resolvePackPriceData($pack));
+    }
 }

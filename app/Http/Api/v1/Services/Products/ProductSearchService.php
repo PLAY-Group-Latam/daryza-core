@@ -248,7 +248,7 @@ class ProductSearchService
             'price'      => (float) $pack->final_price,
             'is_promo'   => (bool) $pack->is_on_promotion,
             'image'      => $pack->mainImage?->file_path,
-            'target_url' => "/packs/{$pack->slug}",
+            'target_url' => "/producto/{$pack->slug}",
         ];
     }
 
