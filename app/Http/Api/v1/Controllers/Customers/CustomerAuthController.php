@@ -112,7 +112,7 @@ class CustomerAuthController extends Controller
             return $this->error('Token no encontrado', 401);
         }
 
-        $newToken = JWTAuth::setToken($oldToken)->refresh(true, false);
+        $newToken = JWTAuth::setToken($oldToken)->refresh();
 
         return $this->successWithCookie(
             'Token renovado correctamente',
