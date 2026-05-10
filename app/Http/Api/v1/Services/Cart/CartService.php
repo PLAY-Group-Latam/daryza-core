@@ -173,6 +173,7 @@ protected function loadCart(Cart $cart): Cart
                         ]);
                     },
                     'mainImage',
+                    // 'selections.attributeValue.attribute',
                     'selections.attributeValue',
                 ],
                 ProductPack::class => [
