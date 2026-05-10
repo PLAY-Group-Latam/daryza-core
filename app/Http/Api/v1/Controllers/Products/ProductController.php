@@ -63,6 +63,7 @@ class ProductController extends Controller
                 'mainVariant' => function ($q) {
                     $q->select('id', 'product_id', 'price', 'promo_price', 'sku', 'is_on_promo', 'promo_start_at', 'promo_end_at');
                 },
+                'mainVariant.selections.attributeValue.attribute',
                 'mainVariant.mainImage' => function ($q) {
                     $q->select('id', 'mediable_id', 'mediable_type', 'file_path');
                 }
@@ -70,7 +71,7 @@ class ProductController extends Controller
             ->latest()
             ->take($limit)
             ->get()
-            ->map(fn(Product $product) => $this->mapProductCard($product));
+            ->map(fn(Product $product) => $this->mapProductCard($product, true));
 
         return $this->success('Productos para Home listados correctamente', $products);
     }
@@ -86,7 +87,7 @@ class ProductController extends Controller
                 'mainImage',
                 'media',
                 'items.product',
-                'items.variant'
+                'items.variant',
             ])
             ->latest()
             ->take($limit)
@@ -219,10 +220,10 @@ class ProductController extends Controller
         ]);
     }
 
-  private function mapProductCard(Product $product): array
+  private function mapProductCard(Product $product, bool $includeVariantAttrs = false): array
     {
         $mainVariant = $product->mainVariant;
-        return [
+        $card = [
             'id' => $product->id,
             'name' => $product->name,
             'slug' => $product->slug,
@@ -236,6 +237,29 @@ class ProductController extends Controller
                 'file_path' => $mainVariant->mainImage->file_path,
             ] : null,
         ];
+
+        if ($includeVariantAttrs && $mainVariant) {
+            $variantAttrs = $mainVariant->selections
+                ?->map(function ($selection) {
+                    $attributeValue = $selection->attributeValue;
+
+                    if (!$attributeValue || !$attributeValue->attribute) {
+                        return null;
+                    }
+
+                    return [
+                        'attribute' => $attributeValue->attribute->name,
+                        'value' => $attributeValue->value,
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all() ?? [];
+
+            $card['main_variant']['variant_attrs'] = $variantAttrs;
+        }
+
+        return $card;
     }
 
     private function mapPackCard(ProductPack $pack): array

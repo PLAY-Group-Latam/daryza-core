@@ -43,11 +43,11 @@ trait ApiTrait
   // }
 
   // Nuevo método para generar cookie JWT con soporte local/prod
-  public function jwtCookie($token, $minutes = 60)
+  public function jwtCookie($token)
   {
     $isProd = config('app.env') === 'production';
     $cookieName = config('jwt.access_cookie_name', 'jwt');
-
+    $minutes =  config('jwt.refresh_ttl');
     return cookie(
       name: $cookieName,
       value: $token,
@@ -80,9 +80,9 @@ trait ApiTrait
   }
 
   // Nuevo método para responder con cookie usando el helper
-  public function successWithCookie($message, $data, $token, $minutes = 60, $status = 200)
+  public function successWithCookie($message, $data, $token, $status = 200)
   {
     return $this->success($message, $data, $status)
-      ->withCookie($this->jwtCookie($token, $minutes));
+      ->withCookie($this->jwtCookie($token));
   }
 }
