@@ -24,9 +24,9 @@ class UpdateBrandRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
             'image' => [
                 'nullable',
-                'file',
-                'mimetypes:image/svg+xml',
-                'max:1024',
+                'image', // Valida que sea un archivo de imagen
+                'mimes:jpg,jpeg,png,webp,svg', // Extensiones permitidas
+                'max:2048', // Aumentado a 2MB opcionalmente, ya que fotos suelen pesar más que SVGs
             ],
         ];
     }
@@ -34,8 +34,9 @@ class UpdateBrandRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'image.mimetypes' => 'El archivo debe ser exclusivamente en formato SVG.',
-            'image.max' => 'El archivo no debe pesar más de 1 MB.',
+            'image.image' => 'El archivo debe ser una imagen válida.',
+            'image.mimes' => 'La imagen debe ser un archivo de tipo: jpg, jpeg, png, webp o svg.',
+            'image.max' => 'La imagen no debe pesar más de 2 MB.',
         ];
     }
 }

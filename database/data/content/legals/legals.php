@@ -27,9 +27,8 @@ return [
     | LIBRO EDITOR - Libro de Reclamaciones
     |--------------------------------------------------------------------------
     */
-    'libro_editor' => [
-        'text' => '',
-        'body' => '<p><strong>OBSERVACIONES Y ACCIONES ADOPTADAS POR EL PROVEEDOR:</strong></p><p>* El plazo máximo de atención es de 30 días calendario desde su presentación, el cual podrá extenderse excepcionalmente de acuerdo a la complejidad del reclamo o queja lo cual será informado oportunamente mediante un previo aviso al USUARIO.</p><p>* Con el envío del presente documento EL USUARIO valida la información consignada y declara haber sido debidamente informado por Daryza SAC (administrador de la Tienda Rubbermaid), sobre el procedimiento, plazo de atención y medio de respuesta a su reclamo o queja.</p><p>* En caso el reclamo resulte procedente o improcedente, será notificado a través del correo electrónico por el cual nos está enviando la presente comunicación.</p><p>* Su HOJA DE RECLAMO / QUEJA así como el seguimiento, le será enviado a su correo electrónico por el cual nos está enviando la presente comunicación.</p><p>* La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.</p><p><br></p>',
-    ],
-
+   'libro_editor' => [
+    'text' => '',
+    'body' => '<p><strong>Tener en cuenta:</strong></p><ul><li>La presente hoja de reclamación forma parte del Libro de Reclamaciones del proveedor.</li><li>La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.</li><li>El proveedor deberá dar respuesta al reclamo o queja en un plazo no mayor a quince (15) días hábiles, el cual es improrrogable.</li><li>Al enviar el presente formulario, el consumidor recibirá una copia de la hoja de reclamación en el correo electrónico consignado.</li><li>Se informa que los datos personales consignados en la presente hoja serán tratados por Daryza con la finalidad de gestionar el reclamo o queja presentado, conforme a lo establecido en la Ley N.º 29733 – Ley de Protección de Datos Personales (Perú). Para más información puede revisar nuestra Política de Protección de Datos Personales.</li></ul>',
+],
 ];
