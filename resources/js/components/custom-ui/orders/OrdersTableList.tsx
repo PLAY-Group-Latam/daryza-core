@@ -220,8 +220,11 @@ export default function OrdersTableList({
                 accessorKey: 'customer_email',
                 header: 'Cliente',
                 cell: ({ row }) => {
-                    const fullName = `${row.original.customer_first_name ?? ''} ${row.original.customer_last_name ?? ''}`.trim();
-                    return <span>{fullName || row.original.customer_email}</span>;
+                    const fullName =
+                        `${row.original.customer_first_name ?? ''} ${row.original.customer_last_name ?? ''}`.trim();
+                    return (
+                        <span>{fullName || row.original.customer_email}</span>
+                    );
                 },
             },
             {
@@ -383,7 +386,7 @@ export default function OrdersTableList({
                 toolbarRight={toolbarRight}
                 initialSearch={currentSearch}
                 onSearch={(value) => applyTableFilters({ search: value })}
-                placeholder="Buscar por # de orden o cliente..."
+                placeholder="Buscar por # de orden o nombre del cliente..."
             />
         </div>
     );
