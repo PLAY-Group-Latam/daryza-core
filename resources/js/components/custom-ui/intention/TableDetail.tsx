@@ -35,25 +35,23 @@ export function TableDetail({
     });
 
    return (
-    <div className='flex flex-col space-y-4 w-full'>
-        {/* Cambiamos el absolute inset-0 por un div con bordes normal */}
-        <div className='rounded-lg border bg-white overflow-hidden'>
-            <ScrollArea className='w-full'>
-                <DataTable table={table} />
-                <ScrollBar orientation='horizontal' />
-            </ScrollArea>
-        </div>
-
-        <div className='flex flex-col gap-2.5'>
-            <DataTablePagination
-                meta={{ 
-                    current_page: currentPage, 
-                    last_page: pageCount, 
-                    per_page: pageSize 
-                }}
-                table={table}
-            />
-        </div>
+  <div className="flex flex-col space-y-4 w-full">
+    <div className="rounded-lg border bg-white overflow-hidden">
+      <div className="w-full overflow-x-auto">
+        <DataTable table={table} />
+      </div>
     </div>
+
+    <div className="flex flex-col gap-2.5">
+      <DataTablePagination
+        meta={{
+          current_page: currentPage,
+          last_page: pageCount,
+          per_page: pageSize,
+        }}
+        table={table}
+      />
+    </div>
+  </div>
 );
 }

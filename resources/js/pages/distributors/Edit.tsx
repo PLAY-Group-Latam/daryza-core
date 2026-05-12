@@ -124,11 +124,11 @@ export default function Edit({ distributor }: Props) {
                                 <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
                                    
                                     <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-600">Departamento / Región</Label>
+                                        <Label className="text-[11px] font-semibold text-slate-600">Departamento, Provincia o Distrito</Label>
                                         <Input
                                             value={data.region}
                                             onChange={e => setData('region', e.target.value)}
-                                            placeholder="Ej. Lima, Arequipa..."
+                                            placeholder="Ej. Lima, Lima, Ate"
                                             className="h-9 rounded-lg"
                                         />
                                     </div>
