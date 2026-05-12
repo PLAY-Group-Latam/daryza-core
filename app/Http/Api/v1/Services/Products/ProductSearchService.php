@@ -9,6 +9,7 @@ use App\Models\Products\BusinessLine;
 use App\Models\Products\Brand;
 use App\Models\Products\DynamicCategory;
 use Illuminate\Support\Collection;
+use App\Models\Products\ProductVariant;
 
 class ProductSearchService
 {
@@ -57,54 +58,72 @@ class ProductSearchService
         return '/productos?q=' . urlencode($q);
     }
 
-  private function sanitizeQuery(string $q): string
-{
-    // Permitir números para que el SKU no sea ignorado
-    $clean = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]/u', '', $q);
-    return trim($clean);
-}
-
-    private function fetchProductsRaw(string $q, int $limit): Collection
-{
-    $qClean = $this->sanitizeQuery($q);
-
-    // 1. PRIORIDAD MÁXIMA: Coincidencia exacta de SKU
-    $productBySku = Product::active()
-        ->whereHas('variants', fn($v) => $v->where('sku', 'ILIKE', $q))
-        ->with(['mainVariant.mainImage'])
-        ->get();
-
-    if ($productBySku->isNotEmpty()) {
-        return $productBySku; // Si es SKU, devolvemos solo esto (relevancia total)
+    private function sanitizeQuery(string $q): string
+    {
+        // Permitir números para que el SKU no sea ignorado
+        $clean = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]/u', '', $q);
+        return trim($clean);
     }
 
-    // 2. PRODUCTOS por nombre (Query original y limpia)
-    $products = Product::active()
-        ->where(fn($query) =>
-            $query->where('name', 'ILIKE', "%{$q}%")
-                  ->orWhere('name', 'ILIKE', "%{$qClean}%")
-        )
-        ->with(['mainVariant.mainImage'])
-        ->limit($limit)
-        ->get();
+    private function fetchProductsRaw(string $q, int $limit): Collection
+    {
+        $qClean = $this->sanitizeQuery($q);
 
-    // 3. PACKS (Solo si aún hay espacio en el limite)
-    $remainingLimit = $limit - $products->count();
-    $packs = collect();
-    
-    if ($remainingLimit > 0) {
-        $packs = ProductPack::where('is_active', true)
+        // =========================================================
+        // 1. SKU EXACTO → DEVOLVER VARIANTE REAL
+        // =========================================================
+
+        $variantsBySku = ProductVariant::query()
+            ->where('is_active', true)
+            ->where('sku', 'ILIKE', $q)
+            ->with([
+                'product',
+                'mainImage',
+                'selections.attributeValue.attribute',
+            ])
+            ->get();
+
+        if ($variantsBySku->isNotEmpty()) {
+            return $variantsBySku;
+        }
+
+        // =========================================================
+        // 2. PRODUCTOS POR NOMBRE
+        // =========================================================
+
+        $products = Product::active()
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
                       ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
-            ->with('mainImage')
-            ->limit($remainingLimit)
+            ->with([
+                'mainVariant.mainImage',
+                'mainVariant.selections.attributeValue.attribute', // ← evita N+1
+            ])
+            ->limit($limit)
             ->get();
-    }
 
-    return $products->concat($packs)->take($limit);
-}
+        // =========================================================
+        // 3. PACKS
+        // =========================================================
+
+        $remainingLimit = $limit - $products->count();
+
+        $packs = collect();
+
+        if ($remainingLimit > 0) {
+            $packs = ProductPack::where('is_active', true)
+                ->where(fn($query) =>
+                    $query->where('name', 'ILIKE', "%{$q}%")
+                          ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                )
+                ->with('mainImage')
+                ->limit($remainingLimit)
+                ->get();
+        }
+
+        return $products->concat($packs)->take($limit);
+    }
 
     private function buildSuggestions(string $q, string $lowQ, int $limit): Collection
     {
@@ -112,7 +131,7 @@ class ProductSearchService
             ->concat($this->suggestCategories($q))
             ->concat($this->suggestBrands($q))
             ->concat($this->suggestBusinessLines($q))
-            ->concat($this->suggestDynamics($q)) // Aquí ya usa el scope ActiveNow
+            ->concat($this->suggestDynamics($q))
             ->unique(fn($item) => mb_strtolower($item['text']));
 
         $hasExactMatch = $entities->contains(fn($item) => mb_strtolower($item['text']) === $lowQ);
@@ -195,7 +214,6 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
 
-        // ✅ USANDO SCOPE ACTIVENOW (Filtra fechas de inicio y fin)
         return DynamicCategory::activeNow()
             ->where(fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
@@ -216,36 +234,74 @@ class ProductSearchService
 
     private function formatProductResponse(mixed $item): array
     {
-        return $item instanceof ProductPack
-            ? $this->formatPack($item)
-            : $this->formatProduct($item);
+        if ($item instanceof ProductPack) {
+            return $this->formatPack($item);
+        }
+
+        if ($item instanceof ProductVariant) {
+            return $this->formatVariant($item);
+        }
+
+        return $this->formatProduct($item);
+    }
+
+    private function formatVariant(ProductVariant $variant): array
+    {
+        $product = $variant->product;
+
+        $isPromoActive = false;
+
+        if ($variant->is_on_promo) {
+            $isPromoActive =
+                (!$variant->promo_start_at || $variant->promo_start_at->isPast()) &&
+                (!$variant->promo_end_at || $variant->promo_end_at->isFuture());
+        }
+
+        return [
+            'id'             => $variant->id,
+            'variant_id'     => $variant->id,
+            'type'           => 'product',
+            'name'           => $product?->name,
+            'slug'           => $product?->slug,
+            'sku'            => $variant->sku,
+            'price'          => (float) ($isPromoActive ? $variant->promo_price : ($variant->price ?? 0)),
+            'original_price' => (float) ($variant->price ?? 0),
+            'is_promo'       => $isPromoActive,
+            'image'          => $variant?->mainImage?->file_path,
+            'target_url'     => "/producto/{$product->slug}?variant_id={$variant->id}",
+            'attributes'     => $variant->selections
+                ->map(fn($selection) => [
+                    'attribute' => $selection->attributeValue?->attribute?->name,
+                    'value'     => $selection->attributeValue?->value,
+                ])
+                ->values(),
+        ];
     }
 
     private function formatPack(ProductPack $pack): array
     {
-        // ✅ VALIDACIÓN DE VIGENCIA PARA PACK
         $isPromoActive = $pack->is_on_promotion &&
             (!$pack->promo_start_at || $pack->promo_start_at->isPast()) &&
             (!$pack->promo_end_at || $pack->promo_end_at->isFuture());
 
         return [
-        'id'         => "pk-{$pack->id}",
-        'name'       => $pack->name,
-        'sku'        => 'PACK-' . $pack->id, // Mantener para el buscador, pero lo ignoraremos en el visual
-        'type'       => 'pack', // <--- AGREGAR ESTO
-        'slug'       => $pack->slug,
-        'price'      => (float) ($isPromoActive ? ($pack->promo_price ?? $pack->price) : $pack->price),
-        'is_promo'   => $isPromoActive,
-        'image'      => $pack->mainImage?->file_path,
-        'target_url' => "/producto/{$pack->slug}",
-    ];
+            'id'             => "pk-{$pack->id}",
+            'name'           => $pack->name,
+            'sku'            => 'PACK-' . $pack->id,
+            'type'           => 'pack',
+            'slug'           => $pack->slug,
+            'price'          => (float) ($isPromoActive ? ($pack->promo_price ?? $pack->price) : $pack->price),
+            'original_price' => (float) $pack->price,
+            'is_promo'       => $isPromoActive,
+            'image'          => $pack->mainImage?->file_path,
+            'target_url'     => "/producto/{$pack->slug}",
+        ];
     }
 
     private function formatProduct(Product $product): array
     {
         $v = $product->mainVariant;
-        
-        // ✅ VALIDACIÓN DE VIGENCIA PARA PRODUCTO/VARIANTE
+
         $isPromoActive = false;
         if ($v && $v->is_on_promo) {
             $isPromoActive = (!$v->promo_start_at || $v->promo_start_at->isPast()) &&
@@ -253,15 +309,27 @@ class ProductSearchService
         }
 
         return [
-        'id'         => $product->id,
-        'name'       => $product->name,
-        'sku'        => $v?->sku,
-        'type'       => 'product', // <--- AGREGAR ESTO
-        'slug'       => $product->slug,
-        'price'      => (float) ($isPromoActive ? $v->promo_price : ($v?->price ?? 0)),
-        'is_promo'   => $isPromoActive,
-        'image'      => $v?->mainImage?->file_path,
-        'target_url' => "/producto/{$product->slug}",
-    ];
+            'id'             => $product->id,
+            'variant_id'     => $v?->id,
+            'name'           => $product->name,
+            'sku'            => $v?->sku,
+            'type'           => 'product',
+            'slug'           => $product->slug,
+            'price'          => (float) ($isPromoActive ? $v->promo_price : ($v?->price ?? 0)),
+            'original_price' => (float) ($v?->price ?? 0),
+            'is_promo'       => $isPromoActive,
+            'image'          => $v?->mainImage?->file_path,
+            'target_url'     => $v
+                ? "/producto/{$product->slug}?variant_id={$v->id}"
+                : "/producto/{$product->slug}",
+            'attributes'     => $v?->selections
+                ? $v->selections
+                    ->map(fn($s) => [
+                        'attribute' => $s->attributeValue?->attribute?->name,
+                        'value'     => $s->attributeValue?->value,
+                    ])
+                    ->values()
+                : [],
+        ];
     }
 }

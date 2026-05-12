@@ -87,6 +87,7 @@ class PageSeeder extends Seeder
             ['tyc_editor',            'Términos y Condiciones',   []],
             ['anticorrupcion_editor', 'Políticas Anticorrupción', []],
             ['libro_editor',          'Libro de Reclamaciones',   []],
+            ['cookies_editor',        'Política de Cookies',        []],
         ], withText: true);
 
         /*

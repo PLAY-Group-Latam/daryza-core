@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
             JobsPortalSeeder::class,
             SeoPageSeeder::class,
             // OrderDemoSeeder::class,
-            DashboardDemoSeeder::class,
+            // DashboardDemoSeeder::class,
             DistributorSeeder::class
 
         ]);
