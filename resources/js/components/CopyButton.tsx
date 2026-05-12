@@ -13,7 +13,6 @@ export function CopyButton({
 }: CopyButtonProps) {
     const [copied, setCopied] = useState(false);
 
-    // Memoizamos la función para evitar recrearla en cada render
     const handleClick = useCallback(() => {
         copyTextToClipboard(textToCopy, () => {
             setCopied(true);
