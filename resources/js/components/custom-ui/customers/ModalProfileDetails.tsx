@@ -91,7 +91,7 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                     </div>
 
                     {/* CONTENIDO */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         {/* INFORMACIÓN PERSONAL */}
                         <section className="space-y-4">
                             <h3 className="flex items-center gap-2 font-bold">
@@ -131,18 +131,6 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                     </div>
                                 )}
 
-                                {/* Tipo de documento */}
-                                {customer.document_type && (
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            Tipo de Documento
-                                        </p>
-                                        <p className="rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
-                                            {customer.document_type.toUpperCase()}
-                                        </p>
-                                    </div>
-                                )}
-
                                 {/* Email */}
                                 <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground">
@@ -156,18 +144,31 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                     </p>
                                 </div>
 
-                                {/* DNI */}
-                                {customer.dni && (
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            DNI del cliente
-                                        </p>
-                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
-                                            {customer.dni}
-                                            <CopyButton
-                                                textToCopy={customer.dni}
-                                            />
-                                        </p>
+                                {(customer.document_type || customer.dni) && (
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        {customer.document_type && (
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Tipo de Documento
+                                                </p>
+                                                <p className="rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                                    {customer.document_type.toUpperCase()}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {customer.dni && (
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Documento del cliente
+                                                </p>
+                                                <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                                    {customer.dni}
+                                                    <CopyButton
+                                                        textToCopy={customer.dni}
+                                                    />
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -181,61 +182,6 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                             {customer.phone}
                                             <CopyButton
                                                 textToCopy={customer.phone}
-                                            />
-                                        </p>
-                                    </div>
-                                )}
-                                {customer.billing_profile?.ruc && (
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            RUC
-                                        </p>
-                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
-                                            {customer.billing_profile?.ruc}
-                                            <CopyButton
-                                                textToCopy={
-                                                    customer.billing_profile
-                                                        ?.ruc
-                                                }
-                                            />
-                                        </p>
-                                    </div>
-                                )}
-
-                                {customer.billing_profile?.social_reason && (
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            Razón Social
-                                        </p>
-                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
-                                            {
-                                                customer.billing_profile
-                                                    ?.social_reason
-                                            }
-                                            <CopyButton
-                                                textToCopy={
-                                                    customer.billing_profile
-                                                        ?.social_reason
-                                                }
-                                            />
-                                        </p>
-                                    </div>
-                                )}
-                                 {customer.billing_profile?.fiscal_address && (
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            Dirección Fiscal
-                                        </p>
-                                        <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
-                                            {
-                                                customer.billing_profile
-                                                    ?.fiscal_address
-                                            }
-                                            <CopyButton
-                                                textToCopy={
-                                                    customer.billing_profile
-                                                        ?.fiscal_address
-                                                }
                                             />
                                         </p>
                                     </div>
@@ -282,6 +228,62 @@ export const ModalProfileDetails = ({ customer }: ModalProfileDetailsProps) => {
                                             </p>
                                             <p className="font-medium">
                                                 {address.reference}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </section>
+
+                        {/* FACTURACIÓN */}
+                        <section className="space-y-4">
+                            <h3 className="flex items-center gap-2 font-bold">
+                                <BarChart3 className="size-4" />
+                                Información de Facturación
+                            </h3>
+
+                            {!customer.billing_profile ? (
+                                <p className="text-sm text-gray-400 italic">
+                                    No se encontró información de facturación.
+                                </p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {customer.billing_profile.ruc && (
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                RUC
+                                            </p>
+                                            <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                                {customer.billing_profile.ruc}
+                                                <CopyButton
+                                                    textToCopy={customer.billing_profile.ruc}
+                                                />
+                                            </p>
+                                        </div>
+                                    )}
+                                    {customer.billing_profile.social_reason && (
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                Razón Social
+                                            </p>
+                                            <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                                {customer.billing_profile.social_reason}
+                                                <CopyButton
+                                                    textToCopy={customer.billing_profile.social_reason}
+                                                />
+                                            </p>
+                                        </div>
+                                    )}
+                                    {customer.billing_profile.fiscal_address && (
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                Dirección Fiscal
+                                            </p>
+                                            <p className="flex items-center justify-between rounded-md bg-gray-100 p-2 text-sm font-medium dark:bg-muted/20">
+                                                {customer.billing_profile.fiscal_address}
+                                                <CopyButton
+                                                    textToCopy={customer.billing_profile.fiscal_address}
+                                                />
                                             </p>
                                         </div>
                                     )}

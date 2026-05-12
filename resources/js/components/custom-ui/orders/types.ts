@@ -1,6 +1,8 @@
 export interface OrderRow {
     id: string;
     code: string;
+    customer_first_name?: string;
+    customer_last_name?: string;
     customer_email: string;
     customer_document_number: string;
     total: string;
@@ -54,6 +56,10 @@ export interface OrderDetail {
     customer_document_number: string;
     customer_document_type?: string | null;
     customer_mobile_phone: string;
+    voucher_type?: 'boleta' | 'factura';
+    billing_ruc?: string | null;
+    billing_social_reason?: string | null;
+    billing_fiscal_address?: string | null;
     payment_method_type: 'bank_transfer' | 'niubiz';
     allowed_actions?: string[];
     rollback_action?: string | null;
