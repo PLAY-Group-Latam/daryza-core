@@ -19,6 +19,7 @@ import SocialsEditor from '@/components/custom-ui/content/editors/footer/Socials
 import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
 import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
 import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
+import CookiesEditor from '@/components/custom-ui/content/editors/legals/CookiesEditor';
 import ContactIndexEditor from '@/components/custom-ui/content/editors/contact/ContactIndexEditor';
 import HelpCenterEditor from '@/components/custom-ui/content/editors/contact/HelpCetnerEditor';
 import CustomerServiceEditor from '@/components/custom-ui/content/editors/contact/CustomerServiceEditor';
@@ -80,7 +81,7 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'tyc_editor':           TermsConditionsEditor,
     'anticorrupcion_editor':PrivacyPoliticEditor,
     'libro_editor':         ComplaintsBookEditor,
-
+    'cookies_editor':       CookiesEditor,
     // Contact
     'contact_general':     ContactIndexEditor,
     'contact_help':        HelpCenterEditor,

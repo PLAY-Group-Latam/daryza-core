@@ -12,6 +12,7 @@ class BrandService
         return Brand::query()
             ->where('is_active', true)
             ->orderBy('name')
+            ->limit(20)
             ->get(['id', 'name', 'slug', 'image']);
     }
 }

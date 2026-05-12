@@ -99,7 +99,7 @@ export default function Show({ distributor }: Props) {
                                 <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
                                    
                                     <div className="space-y-1.5">
-                                        <Label className="text-[11px] font-semibold text-slate-400">Departamento / Región</Label>
+                                        <Label className="text-[11px] font-semibold text-slate-400">Departamento, Provincia o Distrito</Label>
                                         <div className="text-sm font-semibold text-slate-700 bg-slate-50/50 p-2 rounded-md border border-slate-100">
                                             {distributor.region}
                                         </div>

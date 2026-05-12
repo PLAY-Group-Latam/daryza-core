@@ -219,18 +219,17 @@ export default function OrdersTableList({
             {
                 accessorKey: 'customer_email',
                 header: 'Cliente',
-                cell: ({ row }) => (
-                    <div className="flex flex-col">
-                        <span>{row.original.customer_email}</span>
-                        <span className="text-xs text-muted-foreground">
-                            Doc: {row.original.customer_document_number}
-                        </span>
-                    </div>
-                ),
+                cell: ({ row }) => {
+                    const fullName =
+                        `${row.original.customer_first_name ?? ''} ${row.original.customer_last_name ?? ''}`.trim();
+                    return (
+                        <span>{fullName || row.original.customer_email}</span>
+                    );
+                },
             },
             {
                 accessorKey: 'created_at',
-                header: 'Fecha',
+                header: 'Fecha de Compra',
                 cell: ({ row }) => (
                     <span>{formatDate(row.original.created_at, true)}</span>
                 ),
@@ -387,7 +386,7 @@ export default function OrdersTableList({
                 toolbarRight={toolbarRight}
                 initialSearch={currentSearch}
                 onSearch={(value) => applyTableFilters({ search: value })}
-                placeholder="Buscar por # de orden o cliente..."
+                placeholder="Buscar por # de orden o nombre del cliente..."
             />
         </div>
     );

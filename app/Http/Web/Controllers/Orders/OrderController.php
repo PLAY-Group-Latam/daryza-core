@@ -30,8 +30,9 @@ class OrderController extends Controller
             $search = (string) $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('customer_email', 'like', "%{$search}%")
-                    ->orWhere('customer_document_number', 'like', "%{$search}%");
+                    ->orWhere('customer_first_name', 'like', "%{$search}%")
+                    ->orWhere('customer_last_name', 'like', "%{$search}%")
+                    ->orWhereRaw("TRIM(customer_first_name || ' ' || customer_last_name) ILIKE ?", ["%{$search}%"]);
             });
         }
 

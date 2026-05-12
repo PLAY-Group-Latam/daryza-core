@@ -17,7 +17,7 @@ export default function PurchaseIntentDetail({ paginatedEvents }: { paginatedEve
              <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-0">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 rounded-xl p-0">
                 <div className="flex justify-between items-center">
                     <div className="text-xl font-bold lg:text-2xl text-slate-900">
                         Historial de Intenciones de Compra

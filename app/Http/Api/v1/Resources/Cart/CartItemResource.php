@@ -26,14 +26,33 @@ class CartItemResource extends JsonResource
                 ?? $item->product?->mainVariant?->mainImage?->file_path;
         }
 
-        $variantAttrs = [];
-        if (!$isPack && $item->relationLoaded('selections')) {
-            $variantAttrs = $item->selections
-                ->map(fn($selection) => $selection->attribute_value_id)
-                ->filter()
-                ->values()
-                ->all();
-        }
+       $variantAttrs = [];
+
+if (
+    !$isPack &&
+    $item->relationLoaded('selections')
+) {
+    $variantAttrs = $item->selections
+        ->map(function ($selection) {
+
+            $attributeValue = $selection->attributeValue;
+
+            if (
+                !$attributeValue ||
+                !$attributeValue->attribute
+            ) {
+                return null;
+            }
+
+            return [
+                'attribute' => $attributeValue->attribute->name,
+                'value' => $attributeValue->value,
+            ];
+        })
+        ->filter()
+        ->values()
+        ->all();
+}
 
         $quantity = (int) $this->quantity;
         $unitPrice = (float) ($this->unit_price ?? $item->active_price ?? 0);

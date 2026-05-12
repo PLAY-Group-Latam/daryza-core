@@ -183,8 +183,18 @@ export interface FooterSocialsContent {
 // LEGALES
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface InfoItem {
+  label: string; // Ej: "Queja" o "Razón"
+  value: string; // Ej: "Disconformidad relacionada..."
+}
+
+
+
 export interface ComplaintsContent {
+  title: string;
+  subtitle: string;
   body: string;
+  info_items: InfoItem[];
 }
 
 export interface PrivacyContent {

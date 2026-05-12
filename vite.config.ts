@@ -57,7 +57,12 @@ export default defineConfig({
                   protocol: 'ws',
               },
               watch: {
-                  ignored: ['**/vendor/**', '**/node_modules/**'],
+                  ignored: [
+                      '**/vendor/**',
+                      '**/node_modules/**',
+                      '**/storage/**',
+                      '**/tests/**',
+                  ],
               },
           }
         : undefined,

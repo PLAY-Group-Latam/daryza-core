@@ -1,11 +1,8 @@
 import { OrdersTableList } from '@/components/custom-ui/orders';
 import { OrderRow } from '@/components/custom-ui/orders/types';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { Download } from 'lucide-react';
-
-
 
 interface OrdersIndexProps {
     paginatedOrders: Paginated<OrderRow>;

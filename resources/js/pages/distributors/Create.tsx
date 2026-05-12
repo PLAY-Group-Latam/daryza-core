@@ -114,7 +114,7 @@ export default function Create() {
                                     
                                     <div className="space-y-1.5">
                                         <Label className="text-[11px] font-semibold text-slate-600">
-                                            Departamento / Región
+                                            Departamento, Provincia o Distrito
                                         </Label>
                                         <Input
                                             value={data.region}
@@ -124,7 +124,7 @@ export default function Create() {
                                                     e.target.value,
                                                 )
                                             }
-                                            placeholder="Ej. Lima, Arequipa..."
+                                            placeholder="Ej. Lima, Lima, Ate"
                                             className="h-9"
                                         />
                                     </div>

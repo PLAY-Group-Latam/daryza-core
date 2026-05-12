@@ -7,11 +7,10 @@ import { cn } from '@/lib/utils'; // Asegúrate de tener esta utilidad (clsx + t
 import { Link, Lock, RotateCcw, Unlock } from 'lucide-react';
 import * as React from 'react';
 
-interface SlugInputProps
-    extends Omit<
-        React.InputHTMLAttributes<HTMLInputElement>,
-        'onChange' | 'value'
-    > {
+interface SlugInputProps extends Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    'onChange' | 'value'
+> {
     source: string; // Texto origen (ej: nombre del producto)
     value: string; // Valor controlado
     onChange: (value: string) => void;
@@ -60,9 +59,14 @@ export const SlugInput = React.forwardRef<HTMLInputElement, SlugInputProps>(
             // Auto-sync solo cuando:
             // 1) el slug está vacío, o
             // 2) el slug actual fue generado previamente por este componente.
+            // const canAutoSync =
+            //     currentValue === '' ||
+            //     currentValue === lastAutoValueRef.current;
+
             const canAutoSync =
-                currentValue === '' ||
-                currentValue === lastAutoValueRef.current;
+                isAutoMode &&
+                (currentValue === '' ||
+                    currentValue === lastAutoValueRef.current);
 
             if (!canAutoSync) {
                 setIsAutoMode(false);
