@@ -380,6 +380,7 @@ export function VariantRow({
                         <UploadMultiple
                             value={field.value}
                             onFilesChange={field.onChange}
+                            preset="product-media"
                             previewClassName="h-24 w-24"
                         />
                     )}

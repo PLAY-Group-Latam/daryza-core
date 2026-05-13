@@ -7,7 +7,7 @@ import {
     BusinessLine,
     PaginatedBusinessLines,
 } from '@/types/products/businessLines';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -55,28 +55,24 @@ const columns: ColumnDef<BusinessLine>[] = [
         header: 'Acciones',
         cell: ({ row }) => {
             const line = row.original;
-
-            // Asegúrate de tener estas rutas definidas en tu objeto de rutas
-            // o cámbialas por route('business-lines.edit', line.id)
             return (
                 <div className="flex items-center gap-2">
                     <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        title="Editar atributo"
+                        title="Editar línea"
                         asChild
                     >
                         <Link
                             href={productsNamespace.businessLines.edit(line.id)}
                         >
-                            <Edit />
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
                     <ConfirmDeleteAlert
                         resourceId={line.id}
                         resourceName={line.name}
-                        // Asegúrate de pasar las rutas correctas para el delete
                         routes={productsNamespace.businessLines}
                         trigger={
                             <Button
@@ -97,6 +93,8 @@ const columns: ColumnDef<BusinessLine>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
+    const { filters } = usePage<{ filters: any }>().props;
+
     if (!data || !data.data) {
         return (
             <div className="p-4 text-center text-gray-500">
@@ -105,11 +103,30 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
+    const handleSearch = (value: string) => {
+        const params: any = { per_page: data.per_page };
+        
+        if (value && value.trim() !== "") {
+            params.search = value;
+        }
+
+        router.get(
+            '/productos/lineas-de-negocio', // <-- Asegúrate que esta sea tu URL real
+            params,
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedBusinessLines', 'filters'],
+            }
+        );
+    };
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['name', 'slug']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search || ''}
             placeholder="Buscar por nombre o slug..."
         />
     );

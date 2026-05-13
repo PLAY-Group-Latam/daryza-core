@@ -1,57 +1,36 @@
-import { DataTable } from "@/components/data-table";
-import { DataTablePagination } from "@/components/data-table-pagination";
-import { Paginate } from "@/interfaces/paginate";
-import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel } from "@tanstack/react-table";
-import { useState, useEffect } from "react";
-import { columns } from "./columns-intention-detail";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+'use client';
 
-export function TableDetail({
-    data: purchaseIntents,
-    meta: { currentPage, perPage: pageSize, lastPage: pageCount }
-}: { data: object[]; meta: Paginate }) {
-    
+import { DataTable } from '@/components/custom-ui/tables/DataTable';
+import { Paginate } from '@/interfaces/paginate';
+import { columns } from './columns-intention-detail';
+import { useServerPagination } from '@/lib/utils/useServerPagination';
 
-    const [data, setData] = useState(() => [...purchaseIntents]);
-    
-    useEffect(() => {
-        setData(purchaseIntents);
-    }, [purchaseIntents]);
-    const [globalFilter, setGlobalFilter] = useState('');
+interface TableDetailProps {
+    data: any[];
+    meta: Paginate;
+}
 
-    useEffect(() => setData(purchaseIntents), [purchaseIntents]);
+export function TableDetail({ data: purchaseIntents, meta }: TableDetailProps) {
+    // Solo mantenemos goToPage para que la paginación de abajo siga funcionando
+    const { goToPage } = useServerPagination();
 
-    const table = useReactTable({
-        columns,
-        data,
-        manualPagination: true,
-        pageCount,
-        state: { globalFilter, pagination: { pageIndex: currentPage - 1, pageSize } },
+    const paginatedData = {
+        data: purchaseIntents,
+        current_page: meta.currentPage,
+        last_page: meta.lastPage,
+        per_page: meta.perPage,
+        total: meta.total,
+    } as any;
 
-        onGlobalFilterChange: setGlobalFilter,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
-
-   return (
-  <div className="flex flex-col space-y-4 w-full">
-    <div className="rounded-lg border bg-white overflow-hidden">
-      <div className="w-full overflow-x-auto">
-        <DataTable table={table} />
-      </div>
-    </div>
-
-    <div className="flex flex-col gap-2.5">
-      <DataTablePagination
-        meta={{
-          current_page: currentPage,
-          last_page: pageCount,
-          per_page: pageSize,
-        }}
-        table={table}
-      />
-    </div>
-  </div>
-);
+    return (
+        <div className="flex flex-col space-y-4 w-full">
+            <div className="rounded-lg bg-card overflow-hidden">
+                <DataTable
+                    columns={columns}
+                    data={paginatedData}
+                    // ✅ Al no pasar onSearch, el Input desaparece automáticamente
+                />
+            </div>
+        </div>
+    );
 }

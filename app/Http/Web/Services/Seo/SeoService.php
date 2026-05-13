@@ -7,7 +7,7 @@ use App\Http\Web\Services\GcsService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\DB;
 class SeoService
 {
     protected GcsService $gcsService;
@@ -17,13 +17,29 @@ class SeoService
         $this->gcsService = $gcsService;
     }
 
-    public function getAllPaginated(int $perPage = 10): LengthAwarePaginator
-    {
-        return Metadata::with('metadatable')
-            ->where('metadatable_type', 'App\Models\Content\Page')
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-    }
+public function getAllPaginated(int $perPage = 10, ?string $search = null): LengthAwarePaginator
+{
+    return Metadata::with('metadatable')
+        ->where('metadatable_type', 'App\Models\Content\Page')
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('meta_title', 'ilike', "%{$search}%")
+                  // Usamos orWhereHas con un join manual o cast si Eloquent falla
+                ->orWhereExists(function ($query) use ($search) {
+    $query->select(DB::raw(1))
+        ->from('pages')
+        // Forzamos que el ID de la página se vea como texto para comparar con metadatable_id
+        ->whereRaw('metadata.metadatable_id = pages.id::text')
+        ->where('title', 'ilike', "%{$search}%");
+});
+            });
+        })
+        // IMPORTANTE: Si el error persiste, forzamos el cast en el join polimórfico
+        // Pero primero prueba esta versión limpia que suele resolver el 42883
+        ->orderBy('created_at', 'desc')
+        ->paginate($perPage)
+        ->withQueryString();
+}
 
     public function getById(string $id): Metadata
     {

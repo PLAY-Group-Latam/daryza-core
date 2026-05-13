@@ -3,6 +3,14 @@
 import { Media } from '@/types/products/media';
 import { FileVideoIcon, Trash2Icon, UploadIcon } from 'lucide-react';
 import { useRef } from 'react';
+import {
+    type AcceptedFormat,
+    type UploadPreset,
+    type UploadValidationConfig,
+    formatsToAccept,
+    resolveConfig,
+    validateFile,
+} from '../../hooks/upload-presets';
 
 type ExistingUploadMedia = Pick<Media, 'file_path'> &
     Partial<Omit<Media, 'file_path'>>;
@@ -12,14 +20,12 @@ interface UploadMultipleProps {
     value?: UploadItem[];
     onFilesChange?: (files: UploadItem[]) => void;
     previewClassName?: string;
-    accept?: 'image' | 'video' | 'both';
+    // ── Validación ──────────────────────────────────────────
+    preset?: UploadPreset;
+    formats?: AcceptedFormat[];
+    maxSizeMB?: number;
+    mediaType?: 'image' | 'video';
 }
-
-const ACCEPT_MAP = {
-    image: 'image/*',
-    video: 'video/*',
-    both: 'image/*,video/*',
-};
 
 const isVideo = (item: UploadItem) =>
     item instanceof File
@@ -29,19 +35,41 @@ const isVideo = (item: UploadItem) =>
 const getPreview = (item: UploadItem) =>
     item instanceof File ? URL.createObjectURL(item) : item.file_path;
 
+function buildHint(config: UploadValidationConfig): string {
+    const fmts = config.formats
+        .filter((f) => f !== 'jpeg' && f !== 'tif')
+        .map((f) => f.toUpperCase())
+        .join(', ');
+    return `${fmts} · máx. ${config.maxSizeMB} MB`;
+}
+
 export function UploadMultiple({
     value = [],
     onFilesChange,
     previewClassName,
-    accept = 'both',
+    preset,
+    formats,
+    maxSizeMB,
+    mediaType,
 }: UploadMultipleProps) {
+    const config = resolveConfig(preset, {
+        ...(formats   ? { formats }   : {}),
+        ...(maxSizeMB ? { maxSizeMB } : {}),
+        ...(mediaType ? { mediaType } : {}),
+    });
+
+    const accept = formatsToAccept(config.formats);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const dragIndex = useRef<number | null>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
         if (!files.length) return;
-        onFilesChange?.([...value, ...files]);
+
+        // Filtrar solo los válidos; los inválidos se ignoran silenciosamente
+        // (el input `accept` ya bloquea en el picker, esto es defensa extra)
+        const valid = files.filter((f) => validateFile(f, config) === null);
+        if (valid.length) onFilesChange?.([...value, ...valid]);
         e.target.value = '';
     };
 
@@ -50,14 +78,15 @@ export function UploadMultiple({
     };
 
     const handleDrop = (dropIndex: number) => {
-        if (dragIndex.current === null || dragIndex.current === dropIndex)
-            return;
+        if (dragIndex.current === null || dragIndex.current === dropIndex) return;
         const next = [...value];
         const [moved] = next.splice(dragIndex.current, 1);
         next.splice(dropIndex, 0, moved);
         dragIndex.current = null;
         onFilesChange?.(next);
     };
+
+    const showHint = !!(preset || formats || maxSizeMB);
 
     return (
         <div className="flex flex-wrap gap-2">
@@ -85,13 +114,10 @@ export function UploadMultiple({
                                     className="h-full w-full object-cover"
                                     muted
                                     onMouseEnter={(e) =>
-                                        (
-                                            e.currentTarget as HTMLVideoElement
-                                        ).play()
+                                        (e.currentTarget as HTMLVideoElement).play()
                                     }
                                     onMouseLeave={(e) => {
-                                        const v =
-                                            e.currentTarget as HTMLVideoElement;
+                                        const v = e.currentTarget as HTMLVideoElement;
                                         v.pause();
                                         v.currentTime = 0;
                                     }}
@@ -125,24 +151,36 @@ export function UploadMultiple({
                 );
             })}
 
+            {/* Botón de agregar */}
             <div
                 onClick={() => fileInputRef.current?.click()}
                 className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-500"
             >
                 <UploadIcon className="h-5 w-5" />
-                <span className="text-center text-[10px] leading-tight">
-                    {accept === 'image'
-                        ? 'Imagen'
-                        : accept === 'video'
-                          ? 'Video'
-                          : 'Imagen / Video'}
-                </span>
+                {/* Hint de restricciones en lugar del texto genérico */}
+                {showHint ? (
+                    <>
+                        <span className="text-center text-[10px] leading-tight">
+                            {config.formats
+                                .filter((f) => f !== 'jpeg' && f !== 'tif')
+                                .map((f) => f.toUpperCase())
+                                .join(', ')}
+                        </span>
+                        <span className="text-center text-[9px] leading-tight opacity-70">
+                            máx. {config.maxSizeMB} MB
+                        </span>
+                    </>
+                ) : (
+                    <span className="text-center text-[10px] leading-tight">
+                        Imagen / Video
+                    </span>
+                )}
             </div>
 
             <input
                 ref={fileInputRef}
                 type="file"
-                accept={ACCEPT_MAP[accept]}
+                accept={accept}
                 multiple
                 className="hidden"
                 onChange={handleChange}

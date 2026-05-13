@@ -15,10 +15,7 @@ import { PaymentMethod } from '@/types/paymentmethods';
 export const columns = (
     onDelete: (id: string) => void
 ): ColumnDef<PaymentMethod>[] => [
-    {
-        accessorKey: 'id',
-        header: '#',
-    },
+   
     {
         accessorKey: 'company_type',
         header: 'Marca',

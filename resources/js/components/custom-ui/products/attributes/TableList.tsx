@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
-import attributes from '@/routes/products/attributes';
+import attributesRoutes from '@/routes/products/attributes'; // Renombrado para evitar conflicto con tipo
 import { Attribute } from '@/types/products/attributes';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -34,29 +34,6 @@ const columns: ColumnDef<Attribute>[] = [
             </span>
         ),
     },
-    // {
-    //     accessorKey: 'type',
-    //     header: 'Tipo',
-    //     cell: ({ row }) => (
-    //         <span className="capitalize">{row.original.type}</span>
-    //     ),
-    // },
-    // {
-    //     accessorKey: 'is_variant',
-    //     header: 'Variante',
-    //     cell: ({ row }) => (
-    //         <span
-    //             className={
-    //                 row.original.is_variant
-    //                     ? 'font-medium text-green-600'
-    //                     : 'font-medium text-red-600'
-    //             }
-    //         >
-    //             {row.original.is_variant ? 'Sí' : 'No'}
-    //         </span>
-    //     ),
-    // },
-
     {
         id: 'values',
         header: 'Valores',
@@ -115,7 +92,6 @@ const columns: ColumnDef<Attribute>[] = [
             );
         },
     },
-
     {
         accessorKey: 'created_at',
         header: 'Creado el',
@@ -145,14 +121,14 @@ const columns: ColumnDef<Attribute>[] = [
                         title="Editar atributo"
                         asChild
                     >
-                        <Link href={attributes.edit(attribute.id)}>
-                            <Edit />
+                        <Link href={attributesRoutes.edit(attribute.id)}>
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
                     <ConfirmDeleteAlert
                         resourceId={attribute.id}
                         resourceName={attribute.name}
-                        routes={attributes}
+                        routes={attributesRoutes}
                         trigger={
                             <Button
                                 variant="destructive"
@@ -161,7 +137,7 @@ const columns: ColumnDef<Attribute>[] = [
                                 className="bg-red-700!"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <Trash />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         }
                     />
@@ -172,6 +148,8 @@ const columns: ColumnDef<Attribute>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
+    const { filters } = usePage<{ filters: any }>().props;
+
     if (!data) {
         return (
             <div className="p-4 text-center text-gray-500">
@@ -180,14 +158,26 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
+    const handleSearch = (value: string) => {
+        const params: any = { per_page: data.per_page };
+
+        if (value && value.trim() !== '') {
+            params.search = value;
+        }
+
+        router.get('/productos/attributes', params, {
+            preserveState: true,
+            replace: true,
+            only: ['paginatedAttributes', 'filters'],
+        });
+    };
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={[
-                'name',
-                (row) => (row.is_variant ? 'Variante' : 'Especificación'),
-            ]}
+            onSearch={handleSearch}
+            initialSearch={filters?.search || ''}
             placeholder="Buscar por nombre o uso..."
         />
     );

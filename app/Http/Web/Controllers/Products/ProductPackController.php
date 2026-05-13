@@ -22,22 +22,26 @@ class ProductPackController extends Controller
     /**
      * Listado de packs
      */
-    public function index()
-    {
-        // Capturamos la cantidad de filas por página, por defecto 10
-        $perPage = request()->input('per_page', 10);
+ public function index()
+{
+    $perPage = request()->integer('per_page', 10);
+    $search = request()->string('search')->trim()->value();
 
-        // Cargamos los packs con sus relaciones para evitar el problema N+1
-        // Cargamos items, y dentro de items el producto y la variante
-        $packs = ProductPack::with(['items.product', 'items.variant'])
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString(); // Mantiene los filtros de la URL al cambiar de página
+    $packs = ProductPack::with(['items.product', 'items.variant'])
+        ->when($search, function ($query, $search) {
+            $query->where('name', 'ilike', "%{$search}%");
+        })
+        ->latest()
+        ->paginate($perPage)
+        ->withQueryString();
 
-        return Inertia::render('products/packs/Index', [
-            'paginatedPacks' => $packs,
-        ]);
-    }
+    return Inertia::render('products/packs/Index', [
+        'paginatedPacks' => $packs,
+        'filters' => [
+            'search' => $search,
+        ],
+    ]);
+}
 
     /**
      * Mostrar el formulario de creación

@@ -41,46 +41,43 @@ export function DataTablePagination<TData>({
         new Set([per_page, ...baseOptions].filter((value) => value > 0)),
     ).sort((a, b) => a - b);
 
-    return (
-        <div className="flex items-center justify-between">
-            {/* 🧩 Info de selección */}
-            <div className="flex-1 text-sm text-muted-foreground">
-                {table.getFilteredSelectedRowModel().rows.length} de{' '}
-                {table.getFilteredRowModel().rows.length} fila(s) seleccionadas
-                ({total} en total).
+   return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* 🧩 Info de selección */}
+        <div className="text-sm text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length} de{' '}
+            {table.getFilteredRowModel().rows.length} fila(s) seleccionadas
+            ({total} en total).
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+            {/* 🔹 Selector de filas por página */}
+            <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Filas por página</p>
+                <Select
+                    value={`${per_page}`}
+                    onValueChange={(value) => goToPage(1, Number(value))}
+                >
+                    <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue placeholder={`${per_page}`} />
+                    </SelectTrigger>
+                    <SelectContent side="top">
+                        {perPageOptions.map((pageSize) => (
+                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                                {pageSize}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
-            <div className="flex items-center space-x-6 lg:space-x-8">
-                {/* 🔹 Selector de filas por página */}
-                <div className="flex items-center space-x-2">
-                    <p className="text-sm font-medium">Filas por página</p>
-                    <Select
-                        value={`${per_page}`}
-                        onValueChange={(value) => goToPage(1, Number(value))} // 👈 siempre reinicia a la página 1
-                    >
-                        <SelectTrigger className="h-8 w-[70px]">
-                            <SelectValue placeholder={`${per_page}`} />
-                        </SelectTrigger>
-                        <SelectContent side="top">
-                            {perPageOptions.map((pageSize) => (
-                                <SelectItem
-                                    key={pageSize}
-                                    value={`${pageSize}`}
-                                >
-                                    {pageSize}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* 🔹 Indicador de página */}
-                <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+            {/* 🔹 Indicador de página + controles juntos */}
+            <div className="flex items-center gap-2">
+                <div className="text-sm font-medium whitespace-nowrap">
                     Página {current_page} de {last_page}
                 </div>
 
-                {/* 🔹 Controles de paginación */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                     <Button
                         variant="outline"
                         className="hidden h-8 w-8 p-0 lg:flex"
@@ -121,5 +118,6 @@ export function DataTablePagination<TData>({
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 }

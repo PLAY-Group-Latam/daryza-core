@@ -13,16 +13,27 @@ class UserController extends Controller
 {
     public function __construct(protected UserService $userService) {}
 
-    public function index()
-    {
-        $perPage = request()->input('per_page', 10);
-        $paginatedUsers = User::orderBy('id', 'desc')->paginate($perPage);
+   public function index()
+{
+    $perPage = request()->input('per_page', 10);
+    $search = request()->input('search');
 
-        return Inertia::render('users/Index', [
-            'paginatedUsers' => $paginatedUsers,
-        ]);
-    }
+    $paginatedUsers = User::query()
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('email', 'ilike', "%{$search}%");
+            });
+        })
+        ->orderBy('id', 'desc')
+        ->paginate($perPage)
+        ->withQueryString();
 
+    return Inertia::render('users/Index', [
+        'paginatedUsers' => $paginatedUsers,
+        'filters' => ['search' => $search], 
+    ]);
+}
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $this->userService->create($request->validated());

@@ -7,7 +7,7 @@ import {
     DynamicCategory,
     PaginatedDynamicCategories,
 } from '@/types/products/dynamicCategories';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Calendar, Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -117,7 +117,6 @@ const columns: ColumnDef<DynamicCategory>[] = [
                     <ConfirmDeleteAlert
                         resourceId={category.id}
                         resourceName={category.name}
-                        // Usamos el namespace de rutas para categorías dinámicas
                         routes={products.dynamicCategories}
                         trigger={
                             <Button
@@ -138,6 +137,8 @@ const columns: ColumnDef<DynamicCategory>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
+    const { filters } = usePage<{ filters: any }>().props;
+
     if (!data || !data.data) {
         return (
             <div className="p-4 text-center text-gray-500">
@@ -146,11 +147,30 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
+    const handleSearch = (value: string) => {
+        const params: any = { per_page: data.per_page };
+        
+        if (value && value.trim() !== "") {
+            params.search = value;
+        }
+
+        router.get(
+            '/productos/categorias-dinamicas', 
+            params,
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedCategories', 'filters'],
+            }
+        );
+    };
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['name', 'slug']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search || ''}
             placeholder="Buscar por nombre o slug..."
         />
     );

@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TableList } from '@/components/custom-ui/paymentmethods/TableList';
 
-
+// 🚀 Cambiamos la interfaz para que acepte el objeto paginado y los filtros
 interface Props {
-    paymentMethods: PaymentMethod[];
+    paginatedPaymentMethods: Paginated<PaymentMethod>;
+    filters?: { search?: string };
 }
 
-export default function PaymentMethodsList({ paymentMethods }: Props) {
+export default function PaymentMethodsList({ paginatedPaymentMethods, filters }: Props) {
   
     return (
         <AppLayout >
@@ -21,7 +22,6 @@ export default function PaymentMethodsList({ paymentMethods }: Props) {
                 <div className="flex items-center justify-between">
                     <div className="text-lg font-bold lg:text-2xl">Lista de Métodos de Pago</div>
                     
-                    {/* Botón de creación movido aquí para seguir el estilo de Scripts */}
                     <Button onClick={() => router.visit('/metodos-de-pago/crear')}>
                         <Plus className="mr-2 h-4 w-4" />
                         Nueva Cuenta Bancaria
@@ -29,7 +29,8 @@ export default function PaymentMethodsList({ paymentMethods }: Props) {
                 </div>
 
                 <div className="flex flex-col gap-6">
-                    <TableList data={paymentMethods} />
+                    {/* 🚀 Pasamos la data paginada y los filtros al TableList */}
+                    <TableList data={paginatedPaymentMethods} filters={filters} />
                 </div>
             </div>
         </AppLayout>

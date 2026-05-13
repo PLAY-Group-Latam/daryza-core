@@ -1,75 +1,53 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { 
-    getCoreRowModel, 
-    getFilteredRowModel, 
-    getPaginationRowModel, 
-    useReactTable 
-} from '@tanstack/react-table';
+'use client';
 
+import { DataTable } from '@/components/custom-ui/tables/DataTable';
 import { Seo } from '@/types/seo/Seo';
-import { useEffect, useState, useMemo } from 'react';
-import { DataTable } from '@/components/data-table';
-import { DataTablePagination } from '@/components/data-table-pagination';
-import { Input } from '@/components/ui/input';
+import { router } from '@inertiajs/react';
+import { useMemo } from 'react';
 import { columns } from './columns';
 
-export function TableList({ data: defaultData, meta }: { data: Seo[]; meta: any }) {
-    const [data, setData] = useState<Seo[]>(() => [...defaultData]);
-    const [globalFilter, setGlobalFilter] = useState('');
+interface TableListProps {
+    data: Paginated<Seo>;
+    filters?: {
+        search?: string;
+    };
+}
 
-    // Sincronizar estado local si las props cambian (ej. al cambiar de página)
-    useEffect(() => {
-        setData(defaultData);
-    }, [defaultData]);
+export function TableList({ data, filters }: TableListProps) {
+    // Si la data no existe o el objeto está vacío, evitamos el renderizado
+    if (!data || !data.data) return null;
 
-    /**
-     * Función que pasamos a las columnas para que, al eliminar un registro
-     * exitosamente en el backend, lo quitemos de la vista inmediatamente.
-     */
+    // Función para manejar la eliminación (Inertia refrescará la prop 'data' automáticamente)
     const handleDelete = (id: string) => {
-        setData((prev) => prev.filter((item) => item.id !== id));
+        // Generalmente aquí ejecutarías router.delete(...) 
+        // o lo manejarías dentro de los componentes de acción en las columnas
     };
 
-    /**
-     * Importante: Como 'columns' ahora es una función (onDelete) => ColumnDef[],
-     * debemos ejecutarla para obtener el array que useReactTable espera.
-     * Usamos useMemo para que no se recalculen las definiciones en cada render innecesariamente.
-     */
+    // Memorizamos las columnas
     const tableColumns = useMemo(() => columns(handleDelete), []);
 
-    const table = useReactTable({
-        data,
-        columns: tableColumns,
-        state: {
-            globalFilter,
-            pagination: {
-                pageIndex: meta.current_page - 1, // TanStack es base 0
-                pageSize: meta.per_page,
-            },
-        },
-        manualPagination: true,
-        pageCount: meta.last_page,
-
-        onGlobalFilterChange: setGlobalFilter,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
+    // Lógica de búsqueda por servidor (Pattern consistente con Applications/Users)
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedSeo', 'filters'], // Asegúrate que 'paginatedSeo' coincida con tu Controller
+            }
+        );
+    };
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center py-4">
-                <Input
-                    placeholder="Filtrar por página o título..."
-                    value={globalFilter ?? ''}
-                    onChange={(event) => setGlobalFilter(event.target.value)}
-                    className="max-w-sm"
-                />
-            </div>
-            <div className="rounded-md border">
-                <DataTable table={table} />
-            </div>
-            <DataTablePagination table={table} meta={meta} />
+        <div className="p-0">
+            <DataTable<Seo>
+                columns={tableColumns}
+                data={data}
+                onSearch={handleSearch}
+                initialSearch={filters?.search ?? ''}
+                placeholder="Buscar por título de página o meta title..."
+            />
         </div>
     );
 }

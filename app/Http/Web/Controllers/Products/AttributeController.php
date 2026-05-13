@@ -15,21 +15,38 @@ use Inertia\Inertia;
 
 class AttributeController extends Controller
 {
-  public function index()
-  {
-    $perPage = request()->input('per_page', 10);
+ public function index(Request $request)
+{
+    // Capturamos filtros
+    $perPage = $request->integer('per_page', 10);
+    $search = $request->string('search')->trim()->value();
 
     $attributes = Attribute::with('values')
-      ->latest()
-      ->paginate($perPage);
-
-    // Log::info('Lista de atributos: ' . json_encode($attributes->toArray()));
-
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                // Búsqueda por nombre del atributo
+                $q->where('name', 'ilike', "%{$search}%")
+                  // Búsqueda por el tipo de uso (traduciendo lógica de boolean)
+                  ->orWhere(function ($sub) use ($search) {
+                      if (str_contains(strtolower('variante'), strtolower($search))) {
+                          $sub->where('is_variant', true);
+                      } elseif (str_contains(strtolower('especificación'), strtolower($search))) {
+                          $sub->where('is_variant', false);
+                      }
+                  });
+            });
+        })
+        ->latest()
+        ->paginate($perPage)
+        ->withQueryString(); // Importante para mantener el search en los links de paginación
 
     return Inertia::render('products/attributes/Index', [
-      'paginatedAttributes' => $attributes,
+        'paginatedAttributes' => $attributes,
+        'filters' => [
+            'search' => $search,
+        ],
     ]);
-  }
+}
 
   /**
    * Página para crear atributo

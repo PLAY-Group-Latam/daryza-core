@@ -5,8 +5,10 @@ import { Head, usePage } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 
 export default function Index() {
-    const { paginatedCustomers } = usePage<{
+    // Extraemos paginatedCustomers y los filtros del objeto props de usePage
+    const { paginatedCustomers, filters } = usePage<{
         paginatedCustomers: PaginatedCustomers;
+        filters: any;
     }>().props;
     return (
         <AppLayout>

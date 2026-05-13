@@ -19,17 +19,27 @@ class BrandController extends Controller
     ) {}
 
     public function index(): Response
-    {
-        $perPage = request()->integer('per_page', 10);
+{
+    $perPage = request()->integer('per_page', 10);
+    $search = request()->string('search')->trim()->value();
 
-        $brands = Brand::latest()
-            ->paginate($perPage)
-            ->withQueryString();
+    $brands = Brand::latest()
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%");
+            });
+        })
+        ->paginate($perPage)
+        ->withQueryString();
 
-        return Inertia::render('products/brands/Index', [
-            'paginatedBrands' => $brands,
-        ]);
-    }
+    return Inertia::render('products/brands/Index', [
+        'paginatedBrands' => $brands,
+        'filters' => [
+            'search' => $search,
+        ],
+    ]);
+}
 
     public function create(): Response
     {
