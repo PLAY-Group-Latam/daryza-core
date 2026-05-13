@@ -17,15 +17,22 @@ class LandingService
         protected GcsService $gcs
     ) {}
 
-    public function getPaginated(int $perPage = 10): LengthAwarePaginator
-    {
-        return Landing::query()
-            ->withCount('leads')
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+public function getPaginated(int $perPage = 10, array $filters = []): LengthAwarePaginator
+{
+    $query = Landing::query()->withCount('leads');
+
+    if (!empty($filters['search'])) {
+        $search = "%" . trim($filters['search']) . "%";
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'ilike', $search)
+              ->orWhere('slug', 'ilike', $search);
+        });
     }
 
+    return $query->latest()
+        ->paginate($perPage)
+        ->withQueryString();
+}
     public function save(array $data, ?Landing $landing = null): Landing
     {
         $metadata = $data['metadata'] ?? [];

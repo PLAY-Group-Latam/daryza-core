@@ -6,12 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Landing } from '@/types/landings';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react'; // 👈 Importamos router
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash, Users } from 'lucide-react';
 
 interface Props {
     data: Paginated<Landing>;
+    filters?: { search?: string }; // 👈 Agregamos filters
 }
 
 const routes = {
@@ -22,6 +23,7 @@ const routes = {
 };
 
 export const columns: ColumnDef<Landing>[] = [
+    // ... tus columnas se mantienen exactamente igual
     {
         accessorKey: 'title',
         header: 'Título',
@@ -121,12 +123,27 @@ export const columns: ColumnDef<Landing>[] = [
     },
 ];
 
-export default function TableList({ data }: Props) {
+export default function TableList({ data, filters }: Props) {
+    
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedLandings', 'filters'],
+            }
+        );
+    };
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['title', 'slug']}
+         
+            onSearch={handleSearch}
+            initialSearch={filters?.search ?? ''}
             placeholder="Buscar por título o slug..."
         />
     );

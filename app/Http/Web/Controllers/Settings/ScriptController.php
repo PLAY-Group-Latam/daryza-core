@@ -12,21 +12,19 @@ class ScriptController extends Controller
 {
     public function __construct(protected ScriptService $service) {}
 
-    public function index(Request $request)
-    {
-        $scripts = $this->service->paginate($request->query('per_page', 10));
+  public function index(Request $request)
+{
+    $perPage = (int) $request->query('per_page', 10);
+    $search = $request->query('search');
 
-        return Inertia::render('scripts/content-list', [
-            'scripts' => $scripts->items(),
-            'meta' => [
-                'current_page' => $scripts->currentPage(),
-                'last_page'    => $scripts->lastPage(),
-                'per_page'     => $scripts->perPage(),
-                'total'        => $scripts->total(),
-            ],
-        ]);
-    }
+    // Pasamos ambos parámetros al service
+    $paginatedScripts = $this->service->paginate($perPage, $search);
 
+    return Inertia::render('scripts/content-list', [
+        'paginatedScripts' => $paginatedScripts,
+        'filters' => ['search' => $search],
+    ]);
+}
     public function create()
     {
         return Inertia::render('scripts/createScript');

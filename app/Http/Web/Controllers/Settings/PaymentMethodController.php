@@ -8,6 +8,7 @@ use App\Http\Web\Requests\Settings\PayMethodsRequest;
 use App\Models\Settings\PaymentMethod;
 use App\Enums\Currency\CurrencyType; 
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,12 +18,27 @@ class PaymentMethodController extends Controller
         protected PaymenMethodsService $service
     ) {}
 
-    public function index(): Response
-    {
-        return Inertia::render('paymentmethods/Index', [
-            'paymentMethods' => $this->service->getAll()
-        ]);
-    }
+public function index(Request $request): Response
+{
+    $perPage = (int) $request->input('per_page', 10);
+    $search = $request->input('search');
+
+    $paginatedPaymentMethods = PaymentMethod::query()
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('account_number', 'ilike', "%{$search}%");
+            });
+        })
+        ->latest()
+        ->paginate($perPage)
+        ->withQueryString();
+
+    return Inertia::render('paymentmethods/Index', [
+        'paginatedPaymentMethods' => $paginatedPaymentMethods,
+        'filters' => ['search' => $search],
+    ]);
+}
 
     public function create(): Response
     {

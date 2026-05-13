@@ -1,7 +1,10 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import users from '@/routes/users';
 import { User } from '@/types/user';
+import { router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
@@ -10,11 +13,20 @@ import { CreateOrUpdateUserModal } from './CreateOrUpdateUserModal';
 
 interface TableListProps {
     data: Paginated<User>;
+    filters?: {
+        search?: string;
+    };
 }
 
 export const columns: ColumnDef<User>[] = [
-    { accessorKey: 'name', header: 'Nombre' },
-    { accessorKey: 'email', header: 'Email' },
+    { 
+        accessorKey: 'name', 
+        header: 'Nombre' 
+    },
+    { 
+        accessorKey: 'email', 
+        header: 'Email' 
+    },
     {
         accessorKey: 'created_at',
         header: 'Creado el',
@@ -22,7 +34,6 @@ export const columns: ColumnDef<User>[] = [
             <span>{formatDate(row.original.created_at, true)}</span>
         ),
     },
-
     {
         accessorKey: 'updated_at',
         header: 'Actualizado el',
@@ -73,13 +84,27 @@ export const columns: ColumnDef<User>[] = [
     },
 ];
 
-export default function TableList({ data }: TableListProps) {
+export default function TableList({ data, filters }: TableListProps) {
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedUsers', 'filters'],
+            }
+        );
+    };
+
     if (!data) return null;
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['name', 'email']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search ?? ''}
             placeholder="Buscar por nombre o email..."
         />
     );

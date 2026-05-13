@@ -24,21 +24,19 @@ class SeoController extends Controller
     /**
      * Listar SEO de páginas
      */
-    public function index(Request $request)
-    {
-        $perPage = (int) $request->query('per_page', 10);
-        $seoPaginated = $this->seoService->getAllPaginated($perPage);
+  public function index(Request $request)
+{
+    $perPage = (int) $request->query('per_page', 10);
+    $search = $request->query('search');
 
-        return Inertia::render('seos/Index', [
-            'seoItems' => $seoPaginated->items(),
-            'meta' => [
-                'current_page' => $seoPaginated->currentPage(),
-                'last_page'    => $seoPaginated->lastPage(),
-                'per_page'     => $seoPaginated->perPage(),
-                'total'        => $seoPaginated->total(),
-            ],
-        ]);
-    }
+    // Pasamos el search al servicio
+    $paginatedSeo = $this->seoService->getAllPaginated($perPage, $search);
+
+    return Inertia::render('seos/Index', [
+        'paginatedSeo' => $paginatedSeo,
+        'filters' => ['search' => $search],
+    ]);
+}
 
     /**
      * Ver un SEO específico (lectura)

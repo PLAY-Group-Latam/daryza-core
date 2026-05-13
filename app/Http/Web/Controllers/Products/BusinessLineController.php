@@ -18,18 +18,28 @@ class BusinessLineController extends Controller
         protected BusinessLineService $businessLineService,
     ) {}
 
-    public function index(): Response
-    {
-        $perPage = request()->integer('per_page', 10);
+  public function index(): Response
+{
+    $perPage = request()->integer('per_page', 10);
+    $search = request()->string('search')->trim()->value();
 
-        $businessLines = BusinessLine::latest()
-            ->paginate($perPage)
-            ->withQueryString();
+    $businessLines = BusinessLine::latest()
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%");
+            });
+        })
+        ->paginate($perPage)
+        ->withQueryString();
 
-        return Inertia::render('products/businessLines/Index', [
-            'paginatedBusinessLines' => $businessLines,
-        ]);
-    }
+    return Inertia::render('products/businessLines/Index', [
+        'paginatedBusinessLines' => $businessLines,
+        'filters' => [
+            'search' => $search,
+        ],
+    ]);
+}
 
     public function create(): Response
     {
