@@ -3,93 +3,58 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Trash2Icon, UploadIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
-import {
-    type AcceptedFormat,
-    type UploadPreset,
-    type UploadValidationConfig,
-    formatsToAccept,
-    resolveConfig,
-    validateFile,
-} from '../../hooks/upload-presets';
 
 interface UploadProps {
     onFileChange?: (file: File | null) => void;
     value?: File | string | null;
     previewClassName?: string;
+    accept?: string;
     placeholder?: string;
     type?: 'image' | 'video';
-    // ── Validación ──────────────────────────────────────────
-    preset?: UploadPreset;
-    formats?: AcceptedFormat[];
-    maxSizeMB?: number;
-    mediaType?: 'image' | 'video';
 }
 
-function getInitialPreview(value: File | string | null | undefined): string | null {
+function getInitialPreview(
+    value: File | string | null | undefined,
+): string | null {
     if (typeof value === 'string') return value;
     if (value instanceof File) return URL.createObjectURL(value);
     return null;
-}
-
-function buildHint(config: UploadValidationConfig): string {
-    const fmts = config.formats
-        .filter((f) => f !== 'jpeg' && f !== 'tif')
-        .map((f) => f.toUpperCase())
-        .join(', ');
-    return `${fmts} · máx. ${config.maxSizeMB} MB`;
 }
 
 export function Upload({
     onFileChange,
     value,
     previewClassName,
+    accept = 'image/*',
     placeholder,
     type = 'image',
-    preset,
-    formats,
-    maxSizeMB,
-    mediaType,
 }: UploadProps) {
-    const config = resolveConfig(preset, {
-        ...(formats   ? { formats }   : {}),
-        ...(maxSizeMB ? { maxSizeMB } : {}),
-        ...(mediaType ? { mediaType } : {}),
-    });
-
-    const accept = formatsToAccept(config.formats);
-    const isVideo = config.mediaType === 'video' || type === 'video';
-
     const [localPreview, setLocalPreview] = useState<string | null>(() =>
         getInitialPreview(value),
     );
-    const [error, setError] = useState<string | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    // Preview final: archivo local elegido por el usuario, o el value externo
     const preview = localPreview ?? getInitialPreview(value);
-    const resolvedPlaceholder = placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
-        if (!file) return;
-
-        const err = validateFile(file, config);
-        if (err) {
-            setError(err);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
+        if (file) {
+            setLocalPreview(URL.createObjectURL(file));
+            onFileChange?.(file);
         }
-
-        setError(null);
-        setLocalPreview(URL.createObjectURL(file));
-        onFileChange?.(file);
     };
 
     const handleRemove = () => {
         setLocalPreview(null);
-        setError(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         onFileChange?.(null);
     };
+
+    const isVideo = type === 'video' || accept.includes('video');
+    const resolvedPlaceholder =
+        placeholder ?? (isVideo ? 'Subir video' : 'Subir imagen');
 
     return (
         <div className="flex flex-col gap-3">
@@ -148,14 +113,9 @@ export function Upload({
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <UploadIcon className="h-6 w-6 text-slate-400" />
-                    <span className="text-sm text-slate-500">{resolvedPlaceholder}</span>
-                    {/* Línea de restricciones — solo cuando hay config */}
-                    {(preset || formats || maxSizeMB) && (
-                        <span className="text-[11px] text-slate-400">{buildHint(config)}</span>
-                    )}
-                    {error && (
-                        <span className="text-[11px] text-red-500">{error}</span>
-                    )}
+                    <span className="text-sm text-slate-500">
+                        {resolvedPlaceholder}
+                    </span>
                 </div>
             )}
 

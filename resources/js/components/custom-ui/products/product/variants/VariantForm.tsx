@@ -547,7 +547,7 @@ export function VariantForm({
                                     variant="outline"
                                     onClick={() => openSheetForCreate(false)}
                                     disabled={selectedIds.length === 0}
-                                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-5 py-2 text-sm text-slate-600 hover:border-emerald-400 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-5 py-2 text-sm text-slate-600 hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <span>+</span> Agregar Variante
                                 </Button>

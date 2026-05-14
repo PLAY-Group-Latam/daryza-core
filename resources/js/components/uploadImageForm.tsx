@@ -3,46 +3,18 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Trash2Icon, UploadIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import {
-    type AcceptedFormat,
-    type UploadPreset,
-    formatsToAccept,
-    resolveConfig,
-    validateFile,
-} from '../hooks/upload-presets';
 
 interface UploadProps {
     onFileChange?: (file: File | null) => void;
     value?: File | string | null;
     previewClassName?: string;
-    // ── Validación ──────────────────────────────────────────
-    preset?: UploadPreset;
-    formats?: AcceptedFormat[];
-    maxSizeMB?: number;
 }
 
 export function UploadImageForm({
     onFileChange,
     value,
     previewClassName,
-    preset,
-    formats,
-    maxSizeMB,
 }: UploadProps) {
-    const config = resolveConfig(preset, {
-        ...(formats   ? { formats }   : {}),
-        ...(maxSizeMB ? { maxSizeMB } : {}),
-    });
-
-    const accept = formatsToAccept(config.formats);
-    const showHint = !!(preset || formats || maxSizeMB);
-    const hint = showHint
-        ? config.formats
-              .filter((f) => f !== 'jpeg' && f !== 'tif')
-              .map((f) => f.toUpperCase())
-              .join(', ') + ` · máx. ${config.maxSizeMB} MB`
-        : null;
-
     const [preview, setPreview] = useState<string | null>(
         typeof value === 'string'
             ? value
@@ -50,10 +22,11 @@ export function UploadImageForm({
               ? URL.createObjectURL(value)
               : null,
     );
-    const [error, setError] = useState<string | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (typeof value === 'string') setPreview(value);
         if (value instanceof File) setPreview(URL.createObjectURL(value));
         if (!value) setPreview(null);
@@ -61,23 +34,14 @@ export function UploadImageForm({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
-        if (!file) return;
-
-        const err = validateFile(file, config);
-        if (err) {
-            setError(err);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
+        if (file) {
+            setPreview(URL.createObjectURL(file));
+            onFileChange?.(file);
         }
-
-        setError(null);
-        setPreview(URL.createObjectURL(file));
-        onFileChange?.(file);
     };
 
     const handleRemove = () => {
         setPreview(null);
-        setError(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         onFileChange?.(null);
     };
@@ -134,26 +98,25 @@ export function UploadImageForm({
                     <span className="text-center text-sm text-muted-foreground">
                         Subir imagen
                     </span>
-                    {hint && (
-                        <span className="text-center text-[11px] text-muted-foreground/70">
-                            {hint}
-                        </span>
-                    )}
-                    {error && (
-                        <span className="text-center text-[11px] text-red-500">
-                            {error}
-                        </span>
-                    )}
                 </div>
             )}
 
+            {/* input real oculto */}
             <Input
                 type="file"
-                accept={accept}
+                accept="image/*"
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleChange}
             />
+
+            {/* botón para reemplazar si ya hay imagen */}
+            {/* {preview && (
+                <Button type="button" variant="secondary" className="w-fit" size="sm" onClick={() => fileInputRef.current?.click()}>
+                    <UploadIcon className="mr-2 h-4 w-4" />
+                    Reemplazar imagen
+                </Button>
+            )} */}
         </div>
     );
 }
