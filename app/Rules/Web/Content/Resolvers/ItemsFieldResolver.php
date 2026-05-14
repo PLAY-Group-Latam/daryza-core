@@ -19,20 +19,14 @@ class ItemsFieldResolver
             return $rules;
         }
 
-        // Detectamos el tipo mirando las keys del primer item
-        $firstItem = $val[array_key_first($val)];
+        $firstItem     = $val[array_key_first($val)];
         $isProductItem = is_array($firstItem) && array_key_exists('product_id', $firstItem);
 
         foreach ($val as $i => $item) {
             if ($isProductItem) {
-                // Items de productos del blog
-                $rules["{$key}.{$i}.product_id"]   = 'required|string';
-                $rules["{$key}.{$i}.product_name"] = 'required|string';
-                $rules["{$key}.{$i}.sku"]          = 'required|string';
-                $rules["{$key}.{$i}.active_price"] = 'nullable';
-                $rules["{$key}.{$i}.image"]        = 'nullable';
+                // Solo validamos el ID, el resto no llega ni se guarda
+                $rules["{$key}.{$i}.product_id"] = 'required|string';
             } else {
-                // Items de imágenes promocionales
                 $rules["{$key}.{$i}.id"] = 'required';
 
                 if (array_key_exists('src', $item)) {

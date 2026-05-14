@@ -299,7 +299,7 @@ export default function OrdersTableList({
                         {row.original.payment_method_type === 'bank_transfer'
                             ? 'Transferencia bancaria'
                             : row.original.payment_method_type === 'niubiz'
-                              ? 'Niubiz'
+                              ? 'Tarjeta de Crédito / Débito o QR'
                               : '-'}
                     </span>
                 ),

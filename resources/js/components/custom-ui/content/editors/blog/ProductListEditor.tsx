@@ -4,43 +4,67 @@ import { Button } from '@/components/ui/button';
 import { ProductLite, TypedSectionProps } from '@/types/content/content';
 import { useForm } from '@inertiajs/react';
 import { GripVertical, LayoutList, Package, Save, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BlogProductSearch } from './BlogProductSearch';
 
-// URL indestructible de respaldo
 const DEFAULT_IMAGE =
     'https://placehold.co/400x400/f1f5f9/94a3b8?text=Producto';
 
 type Props = TypedSectionProps<'blog_products'> & {
     searchResults?: ProductLite[];
+    initialProducts?: ProductLite[]; 
 };
 
 export default function ProductListEditor({
     section,
     searchResults = [],
+    initialProducts = [],
 }: Props) {
-    const initialItems: ProductLite[] = section.content?.content.items ?? [];
+    const initialItems = section.content?.content.items ?? [];
 
+    // --- ESTADO DE FORMULARIO ---
     const { data, setData, put, processing, transform } = useForm({
         items: initialItems,
     });
 
+    // --- MEMORIA LOCAL (CACHÉ) ---
+    // Guardamos los objetos completos de los productos para que no dependan solo de searchResults
+    const [selectedProductsCache, setSelectedProductsCache] = useState<ProductLite[]>(initialProducts);
+
     useEffect(() => {
         const items = section.content?.content.items;
-
         if (!items) return;
-
         setData('items', items);
     }, [section.content, setData]);
+
+    // MAPA DE REFERENCIA ACTUALIZADO:
+    // Prioriza la caché local + resultados actuales + data inicial del controlador
+    const searchMap = new Map<string, ProductLite>(
+        [...initialProducts, ...selectedProductsCache, ...searchResults].map((p) => [p.product_id, p])
+    );
+
+    // DATA PARA MOSTRAR: Mapea los IDs guardados con la data real disponible en el Mapa
+    const displayItems = data.items.map((stored: any) => {
+        const freshData = searchMap.get(stored.product_id);
+        return {
+            ...stored,
+            ...(freshData ?? {}), 
+        };
+    });
 
     const addProduct = (product: ProductLite) => {
         const exists = data.items.some(
             (item: any) => item.product_id === product.product_id,
         );
+        
         if (exists) return toast.warning('Este producto ya está en la lista');
 
-        const newItems = [...data.items, product] as any;
+        // 1. Guardamos el objeto completo en la caché para que no se pierda al limpiar la búsqueda
+        setSelectedProductsCache(prev => [...prev, product]);
+
+        // 2. Guardamos solo el ID en el formulario (que es lo que va a la DB)
+        const newItems = [...data.items, { product_id: product.product_id }] as any;
         setData('items', newItems);
     };
 
@@ -49,6 +73,8 @@ export default function ProductListEditor({
             'items',
             data.items.filter((item: any) => item.product_id !== id) as any,
         );
+        // Opcional: limpiar de la caché también
+        setSelectedProductsCache(prev => prev.filter(p => p.product_id !== id));
         toast.info('Producto removido de la lista');
     };
 
@@ -62,6 +88,7 @@ export default function ProductListEditor({
             `/content/update/${section.page.slug}/${section.type}/${section.id}`,
             {
                 preserveScroll: true,
+                onSuccess: () => toast.success('Lista de productos actualizada'),
             },
         );
     };
@@ -77,9 +104,7 @@ export default function ProductListEditor({
                         Panel de Productos
                     </h2>
                     <p className="text-sm text-slate-500">
-                        Agrega nuevos productos o quita los existentes. No se
-                        guardarán cambios en la web hasta que hagas clic en el
-                        botón inferior.
+                        Agrega nuevos productos o quita los existentes.
                     </p>
                 </div>
 
@@ -106,7 +131,7 @@ export default function ProductListEditor({
                     </div>
                 ) : (
                     <div className="grid gap-2">
-                        {data.items.map((product: any) => (
+                        {displayItems.map((product: any) => (
                             <div
                                 key={product.product_id}
                                 className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition-all hover:border-primary/40"
@@ -115,37 +140,27 @@ export default function ProductListEditor({
                                     <GripVertical size={18} />
                                 </div>
 
-                                {/* CONTENEDOR DE IMAGEN CON CONDICIONAL Y ONERROR */}
                                 <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                                     <img
-                                        src={
-                                            product.image &&
-                                            product.image.trim() !== ''
-                                                ? product.image
-                                                : DEFAULT_IMAGE
-                                        }
+                                        src={product.image || DEFAULT_IMAGE}
                                         className="h-full w-full object-cover"
-                                        alt={product.product_name}
+                                        alt={product.product_name ?? 'Producto'}
                                         onError={(e) => {
-                                            const target =
-                                                e.target as HTMLImageElement;
-                                            if (target.src !== DEFAULT_IMAGE) {
-                                                target.src = DEFAULT_IMAGE;
-                                            }
+                                            (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
                                         }}
                                     />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
                                     <h4 className="truncate text-sm leading-tight font-bold text-slate-900">
-                                        {product.product_name}
+                                        {product.product_name ?? 'Cargando producto...'}
                                     </h4>
                                     <div className="flex items-center gap-3">
                                         <span className="font-mono text-[10px] text-slate-400 uppercase">
-                                            SKU: {product.sku}
+                                            SKU: {product.sku ?? '---'}
                                         </span>
                                         <span className="text-xs font-bold text-slate-700">
-                                            ${product.active_price}
+                                            {product.active_price ? `$${product.active_price}` : '---'}
                                         </span>
                                     </div>
                                 </div>
@@ -154,9 +169,7 @@ export default function ProductListEditor({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() =>
-                                        removeProduct(product.product_id)
-                                    }
+                                    onClick={() => removeProduct(product.product_id)}
                                     className="h-9 w-9 rounded-full text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
                                 >
                                     <Trash2 size={18} />

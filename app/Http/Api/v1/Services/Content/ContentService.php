@@ -111,36 +111,82 @@ class ContentService
         return $normalized;
     }
 
-    /**
-     * Obtiene todo el contenido de una página
-     */
-    public function getPageFullContent(string $slug): array
-    {
-        $sections = PageSection::with('content')
-            ->whereHas('page', function ($query) use ($slug) {
-                $query->where('slug', $slug);
-            })
-            ->orderBy('sort_order', 'asc')
-            ->get();
+ 
+public function getPageFullContent(string $slug): array
+{
+    $sections = \App\Models\Content\PageSection::with('content')
+        ->whereHas('page', function ($query) use ($slug) {
+            $query->where('slug', $slug);
+        })
+        ->orderBy('sort_order', 'asc')
+        ->get();
 
-        return $sections->mapWithKeys(function ($section) {
-            $content = $section->content->content ?? [];
+    return $sections->mapWithKeys(function ($section) {
+        $content = $section->content->content ?? [];
 
-            if (empty($content)) {
-                return [$section->type => new \stdClass()]; 
-            }
+        // 1. Control de contenido vacío
+        if (empty($content)) {
+            return [$section->type => new \stdClass()]; 
+        }
 
-            if (isset($content['is_visible'])) {
-                $isVisible = filter_var($content['is_visible'], FILTER_VALIDATE_BOOLEAN);
-                if (!$isVisible) return [$section->type => new \stdClass()];
-            }
+        // 2. Control de visibilidad
+        if (isset($content['is_visible'])) {
+            $isVisible = filter_var($content['is_visible'], FILTER_VALIDATE_BOOLEAN);
+            if (!$isVisible) return [$section->type => new \stdClass()];
+        }
 
-            // ✅ Normalizar media también aquí si es necesario
-            if (isset($content['media']) && is_array($content['media'])) {
-                $content['media'] = $this->normalizeMediaArray($content['media']);
-            }
+        // 3. Lógica específica para PRODUCTOS (Secciones como blog_products)
+        if ($section->type === 'blog_products' && isset($content['items'])) {
+            $productIds = collect($content['items'])->pluck('product_id')->toArray();
 
-            return [$section->type => $content];
-        })->toArray();
-    }
+            $products = \App\Models\Products\Product::whereIn('id', $productIds)
+                ->active()
+                ->with(['mainVariant.mainImage'])
+                ->get()
+                ->map(function ($product) {
+                    $variant = $product->mainVariant;
+                    
+                    // Lógica de validación de promoción activa (coincide con tu scopeOnPromoActive)
+                    $isPromoActuallyActive = false;
+                    if ($variant) {
+                        $now = now();
+                        $isPromoActuallyActive = $variant->is_on_promo &&
+                            (!$variant->promo_start_at || $variant->promo_start_at <= $now) &&
+                            (!$variant->promo_end_at || $variant->promo_end_at > $now);
+                    }
+
+                    return [
+                        'id'   => $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'itemType' => 'product',
+                        'main_image' => [
+                            'id'        => $variant?->mainImage?->id ?? $product->id,
+                            'file_path' => $variant?->mainImage?->file_path ?? '/placeholder.png', 
+                        ],
+                        'main_variant' => $variant ? [
+                            'id'             => $variant->id,
+                            'sku'            => $variant->sku,
+                            'price'          => $variant->price,
+                            'promo_price'    => $variant->promo_price,
+                            'active_price'   => $variant->active_price, // El accessor del modelo ya usa la lógica de tiempo
+                            'is_on_promo'    => $isPromoActuallyActive, 
+                            'stock'          => $variant->stock,
+                            'promo_start_at' => $variant->promo_start_at?->toIso8601String(),
+                            'promo_end_at'   => $variant->promo_end_at?->toIso8601String(),
+                        ] : null,
+                    ];
+                });
+
+            return [$section->type => $products];
+        }
+
+        // 4. Lógica para Banners y otros tipos de contenido
+        if (isset($content['media']) && is_array($content['media'])) {
+            $content['media'] = $this->normalizeMediaArray($content['media']);
+        }
+
+        return [$section->type => $content];
+    })->toArray();
+}
 }
