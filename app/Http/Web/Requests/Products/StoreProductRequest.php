@@ -6,6 +6,7 @@ use App\Http\Web\Support\Products\VariantPayloadValidator;
 use App\Http\Web\Support\Products\PromotionPayloadValidator;
 use App\Models\Products\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreProductRequest extends FormRequest
