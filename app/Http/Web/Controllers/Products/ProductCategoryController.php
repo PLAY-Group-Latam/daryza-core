@@ -23,19 +23,26 @@ class ProductCategoryController extends Controller
     /**
      * Listar categorías (árbol completo)
      */
-    public function index(Request $request)
-    {
-        // 1. Extraemos los parámetros de la request
-        $perPage = $request->integer('per_page', 10);
+// ProductCategoryController.php
+public function index(Request $request)
+{
+    $search = $request->string('search')->trim()->value();
 
-        $paginatedTree = $this->categoryService->getPaginatedTree($perPage);
-        $treeForSelect = $this->categoryService->getActiveTreeForSelect();
+    $filters = [
+        'per_page' => $request->integer('per_page', 10),
+        'search'   => $search,
+    ];
 
-        return Inertia::render('products/categories/Index', [
-            'paginatedCategories' => $paginatedTree,
-            'categoriesForSelect'        => $treeForSelect,
-        ]);
-    }
+    // Si no hay búsqueda, nos aseguramos de que el servicio no reciba basura
+    $paginatedTree = $this->categoryService->getPaginatedTree($filters);
+    $treeForSelect = $this->categoryService->getActiveTreeForSelect();
+
+    return Inertia::render('products/categories/Index', [
+        'paginatedCategories' => $paginatedTree,
+        'categoriesForSelect' => $treeForSelect,
+        'filters'             => $filters, 
+    ]);
+}
     /**
      * Crear una categoría
      */

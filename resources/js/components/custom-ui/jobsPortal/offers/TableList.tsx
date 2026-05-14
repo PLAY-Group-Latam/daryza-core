@@ -122,7 +122,7 @@ export default function TableList({ data, filters }: TableListProps) {
                     { preserveState: true, preserveScroll: true },
                 )
             }
-            placeholder="Buscar por título o modalidad..."
+            placeholder="Buscar por título..."
         />
     );
 }

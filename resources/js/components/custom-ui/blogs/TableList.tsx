@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import blogs from '@/routes/blogs';
 import { Blog } from '@/types/blogs';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
@@ -13,6 +13,9 @@ import { DataTable } from '../tables/DataTable';
 
 interface TableListProps {
     data: Paginated<Blog>;
+    filters?: {
+        search?: string;
+    };
 }
 
 export const columns: ColumnDef<Blog>[] = [
@@ -31,7 +34,7 @@ export const columns: ColumnDef<Blog>[] = [
                     <a
                         href={publicUrl}
                         className="w-fit font-medium text-blue-600 hover:underline"
-                        target="_blank" // si quieres abrir en otra pestaña
+                        target="_blank"
                         rel="noopener noreferrer"
                     >
                         {publicUrl}
@@ -80,7 +83,6 @@ export const columns: ColumnDef<Blog>[] = [
 
             return (
                 <div className="flex items-center gap-2">
-                    {/* Editar */}
                     <Button type="button" variant="outline" size="icon" asChild>
                         <Link
                             href={blogs.items.edit(blog.id)}
@@ -90,7 +92,6 @@ export const columns: ColumnDef<Blog>[] = [
                         </Link>
                     </Button>
 
-                    {/* Eliminar */}
                     <ConfirmDeleteAlert
                         resourceId={blog.id}
                         resourceName={blog.title}
@@ -113,14 +114,27 @@ export const columns: ColumnDef<Blog>[] = [
     },
 ];
 
-export default function TableList({ data }: TableListProps) {
+export default function TableList({ data, filters }: TableListProps) {
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedBlogs', 'filters'],
+            }
+        );
+    };
+
     if (!data) return null;
 
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['title', 'author']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search ?? ''}
             placeholder="Buscar por título o autor..."
         />
     );

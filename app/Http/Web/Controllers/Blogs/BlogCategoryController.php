@@ -14,19 +14,26 @@ class BlogCategoryController extends Controller
    * Listado de categorías con paginación
    */
   public function index(Request $request)
-  {
+{
     $perPage = $request->input('per_page', 10);
+    $search = $request->input('search'); // 👈 Capturamos la búsqueda
 
-    // Traer categorías con posibilidad de ordenamiento por nombre
-    $categories = BlogCategory::latest()
-      ->paginate($perPage)
-      ->withQueryString();
+    $query = BlogCategory::query();
+
+   
+    if ($search) {
+        $query->where('name', 'ilike', "%" . trim($search) . "%");
+    }
+
+    $categories = $query->latest()
+        ->paginate($perPage)
+        ->withQueryString();
 
     return Inertia::render('blogs/categories/Index', [
-      'paginatedCategories' => $categories,
+        'paginatedCategories' => $categories,
+        'filters' => ['search' => $search], 
     ]);
-  }
-
+}
   /**
    * Mostrar una categoría específica
    */

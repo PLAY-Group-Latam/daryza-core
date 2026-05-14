@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import packs from '@/routes/products/packs';
 import { ProductPack } from '@/types/products/packs';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -19,17 +19,19 @@ const columns: ColumnDef<ProductPack>[] = [
     {
         accessorKey: 'name',
         header: 'Nombre del Pack',
+        cell: ({ row }) => (
+            <span className="font-medium">{row.original.name}</span>
+        ),
     },
     {
         accessorKey: 'price',
         header: 'Precio',
         cell: ({ row }) => (
-            <span className="font-medium">
+            <span className="font-medium text-green-700">
                 S/ {Number(row.original.price).toFixed(2)}
             </span>
         ),
     },
-
     {
         accessorKey: 'is_active',
         header: 'Estado',
@@ -39,14 +41,18 @@ const columns: ColumnDef<ProductPack>[] = [
         accessorKey: 'created_at',
         header: 'Creado el',
         cell: ({ row }) => (
-            <span>{formatDate(row.original.created_at, true)}</span>
+            <span className="text-sm text-gray-500">
+                {formatDate(row.original.created_at, true)}
+            </span>
         ),
     },
     {
         accessorKey: 'updated_at',
         header: 'Actualizado el',
         cell: ({ row }) => (
-            <span>{formatDate(row.original.updated_at, true)}</span>
+            <span className="text-sm text-gray-500">
+                {formatDate(row.original.updated_at, true)}
+            </span>
         ),
     },
     {
@@ -65,7 +71,7 @@ const columns: ColumnDef<ProductPack>[] = [
                         asChild
                     >
                         <Link href={packs.edit(pack.id)}>
-                            <Edit />
+                            <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
 
@@ -81,7 +87,7 @@ const columns: ColumnDef<ProductPack>[] = [
                                 className="bg-red-700!"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <Trash />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         }
                     />
@@ -92,7 +98,9 @@ const columns: ColumnDef<ProductPack>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
-    if (!data) {
+    const { filters } = usePage<{ filters: any }>().props;
+
+    if (!data || !data.data) {
         return (
             <div className="p-4 text-center text-gray-500">
                 No hay packs disponibles.
@@ -100,11 +108,30 @@ export default function TableList({ data }: TableListProps) {
         );
     }
 
+    const handleSearch = (value: string) => {
+        const params: any = { per_page: data.per_page };
+        
+        if (value && value.trim() !== "") {
+            params.search = value;
+        }
+
+        router.get(
+            '/productos/packs', 
+            params,
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedPacks', 'filters'],
+            }
+        );
+    };
+
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['name']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search || ''}
             placeholder="Buscar por nombre del pack..."
         />
     );

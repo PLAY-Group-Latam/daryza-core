@@ -6,13 +6,14 @@ import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 
 
-export default function SeoIndex({ seoItems, meta }: { seoItems: Seo[]; meta: any }) {
+export default function SeoIndex({ paginatedSeo, filters }: { paginatedSeo: Paginated<Seo>; filters: any }) {
     return (
-        <AppLayout >
+        <AppLayout>
             <Head title="SEO de Páginas" />
             <div className="p-4">
-                <div className="text-lg font-bold lg:text-2xl mb-4">Configuración de SEO</div>
-                <TableList data={seoItems} meta={meta} />
+                <div className="text-lg font-bold lg:text-2xl mb-4">Lista de SEO</div>
+                {/* Ahora pasamos la data paginada directamente */}
+                <TableList data={paginatedSeo} filters={filters} />
             </div>
         </AppLayout>
     );

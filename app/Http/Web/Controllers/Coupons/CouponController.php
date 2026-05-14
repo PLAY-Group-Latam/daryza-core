@@ -20,13 +20,18 @@ class CouponController extends Controller
 
     // ─── Index ────────────────────────────────────────────────
 
-   public function index(Request $request): Response
+public function index(Request $request): Response
 {
     $perPage = $request->integer('per_page', 10);
-    $coupons = $this->couponService->getPaginatedCoupons($perPage);
+    $search = $request->string('search')->trim()->value();
+
+    $coupons = $this->couponService->getPaginatedCoupons($perPage, $search);
 
     return Inertia::render('coupons/Index', [
         'coupons' => $coupons,
+        'filters' => [
+            'search' => $search,
+        ],
     ]);
 }
 

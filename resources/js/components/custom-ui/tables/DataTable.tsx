@@ -45,7 +45,7 @@ export function DataTable<T>({
     const isFirstRender = React.useRef(true);
     const lastSearchRef = React.useRef(initialSearch ?? '');
 
-    // Auto-genera el placeholder desde los searchKeys
+    // 1. Resolvemos el placeholder solo si se va a usar el buscador
     const resolvedPlaceholder = React.useMemo(() => {
         if (placeholder) return placeholder;
         if (searchKeys && searchKeys.length > 0) {
@@ -88,7 +88,6 @@ export function DataTable<T>({
         return data.data.filter((row) => {
             if (!row || typeof row !== 'object') return false;
 
-            // Si hay searchKeys, solo filtrar por esos campos
             const entries = searchKeys
                 ? searchKeys.flatMap((k) => {
                       if (typeof k === 'function') return [k(row)];
@@ -119,21 +118,32 @@ export function DataTable<T>({
 
     const rows = table.getRowModel().rows;
 
+    // Determinar si debemos mostrar la sección superior (barra de herramientas)
+    const showSearch = !!onSearch || (!!searchKeys && searchKeys.length > 0);
+    const showToolbar = showSearch || !!toolbarRight;
+
     return (
         <div className="w-full space-y-6">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <Input
-                    placeholder={resolvedPlaceholder}
-                    value={globalFilter ?? ''}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    className="max-w-sm"
-                />
-                {toolbarRight ? (
-                    <div className="flex items-center justify-end gap-2">
-                        {toolbarRight}
-                    </div>
-                ) : null}
-            </div>
+            {/* 2. Solo renderizamos el contenedor si hay algo que mostrar */}
+            {showToolbar && (
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    {/* 3. Renderizado condicional del Input del buscador */}
+                    {showSearch && (
+                        <Input
+                            placeholder={resolvedPlaceholder}
+                            value={globalFilter ?? ''}
+                            onChange={(e) => setGlobalFilter(e.target.value)}
+                            className="max-w-sm"
+                        />
+                    )}
+                    
+                    {toolbarRight && (
+                        <div className="flex items-center justify-end gap-2">
+                            {toolbarRight}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="mb-4 overflow-x-auto rounded-md border">
                 <Table>
@@ -145,8 +155,7 @@ export function DataTable<T>({
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
+                                                  header.column.columnDef.header,
                                                   header.getContext(),
                                               )}
                                     </TableHead>

@@ -7,7 +7,7 @@ import { TableList } from '@/components/custom-ui/intention/TableList';
 
 export default function PurchaseIntentList({ paginatedIntents }: { paginatedIntents: any }) {
     
-   
+   console.log('paginatedIntents en Index.tsx:', paginatedIntents);
 
     return (
         <AppLayout>

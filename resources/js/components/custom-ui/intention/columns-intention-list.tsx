@@ -21,22 +21,26 @@ const eventTranslations: Record<string, string> = {
 
 export const columns: ColumnDef<any>[] = [
     // ── 1. NOMBRE DEL CLIENTE CON AVATAR ─────────────────────
-    {
-        accessorKey: "customer.full_name",
-        header: "Nombre",
+   {
+        // Cambiamos el ID o el accessor para que sea descriptivo
+        id: "customer_name",
+        header: "Nombre Completo",
         cell: ({ row }) => {
             const customer = row.original.customer;
-            const name = customer?.full_name ?? 'Usuario Anónimo';
+            
+            // ✅ Concatenamos full_name y full_last_name
+            const name = customer 
+                ? `${customer.full_name ?? ''} ${customer.full_last_name ?? ''}`.trim() 
+                : 'Usuario Anónimo';
             
             return (
                 <div className="flex items-center gap-2">
-                    {/* ✅ Agregado el UserAvatar al costado del nombre */}
                     <UserAvatar
-                        image={customer?.photo} // Mapea el avatar/foto del usuario
+                        image={customer?.photo} 
                         name={name}
                     />
                     <span className="font-medium text-slate-900 text-sm">
-                        {name}
+                        {name || 'Usuario Anónimo'}
                     </span>
                 </div>
             );

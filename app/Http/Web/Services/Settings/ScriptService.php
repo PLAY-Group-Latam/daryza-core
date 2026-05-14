@@ -7,10 +7,19 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class ScriptService
 {
-    public function paginate(int $perPage = 10): LengthAwarePaginator
-    {
-        return Script::orderBy('created_at', 'desc')->paginate($perPage);
-    }
+ public function paginate(int $perPage = 10, ?string $search = null): LengthAwarePaginator
+{
+    return Script::query()
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('placement', 'ilike', "%{$search}%");
+            });
+        })
+        ->orderBy('created_at', 'desc')
+        ->paginate($perPage)
+        ->withQueryString();
+}
 
     public function store(array $data): Script
     {

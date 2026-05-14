@@ -11,10 +11,22 @@ class PaymenMethodsService
     /**
      * Traer todos los métodos de pago (para el Index)
      */
-    public function getAll(): Collection
-    {
-        return PaymentMethod::latest()->get();
+public function getPaginated(int $perPage = 10, array $filters = [])
+{
+    $query = PaymentMethod::query();
+
+    if (!empty($filters['search'])) {
+        $search = "%" . trim($filters['search']) . "%";
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'ilike', $search)
+              ->orWhere('account_number', 'ilike', $search);
+        });
     }
+
+    return $query->latest()
+        ->paginate($perPage)
+        ->withQueryString();
+}
 
     /**
      * Crear un nuevo registro

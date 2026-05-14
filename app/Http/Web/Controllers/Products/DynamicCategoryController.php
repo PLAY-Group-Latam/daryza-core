@@ -27,20 +27,29 @@ class DynamicCategoryController extends Controller
   /**
    * Listado de Categorías Dinámicas
    */
-  public function index()
-  {
-    $perPage = request()->input('per_page', 10);
+public function index()
+{
+    $perPage = request()->integer('per_page', 10);
+    $search = request()->string('search')->trim()->value();
 
-    // Cargamos con conteo de items para mostrar en la tabla principal
     $categories = DynamicCategory::withCount('items')
-      ->latest()
-      ->paginate($perPage)
-      ->withQueryString();
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%");
+            });
+        })
+        ->latest()
+        ->paginate($perPage)
+        ->withQueryString();
 
     return Inertia::render('products/dynamicCategories/Index', [
-      'paginatedCategories' => $categories,
+        'paginatedCategories' => $categories,
+        'filters' => [
+            'search' => $search,
+        ],
     ]);
-  }
+}
 
   /**
    * Formulario de creación

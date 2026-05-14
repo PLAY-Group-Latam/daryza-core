@@ -18,13 +18,17 @@ class CouponService
 
     // ─── Queries ──────────────────────────────────────────────
 
-    public function getPaginatedCoupons(int $perPage = 10): LengthAwarePaginator
-    {
-        return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
-            ->withCount('redemptions as usage_count')
-            ->latest()
-            ->paginate($perPage);
-    }
+   public function getPaginatedCoupons(int $perPage = 10, ?string $search = null): LengthAwarePaginator
+{
+    return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
+        ->withCount('redemptions as usage_count')
+        ->when($search, function ($query, $search) {
+            $query->where('code', 'ilike', "%{$search}%")
+                  ->orWhere('scope', 'ilike', "%{$search}%");
+        })
+        ->latest()
+        ->paginate($perPage);
+}
 
     public function getCouponById(string $id): Coupon
     {

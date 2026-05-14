@@ -20,13 +20,15 @@ class LandingController extends Controller
     ) {}
 
     public function index(Request $request): Response
-    {
-        $perPage = (int) $request->input('per_page', 10);
+{
+    $perPage = (int) $request->input('per_page', 10);
+    $filters = $request->only(['search']);
 
-        return Inertia::render('landings/Index', [
-            'paginatedLandings' => $this->landingService->getPaginated($perPage),
-        ]);
-    }
+    return Inertia::render('landings/Index', [
+        'paginatedLandings' => $this->landingService->getPaginated($perPage, $filters),
+        'filters' => $filters,
+    ]);
+}
 
     public function create(): Response
     {

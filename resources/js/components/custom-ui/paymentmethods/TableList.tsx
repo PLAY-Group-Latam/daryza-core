@@ -1,57 +1,48 @@
 'use client';
 
-import { DataTable } from '@/components/data-table';
-import { Input } from '@/components/ui/input';
+import { DataTable } from '@/components/custom-ui/tables/DataTable';
 import { PaymentMethod } from '@/types/paymentmethods';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { useEffect, useMemo, useState } from 'react';
+import { router } from '@inertiajs/react';
+import { useMemo } from 'react';
 import { columns } from './columns';
 
-export function TableList({ data: defaultData }: { data: PaymentMethod[] }) {
-    const [data, setData] = useState<PaymentMethod[]>(() => [...defaultData]);
-    const [globalFilter, setGlobalFilter] = useState('');
+interface TableListProps {
+    data: Paginated<PaymentMethod>;
+    filters?: { search?: string };
+}
 
-    useEffect(() => {
-        setData(defaultData);
-    }, [defaultData]);
+export function TableList({ data, filters }: TableListProps) {
+    // Si data no ha llegado todavía, evitamos que el componente explote
+    if (!data || !data.data) return null;
 
-    const handleDelete = (id: string) => {
-        setData((prev) => prev.filter((item) => item.id.toString() !== id));
+    const handleDelete = (id: string): void => {
+        // Lógica de eliminación si la necesitas
     };
 
     const tableColumns = useMemo(() => columns(handleDelete), []);
 
-    const filteredData = useMemo(() => {
-        const term = globalFilter.toLowerCase().trim();
-        if (!term) return data;
-        return data.filter((item) =>
-            String(item.company_type ?? '').toLowerCase().includes(term) ||
-            String(item.name ?? '').toLowerCase().includes(term) ||
-            String(item.account_number ?? '').toLowerCase().includes(term)
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                // Esto debe coincidir con el nombre en el Controller
+                only: ['paginatedPaymentMethods', 'filters'],
+            }
         );
-    }, [data, globalFilter]);
-
-    const table = useReactTable({
-        data: filteredData,
-        columns: tableColumns,
-        state: {
-            columnVisibility: { id: false },
-        },
-        getCoreRowModel: getCoreRowModel(),
-    });
+    };
 
     return (
         <div className="p-0">
-            <div className="flex items-center py-4">
-                <Input
-                    placeholder="Buscar cuenta bancaria..."
-                    value={globalFilter}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    className="max-w-sm"
-                />
-            </div>
-
-            <DataTable table={table} />
+            <DataTable<PaymentMethod>
+                columns={tableColumns}
+                data={data}
+                onSearch={handleSearch}
+                initialSearch={filters?.search ?? ''}
+                placeholder="Buscar por banco o número de cuenta..."
+            />
         </div>
     );
 }

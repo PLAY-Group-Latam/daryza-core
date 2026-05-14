@@ -15,34 +15,25 @@ class PurchaseIntentionController extends Controller
         protected PurchaseIntentionService $service
     ) {}
 
-    public function index(Request $request): Response
-    {
-        $paginator = $this->service->getAllPaginated($request);
+ public function index(Request $request): Response
+{
+    $paginator = $this->service->getAllPaginated($request);
 
-        // LOG TEMPORAL: Revisa storage/logs/laravel.log
-        \Illuminate\Support\Facades\Log::info("Datos de intenciones:", [
-            'count' => $paginator->count(),
-            'total' => $paginator->total(),
-            'first_item' => $paginator->items()[0] ?? 'Sin datos'
-        ]);
-
-        // Opcional: Descomenta la línea de abajo para ver la data en el navegador y detener la ejecución
-        // dd($paginator->items()); 
-
-        return Inertia::render('intentions/Index', [
-            'paginatedIntents' => [
-                'data' => $paginator->items(),
-                'meta' => [
-                    'currentPage' => $paginator->currentPage(),
-                    'lastPage'    => $paginator->lastPage(),
-                    'perPage'     => $paginator->perPage(),
-                    'total'       => $paginator->total(),
-                ],
-                'links' => $paginator->linkCollection()
+    return Inertia::render('intentions/Index', [
+        'paginatedIntents' => [
+            'data' => $paginator->items(),
+            'meta' => [
+                'currentPage' => $paginator->currentPage(),
+                'lastPage'    => $paginator->lastPage(),
+                'perPage'     => $paginator->perPage(),
+                'total'       => $paginator->total(),
             ],
-            'filters' => $request->only(['search']),
-        ]);
-    }
+        ],
+        'filters' => [
+            'search' => $request->query('search', '')
+        ],
+    ]);
+}
 
     public function show(Request $request, $customerId): Response
     {

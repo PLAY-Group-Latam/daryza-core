@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/incompatible-library */
 'use client';
 
 import { Input } from '@/components/ui/input';
@@ -18,85 +17,74 @@ import {
     flexRender,
     getCoreRowModel,
     getExpandedRowModel,
-    getFilteredRowModel,
     useReactTable,
 } from '@tanstack/react-table';
 import * as React from 'react';
 import { DataTablePagination } from '../data-table-pagination';
+import { useDebounce } from '@/hooks/use-debounce'; // Asegúrate de tener este hook o usa uno simple
 
 interface DataTableProps<T extends { children?: T[]; id: string | number }> {
     columns: ColumnDef<T>[];
     data: Paginated<T>;
     placeholder?: string;
+    onSearch?: (value: string) => void; // 👈 Nueva prop
+    initialSearch?: string; // 👈 Para mantener el valor al recargar
 }
 
 export function DataTableExpandable<
     T extends { children?: T[]; id: string | number },
->({ columns, data, placeholder }: DataTableProps<T>) {
-    const [globalFilter, setGlobalFilter] = React.useState('');
+>({ columns, data, placeholder, onSearch, initialSearch = '' }: DataTableProps<T>) {
+    
+    const [searchValue, setSearchValue] = React.useState(initialSearch);
     const [expanded, setExpanded] = React.useState<ExpandedState>({});
-    const [rows, setRows] = React.useState<T[]>(data.data);
+    
+    // Ref para evitar bucles infinitos y controlar qué se buscó por última vez
+    const lastSearchRef = React.useRef(initialSearch);
 
+    const debouncedSearch = useDebounce(searchValue, 500);
+
+    // ESCENCIAL: Si la URL cambia (ej. navegaste atrás o borraste filtros), 
+    // el input debe resetearse.
     React.useEffect(() => {
-        setRows(data.data);
-    }, [data.data]);
+        setSearchValue(initialSearch);
+        lastSearchRef.current = initialSearch;
+    }, [initialSearch]);
+
+    // Disparamos la búsqueda hacia el servidor
+    React.useEffect(() => {
+        // Si el valor debounced es distinto al último que mandamos al servidor
+        if (onSearch && debouncedSearch !== lastSearchRef.current) {
+            lastSearchRef.current = debouncedSearch;
+            onSearch(debouncedSearch);
+        }
+    }, [debouncedSearch, onSearch]);
 
     const table = useReactTable({
-        data: rows,
+        data: data.data,
         columns,
-        state: { globalFilter, expanded },
+        state: { expanded },
         onExpandedChange: setExpanded,
-        onGlobalFilterChange: setGlobalFilter,
         manualPagination: true,
+        manualFiltering: true,   
         pageCount: data.last_page,
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         getExpandedRowModel: getExpandedRowModel(),
         getRowCanExpand: (row) => !!row.original.children?.length,
         getSubRows: (row) => row.children,
-        globalFilterFn: (row, columnId, filterValue) => {
-            // Chequea si el valor del hijo o del row contiene el filtro
-            const checkRow = (r: any): boolean => {
-                const cellValue = r.getValue(columnId);
-                if (
-                    String(cellValue)
-                        .toLowerCase()
-                        .includes(filterValue.toLowerCase())
-                ) {
-                    return true;
-                }
-
-                // Chequea hijos recursivamente
-                if (r.original.children?.length) {
-                    return r.original.children.some((child: any) =>
-                        checkRow({
-                            ...r,
-                            original: child,
-                            getValue: (id: string) => child[id],
-                        }),
-                    );
-                }
-
-                return false;
-            };
-
-            return checkRow(row);
-        },
     });
 
     return (
         <div className="w-full space-y-6">
-            {/* Filtro global */}
             <div>
                 <Input
-                     placeholder={placeholder ?? 'Buscar...'}
-                    value={globalFilter}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
+                    placeholder={placeholder ?? 'Buscar...'}
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
                     className="max-w-sm"
                 />
             </div>
 
-            {/* Tabla */}
+            {/* Resto del JSX (ScrollArea, Table, etc.) se mantiene igual */}
             <div className="mb-4 overflow-hidden rounded-md border">
                 <ScrollArea className="h-[600px] w-full overflow-x-auto overflow-y-auto">
                     <Table>
@@ -118,10 +106,7 @@ export function DataTableExpandable<
                         <TableBody>
                             {table.getRowModel().rows.length === 0 ? (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="text-center">
                                         No hay registros
                                     </TableCell>
                                 </TableRow>
@@ -130,9 +115,7 @@ export function DataTableExpandable<
                                     <TableRow
                                         key={row.id}
                                         className={`transition-all hover:bg-gray-100 ${
-                                            row.depth > 0
-                                                ? 'bg-gray-50'
-                                                : 'bg-white'
+                                            row.depth > 0 ? 'bg-gray-50' : 'bg-white'
                                         }`}
                                     >
                                         {row.getVisibleCells().map((cell) => (
@@ -151,7 +134,6 @@ export function DataTableExpandable<
                 </ScrollArea>
             </div>
 
-            {/* Paginación */}
             <DataTablePagination table={table} paginated={data} />
         </div>
     );

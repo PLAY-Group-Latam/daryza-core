@@ -7,6 +7,7 @@ use App\Http\Web\Requests\Blogs\BlogRequest;
 use App\Http\Web\Requests\Blogs\UpdateBlogRequest;
 use App\Http\Web\Services\Blog\BlogService;
 use App\Models\Blogs\Blog;
+use Illuminate\Http\Request;
 use App\Models\Blogs\BlogCategory;
 
 use Inertia\Inertia;
@@ -16,21 +17,31 @@ class BlogController extends Controller
   /**
    * Listado de blogs con paginación
    */
-  public function index()
-  {
-    $perPage = request()->input('per_page', 10);
+ public function index(Request $request) // 👈 Agregamos el Request
+    {
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search'); // 👈 Capturamos la búsqueda
 
-    // Traer blogs con categorías y metadata
-    $blogs = Blog::with('categories', 'metadata')
-      ->latest()
-      ->paginate($perPage)
-      ->withQueryString();
+        $query = Blog::with(['categories', 'metadata']);
 
-    return Inertia::render('blogs/Index', [
-      'paginatedBlogs' => $blogs,
-    ]);
-  }
+       
+        if ($search) {
+            $searchTerm = "%" . trim($search) . "%";
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'ilike', $searchTerm) // Usamos ilike por tu preferencia de PostgreSQL
+                  ->orWhere('author', 'ilike', $searchTerm);
+            });
+        }
 
+        $blogs = $query->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return Inertia::render('blogs/Index', [
+            'paginatedBlogs' => $blogs,
+            'filters' => ['search' => $search], // 👈 Enviamos el filtro de vuelta al frontend
+        ]);
+    }
 
   /**
    * Formulario para crear blog

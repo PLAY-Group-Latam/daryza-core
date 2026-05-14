@@ -50,7 +50,8 @@ class OrderService
             $discountTotal = (float) $couponData['discount_total'];
         }
 
-        $thresholds = $this->resolveOrderThresholds($subtotal);
+        $netSubtotal = max(0, $subtotal - $discountTotal);
+        $thresholds = $this->resolveOrderThresholds($netSubtotal);
         $shipping = null;
         $deliveryCost = 0.0;
         $shippingInput = $this->extractShippingInput($payload);
@@ -60,7 +61,7 @@ class OrderService
                 $shippingInput['department_id'],
                 $shippingInput['province_id'],
                 $shippingInput['district_id'],
-                $subtotal,
+                $netSubtotal,
                 false
             );
             $deliveryCost = (float) $shipping['delivery_cost'];
@@ -106,11 +107,12 @@ class OrderService
             }
 
             $shippingInput = $payload['shipping_info'];
+            $netSubtotal = max(0, $subtotal - $discountTotal);
             $shipping = $this->resolveShippingQuote(
                 $shippingInput['department_id'],
                 $shippingInput['province_id'],
                 $shippingInput['district_id'],
-                $subtotal
+                $netSubtotal
             );
 
             $paymentInfo = $payload['payment_info'];

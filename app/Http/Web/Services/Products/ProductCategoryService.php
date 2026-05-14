@@ -21,15 +21,25 @@ class ProductCategoryService
     /**
      * Obtener el árbol de categorías paginado para la tabla.
      */
-    public function getPaginatedTree(int $perPage = 10): LengthAwarePaginator
-    {
-        return ProductCategory::roots()
-            ->with('children')
-            ->orderBy('order')
-            ->paginate($perPage)
-            ->withQueryString();
-    }
+public function getPaginatedTree(array $filters = []): LengthAwarePaginator
+{
+    $perPage = $filters['per_page'] ?? 10;
+    $search = $filters['search'] ?? null;
 
+    return ProductCategory::roots() // Solo paginamos las categorías principales
+        ->with(['children' => function ($query) {
+            $query->orderBy('order');
+        }])
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%");
+            });
+        })
+        ->orderBy('order')
+        ->paginate($perPage)
+        ->withQueryString();
+}
     /**
      * Obtener solo las categorías activas estructuradas para Selects.
      */

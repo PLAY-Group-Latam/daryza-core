@@ -18,27 +18,42 @@ class CustomerController extends Controller
 {
     public function __construct(protected CustomerService $customerService) {}
 
-    public function index()
-    {
-        $perPage = request()->input('per_page', 10);
+   public function index(Request $request) // Añadimos el Request aquí
+{
+    $filters = $request->only(['search', 'per_page']);
+    $perPage = $request->input('per_page', 10);
 
-        $paginatedCustomers = Customer::with(['billingProfile', 'addresses'])
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage)
-            ->through(function ($customer) {
-                $customer->addresses->each(function ($address) {
-                    $address->makeHidden(['department_id', 'province_id', 'district_id']);
-                });
+  
+    $query = Customer::with(['billingProfile', 'addresses']);
 
-                $customer->metrics = $this->customerService->getMetrics($customer->id);
+    if (!empty($filters['search'])) {
+        $search = $filters['search'];
+        $query->where(function ($q) use ($search) {
+            $q->where('full_name', 'ilike', "%{$search}%")
+              ->orWhere('full_last_name', 'ilike', "%{$search}%")
+              ->orWhere('email', 'ilike', "%{$search}%")
+              ->orWhere('dni', 'ilike', "%{$search}%");
+        });
+    }
 
-                return $customer;
+    $paginatedCustomers = $query->orderBy('created_at', 'desc')
+        ->paginate($perPage)
+        ->withQueryString() 
+        ->through(function ($customer) {
+            $customer->addresses->each(function ($address) {
+                $address->makeHidden(['department_id', 'province_id', 'district_id']);
             });
 
-        return Inertia::render('customers/Index', [
-            'paginatedCustomers' => $paginatedCustomers,
-        ]);
-    }
+            $customer->metrics = $this->customerService->getMetrics($customer->id);
+
+            return $customer;
+        });
+
+    return Inertia::render('customers/Index', [
+        'paginatedCustomers' => $paginatedCustomers,
+        'filters' => $filters, 
+    ]);
+}
 
     // public function create()
     // {

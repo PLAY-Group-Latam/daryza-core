@@ -23,13 +23,14 @@ class ProductFilterService
     public function applyFilters(array $params): array
     {
         $results = $this->resolveItems($params);
+        $isPack  = $this->bool($params, 'is_pack');
 
         $nextPage = $results->currentPage() < $results->lastPage()
             ? $results->currentPage() + 1
             : null;
 
         return [
-            'items'      => $results->items(),
+            'items'      => $this->mapItemsWithImages($results->items(), $isPack),
             'sidebar'    => $this->buildSidebar($params),
             'pagination' => [
                 'total'        => $results->total(),
@@ -131,7 +132,9 @@ class ProductFilterService
         $priceMin = $this->float($params, 'price_min');
         $priceMax = $this->float($params, 'price_max');
 
-        $query = ProductPack::query()->where('is_active', true);
+        $query = ProductPack::query()
+            ->where('is_active', true)
+            ->with('mainImage');
 
         if ($this->bool($params, 'on_offer')) {
             $query->where('is_on_promotion', true)
@@ -451,5 +454,20 @@ private function getNormalizedBrands()
     {
         $int = (int) $value;
         return ($int >= 1 && $int <= self::PER_PAGE_MAX) ? $int : self::PER_PAGE_DEFAULT;
+    }
+
+    private function mapItemsWithImages(array $items, bool $isPack): array
+    {
+        return array_map(function ($item) use ($isPack) {
+            $data = $item->toArray();
+
+            $imagePath = $isPack
+                ? ($item->mainImage?->file_path ?? null)
+                : ($item->mainVariant?->mainImage?->file_path ?? null);
+
+            $data['main_image'] = $imagePath ? ['file_path' => $imagePath] : null;
+
+            return $data;
+        }, $items);
     }
 }

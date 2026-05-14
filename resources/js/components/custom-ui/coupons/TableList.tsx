@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { CouponModel } from '@/types/coupons/coupon';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../ConfirmDeleteAlert';
@@ -96,13 +96,6 @@ export const columns: ColumnDef<CouponModel>[] = [
         cell: ({ row }) => <span>{row.original.usage_limit ?? '∞'}</span>,
     },
     {
-        accessorKey: 'usage_limit_per_user',
-        header: 'Límite por usuario',
-        cell: ({ row }) => (
-            <span>{row.original.usage_limit_per_user ?? '∞'}</span>
-        ),
-    },
-    {
         id: 'total_uses',
         header: 'Usos',
         cell: ({ row }) => (
@@ -124,6 +117,7 @@ export const columns: ColumnDef<CouponModel>[] = [
                     <Button
                         variant="outline"
                         size="icon"
+                        title="Editar cupón"
                         onClick={() =>
                             router.visit(`/coupon/${coupon.id}/editar`)
                         }
@@ -141,7 +135,7 @@ export const columns: ColumnDef<CouponModel>[] = [
                             }),
                         }}
                         trigger={
-                            <Button variant="destructive" size="icon">
+                            <Button variant="destructive" size="icon" title="Eliminar cupón">
                                 <Trash className="h-4 w-4" />
                             </Button>
                         }
@@ -153,13 +147,34 @@ export const columns: ColumnDef<CouponModel>[] = [
 ];
 
 export default function TableList({ data }: TableListProps) {
-    if (!data) return null;
+    const { filters } = usePage<{ filters: any }>().props;
+
+    if (!data || !data.data) return null;
+
+    const handleSearch = (value: string) => {
+        const params: any = { per_page: data.per_page };
+        
+        if (value && value.trim() !== "") {
+            params.search = value;
+        }
+
+        router.get(
+            '/coupon', // Asegúrate que esta sea la URL de tu index de cupones
+            params,
+            {
+                preserveState: true,
+                replace: true,
+                only: ['coupons', 'filters'],
+            }
+        );
+    };
 
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['code', 'scope']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search || ''}
             placeholder="Buscar por código o alcance..."
         />
     );

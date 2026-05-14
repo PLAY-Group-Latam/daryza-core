@@ -17,16 +17,30 @@ class ApplicationService
 {
     public function __construct(private readonly ApplicationCvStorageService $cvStorageService) {}
 
-    public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
-    {
-        return Application::query()
-            ->with('job')
-            ->byEmail($filters['email'] ?? null)
-            ->when(isset($filters['job_id']), fn($q) => $q->where('job_id', $filters['job_id']))
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+    public function paginate(array $filters, int $perPage = 10)
+{
+    $query = Application::query()->with('job');
+
+    if (!empty($filters['email'])) {
+        $search = "%" . trim($filters['email']) . "%";
+        
+        $query->where(function ($q) use ($search) {
+            $q->where('email', 'ilike', $search)
+              ->orWhere('phone', 'ilike', $search)
+             
+              ->orWhereRaw("CONCAT(first_name, ' ', last_name) ilike ?", [$search])
+              
+              ->orWhere('first_name', 'ilike', $search)
+              ->orWhere('last_name', 'ilike', $search);
+        });
     }
+
+    if (!empty($filters['job_id'])) {
+        $query->where('job_id', $filters['job_id']);
+    }
+
+    return $query->latest()->paginate($perPage)->withQueryString();
+}
 
     public function create(ApplicationData $data): Application
     {

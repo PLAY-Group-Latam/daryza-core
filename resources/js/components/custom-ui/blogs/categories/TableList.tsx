@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import categories from '@/routes/blogs/categories';
-import { BlogCategory } from '@/types/blogs'; // ajusta la ruta según tu proyecto
-import { Link } from '@inertiajs/react';
+import { BlogCategory } from '@/types/blogs';
+import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash } from 'lucide-react';
 import { ConfirmDeleteAlert } from '../../ConfirmDeleteAlert';
@@ -12,6 +12,9 @@ import { DataTable } from '../../tables/DataTable';
 
 interface TableCategoryProps {
     data: Paginated<BlogCategory>;
+    filters?: {
+        search?: string;
+    };
 }
 
 export const columns: ColumnDef<BlogCategory>[] = [
@@ -26,7 +29,7 @@ export const columns: ColumnDef<BlogCategory>[] = [
         cell: ({ row }) => formatDate(row.original.created_at),
     },
     {
-        accessorKey: 'updated_at', // 🔹 nueva columna
+        accessorKey: 'updated_at',
         header: 'Última actualización',
         cell: ({ row }) => formatDate(row.original.updated_at),
     },
@@ -55,7 +58,7 @@ export const columns: ColumnDef<BlogCategory>[] = [
                     <ConfirmDeleteAlert
                         resourceId={category.id}
                         resourceName={category.name}
-                        routes={categories} // aquí pasamos el helper de rutas de categorías
+                        routes={categories}
                         trigger={
                             <Button
                                 variant="destructive"
@@ -73,14 +76,27 @@ export const columns: ColumnDef<BlogCategory>[] = [
     },
 ];
 
-export default function TableList({ data }: TableCategoryProps) {
+export default function TableList({ data, filters }: TableCategoryProps) {
+    const handleSearch = (value: string) => {
+        router.get(
+            window.location.pathname,
+            { search: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['paginatedCategories', 'filters'],
+            }
+        );
+    };
+
     if (!data) return null;
 
     return (
         <DataTable
             columns={columns}
             data={data}
-            searchKeys={['name']}
+            onSearch={handleSearch}
+            initialSearch={filters?.search ?? ''}
             placeholder="Buscar por nombre..."
         />
     );
