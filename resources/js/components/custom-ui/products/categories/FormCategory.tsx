@@ -168,7 +168,6 @@ export default function FormCategory({
                         control={control}
                         render={({ field: { value, onChange } }) => (
                             <UploadImageForm
-                                preset="avatar"
                                 value={value}
                                 onFileChange={onChange}
                             />

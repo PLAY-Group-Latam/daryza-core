@@ -6,7 +6,6 @@ use App\Http\Web\Support\Products\VariantPayloadValidator;
 use App\Http\Web\Support\Products\PromotionPayloadValidator;
 use App\Models\Products\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreProductRequest extends FormRequest
@@ -81,16 +80,8 @@ class StoreProductRequest extends FormRequest
             'variants.*.is_main'        => ['boolean'],
 
             // — Media —
-           'variants.*.media'   => ['nullable', 'array'],
-'variants.*.media.*' => [
-    'file',
-
-    Rule::when(
-        fn ($value) => $value instanceof \Illuminate\Http\UploadedFile && str_starts_with($value->getMimeType(), 'video/'),
-        ['mimes:mp4,webm', 'max:15360'],   // video  → 15 MB
-        ['mimes:jpg,jpeg,png,gif,webp,svg', 'max:1024'], // imagen → 1 MB
-    ),
-],
+            'variants.*.media'   => ['nullable', 'array'],
+            'variants.*.media.*' => ['file', 'mimes:jpg,jpeg,png,gif,webp,svg,mp4', 'max:10240'],
 
             // — Atributos —
             'variants.*.attributes'                      => ['nullable', 'array'],
@@ -155,9 +146,9 @@ class StoreProductRequest extends FormRequest
             'variants.*.stock.min'       => 'El stock no puede ser negativo.',
 
             // — Media —
-          'variants.*.media.*.file'  => 'El archivo adjunto no es válido.',
-'variants.*.media.*.mimes' => 'Los formatos permitidos son: JPG, PNG, GIF, WebP, SVG · o MP4, WebM para video.',
-'variants.*.media.*.max'   => 'Tamaño máximo excedido (imágenes: 1 MB, videos: 15 MB).',
+            'variants.*.media.*.file'    => 'El archivo adjunto no es válido.',
+            'variants.*.media.*.mimes'   => 'Los formatos permitidos son: jpg, jpeg, png, gif, webp, svg, mp4.',
+            'variants.*.media.*.max'     => 'El tamaño máximo por archivo es 10MB.',
 
             // — Atributos —
             'variants.*.attributes.*.attribute_id.required'      => 'El atributo de la variante es obligatorio.',

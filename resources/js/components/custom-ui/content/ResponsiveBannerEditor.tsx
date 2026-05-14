@@ -121,7 +121,7 @@ const ResponsiveBannerEditor: React.FC<Props> = ({
                         </Label>
                         <Upload
                             type={allowedType === 'video' ? 'video' : 'image'}
-                            preset="banner-image"
+                            accept={getAccept()}
                             value={data.src_desktop}
                             onFileChange={(file) => onChange({ src_desktop: file })}
                             previewClassName="w-full aspect-[21/9] lg:aspect-[3/1]"
@@ -137,7 +137,7 @@ const ResponsiveBannerEditor: React.FC<Props> = ({
                         <div className="flex justify-center lg:justify-start">
                             <Upload
                                 type={allowedType === 'video' ? 'video' : 'image'}
-                                preset="banner-image"
+                                accept={getAccept()}
                                 value={data.src_mobile}
                                 onFileChange={(file) => onChange({ src_mobile: file })}
                                 previewClassName="w-[140px] aspect-[9/16]"
