@@ -134,7 +134,7 @@ export function VariantRow({
                         control={control}
                         render={({ field, fieldState }) => (
                             <div className="flex flex-col gap-1">
-                                <Label className="text-xs">SKU Dariza *</Label>
+                                <Label className="text-xs">SKU Daryza *</Label>
                                 <Input {...field} />
                                 {fieldState.error && (
                                     <p className="text-xs text-red-500">
