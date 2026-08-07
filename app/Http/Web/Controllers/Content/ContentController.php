@@ -21,15 +21,30 @@ class ContentController extends Controller
         ]);
     }
 
-    public function edit(Request $request, string $slug, string $type, int $id): Response
+   public function edit(Request $request, string $slug, string $type, int $id): Response
 {
     $section = $this->contentService->getValidatedSection($slug, $type, $id);
 
-    $searchResults = $this->contentService->searchProductsByName($request->input('q', ''));
+    // 1. Obtenemos los productos de la búsqueda normal (si existe q)
+    $searchData = $this->contentService->searchProductsByName($request->input('q', ''));
+    $searchResults = $searchData['searchResults'] ?? [];
+
+    // 2. HIDRATACIÓN: Si la sección tiene items, buscamos su data fresca por ID
+    $initialProducts = [];
+    $savedItems = $section->content['content']['items'] ?? [];
+    
+    if (!empty($savedItems)) {
+        $ids = collect($savedItems)->pluck('product_id')->filter()->toArray();
+        
+        // Creamos un método o usamos el mismo servicio para traer estos IDs
+        // NOTA: Debes crear un método getProductsByIds o similar en tu servicio
+        $initialProducts = $this->contentService->getProductsByIds($ids);
+    }
 
     return Inertia::render('content/EditSection', [
         'section' => $section,
-        ...$searchResults
+        'searchResults' => $searchResults,
+        'initialProducts' => $initialProducts // Enviamos la data fresca de lo ya guardado
     ]);
 }
 

@@ -2,45 +2,45 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, AlertCircle, Puzzle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Puzzle } from 'lucide-react';
 
 // Importación de los editores
-import ModalEditor from '@/components/custom-ui/content/editors/home/ModalEditor';
-import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BanneDynamicEditor';
-import BrandsEditor from '@/components/custom-ui/content/editors/home/BrandsEditor';
-import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagePromEditor';
-import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagesDynamicsEditor';
-import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
-import TituloSectionEditor from '@/components/custom-ui/content/editors/home/TitleSectionEditor';
-import LogoHeaderEditor from '@/components/custom-ui/content/editors/footer/LogoHeaderEditor';
-import ContactInfoEditor from '@/components/custom-ui/content/editors/footer/ContanctInfoEdito';
-import LogoFooterEditor from '@/components/custom-ui/content/editors/footer/LogoFooterEditor';
-import SocialsEditor from '@/components/custom-ui/content/editors/footer/SocialsEditor';
-import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
-import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
-import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
-import CookiesEditor from '@/components/custom-ui/content/editors/legals/CookiesEditor';
-import ContactIndexEditor from '@/components/custom-ui/content/editors/contact/ContactIndexEditor';
-import HelpCenterEditor from '@/components/custom-ui/content/editors/contact/HelpCetnerEditor';
-import CustomerServiceEditor from '@/components/custom-ui/content/editors/contact/CustomerServiceEditor';
-import DistributorNetworkEditor from '@/components/custom-ui/content/editors/contact/DistribuitorNewtworkEditor';
-import ContactAdviceEditor from '@/components/custom-ui/content/editors/contact/ContactAdviceEditor';
-import ContactWorkEditor from '@/components/custom-ui/content/editors/contact/ContactWorkEditor';
 import BannerPromotionalEditor from '@/components/custom-ui/content/editors/aboutus/BannerPromotionalEditor';
+import ImageFormEditor from '@/components/custom-ui/content/editors/aboutus/ImageFormEditor';
 import IntroAboutusEditor from '@/components/custom-ui/content/editors/aboutus/IntroAboutusEditor';
 import OurHistoryEditor from '@/components/custom-ui/content/editors/aboutus/OurHistoryEditor';
 import OurPurposeEditor from '@/components/custom-ui/content/editors/aboutus/OurPurposeEditor';
 import SustainabilityEditor from '@/components/custom-ui/content/editors/aboutus/SustainabilityEditor';
-import ImageFormEditor from '@/components/custom-ui/content/editors/aboutus/ImageFormEditor';
 import BannerIndexEditor from '@/components/custom-ui/content/editors/blog/BannerIndexEditor';
 import ImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/ImagePromotionalEditor';
-import ProductListEditor from '@/components/custom-ui/content/editors/blog/ProductListEditor';
 import PageImagePromotionalEditor from '@/components/custom-ui/content/editors/blog/PageImagePromtionalEditor';
-import ProfileEditor from '@/components/custom-ui/content/editors/system-all/ProfileEditor';
-import ProductInformativeEditor from '@/components/custom-ui/content/editors/system-all/ProductInformativeEditor';
-import CheckoutEditor from '@/components/custom-ui/content/editors/system-all/CheckoutEditor';
+import ProductListEditor from '@/components/custom-ui/content/editors/blog/ProductListEditor';
+import ContactAdviceEditor from '@/components/custom-ui/content/editors/contact/ContactAdviceEditor';
+import ContactIndexEditor from '@/components/custom-ui/content/editors/contact/ContactIndexEditor';
+import ContactWorkEditor from '@/components/custom-ui/content/editors/contact/ContactWorkEditor';
+import CustomerServiceEditor from '@/components/custom-ui/content/editors/contact/CustomerServiceEditor';
+import DistributorNetworkEditor from '@/components/custom-ui/content/editors/contact/DistribuitorNewtworkEditor';
+import HelpCenterEditor from '@/components/custom-ui/content/editors/contact/HelpCetnerEditor';
+import ContactInfoEditor from '@/components/custom-ui/content/editors/footer/ContanctInfoEdito';
+import LogoFooterEditor from '@/components/custom-ui/content/editors/footer/LogoFooterEditor';
+import LogoHeaderEditor from '@/components/custom-ui/content/editors/footer/LogoHeaderEditor';
+import SocialsEditor from '@/components/custom-ui/content/editors/footer/SocialsEditor';
+import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
+import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BanneDynamicEditor';
+import BrandsEditor from '@/components/custom-ui/content/editors/home/BrandsEditor';
+import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagePromEditor';
+import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagesDynamicsEditor';
+import ModalEditor from '@/components/custom-ui/content/editors/home/ModalEditor';
+import TituloSectionEditor from '@/components/custom-ui/content/editors/home/TitleSectionEditor';
+import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
+import CookiesEditor from '@/components/custom-ui/content/editors/legals/CookiesEditor';
+import PrivacyPoliticEditor from '@/components/custom-ui/content/editors/legals/PrivacyPoliticEditor';
+import TermsConditionsEditor from '@/components/custom-ui/content/editors/legals/TermConditionEditor';
 import CartEditor from '@/components/custom-ui/content/editors/system-all/CartEditor';
+import CheckoutEditor from '@/components/custom-ui/content/editors/system-all/CheckoutEditor';
 import FilterProductoEditor from '@/components/custom-ui/content/editors/system-all/FilterProductEditor';
+import ProductInformativeEditor from '@/components/custom-ui/content/editors/system-all/ProductInformativeEditor';
+import ProfileEditor from '@/components/custom-ui/content/editors/system-all/ProfileEditor';
 import { BackButton } from '@/components/custom-ui/PageHeader';
 interface Props {
     section: {
@@ -55,7 +55,8 @@ interface Props {
             slug: string;
         };
     };
-      searchResults?: any[]; 
+    searchResults?: any[];
+    initialProducts?: any[];
 }
 
 /**
@@ -64,64 +65,60 @@ interface Props {
  */
 const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     // Home
-    'home_modal':           ModalEditor,
-    'home_banner':          BannerDinamicoEditor,
-    'home_brands':          BrandsEditor,
-    'home_promo_image':     ImagenPromocionalEditor,
-    'home_promo_dynamic':   ImagenesPromocionalesEditor,
-    'home_attributes':      AtributosEditor,
-    'home_section_title':  TituloSectionEditor,
+    home_modal: ModalEditor,
+    home_banner: BannerDinamicoEditor,
+    home_brands: BrandsEditor,
+    home_promo_image: ImagenPromocionalEditor,
+    home_promo_dynamic: ImagenesPromocionalesEditor,
+    home_attributes: AtributosEditor,
+    home_section_title: TituloSectionEditor,
     // Footer
-    'footer_logo_header':   LogoHeaderEditor,
-    'footer_logo_footer':   LogoFooterEditor,
-    'footer_contact_info':  ContactInfoEditor,
-    'footer_socials':       SocialsEditor,
-   
+    footer_logo_header: LogoHeaderEditor,
+    footer_logo_footer: LogoFooterEditor,
+    footer_contact_info: ContactInfoEditor,
+    footer_socials: SocialsEditor,
+
     // Legales
-    'tyc_editor':           TermsConditionsEditor,
-    'anticorrupcion_editor':PrivacyPoliticEditor,
-    'libro_editor':         ComplaintsBookEditor,
-    'cookies_editor':       CookiesEditor,
+    tyc_editor: TermsConditionsEditor,
+    anticorrupcion_editor: PrivacyPoliticEditor,
+    libro_editor: ComplaintsBookEditor,
+    cookies_editor: CookiesEditor,
     // Contact
-    'contact_general':     ContactIndexEditor,
-    'contact_help':        HelpCenterEditor,
-    'contact_service':      CustomerServiceEditor,
-    'contact_distributors': DistributorNetworkEditor,
-    'contact_advisor':       ContactAdviceEditor,
-    'contact_work':         ContactWorkEditor,
-    
+    contact_general: ContactIndexEditor,
+    contact_help: HelpCenterEditor,
+    contact_service: CustomerServiceEditor,
+    contact_distributors: DistributorNetworkEditor,
+    contact_advisor: ContactAdviceEditor,
+    contact_work: ContactWorkEditor,
 
     //Aboutus
-    'nosotros_banner': BannerPromotionalEditor,
-    'nosotros_intro' :IntroAboutusEditor,
-    'nosotros_historia':OurHistoryEditor,
-    'nosotros_proposito': OurPurposeEditor,
-    'nosotros_sostenibilidad':SustainabilityEditor,
-    'nosotros_formulario': ImageFormEditor,
-
+    nosotros_banner: BannerPromotionalEditor,
+    nosotros_intro: IntroAboutusEditor,
+    nosotros_historia: OurHistoryEditor,
+    nosotros_proposito: OurPurposeEditor,
+    nosotros_sostenibilidad: SustainabilityEditor,
+    nosotros_formulario: ImageFormEditor,
 
     //Blog
-    'blog_banner':BannerIndexEditor,
-    'blog_promos':ImagePromotionalEditor,
-    'blog_products':ProductListEditor,
-    'blog_post_promos':PageImagePromotionalEditor,
-    
+    blog_banner: BannerIndexEditor,
+    blog_promos: ImagePromotionalEditor,
+    blog_products: ProductListEditor,
+    blog_post_promos: PageImagePromotionalEditor,
 
     //System
 
-    'sistema_perfil':ProfileEditor,
-    'sistema_producto':ProductInformativeEditor,
-    'sistema_checkout':CheckoutEditor,
-    'sistema_carrito':CartEditor,
-    'sistema_filtrado':FilterProductoEditor,
-
-
-    
-
-
+    sistema_perfil: ProfileEditor,
+    sistema_producto: ProductInformativeEditor,
+    sistema_checkout: CheckoutEditor,
+    sistema_carrito: CartEditor,
+    sistema_filtrado: FilterProductoEditor,
 };
 
-export default function EditSection({ section , searchResults = []}: Props) {
+export default function EditSection({
+    section,
+    searchResults = [],
+    initialProducts = [], // <--- Recíbela aquí
+}: Props) {
     const EditorComponent = EDITOR_COMPONENTS[section.type];
 
     return (
@@ -129,22 +126,17 @@ export default function EditSection({ section , searchResults = []}: Props) {
             <Head title={`Editar · ${section.name}`} />
 
             <div className="flex flex-1 flex-col gap-0">
-
                 {/* ── Topbar ──────────────────────────────────────────── */}
-              <div className="sticky top-0 z-20 flex items-center gap-4 bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8 ">
-                    
+                <div className="sticky top-0 z-20 flex items-center gap-4 bg-background/80 px-4 py-3 backdrop-blur-sm lg:px-8">
                     {/* Solo el botón de volver atrás */}
                     <BackButton />
 
                     {/* Separador visual sutil */}
                     <div className="h-4 w-[1px]" />
-
-                
                 </div>
 
                 {/* ── Contenido ───────────────────────────────────────── */}
                 <div className="flex flex-1 flex-col gap-6 p-4 lg:p-8">
-
                     {/* Título de sección */}
                     <div className="flex flex-col gap-1">
                         <h1 className="text-xl font-bold tracking-tight text-foreground">
@@ -160,7 +152,11 @@ export default function EditSection({ section , searchResults = []}: Props) {
                     {/* Editor o estado vacío */}
                     <div className="mx-auto w-full max-w-5xl">
                         {EditorComponent ? (
-                            <EditorComponent section={section} searchResults={searchResults} />
+                            <EditorComponent
+                                section={section}
+                                searchResults={searchResults}
+                                initialProducts={initialProducts}
+                            />
                         ) : (
                             <NotConfigured type={section.type} />
                         )}

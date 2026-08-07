@@ -18,6 +18,7 @@ export interface OrderItem {
     id: string;
     product_name: string;
     variant_sku: string;
+    item_type?: 'simple_product' | 'product_pack';
     quantity: number;
     unit_price: string;
     line_total: string;

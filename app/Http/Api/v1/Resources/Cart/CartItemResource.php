@@ -16,6 +16,10 @@ class CartItemResource extends JsonResource
         }
 
         $isPack = $this->item_type === ProductPack::class;
+        +$promoRealmenteActiva = $item::query()
+            ->where('id', $item->id)
+            ->onPromoActive()
+            ->exists();
 
         $imagePath = null;
         if ($isPack) {
@@ -26,33 +30,33 @@ class CartItemResource extends JsonResource
                 ?? $item->product?->mainVariant?->mainImage?->file_path;
         }
 
-       $variantAttrs = [];
+        $variantAttrs = [];
 
-if (
-    !$isPack &&
-    $item->relationLoaded('selections')
-) {
-    $variantAttrs = $item->selections
-        ->map(function ($selection) {
+        if (
+            !$isPack &&
+            $item->relationLoaded('selections')
+        ) {
+            $variantAttrs = $item->selections
+                ->map(function ($selection) {
 
-            $attributeValue = $selection->attributeValue;
+                    $attributeValue = $selection->attributeValue;
 
-            if (
-                !$attributeValue ||
-                !$attributeValue->attribute
-            ) {
-                return null;
-            }
+                    if (
+                        !$attributeValue ||
+                        !$attributeValue->attribute
+                    ) {
+                        return null;
+                    }
 
-            return [
-                'attribute' => $attributeValue->attribute->name,
-                'value' => $attributeValue->value,
-            ];
-        })
-        ->filter()
-        ->values()
-        ->all();
-}
+                    return [
+                        'attribute' => $attributeValue->attribute->name,
+                        'value' => $attributeValue->value,
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+        }
 
         $quantity = (int) $this->quantity;
         $unitPrice = (float) ($this->unit_price ?? $item->active_price ?? 0);
@@ -73,7 +77,7 @@ if (
                 'sku' => $isPack ? 'PACK-' . $item->id : $item->sku,
                 'price' => (float) $item->price,
                 'promo_price' => (float) $item->promo_price,
-                'is_on_promo' => (bool) ($isPack ? $item->is_on_promotion : $item->is_on_promo),
+                'is_on_promo' => $promoRealmenteActiva,
                 'active_price' => (float) $item->active_price,
                 'variant_attrs' => $variantAttrs,
             ],
@@ -84,4 +88,3 @@ if (
         ];
     }
 }
-

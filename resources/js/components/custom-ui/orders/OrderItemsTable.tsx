@@ -1,6 +1,7 @@
 import { OrderItem } from './types';
 
 export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
+    console.log('OrderItemsTable rendered with items:', items);
     const toNumber = (
         value: number | string | null | undefined,
     ): number | null => {
@@ -35,6 +36,7 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                         const regularPrice = toNumber(
                             item.metadata?.regular_price,
                         );
+                        const isPack = item.item_type === 'product_pack';
                         const unitPrice = toNumber(item.unit_price);
                         const variantAttributes = (
                             item.metadata?.variant_attributes ?? []
@@ -124,7 +126,15 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                                     </div>
                                 </td>
                                 <td className="px-4 py-2">
-                                    {item.variant_sku}
+                                    {isPack ? (
+                                        <span className="inline-flex items-center rounded border border-blue-200 bg-blue-100 px-2 py-0.5 text-[11px] font-bold tracking-tight text-blue-800 uppercase">
+                                            Pack Daryza
+                                        </span>
+                                    ) : (
+                                        <span className="font-mono text-xs text-gray-600">
+                                            {item.variant_sku}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="px-4 py-2">{item.quantity}</td>
                                 <td className="px-4 py-2">

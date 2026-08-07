@@ -11,6 +11,7 @@ import { router } from '@inertiajs/react';
 import debounce from 'lodash/debounce';
 import { Loader2, Plus } from 'lucide-react';
 import * as React from 'react';
+import { ProductLite } from '@/types/content/content-types';
 
 // --- Interfaces ---
 
@@ -20,12 +21,12 @@ interface ProductResult {
     sku: string;
     image?: string | null;
     active_price: number | string;
-    [key: string]: unknown; // Para compatibilidad con otras props del backend
+  
 }
 
 interface BlogProductSearchProps {
-    searchResults?: ProductResult[];
-    onSelect: (product: ProductResult) => void;
+    searchResults?: ProductLite[];
+    onSelect: (product: ProductLite) => void;
 }
 
 const DEFAULT_IMAGE = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
@@ -100,7 +101,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductS
             >
                 <div className="relative">
                     <CommandInput
-                        placeholder="Buscar por nombre"
+                        placeholder="Buscar por nombre y  SKU DARYZA..."
                         value={searchTerm}
                         onValueChange={handleChange}
                         onFocus={() => setOpen(true)}
