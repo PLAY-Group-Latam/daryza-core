@@ -29,6 +29,16 @@ class ItemsFieldResolver
             } else {
                 $rules["{$key}.{$i}.id"] = 'required';
 
+                // --- NUEVAS REGLAS PARA FAQS ---
+                if (array_key_exists('question', $item)) {
+                    $rules["{$key}.{$i}.question"] = 'nullable|string';
+                }
+
+                if (array_key_exists('answer', $item)) {
+                    $rules["{$key}.{$i}.answer"] = 'nullable|string';
+                }
+
+                // --- OTROS CAMPOS ---
                 if (array_key_exists('src', $item)) {
                     $rules["{$key}.{$i}.src"] = ['nullable', function ($attr, $value, $fail) {
                         if (!is_null($value) && !is_string($value) && !($value instanceof UploadedFile)) {

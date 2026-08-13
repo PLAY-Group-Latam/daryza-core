@@ -4,6 +4,7 @@ use App\Http\Web\Controllers\Leads\ClaimController;
 use App\Http\Web\Controllers\Leads\ContactController;
 use App\Http\Web\Controllers\Leads\AboutUsController;
 use App\Http\Web\Controllers\Leads\JobsController;
+use App\Http\Web\Controllers\Leads\NewsLetterController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('claims')->name('claims.')->middleware('auth')->group(function () {
@@ -36,4 +37,12 @@ Route::prefix('jobs')->name('jobs.')->group(function(){
     ->parameters([
         'items' => 'job',
     ]);
+});
+
+Route::prefix('subscriptions')->name('subscriptions.')->middleware('auth')->group(function () {
+    Route::resource('items', NewsLetterController::class)
+        ->names('items')
+        ->parameters([
+            'items' => 'subscription',
+        ]);
 });
