@@ -71,11 +71,19 @@ class SeoPageSeeder extends Seeder
                 'is_static' => true
             ],
             [
+                'slug' => 'preguntas-frecuentes',
+                'title' => 'Preguntas Frecuentes',
+                'path' => '/preguntas-frecuentes',
+                'meta_title' => "Preguntas Frecuentes | $brand",
+                'meta_description' => 'Resuelve tus dudas sobre métodos de pago, envíos, seguimiento de pedidos y políticas de compra.',
+                'is_static' => true
+            ],
+           [
                 'slug' => 'centro-de-ayuda',
                 'title' => 'Centro de Ayuda',
                 'path' => '/contacto/centro-de-ayuda',
-                'meta_title' => "Preguntas Frecuentes y Ayuda | $brand",
-                'meta_description' => 'Todo lo que necesitas saber sobre tus pedidos, envíos y medios de pago.',
+                'meta_title' => "Centro de Ayuda y Soporte | $brand",
+                'meta_description' => 'Encuentra recursos, guías y asistencia técnica para gestionar tus consultas en Daryza.',
                 'is_static' => true
             ],
             [

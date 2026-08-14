@@ -14,7 +14,8 @@ class DashboardService
      * Estados que NO deben contabilizarse como ventas.
      * Incluimos 'payment_failed' para mayor precisión.
      */
-    private array $excludedStates = ['cancelled', 'pending_payment', 'payment_failed'];
+
+    private array $excludedStates = ['cancelled'];
 
     public function getKPIData($fromDate, $toDate): array
     {
@@ -150,23 +151,23 @@ class DashboardService
         return round((($current - $previous) / $previous) * 100, 2);
     }
 
-   private function calculateConversion($from, $to): float
-{
-    // 1. EL DENOMINADOR: ¿Cuánta gente entró realmente?
-    // Usamos 'product_view' porque si alguien vio un producto, ya es un "interesado".
-    $totalTraffic = EventLog::where('event_type', 'product_view')
-        ->whereBetween('created_at', [$from, $to])
-        ->distinct('session_id') // Contamos personas únicas por sesión, no solo logueados
-        ->count('session_id');
+    private function calculateConversion($from, $to): float
+    {
+        // 1. EL DENOMINADOR: ¿Cuánta gente entró realmente?
+        // Usamos 'product_view' porque si alguien vio un producto, ya es un "interesado".
+        $totalTraffic = EventLog::where('event_type', 'product_view')
+            ->whereBetween('created_at', [$from, $to])
+            ->distinct('session_id') // Contamos personas únicas por sesión, no solo logueados
+            ->count('session_id');
 
-    // 2. EL NUMERADOR: ¿Cuántos se convirtieron en clientes reales?
-    // 'order_placed' es el evento que dispara tu Seeder y tu flujo de caja.
-    $conversions = EventLog::where('event_type', 'order_placed')
-        ->whereBetween('created_at', [$from, $to])
-        ->distinct('session_id')
-        ->count('session_id');
+        // 2. EL NUMERADOR: ¿Cuántos se convirtieron en clientes reales?
+        // 'order_placed' es el evento que dispara tu Seeder y tu flujo de caja.
+        $conversions = EventLog::where('event_type', 'order_placed')
+            ->whereBetween('created_at', [$from, $to])
+            ->distinct('session_id')
+            ->count('session_id');
 
-    // 3. LA MAGIA: (Éxitos / Visitas) * 100
-    return $totalTraffic > 0 ? round(($conversions / $totalTraffic) * 100, 2) : 0;
-}
+        // 3. LA MAGIA: (Éxitos / Visitas) * 100
+        return $totalTraffic > 0 ? round(($conversions / $totalTraffic) * 100, 2) : 0;
+    }
 }

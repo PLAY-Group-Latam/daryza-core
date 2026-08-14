@@ -25,12 +25,14 @@ import ContactInfoEditor from '@/components/custom-ui/content/editors/footer/Con
 import LogoFooterEditor from '@/components/custom-ui/content/editors/footer/LogoFooterEditor';
 import LogoHeaderEditor from '@/components/custom-ui/content/editors/footer/LogoHeaderEditor';
 import SocialsEditor from '@/components/custom-ui/content/editors/footer/SocialsEditor';
+import FaqsEditor from '@/components/custom-ui/content/editors/footer/FaqsEditor';
 import AtributosEditor from '@/components/custom-ui/content/editors/home/AtributosEditor';
 import BannerDinamicoEditor from '@/components/custom-ui/content/editors/home/BanneDynamicEditor';
 import BrandsEditor from '@/components/custom-ui/content/editors/home/BrandsEditor';
 import ImagenPromocionalEditor from '@/components/custom-ui/content/editors/home/ImagePromEditor';
 import ImagenesPromocionalesEditor from '@/components/custom-ui/content/editors/home/ImagesDynamicsEditor';
 import ModalEditor from '@/components/custom-ui/content/editors/home/ModalEditor';
+import NewsLetterEditor from '@/components/custom-ui/content/editors/home/NewsLetterEditor';
 import TituloSectionEditor from '@/components/custom-ui/content/editors/home/TitleSectionEditor';
 import ComplaintsBookEditor from '@/components/custom-ui/content/editors/legals/ComplaintsBookEditor';
 import CookiesEditor from '@/components/custom-ui/content/editors/legals/CookiesEditor';
@@ -72,11 +74,13 @@ const EDITOR_COMPONENTS: Record<string, React.ComponentType<any>> = {
     home_promo_dynamic: ImagenesPromocionalesEditor,
     home_attributes: AtributosEditor,
     home_section_title: TituloSectionEditor,
+    home_newsletter:NewsLetterEditor,
     // Footer
     footer_logo_header: LogoHeaderEditor,
     footer_logo_footer: LogoFooterEditor,
     footer_contact_info: ContactInfoEditor,
     footer_socials: SocialsEditor,
+    faqs_info: FaqsEditor,
 
     // Legales
     tyc_editor: TermsConditionsEditor,

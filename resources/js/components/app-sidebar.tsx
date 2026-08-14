@@ -123,6 +123,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Lista de Trabajos',
                 href: '/jobs/items',
             },
+            {
+                title:'Lista de Suscripciones',
+                href:'/subscriptions/items',
+            }
         ],
     },
     {
