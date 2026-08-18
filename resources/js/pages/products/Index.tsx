@@ -27,7 +27,7 @@ export default function Index() {
                         {/* Botón para crear producto */}
                         <Link
                             href="/productos/items/create"
-                            className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
+                            className="flex items-center gap-2 rounded-sm bg-black px-2.5 py-1.5 text-sm text-white"
                         >
                             <Plus className="mr-1 h-4 w-4" />
                             Crear Producto
@@ -36,7 +36,7 @@ export default function Index() {
                         {/* Botón para importar Excel */}
                         <Link
                             href="/productos/items/import"
-                            className="flex items-center gap-2 rounded-sm bg-green-600 px-2.5 py-1.5 text-sm text-white hover:bg-green-700"
+                            className="flex items-center gap-2 rounded-sm bg-black px-2.5 py-1.5 text-sm text-white hover:bg-black/90"
                         >
                             <Plus className="mr-1 h-4 w-4" />
                             Importar Productos
@@ -46,7 +46,7 @@ export default function Index() {
                                 window.location.href =
                                     productRoutes.items.export().url;
                             }}
-                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-blue-600 px-2.5 py-1.5 text-sm text-white hover:bg-blue-700"
+                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-2.5 py-1.5 text-sm text-white hover:bg-black/90"
                         >
                             <Plus className="mr-1 h-4 w-4" />
                             Exportar Productos

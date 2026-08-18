@@ -12,7 +12,7 @@ export default function Index() {
      
     return (
         <AppLayout>
-            <Head title="Lista de CLientes" />
+            <Head title="Lista de Categorias" />
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold lg:text-2xl">

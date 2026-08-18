@@ -13,7 +13,7 @@ export default function Edit() {
     // console.log('category', category);
     return (
         <AppLayout>
-            <Head title="Lista de CLientes" />
+            <Head title="Lista para Categoria de Blog" />
              <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>

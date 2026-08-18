@@ -10,7 +10,7 @@ import { BackButton } from '@/components/custom-ui/PageHeader';
 export default function Create() {
     return (
         <AppLayout>
-            <Head title="Lista de CLientes" />
+            <Head title="Lista de Atributos" />
              <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>

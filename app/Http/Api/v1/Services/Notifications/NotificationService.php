@@ -7,11 +7,29 @@ use App\Models\Customers\NotificationRead;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
     const DEFAULT_IMAGE = '/images/daryza-default.png';
+
+    // TTL del cache Redis para getNotifications
+    private const CACHE_TTL = 60; // segundos
+
+    private function cacheKey(string $prefix, ?string $customerId, ?string $visitorId, int $page): string
+    {
+        $id = $customerId ? "c:{$customerId}" : "v:{$visitorId}";
+        return "notifications:{$prefix}:{$id}:p{$page}";
+    }
+
+    public function invalidateCache(?string $customerId, ?string $visitorId): void
+    {
+        // Invalida las primeras 10 páginas (suficiente en práctica)
+        for ($p = 1; $p <= 10; $p++) {
+            Cache::forget($this->cacheKey('list', $customerId, $visitorId, $p));
+        }
+    }
 
     // ─────────────────────────────────────────────────────────────
     // HELPERS PRIVADOS
@@ -22,7 +40,7 @@ class NotificationService
         return $query->where(function ($q) use ($customerId, $visitorId) {
             if ($customerId && $visitorId) {
                 $q->where('customer_id', $customerId)
-                  ->orWhere('visitor_id', $visitorId);
+                    ->orWhere('visitor_id', $visitorId);
             } elseif ($customerId) {
                 $q->where('customer_id', $customerId);
             } else {
@@ -36,10 +54,6 @@ class NotificationService
         return $image ?? self::DEFAULT_IMAGE;
     }
 
-    /**
-     * Busca el registro existente para esta identidad (customer o visitor).
-     * Nunca mezcla ambos — resuelve exactamente UNO.
-     */
     private function findRecord(string $notificationId, ?string $customerId, ?string $visitorId): ?NotificationRead
     {
         $query = NotificationRead::where('notification_id', $notificationId);
@@ -47,18 +61,13 @@ class NotificationService
         if ($customerId) {
             $query->where('customer_id', $customerId);
         } else {
-            // Cuando no hay customer, buscar SOLO por visitor_id
             $query->whereNull('customer_id')
-                  ->where('visitor_id', $visitorId);
+                ->where('visitor_id', $visitorId);
         }
 
         return $query->first();
     }
 
-    /**
-     * Upsert seguro contra race conditions y violaciones UNIQUE.
-     * Centraliza toda la lógica de insert/update en un solo lugar.
-     */
     private function upsertNotificationRead(
         string $notificationId,
         ?string $customerId,
@@ -77,15 +86,11 @@ class NotificationService
                     'visitor_id'      => $customerId ? null : $visitorId,
                 ], $attributes));
             }
-
         } catch (\Illuminate\Database\QueryException $e) {
-            // Race condition: alguien insertó entre nuestro SELECT y nuestro INSERT
-            // Solo se da en concurrencia alta, pero lo manejamos igual
             $code = $e->getCode();
             if ($code === '23505' || $code === '23000') {
-                // Reintentar solo el update — el registro ya existe
                 $this->findRecord($notificationId, $customerId, $visitorId)
-                     ?->update($attributes);
+                    ?->update($attributes);
             } else {
                 throw $e;
             }
@@ -93,19 +98,31 @@ class NotificationService
     }
 
     // ─────────────────────────────────────────────────────────────
-    // GET NOTIFICATIONS
+    // GET NOTIFICATIONS — con Redis cache
     // ─────────────────────────────────────────────────────────────
 
-    public function getNotifications(?string $customerId, ?string $visitorId, int $perPage = 5): array
+    public function getNotifications(?string $customerId, ?string $visitorId, int $perPage = 5, int $page = 1): array
     {
-        // IDs eliminados para este usuario
+        $cacheKey = $this->cacheKey('list', $customerId, $visitorId, $page);
+
+        // Usa Cache::tags() directo
+        return Cache::tags(['notifications'])->remember($cacheKey, self::CACHE_TTL, function () use ($customerId, $visitorId, $perPage, $page) {
+            return $this->fetchNotifications($customerId, $visitorId, $perPage, $page);
+        });
+    }
+    public function clearNotificationCache(): void
+    {
+
+        Cache::tags(['notifications'])->flush();
+    }
+    private function fetchNotifications(?string $customerId, ?string $visitorId, int $perPage, int $page): array
+    {
         $deletedIds = $this->identifierQuery(
             NotificationRead::where('is_deleted', true),
             $customerId,
             $visitorId
         )->pluck('notification_id')->toArray();
 
-        // Mapa read_at por notification_id
         $readMap = $this->identifierQuery(
             NotificationRead::where('is_deleted', false)->whereNotNull('read_at'),
             $customerId,
@@ -114,21 +131,19 @@ class NotificationService
 
         $paginator = Notification::whereNotIn('id', $deletedIds)
             ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->paginate($perPage, ['*'], 'page', $page);
 
         $notifications = $paginator->getCollection();
 
-        // ── Pre-cargar productos y packs en 2 queries (evita N+1) ──
-
         $productIds = $notifications
-            ->whereIn('type', ['new_product', 'promotion'])
+            ->whereIn('type', ['new_product', 'product_promotion'])
             ->pluck('data.product_id')
             ->filter()
             ->unique()
             ->values();
 
         $packIds = $notifications
-            ->where('type', 'new_pack')
+            ->whereIn('type', ['new_pack', 'pack_promotion'])
             ->pluck('data.product_id')
             ->filter()
             ->unique()
@@ -144,15 +159,16 @@ class NotificationService
             ->get()
             ->keyBy('id');
 
-        // ── Mapear ──
-
         $data = $notifications->map(function (Notification $n) use ($readMap, $products, $packs) {
+            $data = $n->data ?? [];
 
-            $data = $n->data;
+            // 👈 SOBREESCRIBIR CON LOS VALORES REALES DE LA TABLA NOTIFICATIONS
+            $data['type']    = $n->type;
+            $data['title']   = $n->title;
+            $data['message'] = $n->message;
 
-            // Productos dinámicos (new_product y promotion)
-            if (in_array($n->type, ['new_product', 'promotion'])) {
-
+            // CASOS 1 Y 2: Producto (Nuevo o Promoción)
+            if (in_array($n->type, ['new_product', 'product_promotion'])) {
                 $product = $products[$data['product_id'] ?? null] ?? null;
 
                 if ($product) {
@@ -165,7 +181,7 @@ class NotificationService
                     $data['productName']  = $product->name;
                     $data['productImage'] = $this->resolveImage($variant?->mainImage?->file_path ?? null);
                     $data['url']          = $product->slug;
-                    $data['inPromotion']  = (bool) $variant?->is_on_promo;
+                    $data['inPromotion']  = $n->type === 'product_promotion';
                 } else {
                     $data['productName']  = 'Producto no disponible';
                     $data['productImage'] = $this->resolveImage(null);
@@ -174,16 +190,15 @@ class NotificationService
                 }
             }
 
-            // Packs dinámicos
-            if ($n->type === 'new_pack') {
-
+            // CASOS 3 Y 4: Pack (Nuevo o Promoción)
+            if (in_array($n->type, ['new_pack', 'pack_promotion'])) {
                 $pack = $packs[$data['product_id'] ?? null] ?? null;
 
                 if ($pack) {
                     $data['productName']  = $pack->name;
                     $data['productImage'] = $this->resolveImage($pack->mainImage?->file_path ?? null);
                     $data['url']          = $pack->slug;
-                    $data['inPromotion']  = (bool) $pack->is_on_promotion;
+                    $data['inPromotion']  = $n->type === 'pack_promotion';
                 } else {
                     $data['productName']  = 'Pack no disponible';
                     $data['productImage'] = $this->resolveImage(null);
@@ -194,12 +209,12 @@ class NotificationService
 
             return [
                 'id'      => $n->id,
+                'type'    => $n->type,
                 'data'    => $data,
                 'read_at' => $readMap[$n->id] ?? null,
             ];
         });
 
-        // Unread total: notificaciones que no están en readMap ni eliminadas
         $unreadTotal = Notification::whereNotIn('id', array_merge(
             $deletedIds,
             $readMap->keys()->toArray()
@@ -212,7 +227,6 @@ class NotificationService
             'lastPage'    => $paginator->lastPage(),
         ];
     }
-
     // ─────────────────────────────────────────────────────────────
     // MARK AS READ
     // ─────────────────────────────────────────────────────────────
@@ -223,22 +237,21 @@ class NotificationService
             'read_at'    => now(),
             'is_deleted' => false,
         ]);
+        $this->invalidateCache($customerId, $visitorId);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // MARK ALL AS READ  — bulk (3 queries fijas, no loop)
+    // MARK ALL AS READ
     // ─────────────────────────────────────────────────────────────
 
     public function markAllAsRead(?string $customerId, ?string $visitorId): void
     {
-        // 1. IDs que ya tienen registro para este usuario
         $existingIds = $this->identifierQuery(
             NotificationRead::query(),
             $customerId,
             $visitorId
         )->pluck('notification_id')->toArray();
 
-        // 2. Actualizar los que ya existen en bulk
         if (!empty($existingIds)) {
             $this->identifierQuery(
                 NotificationRead::whereIn('notification_id', $existingIds),
@@ -250,8 +263,7 @@ class NotificationService
             ]);
         }
 
-        // 3. Insertar los que no tienen registro aún (bulk insert en chunks)
-        $allIds    = Notification::pluck('id')->toArray();
+        $allIds     = Notification::pluck('id')->toArray();
         $missingIds = array_diff($allIds, $existingIds);
 
         if (!empty($missingIds)) {
@@ -266,11 +278,12 @@ class NotificationService
                 'updated_at'      => $now,
             ], $missingIds);
 
-            // Chunks de 200 para no explotar el query con miles de rows
             foreach (array_chunk($rows, 200) as $chunk) {
                 NotificationRead::insert($chunk);
             }
         }
+
+        $this->invalidateCache($customerId, $visitorId);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -283,10 +296,11 @@ class NotificationService
             'is_deleted' => true,
             'read_at'    => now(),
         ]);
+        $this->invalidateCache($customerId, $visitorId);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // SYNC VISITOR → CUSTOMER  (llamar al login)
+    // SYNC VISITOR → CUSTOMER
     // ─────────────────────────────────────────────────────────────
 
     public function syncVisitorToCustomer(string $customerId, string $visitorId): void
@@ -294,21 +308,17 @@ class NotificationService
         $visitorRecords = NotificationRead::where('visitor_id', $visitorId)->get();
 
         foreach ($visitorRecords as $visitorRecord) {
-
-            // ¿Ya existe un registro de este customer para esta notificación?
             $customerRecord = NotificationRead::where('notification_id', $visitorRecord->notification_id)
                 ->where('customer_id', $customerId)
                 ->first();
 
             if ($customerRecord) {
-                // Merge: is_deleted=true gana, read_at más antiguo gana
                 $customerRecord->update([
                     'is_deleted' => $customerRecord->is_deleted || $visitorRecord->is_deleted,
                     'read_at'    => $customerRecord->read_at ?? $visitorRecord->read_at,
                 ]);
                 $visitorRecord->delete();
             } else {
-                // Sin conflicto: solo migrar
                 $visitorRecord->update([
                     'customer_id' => $customerId,
                     'visitor_id'  => null,
@@ -318,55 +328,178 @@ class NotificationService
     }
 
     // ─────────────────────────────────────────────────────────────
-    // NOTIFICACIONES (sin snapshot)
+    // NOTIFY — con upsert por tipo+product_id (no duplica)
     // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Busca notif existente del mismo tipo para el mismo product_id.
+     * Si existe la reutiliza (no duplica), si no la crea.
+     */
+    private function upsertNotification(string $type, string $title, string $message, array $data): Notification
+    {
+        $existing = Notification::where('type', $type)
+            ->whereJsonContains('data->product_id', $data['product_id'])
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'title'   => $title,
+                'message' => $message,
+                'data'    => $data, // 👈 Se guarda el nuevo array data con message y title correctos
+            ]);
+            $notification = $existing;
+        } else {
+            $notification = Notification::create([
+                'type'    => $type,
+                'title'   => $title,
+                'message' => $message,
+                'data'    => $data,
+            ]);
+        }
+
+        Cache::tags(['notifications'])->flush();
+
+        return $notification;
+    }
+
+    private function deleteNotificationByTypeAndProduct(string $type, string $productId): void
+    {
+        Notification::where('type', $type)
+            ->whereJsonContains('data->product_id', $productId)
+            ->delete();
+
+        // Invalida la caché para eliminar notificaciones antiguas del menú inmediatamente
+        Cache::tags(['notifications'])->flush();
+    }
 
     public function notifyNewProduct(Product $product): void
     {
         if (!$product->is_active) return;
 
-        Notification::create([
-            'type'    => 'new_product',
-            'title'   => '¡Nuevo producto disponible!',
-            'message' => '¡Dale click y entérate más!',
-            'data'    => [
-                'type'       => 'new_product',
-                'product_id' => $product->id,
-                'timestamp'  => now()->toIso8601String(),
-            ],
-        ]);
+        // Evita duplicar si el producto ya tiene una promoción activa
+        $hasPromoNotif = Notification::where('type', 'product_promotion')
+            ->whereJsonContains('data->product_id', $product->id)
+            ->exists();
+
+        if ($hasPromoNotif) return;
+
+        $title = '¡Nuevo producto!';
+        $message = 'Haz clic para conocer más.';
+
+        $this->upsertNotification(
+            'new_product',
+            $title,
+            $message,
+            [
+                'type'        => 'new_product',
+                'title'       => $title,
+                'message'     => $message,
+                'product_id'  => $product->id,
+                'productName' => $product->name,
+                'timestamp'   => now()->toIso8601String(),
+            ]
+        );
     }
+
 
     public function notifyNewPack(ProductPack $pack): void
     {
         if (!$pack->is_active) return;
 
-        Notification::create([
-            'type'    => 'new_pack',
-            'title'   => '¡Nuevo pack disponible!',
-            'message' => '¡Dale click y entérate más!',
-            'data'    => [
-                'type'       => 'new_pack',
-                'product_id' => $pack->id,
-                'timestamp'  => now()->toIso8601String(),
-            ],
-        ]);
+        // Evita duplicar si el pack ya tiene una promoción activa
+        $hasPromoNotif = Notification::where('type', 'pack_promotion')
+            ->whereJsonContains('data->product_id', $pack->id)
+            ->exists();
+
+        if ($hasPromoNotif) return;
+
+        $title = '¡Nuevo pack!';
+        $message = 'Haz clic para conocer más.';
+
+        $this->upsertNotification(
+            'new_pack',
+            $title,
+            $message,
+            [
+                'type'        => 'new_pack',
+                'title'       => $title,
+                'message'     => $message,
+                'product_id'  => $pack->id,
+                'productName' => $pack->name,
+                'timestamp'   => now()->toIso8601String(),
+            ]
+        );
     }
 
-    public function notifyPromotion(Product $product, ?ProductVariant $variant = null): void
+    public function notifyPromotion(Product $product, ProductVariant $variant): void
     {
         if (!$product->is_active) return;
 
-        Notification::create([
-            'type'    => 'promotion',
-            'title'   => '¡Producto en promoción!',
-            'message' => 'Este producto ahora tiene descuento.',
-            'data'    => [
-                'type'       => 'promotion',
-                'product_id' => $product->id,
-                'timestamp'  => now()->toIso8601String(),
-            ],
-        ]);
+        // Elimina notificación de nuevo producto previa para ser reemplazada por la oferta
+        $this->deleteNotificationByTypeAndProduct('new_product', $product->id);
+
+        $title = '¡Producto en oferta!';
+        $message = "Haz clic para conocer más.";
+
+        $this->upsertNotification(
+            'product_promotion',
+            $title,
+            $message,
+            [
+                'type'        => 'product_promotion',
+                'title'       => $title,
+                'message'     => $message,
+                'product_id'  => $product->id,
+                'productName' => $product->name,
+                'promoPrice'  => $variant->promo_price,
+                'timestamp'   => now()->toIso8601String(),
+            ]
+        );
+    }
+
+
+    public function removePromotion(Product $product): void
+    {
+        // 1. Elimina la notificación de promoción activa
+        $this->deleteNotificationByTypeAndProduct('product_promotion', $product->id);
+
+        // 2. Vuelve a registrarlo/asegurarlo como nuevo producto
+        $this->notifyNewProduct($product);
+    }
+
+    public function notifyPackPromotion(ProductPack $pack): void
+    {
+        if (!$pack->is_active) return;
+
+        // Elimina notificación de nuevo pack previa para ser reemplazada por la oferta
+        $this->deleteNotificationByTypeAndProduct('new_pack', $pack->id);
+
+        $title = '¡Pack en oferta!';
+        $message = "Haz clic para conocer más.";
+
+        $this->upsertNotification(
+            'pack_promotion',
+            $title,
+            $message,
+            [
+                'type'        => 'pack_promotion',
+                'title'       => $title,
+                'message'     => $message,
+                'product_id'  => $pack->id,
+                'productName' => $pack->name,
+                'promoPrice'  => $pack->promo_price,
+                'timestamp'   => now()->toIso8601String(),
+            ]
+        );
+    }
+
+    public function removePackPromotion(ProductPack $pack): void
+    {
+        // 1. Elimina la notificación de promoción del pack
+        $this->deleteNotificationByTypeAndProduct('pack_promotion', $pack->id);
+
+        // 2. Vuelve a registrarlo/asegurarlo como nuevo pack
+        $this->notifyNewPack($pack);
     }
 
     public function notifyOrderCreated($order): void

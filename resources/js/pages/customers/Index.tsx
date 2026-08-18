@@ -22,7 +22,7 @@ export default function Index() {
                         onClick={() => {
                             window.location.href = '/clientes/export';
                         }}
-                        className="flex cursor-pointer items-center gap-2 rounded-sm bg-blue-600 px-2.5 py-1.5 text-sm text-white hover:bg-blue-700"
+                        className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-2.5 py-1.5 text-sm text-white hover:bg-black/90"
                     >
                         <Download className="mr-1 h-4 w-4" />
                         Exportar Clientes

@@ -60,28 +60,14 @@ class UbigeoController extends Controller
     return $this->success('Departamentos con cobertura de delivery cargados', $departments);
   }
 
-  public function checkoutProvinces(string $departmentId)
-  {
-    $department = Department::query()->findOrFail($departmentId);
-    $zoneIds = $this->zoneIdsByType();
-
-    $departmentHasCoverage = in_array($department->id, $zoneIds['department'], true);
-
-    $provincesQuery = $department->provinces()
-      ->select('id', 'name')
-      ->orderBy('name');
-
-    if (!$departmentHasCoverage) {
-      $provincesQuery->where(function ($query) use ($zoneIds) {
-        $query->whereIn('id', $zoneIds['province'])
-          ->orWhereHas('districts', fn($districtQuery) => $districtQuery->whereIn('id', $zoneIds['district']));
-      });
-    }
-
-    $provinces = $provincesQuery->get();
+public function checkoutProvinces(string $departmentId)
+{
+    $provinces = Province::select('id', 'name')
+        ->where('ubigeo_id', '3927')
+        ->get();
 
     return $this->success('Provincias con cobertura de delivery cargadas', $provinces);
-  }
+}
 
   public function checkoutDistricts(string $provinceId)
   {

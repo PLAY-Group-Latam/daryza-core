@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Http\Web\Imports\ProductsImport;
+use App\Models\Products\Product;
 use App\Models\Products\ProductImportSession;
 use App\Observers\Web\Product\ProductObserver;
+use App\Http\Api\v1\Services\Notifications\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -91,6 +93,21 @@ class ProcessProductImportSessionJob implements ShouldQueue
                 'finished_at' => now(),
                 'resume_from_row' => null,
             ]);
+
+            // Notificaciones post-import: disparar promo solo para productos
+            // importados que tienen al menos una variante activa en promoción.
+            // new_product queda silenciado (muteNotifications) durante todo el import.
+            if (!$dryRun && in_array($status, ['completed', 'completed_with_errors'], true)) {
+                $promoProductIds = $import->getImportedProductIdsWithPromo();
+                if (!empty($promoProductIds)) {
+                    $notifService = app(NotificationService::class);
+                    Product::whereIn('id', $promoProductIds)
+                        ->where('is_active', true)
+                        ->get()
+                        ->each(fn(Product $product) => $notifService->notifyPromotion($product));
+                }
+            }
+
         } catch (ValidationException $e) {
             $failures = $e->failures();
             $summary = [
@@ -229,8 +246,6 @@ class ProcessProductImportSessionJob implements ShouldQueue
             $summary['errors_total_available'] = $details->count();
         }
 
-        // Guardamos todo el detalle para asegurar que la UI siempre pueda paginar
-        // todos los errores, incluso si no existe archivo auxiliar.
         $summary['error_details'] = $details->all();
         $summary['errors'] = $messages->all();
 

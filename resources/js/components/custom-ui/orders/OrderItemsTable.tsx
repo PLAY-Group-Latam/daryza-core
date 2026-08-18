@@ -24,7 +24,7 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                 <thead className="bg-muted/30 text-left">
                     <tr>
                         <th className="px-4 py-2">Nombre</th>
-                        <th className="px-4 py-2">Sku Daryza</th>
+                        <th className="px-4 py-2">SKU DARYZA</th>
                         <th className="px-4 py-2">Cantidad</th>
                         <th className="px-4 py-2">Unitario</th>
                         <th className="px-4 py-2">Subtotal</th>
@@ -78,12 +78,12 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                                             )}
                                         </span>
                                         {variantAttributes.length > 0 && (
-                                            <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                            <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
                                                 {variantAttributes.map(
                                                     (attribute, index) => (
-                                                        <span
+                                                        <div
                                                             key={`${item.id}-attr-${index}`}
-                                                            className="inline-flex items-center gap-1"
+                                                            className="inline-flex items-center gap-1.5"
                                                         >
                                                             {attribute.isColorAttribute ? (
                                                                 <>
@@ -111,17 +111,10 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                                                                     }
                                                                 </span>
                                                             )}
-                                                            {index <
-                                                            variantAttributes.length -
-                                                                1 ? (
-                                                                <span className="text-muted-foreground/60">
-                                                                    |
-                                                                </span>
-                                                            ) : null}
-                                                        </span>
+                                                        </div>
                                                     ),
                                                 )}
-                                            </span>
+                                            </div>
                                         )}
                                     </div>
                                 </td>

@@ -10,7 +10,7 @@ export default function Edit() {
     }>().props;
     return (
         <AppLayout>
-            <Head title="Lista de CLientes" />
+            <Head title="Lista de Blog" />
              <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
