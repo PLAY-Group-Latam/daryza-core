@@ -180,12 +180,41 @@ class ProductImportService
   /**
    * Crear variante de producto
    */
-  public function createVariant(Product $product, array $data, ?string &$status = null): ProductVariant
+  public function createVariant(Product $product, array $data, ?string &$status = null, array $attributes = []): ProductVariant
   {
-    // Buscamos la variante por SKU incluyendo las borradas
-    $variant = ProductVariant::withTrashed()
-      ->where('sku', $data['sku_daryza'])
-      ->first();
+    // Buscar variante por producto + SKU (no global)
+    $existingQuery = ProductVariant::withTrashed()
+      ->where('product_id', $product->id)
+      ->where('sku', $data['sku_daryza']);
+
+    // Si vienen atributos, intentar matchear por combinación exacta
+    $variant = null;
+    if (!empty($attributes)) {
+      $candidates = $existingQuery->get();
+
+      foreach ($candidates as $candidate) {
+        $candidateAttrValues = $candidate->attributes()
+          ->pluck('value')
+          ->map(fn($v) => strtolower(trim($v)))
+          ->sort()
+          ->values()
+          ->all();
+
+        $incomingAttrValues = collect($attributes)
+          ->values()
+          ->map(fn($v) => strtolower(trim((string) $v)))
+          ->sort()
+          ->values()
+          ->all();
+
+        if ($candidateAttrValues === $incomingAttrValues) {
+          $variant = $candidate;
+          break;
+        }
+      }
+    } else {
+      $variant = $existingQuery->first();
+    }
 
     $variantData = [
       'product_id'     => $product->id,
@@ -201,11 +230,9 @@ class ProductImportService
 
     if ($variant) {
       $wasTrashed = $variant->trashed();
-      // 1. Si estaba borrada, la restauramos
       if ($wasTrashed) {
         $variant->restore();
       }
-      // 2. Actualizamos con los nuevos datos del Excel
       $variant->fill($variantData);
       $wasDirty = $variant->isDirty();
       if ($wasDirty) {
@@ -217,14 +244,12 @@ class ProductImportService
 
     $isFirstVariant = !$product->variants()->exists();
     $variantData['is_main'] = $isFirstVariant;
-    // 3. Si no existe, creación limpia
     $variantData['id'] = Str::ulid();
     $variantData['sku'] = $data['sku_daryza'];
 
     $status = 'created';
     return ProductVariant::create($variantData);
   }
-
   /**
    * Crea o actualiza la variante principal cuando la fila no trae atributos de variante.
    *

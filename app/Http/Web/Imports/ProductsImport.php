@@ -137,7 +137,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function shouldCreateVariant(array $ctx): bool
     {
-        return $ctx['has_sku'] && $ctx['has_price'];
+        return $ctx['has_sku'] && $ctx['has_price'];    
     }
 
     private function validateVariantRequirements(
@@ -391,24 +391,30 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             if ($ctx['has_sku']) {
                 if (isset($this->seenSkus[$ctx['sku_normalized']])) {
                     $previous = $this->seenSkus[$ctx['sku_normalized']];
-                    $this->summary['sku_duplicates']++;
-                    $this->registerRowError(
-                        $excelRow,
-                        "SKU duplicado. Ya se uso en la fila {$previous['row']}.",
-                        [
-                            'codigo' => $code,
-                            'sku_daryza' => $sku_daryza,
-                        ],
-                        [ProductImportRowMapper::HEADER_SKU_DARYZA],
-                        $row
-                    );
-                    continue;
+
+                    // ← Solo rechazar si es un producto DIFERENTE
+                    if ($previous['code'] !== $code) {
+                        $this->summary['sku_duplicates']++;
+                        $this->registerRowError(
+                            $excelRow,
+                            "SKU duplicado. Ya se uso en la fila {$previous['row']} para otro producto.",
+                            [
+                                'codigo' => $code,
+                                'sku_daryza' => $sku_daryza,
+                            ],
+                            [ProductImportRowMapper::HEADER_SKU_DARYZA],
+                            $row
+                        );
+                        continue;
+                    }
+                    // mismo producto → ok, no registrar en seenSkus de nuevo
+                } else {
+                    $this->seenSkus[$ctx['sku_normalized']] = [
+                        'row' => $excelRow,
+                        'code' => $code,
+                        'sku' => $sku_daryza,
+                    ];
                 }
-                $this->seenSkus[$ctx['sku_normalized']] = [
-                    'row' => $excelRow,
-                    'code' => $code,
-                    'sku' => $sku_daryza,
-                ];
             }
 
             if ($ctx['has_sku']) {
@@ -536,7 +542,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 $variantData = $this->runTransactionalWithRowError(
                     fn() => DB::transaction(function () use ($service, $product, $mapped, $ctx, $sku_daryza) {
                         $variantStatus = null;
-                        $variant = $service->createVariant($product, $mapped['variant'], $variantStatus);
+                        $variant = $service->createVariant($product, $mapped['variant'], $variantStatus, $mapped['attributes']);
 
                         $attributes = $mapped['attributes'];
                         if (!empty($attributes)) {
@@ -772,8 +778,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         array $context = [],
         array $columns = [],
         array|Collection|null $row = null
-    ): void
-    {
+    ): void {
         $this->summary['failed']++;
 
         $line = "Fila {$excelRow}: {$message}";
