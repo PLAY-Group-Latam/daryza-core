@@ -4,47 +4,73 @@ namespace App\Observers\Web\Product;
 
 use App\Http\Api\v1\Services\Notifications\NotificationService;
 use App\Models\Products\ProductVariant;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class ProductVariantObserver
 {
-    public function updated(ProductVariant $variant): void
+    private function isPromoActive(ProductVariant $variant): bool
     {
-        // 1. Si la bandera de promo no está activa, salir
-        if (!$variant->is_on_promo) {
-            return;
-        }
+        if (!$variant->is_on_promo || !$variant->is_active) return false;
+
+        $hasValidPrice = !empty($variant->promo_price)
+            && (float) $variant->promo_price > 0
+            && (float) $variant->promo_price < (float) $variant->price;
+
+        if (!$hasValidPrice) return false;
 
         $now = now();
 
-        // 2. Validar precios válidos
-        $hasValidPrice = !empty($variant->promo_price) 
-            && (float) $variant->promo_price > 0 
-            && (float) $variant->promo_price < (float) $variant->price;
-
-        // 3. Ajustar horas para inicio y fin de día en la validación
-        $hasValidStartDate = is_null($variant->promo_start_at) 
+        $startOk = is_null($variant->promo_start_at)
             || $variant->promo_start_at->copy()->startOfDay()->lte($now);
 
-        $hasValidEndDate = is_null($variant->promo_end_at) 
+        $endOk = is_null($variant->promo_end_at)
             || $variant->promo_end_at->copy()->endOfDay()->gte($now);
 
-        $isPromoActive = $variant->is_active 
-            && $hasValidPrice 
-            && $hasValidStartDate 
-            && $hasValidEndDate;
+        return $startOk && $endOk;
+    }
 
-        // 4. Si la fecha ya expiró realmente, cancelar
-        if (!$isPromoActive) {
-            return;
-        }
+    public function updated(ProductVariant $variant): void
+    {
+        $promoRelatedChanged = $variant->wasChanged([
+            'is_on_promo',
+            'is_active',
+            'promo_price',
+            'promo_start_at',
+            'promo_end_at',
+        ]);
 
-        // 5. Emitir notificación tras confirmar la transacción
-        DB::afterCommit(function () use ($variant) {
+        if (!$promoRelatedChanged) return;
+
+        $promoNowActive = $this->isPromoActive($variant);
+
+        DB::afterCommit(function () use ($variant, $promoNowActive) {
             $product = $variant->product;
-            if ($product) {
-                app(NotificationService::class)
-                    ->notifyPromotion($product, $variant->fresh());
+            if (!$product) return;
+
+            $service = app(NotificationService::class);
+
+            if ($promoNowActive) {
+                // Promo válida en esta variante → notif de oferta apuntando a esta variante
+                $service->notifyPromotion($product, $variant->fresh());
+            } else {
+                // Esta variante ya no tiene promo válida.
+                // Solo quitar notif si NINGUNA otra variante del producto sigue en promo activa.
+                $stillHasActivePromo = $product->variants()
+                    ->where('id', '!=', $variant->id)
+                    ->where('is_on_promo', true)
+                    ->where('is_active', true)
+                    ->where(fn($q) => $q->whereNull('promo_start_at')
+                        ->orWhere('promo_start_at', '<=', now()))
+                    ->where(fn($q) => $q->whereNull('promo_end_at')
+                        ->orWhere('promo_end_at', '>', now()))
+                    ->exists();
+
+                if (!$stillHasActivePromo) {
+                    // Ninguna variante en promo → quitar notif promo, crear new_product
+                    $service->removePromotion($product);
+                }
+                // Si otra variante sigue en promo, no tocamos nada
             }
         });
     }

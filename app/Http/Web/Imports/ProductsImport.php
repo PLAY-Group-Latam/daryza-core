@@ -772,7 +772,8 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         array $context = [],
         array $columns = [],
         array|Collection|null $row = null
-    ): void {
+    ): void
+    {
         $this->summary['failed']++;
 
         $line = "Fila {$excelRow}: {$message}";
@@ -1132,52 +1133,5 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-    /**
-     * Devuelve los IDs de productos importados que tienen al menos
-     * una variante activa en promoción. Úsalo post-import para
-     * disparar notifyPromotion() solo donde corresponde.
-     *
-     * @return array<int, string>  product IDs
-     */
-    public function getImportedProductIdsWithPromo(): array
-    {
-        if (empty($this->productsCache)) {
-            return [];
-        }
-
-        $productIds = collect($this->productsCache)
-            ->map(fn($p) => is_object($p) ? $p->id : null)
-            ->filter()
-            ->values()
-            ->all();
-
-        if (empty($productIds)) {
-            return [];
-        }
-
-        $today = now()->format('Y-m-d');
-
-        return \App\Models\Products\ProductVariant::whereIn('product_id', $productIds)
-            ->where('is_active', true)
-            ->where('is_on_promo', true)
-            ->whereNotNull('offer_price')
-            ->where('offer_price', '>', 0)
-            ->whereColumn('offer_price', '<', 'price')
-            // Validar que la fecha de inicio ya haya comenzado o sea nula
-            ->where(function ($q) use ($today) {
-                $q->whereNull('offer_start_date')
-                    ->orWhereDate('offer_start_date', '<=', $today);
-            })
-            // Validar que la fecha de fin NO haya pasado y no sea nula/vacía
-            ->where(function ($q) use ($today) {
-                $q->whereNotNull('offer_end_date')
-                    ->where('offer_end_date', '!=', '')
-                    ->whereDate('offer_end_date', '>=', $today);
-            })
-            ->pluck('product_id')
-            ->unique()
-            ->values()
-            ->all();
     }
 }

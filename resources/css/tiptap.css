@@ -32,6 +32,32 @@
     font-weight: 700;
 }
 
+/* subrayado (Fix para reset de CSS / Tailwind) */
+.rich-editor u {
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+}
+
+/* resaltado de texto (Highlight extension) */
+.rich-editor mark {
+    background-color: #fef08a; /* Color por defecto */
+    border-radius: 0.2rem;
+    padding: 0.1em 0.25em;
+    color: inherit;
+}
+
+/* soporte para marcas de resaltado con estilos en línea (multicolor) */
+.rich-editor mark[style] {
+    border-radius: 0.2rem;
+    padding: 0.1em 0.25em;
+}
+
+/* color de texto personalizado (TextStyle + Color extension) */
+.rich-editor span[style*="color"] {
+    /* Mantiene el renderizado correcto del estilo inline de TipTap */
+    display: inline;
+}
+
 /* encabezados */
 .rich-editor h1 {
     font-size: 2rem;

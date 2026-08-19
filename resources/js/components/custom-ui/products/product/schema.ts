@@ -20,14 +20,14 @@ const ExistingMediaSchema = z
         mediable_id: z.string().optional(),
         mediable_type: z.string().optional(),
         file_path: z.string().min(1),
-        type: z.enum(['image', 'video', 'technical_sheet']).optional(),
+        type: z.enum(['image', 'video', 'technical_sheet', 'other']).optional(),
         folder: z.string().optional(),
         is_main: z.boolean().optional(),
         order: z.number().optional(),
         created_at: z.string().optional(),
         updated_at: z.string().optional(),
     })
-    .strict();
+    .passthrough();
 
 const VariantAttributeSchema = z.object({
     attribute_id: z.string().min(1),
@@ -150,22 +150,6 @@ export const ProductSchema = z
             });
         }
 
-        const skuMap = new Map<string, number>();
-        data.variants.forEach((variant, index) => {
-            const normalizedSku = variant.sku.trim().toLowerCase();
-            if (!normalizedSku) return;
-
-            if (skuMap.has(normalizedSku)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ['variants', index, 'sku'],
-                    message: 'El SKU está repetido en el formulario.',
-                });
-            } else {
-                skuMap.set(normalizedSku, index);
-            }
-        });
-
         data.variants.forEach((variant, index) => {
             if (!variant.is_on_promo) return;
 
@@ -260,16 +244,17 @@ export const ProductSchema = z
                 }
             }
 
-            const signature =
-                selectedValues.sort().join('|') || '__no_variant_attributes__';
-            if (combinationSignatures.has(signature)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ['variants', index, 'attributes'],
-                    message: 'La combinación de atributos está duplicada.',
-                });
-            } else {
-                combinationSignatures.set(signature, index);
+            if (selectedAttributeIds.size > 0) {
+                const signature = selectedValues.sort().join('|');
+                if (combinationSignatures.has(signature)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['variants', index, 'attributes'],
+                        message: 'La combinación de atributos está duplicada.',
+                    });
+                } else {
+                    combinationSignatures.set(signature, index);
+                }
             }
         });
     });

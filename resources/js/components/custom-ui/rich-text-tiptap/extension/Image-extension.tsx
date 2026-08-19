@@ -3,7 +3,6 @@
 
 import Image from '@tiptap/extension-image';
 import {
-    NodeViewContent,
     type NodeViewProps,
     NodeViewWrapper,
     ReactNodeViewRenderer,
@@ -33,23 +32,18 @@ import { cn, duplicateContent } from '@/lib/utils';
 export const ImageExtension = Image.extend({
     addAttributes() {
         return {
-            src: {
-                default: null,
-            },
-            alt: {
-                default: null,
-            },
-            title: {
-                default: null,
-            },
+            ...this.parent?.(),
             width: {
                 default: '100%',
-            },
-            height: {
-                default: null,
+                renderHTML: (attributes) => ({
+                    style: `width: ${typeof attributes.width === 'number' ? `${attributes.width}px` : attributes.width}`,
+                }),
             },
             align: {
                 default: 'center',
+                renderHTML: (attributes) => ({
+                    'data-align': attributes.align,
+                }),
             },
         };
     },
@@ -64,9 +58,7 @@ function TiptapImage(props: NodeViewProps) {
     const imageRef = useRef<HTMLImageElement | null>(null);
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const [resizing, setResizing] = useState(false);
-    const [resizingPosition, setResizingPosition] = useState<'left' | 'right'>(
-        'left',
-    );
+    const [resizingPosition, setResizingPosition] = useState<'left' | 'right'>('left');
     const [resizeInitialWidth, setResizeInitialWidth] = useState(0);
     const [resizeInitialMouseX, setResizeInitialMouseX] = useState(0);
 
@@ -87,7 +79,6 @@ function TiptapImage(props: NodeViewProps) {
         event.preventDefault();
 
         setResizing(true);
-
         setResizeInitialMouseX(event.clientX);
         if (imageRef.current) {
             setResizeInitialWidth(imageRef.current.offsetWidth);
@@ -95,17 +86,15 @@ function TiptapImage(props: NodeViewProps) {
     }
 
     function resize(event: MouseEvent) {
-        if (!resizing) {
-            return;
-        }
+        if (!resizing) return;
 
         let dx = event.clientX - resizeInitialMouseX;
         if (resizingPosition === 'left') {
             dx = resizeInitialMouseX - event.clientX;
         }
 
-        const newWidth = Math.max(resizeInitialWidth + dx, 150); // Minimum width: 150
-        const parentWidth = nodeRef.current?.parentElement?.offsetWidth || 0; // Get the parent element's width
+        const newWidth = Math.max(resizeInitialWidth + dx, 150);
+        const parentWidth = nodeRef.current?.parentElement?.offsetWidth || 0;
 
         if (newWidth < parentWidth) {
             updateAttributes({
@@ -136,9 +125,7 @@ function TiptapImage(props: NodeViewProps) {
     }
 
     function handleTouchMove(event: TouchEvent) {
-        if (!resizing) {
-            return;
-        }
+        if (!resizing) return;
 
         let dx = event.touches[0].clientX - resizeInitialMouseX;
         if (resizingPosition === 'left') {
@@ -161,12 +148,9 @@ function TiptapImage(props: NodeViewProps) {
         setResizeInitialWidth(0);
     }
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
-        // Mouse events
         window.addEventListener('mousemove', resize);
         window.addEventListener('mouseup', endResize);
-        // Touch events
         window.addEventListener('touchmove', handleTouchMove);
         window.addEventListener('touchend', handleTouchEnd);
         return () => {
@@ -181,29 +165,31 @@ function TiptapImage(props: NodeViewProps) {
         <NodeViewWrapper
             ref={nodeRef}
             className={cn(
-                'relative flex flex-col rounded-md border-2 border-transparent',
+                'relative flex flex-col rounded-md border-2 border-transparent select-none',
                 selected ? 'border-blue-300' : '',
                 node.attrs.align === 'left' && 'left-0 -translate-x-0',
                 node.attrs.align === 'center' && 'left-1/2 -translate-x-1/2',
                 node.attrs.align === 'right' && 'left-full -translate-x-full',
             )}
-            style={{ width: node.attrs.width }}
+            style={{ 
+                width: typeof node.attrs.width === 'number' ? `${node.attrs.width}px` : node.attrs.width 
+            }}
         >
-            <div
-                className={cn(
-                    'group relative flex flex-col rounded-md',
-                    resizing && '',
-                )}
-            >
+            <div className="group relative flex flex-col rounded-md">
                 <img
                     ref={imageRef}
                     src={node.attrs.src}
                     alt={node.attrs.alt}
                     title={node.attrs.title}
+                    className="rounded-md object-cover"
                 />
-                <NodeViewContent className="text-center">
-                    {node.attrs.title}
-                </NodeViewContent>
+
+                {/* Remplazado NodeViewContent por renderizado standard */}
+                {node.attrs.title && (
+                    <span className="mt-1 text-center text-xs text-muted-foreground block">
+                        {node.attrs.title}
+                    </span>
+                )}
 
                 {editor?.isEditable && (
                     <>
@@ -329,12 +315,12 @@ function TiptapImage(props: NodeViewProps) {
                                     <DropdownMenuItem
                                         onClick={() => {
                                             updateAttributes({
-                                                width: 'fit-content',
+                                                width: '100%',
                                             });
                                         }}
                                     >
                                         <Maximize className="mr-2 size-4" />{' '}
-                                        Full Screen
+                                        Full Width
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem

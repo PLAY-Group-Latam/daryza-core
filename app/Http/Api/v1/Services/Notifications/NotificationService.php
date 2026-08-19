@@ -8,14 +8,11 @@ use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
     const DEFAULT_IMAGE = '/images/daryza-default.png';
-
-    // TTL del cache Redis para getNotifications
-    private const CACHE_TTL = 60; // segundos
+    private const CACHE_TTL = 60;
 
     private function cacheKey(string $prefix, ?string $customerId, ?string $visitorId, int $page): string
     {
@@ -25,10 +22,14 @@ class NotificationService
 
     public function invalidateCache(?string $customerId, ?string $visitorId): void
     {
-        // Invalida las primeras 10 páginas (suficiente en práctica)
         for ($p = 1; $p <= 10; $p++) {
             Cache::forget($this->cacheKey('list', $customerId, $visitorId, $p));
         }
+    }
+
+    public function clearNotificationCache(): void
+    {
+        Cache::tags(['notifications'])->flush();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -47,11 +48,6 @@ class NotificationService
                 $q->where('visitor_id', $visitorId);
             }
         });
-    }
-
-    private function resolveImage(?string $image): string
-    {
-        return $image ?? self::DEFAULT_IMAGE;
     }
 
     private function findRecord(string $notificationId, ?string $customerId, ?string $visitorId): ?NotificationRead
@@ -97,6 +93,23 @@ class NotificationService
         }
     }
 
+    /**
+     * Primer media (image o video) ordenado por 'order' asc.
+     * El que tenga menor order gana, sin importar tipo.
+     */
+    private function resolveVariantMedia($mediaCollection): array
+    {
+        $media = $mediaCollection
+            ->whereIn('type', ['image', 'video'])
+            ->sortBy('order')
+            ->first();
+
+        return [
+            'file'      => $media?->file_path ?? null,
+            'mediaType' => $media?->type ?? null,
+        ];
+    }
+
     // ─────────────────────────────────────────────────────────────
     // GET NOTIFICATIONS — con Redis cache
     // ─────────────────────────────────────────────────────────────
@@ -105,16 +118,11 @@ class NotificationService
     {
         $cacheKey = $this->cacheKey('list', $customerId, $visitorId, $page);
 
-        // Usa Cache::tags() directo
         return Cache::tags(['notifications'])->remember($cacheKey, self::CACHE_TTL, function () use ($customerId, $visitorId, $perPage, $page) {
             return $this->fetchNotifications($customerId, $visitorId, $perPage, $page);
         });
     }
-    public function clearNotificationCache(): void
-    {
 
-        Cache::tags(['notifications'])->flush();
-    }
     private function fetchNotifications(?string $customerId, ?string $visitorId, int $perPage, int $page): array
     {
         $deletedIds = $this->identifierQuery(
@@ -138,23 +146,30 @@ class NotificationService
         $productIds = $notifications
             ->whereIn('type', ['new_product', 'product_promotion'])
             ->pluck('data.product_id')
-            ->filter()
-            ->unique()
-            ->values();
+            ->filter()->unique()->values();
 
         $packIds = $notifications
             ->whereIn('type', ['new_pack', 'pack_promotion'])
             ->pluck('data.product_id')
-            ->filter()
-            ->unique()
-            ->values();
+            ->filter()->unique()->values();
 
-        $products = Product::with(['variants.mainImage'])
+        $products = Product::with([
+            'variants' => function ($q) {
+                $q->where('is_active', true)
+                    ->with(['media' => function ($m) {
+                        $m->whereIn('type', ['image', 'video'])
+                            ->orderBy('order', 'asc');
+                    }]);
+            },
+        ])
             ->whereIn('id', $productIds)
             ->get()
             ->keyBy('id');
 
-        $packs = ProductPack::with('mainImage')
+        $packs = ProductPack::with(['media' => function ($m) {
+            $m->whereIn('type', ['image', 'video'])
+                ->orderBy('order', 'asc');
+        }])
             ->whereIn('id', $packIds)
             ->get()
             ->keyBy('id');
@@ -162,48 +177,78 @@ class NotificationService
         $data = $notifications->map(function (Notification $n) use ($readMap, $products, $packs) {
             $data = $n->data ?? [];
 
-            // 👈 SOBREESCRIBIR CON LOS VALORES REALES DE LA TABLA NOTIFICATIONS
             $data['type']    = $n->type;
             $data['title']   = $n->title;
             $data['message'] = $n->message;
 
-            // CASOS 1 Y 2: Producto (Nuevo o Promoción)
+            // ── Productos ──
             if (in_array($n->type, ['new_product', 'product_promotion'])) {
                 $product = $products[$data['product_id'] ?? null] ?? null;
 
                 if ($product) {
-                    $variant = $product->variants
-                        ->where('is_main', true)
-                        ->where('is_active', true)
-                        ->first()
-                        ?? $product->variants->where('is_active', true)->first();
+                    if ($n->type === 'product_promotion') {
+                        // Variante que tiene la promo — guardamos su ID en data al crear la notif
+                        // Usamos variant_id del data si existe, sino buscamos la primera en promo
+                        $variant = isset($data['variant_id'])
+                            ? $product->variants->firstWhere('id', $data['variant_id'])
+                            : null;
 
-                    $data['productName']  = $product->name;
-                    $data['productImage'] = $this->resolveImage($variant?->mainImage?->file_path ?? null);
-                    $data['url']          = $product->slug;
-                    $data['inPromotion']  = $n->type === 'product_promotion';
+                        $variant ??= $product->variants->where('is_on_promo', true)->first()
+                            ?? $product->variants->where('is_main', true)->first()
+                            ?? $product->variants->first();
+
+                        // URL apunta directo a la variante en promo
+                        $url = $variant
+                            ? $product->slug . '?variant_id=' . $variant->id
+                            : $product->slug;
+                    } else {
+                        // new_product: variante principal
+                        $variant = $product->variants->where('is_main', true)->first()
+                            ?? $product->variants->first();
+
+                        // URL apunta al producto sin especificar variante
+                        // (la PDP selecciona la principal por defecto)
+                        $url = $product->slug;
+                    }
+
+                    $resolved = $this->resolveVariantMedia($variant?->media ?? collect());
+
+                    $data['productName']      = $product->name;
+                    $data['productImage']     = $resolved['file'];
+                    $data['productMediaType'] = $resolved['mediaType'];
+                    $data['url']              = $url;
+                    $data['inPromotion']      = $n->type === 'product_promotion';
                 } else {
-                    $data['productName']  = 'Producto no disponible';
-                    $data['productImage'] = $this->resolveImage(null);
-                    $data['url']          = null;
-                    $data['inPromotion']  = false;
+                    $data['productName']      = 'Producto no disponible';
+                    $data['productImage']     = null;
+                    $data['productMediaType'] = null;
+                    $data['url']              = null;
+                    $data['inPromotion']      = false;
                 }
             }
 
-            // CASOS 3 Y 4: Pack (Nuevo o Promoción)
+            // ── Packs ──
             if (in_array($n->type, ['new_pack', 'pack_promotion'])) {
                 $pack = $packs[$data['product_id'] ?? null] ?? null;
 
                 if ($pack) {
-                    $data['productName']  = $pack->name;
-                    $data['productImage'] = $this->resolveImage($pack->mainImage?->file_path ?? null);
-                    $data['url']          = $pack->slug;
-                    $data['inPromotion']  = $n->type === 'pack_promotion';
+                    // Primer media en orden (image o video), igual que variantes de producto
+                    $firstMedia = $pack->media
+                        ->whereIn('type', ['image', 'video'])
+                        ->sortBy('order')
+                        ->first();
+
+                    $data['productName']      = $pack->name;
+                    $data['productImage']     = $firstMedia?->file_path ?? null;
+                    $data['productMediaType'] = $firstMedia?->type ?? null;
+                    $data['url']              = $pack->slug;
+                    $data['inPromotion']      = $n->type === 'pack_promotion';
                 } else {
-                    $data['productName']  = 'Pack no disponible';
-                    $data['productImage'] = $this->resolveImage(null);
-                    $data['url']          = null;
-                    $data['inPromotion']  = false;
+                    $data['productName']      = 'Pack no disponible';
+                    $data['productImage']     = null;
+                    $data['productMediaType'] = null;
+                    $data['url']              = null;
+                    $data['inPromotion']      = false;
                 }
             }
 
@@ -227,6 +272,7 @@ class NotificationService
             'lastPage'    => $paginator->lastPage(),
         ];
     }
+
     // ─────────────────────────────────────────────────────────────
     // MARK AS READ
     // ─────────────────────────────────────────────────────────────
@@ -328,13 +374,9 @@ class NotificationService
     }
 
     // ─────────────────────────────────────────────────────────────
-    // NOTIFY — con upsert por tipo+product_id (no duplica)
+    // NOTIFY — upsert por tipo+product_id (no duplica)
     // ─────────────────────────────────────────────────────────────
 
-    /**
-     * Busca notif existente del mismo tipo para el mismo product_id.
-     * Si existe la reutiliza (no duplica), si no la crea.
-     */
     private function upsertNotification(string $type, string $title, string $message, array $data): Notification
     {
         $existing = Notification::where('type', $type)
@@ -345,7 +387,7 @@ class NotificationService
             $existing->update([
                 'title'   => $title,
                 'message' => $message,
-                'data'    => $data, // 👈 Se guarda el nuevo array data con message y title correctos
+                'data'    => $data,
             ]);
             $notification = $existing;
         } else {
@@ -368,102 +410,85 @@ class NotificationService
             ->whereJsonContains('data->product_id', $productId)
             ->delete();
 
-        // Invalida la caché para eliminar notificaciones antiguas del menú inmediatamente
         Cache::tags(['notifications'])->flush();
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // MÉTODOS PÚBLICOS DE NOTIFICACIÓN
+    // ─────────────────────────────────────────────────────────────
 
     public function notifyNewProduct(Product $product): void
     {
         if (!$product->is_active) return;
 
-        // Evita duplicar si el producto ya tiene una promoción activa
         $hasPromoNotif = Notification::where('type', 'product_promotion')
             ->whereJsonContains('data->product_id', $product->id)
             ->exists();
 
         if ($hasPromoNotif) return;
 
-        $title = '¡Nuevo producto!';
+        $title   = '¡Nuevo producto!';
         $message = 'Haz clic para conocer más.';
 
-        $this->upsertNotification(
-            'new_product',
-            $title,
-            $message,
-            [
-                'type'        => 'new_product',
-                'title'       => $title,
-                'message'     => $message,
-                'product_id'  => $product->id,
-                'productName' => $product->name,
-                'timestamp'   => now()->toIso8601String(),
-            ]
-        );
+        // new_product no lleva variant_id — la PDP abre la variante principal por defecto
+        $this->upsertNotification('new_product', $title, $message, [
+            'type'        => 'new_product',
+            'title'       => $title,
+            'message'     => $message,
+            'product_id'  => $product->id,
+            'productName' => $product->name,
+            'timestamp'   => now()->toIso8601String(),
+        ]);
     }
-
 
     public function notifyNewPack(ProductPack $pack): void
     {
         if (!$pack->is_active) return;
 
-        // Evita duplicar si el pack ya tiene una promoción activa
         $hasPromoNotif = Notification::where('type', 'pack_promotion')
             ->whereJsonContains('data->product_id', $pack->id)
             ->exists();
 
         if ($hasPromoNotif) return;
 
-        $title = '¡Nuevo pack!';
+        $title   = '¡Nuevo pack!';
         $message = 'Haz clic para conocer más.';
 
-        $this->upsertNotification(
-            'new_pack',
-            $title,
-            $message,
-            [
-                'type'        => 'new_pack',
-                'title'       => $title,
-                'message'     => $message,
-                'product_id'  => $pack->id,
-                'productName' => $pack->name,
-                'timestamp'   => now()->toIso8601String(),
-            ]
-        );
+        $this->upsertNotification('new_pack', $title, $message, [
+            'type'        => 'new_pack',
+            'title'       => $title,
+            'message'     => $message,
+            'product_id'  => $pack->id,
+            'productName' => $pack->name,
+            'timestamp'   => now()->toIso8601String(),
+        ]);
     }
 
     public function notifyPromotion(Product $product, ProductVariant $variant): void
     {
         if (!$product->is_active) return;
 
-        // Elimina notificación de nuevo producto previa para ser reemplazada por la oferta
         $this->deleteNotificationByTypeAndProduct('new_product', $product->id);
 
-        $title = '¡Producto en oferta!';
-        $message = "Haz clic para conocer más.";
+        $title   = '¡Producto en oferta!';
+        $message = 'Haz clic para conocer más.';
 
-        $this->upsertNotification(
-            'product_promotion',
-            $title,
-            $message,
-            [
-                'type'        => 'product_promotion',
-                'title'       => $title,
-                'message'     => $message,
-                'product_id'  => $product->id,
-                'productName' => $product->name,
-                'promoPrice'  => $variant->promo_price,
-                'timestamp'   => now()->toIso8601String(),
-            ]
-        );
+        // Guardamos variant_id para que el link lleve directo a esa variante en promo
+        $this->upsertNotification('product_promotion', $title, $message, [
+            'type'        => 'product_promotion',
+            'title'       => $title,
+            'message'     => $message,
+            'product_id'  => $product->id,
+            'variant_id'  => $variant->id,
+            'productName' => $product->name,
+            'promoPrice'  => $variant->promo_price,
+            'timestamp'   => now()->toIso8601String(),
+        ]);
     }
-
 
     public function removePromotion(Product $product): void
     {
-        // 1. Elimina la notificación de promoción activa
         $this->deleteNotificationByTypeAndProduct('product_promotion', $product->id);
-
-        // 2. Vuelve a registrarlo/asegurarlo como nuevo producto
         $this->notifyNewProduct($product);
     }
 
@@ -471,34 +496,25 @@ class NotificationService
     {
         if (!$pack->is_active) return;
 
-        // Elimina notificación de nuevo pack previa para ser reemplazada por la oferta
         $this->deleteNotificationByTypeAndProduct('new_pack', $pack->id);
 
-        $title = '¡Pack en oferta!';
-        $message = "Haz clic para conocer más.";
+        $title   = '¡Pack en oferta!';
+        $message = 'Haz clic para conocer más.';
 
-        $this->upsertNotification(
-            'pack_promotion',
-            $title,
-            $message,
-            [
-                'type'        => 'pack_promotion',
-                'title'       => $title,
-                'message'     => $message,
-                'product_id'  => $pack->id,
-                'productName' => $pack->name,
-                'promoPrice'  => $pack->promo_price,
-                'timestamp'   => now()->toIso8601String(),
-            ]
-        );
+        $this->upsertNotification('pack_promotion', $title, $message, [
+            'type'        => 'pack_promotion',
+            'title'       => $title,
+            'message'     => $message,
+            'product_id'  => $pack->id,
+            'productName' => $pack->name,
+            'promoPrice'  => $pack->promo_price,
+            'timestamp'   => now()->toIso8601String(),
+        ]);
     }
 
     public function removePackPromotion(ProductPack $pack): void
     {
-        // 1. Elimina la notificación de promoción del pack
         $this->deleteNotificationByTypeAndProduct('pack_promotion', $pack->id);
-
-        // 2. Vuelve a registrarlo/asegurarlo como nuevo pack
         $this->notifyNewPack($pack);
     }
 

@@ -26,8 +26,6 @@ class VariantPayloadValidator
         $attributeValueAttributeMap = $this->buildAttributeValueAttributeMap($variants);
 
         $seenCombinations = [];
-        $seenSkus = [];
-
         foreach ($variants as $variantIndex => $variant) {
             $variantId = $variant['id'] ?? null;
             $sku = trim((string) ($variant['sku'] ?? ''));
@@ -45,7 +43,7 @@ class VariantPayloadValidator
                 $sku,
                 $variantId,
                 $variantIndex,
-                $seenSkus,
+                $product,
                 $validateSkuInDatabase
             );
 
@@ -107,37 +105,25 @@ class VariantPayloadValidator
         }
     }
 
-    /**
-     * @param  array<string, int>  $seenSkus
-     */
     private function validateSku(
         Validator $validator,
         string $sku,
         ?string $variantId,
         int $variantIndex,
-        array &$seenSkus,
+        ?Product $product,
         bool $validateSkuInDatabase
     ): void {
         if ($sku === '') {
             return;
         }
 
-        if (isset($seenSkus[$sku])) {
-            $validator->errors()->add(
-                "variants.$variantIndex.sku",
-                'No puede haber dos variantes con el mismo SKU en el formulario.'
-            );
-            return;
-        }
-
-        $seenSkus[$sku] = $variantIndex;
-
         if (!$validateSkuInDatabase) {
             return;
         }
 
-        $skuInUse = ProductVariant::query()
+        $skuInUse = ProductVariant::withTrashed()
             ->where('sku', $sku)
+            ->when($product, fn($q) => $q->where('product_id', '!=', $product->id))
             ->when($variantId, fn($q) => $q->where('id', '!=', $variantId))
             ->exists();
 
@@ -260,4 +246,3 @@ class VariantPayloadValidator
         $seenCombinations[$signature] = $variantIndex;
     }
 }
-

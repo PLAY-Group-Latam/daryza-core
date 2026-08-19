@@ -2,6 +2,7 @@
 
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
+import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,10 +75,9 @@ export function GeneralSection() {
                 render={({ field }) => (
                     <div className="flex flex-col gap-2">
                         <Label>Descripción completa</Label>
-                        <textarea
-                            {...field}
-                            className="min-h-[180px] w-full rounded-xl border p-4 text-sm"
-                            placeholder="Describe el producto en detalle..."
+                        <RichTextEditor
+                            value={field.value || ''}
+                            onChange={field.onChange}
                         />
                     </div>
                 )}

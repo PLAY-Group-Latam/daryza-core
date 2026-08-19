@@ -68,7 +68,7 @@ class StoreProductRequest extends FormRequest
 
             // — Variantes —
             'variants'                  => ['required', 'array', 'min:1'],
-            'variants.*.sku'            => ['required', 'string', 'max:100', 'unique:product_variants,sku'],
+            'variants.*.sku'            => ['required', 'string', 'max:100'],
             'variants.*.sku_supplier'   => ['nullable', 'string', 'max:100'],
             'variants.*.price'          => ['required', 'numeric', 'min:0'],
             'variants.*.promo_price'    => ['nullable', 'numeric', 'min:0'],
@@ -187,7 +187,7 @@ class StoreProductRequest extends FormRequest
                 $variants,
                 $selectedVariantAttributeIds,
                 null,
-                false
+                true
             );
 
             app(PromotionPayloadValidator::class)->validate(
