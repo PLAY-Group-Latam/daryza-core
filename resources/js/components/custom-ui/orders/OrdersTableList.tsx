@@ -347,7 +347,7 @@ export default function OrdersTableList({
                         <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[200px]">
                     {availableBulkActions.map((item) => {
                         const selectedOrderForLabel =
                             selectedOrders.length === 1

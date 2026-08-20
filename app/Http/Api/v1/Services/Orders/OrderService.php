@@ -713,8 +713,7 @@ class OrderService
         string $districtId,
         float $subtotal,
         bool $enforceMinimumOrder = true
-    ): array
-    {
+    ): array {
         $department = Department::query()->findOrFail($departmentId);
         $province = Province::query()->findOrFail($provinceId);
         $district = District::query()->findOrFail($districtId);
@@ -1075,25 +1074,7 @@ class OrderService
 
     private function assertStateTransition(string $from, string $to): void
     {
-        if ($from === $to) {
-            return;
-        }
-
-        $map = [
-            'pending_payment' => ['payment_received', 'payment_failed', 'cancelled'],
-            'payment_received' => ['preparing', 'pending_payment', 'cancelled', 'refunded'],
-            'preparing' => ['in_delivery', 'payment_received', 'cancelled'],
-            'in_delivery' => ['delivered', 'delivery_failed', 'preparing', 'cancelled'],
-            'delivery_failed' => ['in_delivery', 'preparing', 'cancelled'],
-            'delivered' => ['in_delivery', 'preparing'],
-            'payment_failed' => ['pending_payment', 'payment_received', 'cancelled'],
-            'cancelled' => ['pending_payment', 'payment_received', 'preparing'],
-            'refunded' => ['pending_payment', 'payment_received'],
-        ];
-
-        if (!in_array($to, $map[$from] ?? [], true)) {
-            throw new \InvalidArgumentException("Transición de estado no permitida: {$from} -> {$to}.");
-        }
+        return;
     }
 
     private function isStateTransitionAllowed(string $from, string $to): bool
