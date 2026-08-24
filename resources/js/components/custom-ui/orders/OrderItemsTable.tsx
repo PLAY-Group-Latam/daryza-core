@@ -1,7 +1,7 @@
 import { OrderItem } from './types';
 
 export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
-    console.log('OrderItemsTable rendered with items:', items);
+    
     const toNumber = (
         value: number | string | null | undefined,
     ): number | null => {

@@ -186,7 +186,7 @@ export default function TableList({ data, filters }: TableListProps) {
             data={data}
             onSearch={handleSearch}
             initialSearch={filters?.search}
-            placeholder="Buscar por nombre o SKU..."
+            placeholder="Buscar por nombre o sku daryza..."
         />
     );
 }

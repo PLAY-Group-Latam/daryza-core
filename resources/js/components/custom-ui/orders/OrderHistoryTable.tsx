@@ -9,9 +9,14 @@ function describeStatus(raw: string | null | undefined) {
     return { scope: 'Estado', label: getStateLabel(raw) };
 }
 
-function actorLabel(actor: string) {
-    if (actor === 'admin') return 'Administrador';
-    if (actor === 'customer') return 'Cliente';
+// Actualizamos actorLabel para priorizar el nombre real si existe
+function actorLabel(entry: OrderStatusHistory) {
+    if (entry.changed_by_name) {
+        return entry.changed_by_name;
+    }
+
+    if (entry.changed_by_type === 'admin') return 'Administrador';
+    if (entry.changed_by_type === 'customer') return 'Cliente';
     return 'Sistema';
 }
 
@@ -28,7 +33,7 @@ export default function OrderHistoryTable({ history }: { history: OrderStatusHis
             <table className="min-w-full text-sm">
                 <thead className="bg-muted/30 text-left">
                     <tr>
-                        <th className="px-4 py-3">Accion</th>
+                        <th className="px-4 py-3">Acción</th>
                         <th className="px-4 py-3">Hecho por</th>
                         <th className="px-4 py-3">Fecha</th>
                         <th className="px-4 py-3">Motivo</th>
@@ -39,9 +44,9 @@ export default function OrderHistoryTable({ history }: { history: OrderStatusHis
                         return (
                             <tr key={entry.id} className="border-t align-top">
                                 <td className="px-4 py-3 font-medium">{changeLabel(entry)}</td>
-                                <td className="px-4 py-3">{actorLabel(entry.changed_by_type)}</td>
+                                <td className="px-4 py-3">{actorLabel(entry)}</td>
                                 <td className="px-4 py-3">{formatDate(entry.created_at, true)}</td>
-                                <td className="px-4 py-3 text-muted-foreground">{entry.note || 'Sin observacion'}</td>
+                                <td className="px-4 py-3 text-muted-foreground">{entry.note || 'Sin observación'}</td>
                             </tr>
                         );
                     })}

@@ -43,6 +43,12 @@ export interface OrderStatusHistory {
     from_status?: string | null;
     to_status: string;
     changed_by_type: string;
+    changed_by_name?: string | null;
+    changed_by?: {
+        id: string | number;
+        name: string;
+        email?: string;
+    } | null;
     note?: string | null;
     created_at: string;
 }

@@ -12,11 +12,11 @@ import {
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, Eye } from 'lucide-react';
+import { ChevronDown, Download, Eye,RotateCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import OrderStateDialog from './OrderStateDialog';
 
-import OrderStateGuideDialog from './OrderStateGuideDialog';
 import {
     ADMIN_ACTION_OPTIONS,
     AdminOrderAction,
@@ -162,16 +162,12 @@ export default function OrdersTableList({
                     ).flash;
                     const failedReasons = flash?.bulk_result?.failed ?? [];
                     if (blockedOrders.length > 0) {
-                        setBulkMessage(
-                            `Se enviaron ${allowedOrders.length} orden(es) al cambio. ${blockedOrders.length} quedaron fuera por no aplicar.`,
-                        );
+                        
                         toast.success(
                             `Actualizacion parcial: ${allowedOrders.length} actualizadas, ${blockedOrders.length} sin cambios.`,
                         );
                     } else {
-                        setBulkMessage(
-                            `Se enviaron ${allowedOrders.length} orden(es) al cambio.`,
-                        );
+                      
                         toast.success(
                             `Se actualizaron ${allowedOrders.length} orden(es).`,
                         );
@@ -333,47 +329,40 @@ export default function OrdersTableList({
             isAdminActionAvailable(order, action.value),
         ),
     );
+    
 
-    const toolbarRight = (
-        <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        disabled={selectedIds.length === 0 || isApplying}
-                    >
-                        {isApplying ? 'Aplicando...' : 'Actualizar estado'}{' '}
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[200px]">
-                    {availableBulkActions.map((item) => {
-                        const selectedOrderForLabel =
-                            selectedOrders.length === 1
-                                ? selectedOrders[0]
-                                : null;
-                        const label = selectedOrderForLabel
-                            ? getAdminActionLabel(
-                                  selectedOrderForLabel,
-                                  item.value,
-                              )
-                            : item.label;
+const toolbarRight = (
+    <div className="flex items-center gap-2">
+        {/* Exportar */}
+        <button
+            type="button"
+            onClick={() => {
+                window.location.href = `/ordenes/export${window.location.search}`;
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-2.5 py-1.5 text-sm text-white hover:bg-black/90"
+        >
+            <Download className="mr-1 h-4 w-4" />
+            Exportar Órdenes
+        </button>
 
-                        return (
-                            <DropdownMenuItem
-                                key={item.value}
-                                onClick={() => applyBulkAction(item.value)}
-                            >
-                                {label}
-                            </DropdownMenuItem>
-                        );
-                    })}
-                </DropdownMenuContent>
-            </DropdownMenu>
-            <OrderStateGuideDialog />
-        </>
-    );
+        {/* Modal de Cambio de Estado (Soporta 1 o varias seleccionadas) */}
+        <OrderStateDialog
+            orders={selectedOrders}
+            onSuccessCallback={() => setSelectedIds([])}
+            trigger={
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={selectedIds.length === 0}
+                    className="bg-black text-white hover:bg-black/90 hover:text-white"
+                >
+                    <RotateCw className="mr-2 h-4 w-4" />
+                    Actualizar estado
+                </Button>
+            }
+        />
+    </div>
+);
 
     return (
         <div className="space-y-3">
@@ -386,7 +375,7 @@ export default function OrdersTableList({
                 toolbarRight={toolbarRight}
                 initialSearch={currentSearch}
                 onSearch={(value) => applyTableFilters({ search: value })}
-                placeholder="Buscar por # de orden o nombre del cliente..."
+                placeholder="Buscar por número de orden o cliente..."
             />
         </div>
     );

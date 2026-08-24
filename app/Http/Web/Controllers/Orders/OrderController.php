@@ -57,16 +57,26 @@ class OrderController extends Controller
         $order->load([
             'items',
             'payments',
-            'statusHistory',
+            'statusHistory.changedBy', // Cargamos la relación anidada
             'customer:id,full_name,full_last_name,email,phone,photo,dni,document_type',
         ]);
 
+        // Preparamos la orden serializada con el usuario formateado en el historial
+        $orderData = array_merge(
+            $order->toArray(),
+            $this->orderService->buildAdminStateMeta($order),
+            $this->orderService->buildPricingMeta($order)
+        );
+
+        $orderData['status_history'] = $order->statusHistory->map(function ($history) {
+            return array_merge($history->toArray(), [
+                'changed_by_name' => $history->changedBy?->name
+                    ?? ($history->changed_by_type === 'customer' ? 'Cliente' : 'Sistema'),
+            ]);
+        });
+
         return Inertia::render('orders/Show', [
-            'order' => array_merge(
-                $order->toArray(),
-                $this->orderService->buildAdminStateMeta($order),
-                $this->orderService->buildPricingMeta($order)
-            ),
+            'order' => $orderData,
         ]);
     }
 

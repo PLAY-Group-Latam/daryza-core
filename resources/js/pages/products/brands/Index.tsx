@@ -12,11 +12,11 @@ export default function Index() {
 
     return (
         <AppLayout>
-            <Head title="Marcas" />
+            <Head title="Lista de Marcas" />
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold lg:text-2xl">
-                        Marcas
+                        Lista de Marcas
                     </h1>
                     <Link
                         href="/productos/marcas/create"

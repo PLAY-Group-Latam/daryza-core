@@ -1,5 +1,4 @@
 import { ShoppingCart } from 'lucide-react';
-
 import { OrderDetail } from './types';
 
 export default function OrderTotalsCard({ order }: { order: OrderDetail }) {
@@ -11,7 +10,7 @@ export default function OrderTotalsCard({ order }: { order: OrderDetail }) {
     const total = Number(order.total ?? 0);
 
     return (
-        <div className="rounded-lg border p-5">
+        <div className="flex h-full flex-col justify-between rounded-lg border p-5">
             <p className="mb-4 flex items-center gap-2 text-base font-semibold">
                 <ShoppingCart className="h-4 w-4" /> Resumen de totales
             </p>

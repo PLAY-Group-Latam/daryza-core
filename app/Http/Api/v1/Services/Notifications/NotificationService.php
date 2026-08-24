@@ -185,45 +185,41 @@ class NotificationService
             if (in_array($n->type, ['new_product', 'product_promotion'])) {
                 $product = $products[$data['product_id'] ?? null] ?? null;
 
-                if ($product) {
-                    if ($n->type === 'product_promotion') {
-                        // Variante que tiene la promo — guardamos su ID en data al crear la notif
-                        // Usamos variant_id del data si existe, sino buscamos la primera en promo
-                        $variant = isset($data['variant_id'])
-                            ? $product->variants->firstWhere('id', $data['variant_id'])
-                            : null;
+                if ($n->type === 'product_promotion') {
+                    // 1. Si existe variant_id explícito en el payload de la notificación, intentar traer esa primero
+                    $variant = isset($data['variant_id'])
+                        ? $product->variants->firstWhere('id', $data['variant_id'])
+                        : null;
 
-                        $variant ??= $product->variants->where('is_on_promo', true)->first()
-                            ?? $product->variants->where('is_main', true)->first()
-                            ?? $product->variants->first();
+                    // 2. FALLBACK: Si no viene variant_id o no se encontró, buscar la primera variante con promo VIGENTE
+                    $now = now();
+                    $variant ??= $product->variants
+                        ->filter(function ($v) use ($now) {
+                            if (!$v->is_active || !$v->is_on_promo) return false;
 
-                        // URL apunta directo a la variante en promo
-                        $url = $variant
-                            ? $product->slug . '?variant_id=' . $variant->id
-                            : $product->slug;
-                    } else {
-                        // new_product: variante principal
-                        $variant = $product->variants->where('is_main', true)->first()
-                            ?? $product->variants->first();
+                            // Validación de precio
+                            $hasValidPrice = !empty($v->promo_price)
+                                && (float) $v->promo_price > 0
+                                && (float) $v->promo_price < (float) $v->price;
 
-                        // URL apunta al producto sin especificar variante
-                        // (la PDP selecciona la principal por defecto)
-                        $url = $product->slug;
-                    }
+                            if (!$hasValidPrice) return false;
 
-                    $resolved = $this->resolveVariantMedia($variant?->media ?? collect());
+                            // Validación de fechas
+                            $startOk = is_null($v->promo_start_at) || $v->promo_start_at->lte($now);
+                            $endOk   = is_null($v->promo_end_at)   || $v->promo_end_at->gte($now);
 
-                    $data['productName']      = $product->name;
-                    $data['productImage']     = $resolved['file'];
-                    $data['productMediaType'] = $resolved['mediaType'];
-                    $data['url']              = $url;
-                    $data['inPromotion']      = $n->type === 'product_promotion';
-                } else {
-                    $data['productName']      = 'Producto no disponible';
-                    $data['productImage']     = null;
-                    $data['productMediaType'] = null;
-                    $data['url']              = null;
-                    $data['inPromotion']      = false;
+                            return $startOk && $endOk;
+                        })
+                        ->first();
+
+                    // 3. Si no hay ninguna en promo vigente, caer a la principal o la primera
+                    $variant ??= $product->variants->firstWhere('is_main', true)
+                        ?? $product->variants->first();
+
+                    // Generar la URL
+                    $url = $variant
+                        ? $product->slug . '?variant_id=' . $variant->id
+                        : $product->slug;
                 }
             }
 

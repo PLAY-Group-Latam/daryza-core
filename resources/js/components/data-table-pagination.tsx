@@ -35,9 +35,7 @@ export function DataTablePagination<TData>({ table, meta, onPagination }: DataTa
       
         <div className="mt-4 flex flex-col items-center justify-between gap-4 px-1 md:flex-row md:px-2">
             
-            <div className="hidden text-sm text-muted-foreground md:block md:flex-1">
-                {table.getFilteredSelectedRowModel().rows.length} de {table.getFilteredRowModel().rows.length} fila(s) seleccionadas.
-            </div>
+       
 
             
             <div className="flex flex-col items-center gap-4 sm:flex-row md:space-x-6 lg:space-x-8">

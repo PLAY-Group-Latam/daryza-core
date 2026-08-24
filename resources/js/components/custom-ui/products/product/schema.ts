@@ -137,18 +137,21 @@ export const ProductSchema = z
                 });
             }
         });
+        const hasAnyActiveVariant = data.variants.some((v) => v.is_active);
 
-        const activeMainCount = data.variants.filter(
-            (v) => v.is_active && v.is_main,
-        ).length;
-        if (activeMainCount !== 1) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['variants'],
-                message:
-                    'Debe existir exactamente una variante principal activa.',
-            });
-        }
+       if (hasAnyActiveVariant) {
+    const activeMainCount = data.variants.filter(
+        (v) => v.is_active && v.is_main,
+    ).length;
+
+    if (activeMainCount !== 1) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['variants'],
+            message: 'Debe existir exactamente una variante principal activa.',
+        });
+    }
+}
 
         data.variants.forEach((variant, index) => {
             if (!variant.is_on_promo) return;

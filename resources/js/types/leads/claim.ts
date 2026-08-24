@@ -39,6 +39,7 @@ export interface Claim {
   
     id: string;
     type: string;
+    claim_code?:number;
     full_name: string; 
     email: string;
     phone: string;

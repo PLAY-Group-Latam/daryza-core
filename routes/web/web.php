@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Web\Controllers\Dashboard\DashBoardController;
+use App\Http\Web\Controllers\Feeds\MetaFeedController;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -16,6 +17,8 @@ Route::get('/', function (Request $request) {
         'status' => $request->session()->get('status'),
     ]);
 })->name('home');
+
+Route::get('/meta-feed.xml', MetaFeedController::class)->name('index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Cambiamos la función por el controlador

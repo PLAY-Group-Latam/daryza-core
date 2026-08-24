@@ -171,7 +171,7 @@ export default function TableList({ data }: TableListProps) {
             data={data}
             onSearch={handleSearch}
             initialSearch={filters?.search || ''}
-            placeholder="Buscar por nombre o slug..."
+            placeholder="Buscar por nombre..."
         />
     );
 }

@@ -1216,15 +1216,19 @@ class OrderService
 
     private function generateOrderCode(): string
     {
-        for ($i = 0; $i < 5; $i++) {
-            $numericPart = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
-            $code = 'DAR-' . $numericPart;
+        $lastCode = Order::query()
+            ->where('code', 'like', 'DAR-%')
+            ->latest('id')
+            ->value('code');
 
-            if (!Order::query()->where('code', $code)->exists()) {
-                return $code;
-            }
+        if (!$lastCode) {
+            return 'DAR-' . str_pad('1', 12, '0', STR_PAD_LEFT);
         }
 
-        throw new \RuntimeException('No se pudo generar un código único de orden.');
+        // Extraer la parte numérica y sumar 1
+        $numericPart = (int) str_replace('DAR-', '', $lastCode);
+        $nextNumericPart = str_pad((string) ($numericPart + 1), 12, '0', STR_PAD_LEFT);
+
+        return 'DAR-' . $nextNumericPart;
     }
 }

@@ -28,27 +28,33 @@ class CartService
             $this->ensureIsPurchasable($item, $type);
 
             $cartItem = CartItem::where([
-                'cart_id' => $cart->id,
-                'item_id' => $item->id,
+                'cart_id'   => $cart->id,
+                'item_id'   => $item->id,
                 'item_type' => $modelClass,
             ])->first();
 
             $newQuantity = (int) ($cartItem?->quantity ?? 0) + $quantity;
             $this->ensureStock($item, $newQuantity);
 
+            $name = $type === 'pack'
+                ? $item->name
+                : ($item->product?->name ?? $item->name ?? null);
+
             if ($cartItem) {
                 $cartItem->update([
-                    'quantity' => $newQuantity,
-                    'currency' => 'PEN',
+                    'quantity'   => $newQuantity,
+                    'currency'   => 'PEN',
                     'unit_price' => (float) $item->active_price,
+                    'metadata'   => array_merge($cartItem->metadata ?? [], ['name' => $name]),
                 ]);
             } else {
                 $cart->items()->create([
-                    'item_id' => $item->id,
-                    'item_type' => $modelClass,
-                    'quantity' => $quantity,
-                    'currency' => 'PEN',
+                    'item_id'    => $item->id,
+                    'item_type'  => $modelClass,
+                    'quantity'   => $quantity,
+                    'currency'   => 'PEN',
                     'unit_price' => (float) $item->active_price,
+                    'metadata'   => ['name' => $name],
                 ]);
             }
 
@@ -72,8 +78,8 @@ class CartService
             $this->ensureStock($item, $quantity);
 
             $cartItem->update([
-                'quantity' => $quantity,
-                'currency' => 'PEN',
+                'quantity'   => $quantity,
+                'currency'   => 'PEN',
                 'unit_price' => (float) $item->active_price,
             ]);
 
@@ -109,13 +115,13 @@ class CartService
 
         if (!$cart) {
             return [
-                'items_count' => 0,
+                'items_count'    => 0,
                 'total_quantity' => 0,
             ];
         }
 
         return [
-            'items_count' => (int) $cart->items()->count(),
+            'items_count'    => (int) $cart->items()->count(),
             'total_quantity' => (int) $cart->items()->sum('quantity'),
         ];
     }
@@ -123,7 +129,7 @@ class CartService
     protected function resolveItem(string $itemId, string $type): array
     {
         $modelClass = $type === 'pack' ? ProductPack::class : ProductVariant::class;
-        $item = $modelClass::query()->find($itemId);
+        $item       = $modelClass::query()->find($itemId);
 
         if (!$item) {
             throw new \InvalidArgumentException('El producto solicitado no existe.');
@@ -158,43 +164,96 @@ class CartService
             throw new \InvalidArgumentException('El item del carrito no pertenece al cliente autenticado.');
         }
     }
-protected function loadCart(Cart $cart): Cart
-{
-    $cart->load([
-        'items' => fn($query) => $query->orderByDesc('created_at'),
-        'items.item' => function (MorphTo $morphTo) {
-            $morphTo->morphWith([
-                ProductVariant::class => [
-                    'product',
-                    'product.recommendedProducts' => function ($q) {
-                        $q->active()->with([
-                            'mainVariant' => fn($v) => $v->select('id', 'product_id', 'price', 'promo_price', 'sku', 'is_on_promo'),
-                            'mainVariant.mainImage' => fn($i) => $i->select('id', 'mediable_id', 'mediable_type', 'file_path')
-                        ]);
-                    },
-                    'mainImage',
-                    // 'selections.attributeValue.attribute',
-                    'selections.attributeValue',
-                ],
-                ProductPack::class => [
-                    'mainImage',
-                ],
-            ]);
-        },
-    ]);
 
-    // LOG PARA DEBUG EN SERVICIO
-    $cart->items->each(function($cartItem) {
-        if ($cartItem->item_type === \App\Models\Products\ProductVariant::class) {
-            $count = $cartItem->item->product?->recommendedProducts->count() ?? 0;
-            Log::info("CartService: Item {$cartItem->id} (Producto: {$cartItem->item->product?->name}) tiene {$count} recomendaciones.");
+    protected function loadCart(Cart $cart): Cart
+    {
+        $cart->load([
+            'items' => fn($query) => $query->orderByDesc('created_at'),
+            'items.item' => function (MorphTo $morphTo) {
+                $morphTo->morphWith([
+                    ProductVariant::class => [
+                        'product',
+                        'product.recommendedProducts' => function ($q) {
+                            $q->active()->with([
+                                'mainVariant'           => fn($v) => $v->select('id', 'product_id', 'price', 'promo_price', 'sku', 'is_on_promo'),
+                                'mainVariant.mainImage' => fn($i) => $i->select('id', 'mediable_id', 'mediable_type', 'file_path'),
+                            ]);
+                        },
+                        'mainImage',
+                        'selections.attributeValue',
+                    ],
+                    ProductPack::class => [
+                        'mainImage',
+                    ],
+                ]);
+            },
+        ]);
+
+        $warnings   = [];
+        $validItems = collect();
+
+        foreach ($cart->items as $cartItem) {
+            $item = $cartItem->item;
+            $savedName = $cartItem->metadata['name'] ?? null;
+
+            // Eliminado de BD (migrate o admin)
+            if (!$item) {
+                $label      = $savedName ? "\"$savedName\"" : 'Un producto';
+                $warnings[] = [
+                    'code'    => 'deleted',
+                    'message' => "$label fue eliminado del catálogo y removido de tu carrito.",
+                ];
+                $cartItem->delete();
+                continue;
+            }
+
+            $isPack = $cartItem->item_type === ProductPack::class;
+            $name   = $isPack
+                ? $item->name
+                : ($item->product?->name ?? $savedName ?? 'Producto');
+
+            // Inactivo
+            if (!$item->is_active) {
+                $warnings[] = [
+                    'code'    => 'inactive',
+                    'message' => "\"$name\" ya no está disponible y fue eliminado de tu carrito.",
+                ];
+                $cartItem->delete();
+                continue;
+            }
+
+            $stock    = (int) ($item->stock ?? 0);
+            $quantity = (int) $cartItem->quantity;
+
+            // Sin stock
+            if ($stock === 0) {
+                $warnings[] = [
+                    'code'    => 'out_of_stock',
+                    'message' => "\"$name\" está agotado y fue eliminado de tu carrito.",
+                ];
+                $cartItem->delete();
+                continue;
+            }
+
+            // Stock insuficiente → ajustar cantidad
+            if ($stock < $quantity) {
+                $warnings[] = [
+                    'code'            => 'insufficient_stock',
+                    'message'         => "Solo hay $stock unidad(es) de \"$name\" disponibles. Se ajustó la cantidad en tu carrito.",
+                    'available_stock' => $stock,
+                ];
+                $cartItem->update(['quantity' => $stock]);
+                $cartItem->quantity = $stock;
+            }
+
+            $validItems->push($cartItem);
         }
-    });
 
-    $validItems = $cart->items->filter(fn(CartItem $item) => $item->item !== null)->values();
-    $cart->setRelation('items', $validItems);
+        $cart->setRelation('items', $validItems);
+        $cart->cart_warnings = $warnings;
 
-    return $cart;
+        Log::info("CartService: loadCart — {$validItems->count()} items válidos, " . count($warnings) . " warnings.");
+
+        return $cart;
+    }
 }
-}
-

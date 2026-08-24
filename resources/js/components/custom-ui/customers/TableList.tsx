@@ -36,7 +36,7 @@ export const columns: ColumnDef<Customer>[] = [
     },
     {
         accessorKey: 'email',
-        header: 'Email',
+        header: 'Correo',
         cell: ({ row }) => (
             <span className="lowercase">{row.original.email}</span>
         ),
@@ -114,7 +114,7 @@ export default function TableList({ data }: { data: PaginatedCustomers }) {
             data={data}
             onSearch={handleSearch}
             initialSearch={filters?.search || ''}
-            placeholder="Buscar por nombre, email o DNI..."
+            placeholder="Buscar por nombre o correo..."
         />
     );
 }
