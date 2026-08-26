@@ -22,7 +22,7 @@ class MetaFeedService
     {
         $this->writtenItemIds = [];
 
-        $xml = new XMLWriter();
+        $xml = new XMLWriter;
         $xml->openMemory();
         $xml->startDocument('1.0', 'UTF-8');
         $xml->startElement('rss');
@@ -46,19 +46,16 @@ class MetaFeedService
     private function writeProducts(XMLWriter $xml): void
     {
         Product::query()
+            ->where('is_active', true)
             ->with([
                 'categories',
-                'variants.media',
-                'variants.attributes',
+                'variants' => fn($q) => $q->where('is_active', true)
+                    ->with(['media', 'attributes']),
             ])
             ->orderBy('created_at', 'desc')
             ->chunk(200, function (EloquentCollection $products) use ($xml): void {
                 foreach ($products as $product) {
                     foreach ($product->variants as $variant) {
-                        if (!$variant->is_active) {
-                            continue;
-                        }
-
                         $feedId = $this->resolveFeedId($variant);
 
                         if ($this->alreadyWritten($feedId)) {
@@ -69,9 +66,7 @@ class MetaFeedService
                             $variant->media->where('type', 'image')->sortBy('order')->values()
                         );
 
-                        // Atributos de la variante (ej. Color, Talla, etc.)
                         $attributeValues = $variant->attributes->pluck('name')->toArray();
-
                         $isSimple = empty($attributeValues);
 
                         $this->writeItem($xml, [
@@ -92,6 +87,7 @@ class MetaFeedService
                             'size'                      => $this->normalizeAttribute($this->findAttributeValue($variant, ['size', 'talla'])),
                             'product_type'              => $product->categories->first()?->name,
                             'google_product_category'   => $product->categories->first()?->name,
+                            'images_raw' => $variant->media->sortBy('order')->values(),
                         ]);
                     }
                 }
@@ -107,16 +103,6 @@ class MetaFeedService
 
         $images = $this->imageOnlyCollection($item['images'] ?? collect());
         $mainImage = $this->imageUrl($images->first());
-
-        if (!$mainImage) {
-            Log::warning('Daryza feed item skipped: no valid image', [
-                'item_id'       => $item['id'] ?? null,
-                'item_group_id' => $item['item_group_id'] ?? null,
-                'source'        => __METHOD__,
-            ]);
-
-            return;
-        }
 
         $xml->startElement('item');
         $xml->writeElement('g:id', $itemId);
@@ -135,7 +121,11 @@ class MetaFeedService
         }
 
         $xml->writeElement('g:link', $item['link']);
-        $xml->writeElement('g:image_link', $mainImage);
+
+        if ($mainImage) {
+            $xml->writeElement('g:image_link', $mainImage);
+        }
+
         $xml->writeElement('g:brand', self::BRAND);
         $xml->writeElement('g:item_group_id', $item['item_group_id']);
 
@@ -157,12 +147,22 @@ class MetaFeedService
 
         foreach ($images->slice(1) as $image) {
             $additionalImage = $this->imageUrl($image);
-
             if ($additionalImage) {
                 $xml->writeElement('g:additional_image_link', $additionalImage);
             }
         }
 
+        // en writeItem, después de los additional_image_link
+        $videos = collect($item['images_raw'] ?? collect())
+            ->filter(fn($m) => strtolower((string) $m->getAttribute('type')) === 'video')
+            ->first();
+
+        if ($videos) {
+            $videoUrl = $videos->getAttribute('file_path') ?? $videos->getAttribute('url');
+            if ($videoUrl) {
+                $xml->writeElement('g:video_link', $this->absoluteUrl($videoUrl));
+            }
+        }
         $xml->endElement();
     }
 
@@ -194,7 +194,6 @@ class MetaFeedService
             return false;
         }
 
-        // Si no hay fechas definidas pero is_on_promo está activo, se asume vigente
         if (!$startDate && !$endDate) {
             return (float) $salePrice < (float) $regularPrice;
         }
@@ -236,7 +235,6 @@ class MetaFeedService
             return null;
         }
 
-        // En tus modelos el campo en product_media es 'file_path'
         $url = $image->getAttribute('file_path') ?? $image->getAttribute('url');
         if (!$url) {
             return null;
@@ -254,7 +252,7 @@ class MetaFeedService
         $collection = $images instanceof Collection ? $images->values() : collect($images)->values();
 
         return $collection
-            ->filter(fn ($image) => $this->imageUrl($image) !== null)
+            ->filter(fn($image) => $this->imageUrl($image) !== null)
             ->values();
     }
 
@@ -265,8 +263,8 @@ class MetaFeedService
         }
 
         $suffix = collect($attributes)
-            ->filter(fn ($a) => filled($a))
-            ->reject(fn ($a) => in_array(strtolower(trim((string) $a)), ['pd', 'predeterminado'], true))
+            ->filter(fn($a) => filled($a))
+            ->reject(fn($a) => in_array(strtolower(trim((string) $a)), ['pd', 'predeterminado'], true))
             ->unique()
             ->implode(' - ');
 
@@ -276,8 +274,6 @@ class MetaFeedService
     private function findAttributeValue(ProductVariant $variant, array $keys): ?string
     {
         foreach ($variant->attributes as $attribute) {
-            // Asumiendo que attributes tiene alguna relación o campo que indique el tipo/nombre (ej. attribute->name o similar)
-            // Si tus atributos guardan la propiedad de qué tipo son, puedes validarlo aquí.
             $attributeName = strtolower($attribute->name ?? '');
             foreach ($keys as $key) {
                 if (str_contains($attributeName, $key)) {

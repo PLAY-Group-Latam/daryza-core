@@ -29,6 +29,35 @@ class ProductVariantObserver
         return $startOk && $endOk;
     }
 
+    private function wasPromoActiveBefore(ProductVariant $variant): bool
+    {
+        if (!$variant->getOriginal('is_on_promo') || !$variant->getOriginal('is_active')) {
+            return false;
+        }
+
+        $promoPrice   = $variant->getOriginal('promo_price');
+        $regularPrice = $variant->getOriginal('price');
+
+        $hasValidPrice = !empty($promoPrice)
+            && (float) $promoPrice > 0
+            && (float) $promoPrice < (float) $regularPrice;
+
+        if (!$hasValidPrice) return false;
+
+        $now = now();
+
+        $startAt = $variant->getOriginal('promo_start_at');
+        $endAt   = $variant->getOriginal('promo_end_at');
+
+        $start = $startAt ? \Carbon\Carbon::parse($startAt) : null;
+        $end   = $endAt   ? \Carbon\Carbon::parse($endAt)   : null;
+
+        $startOk = is_null($start) || $start->copy()->startOfDay()->lte($now);
+        $endOk   = is_null($end)   || $end->copy()->endOfDay()->gte($now);
+
+        return $startOk && $endOk;
+    }
+
     public function updated(ProductVariant $variant): void
     {
         $promoRelatedChanged = $variant->wasChanged([
@@ -41,10 +70,9 @@ class ProductVariantObserver
 
         if (!$promoRelatedChanged) return;
 
-        $promoNowActive = $this->isPromoActive($variant);
+        $promoNowActive    = $this->isPromoActive($variant);
+        $wasPromoActiveBefore = $this->wasPromoActiveBefore($variant);
 
-        // Si antes NO tenía promo y ahora TAMPOCO es una promo activa (ej. la guardaste con fecha vencida), no hacemos nada.
-        $wasPromoActiveBefore = $variant->getOriginal('is_on_promo') && $variant->getOriginal('is_active');
         if (!$promoNowActive && !$wasPromoActiveBefore) {
             return;
         }
@@ -56,10 +84,8 @@ class ProductVariantObserver
             $service = app(NotificationService::class);
 
             if ($promoNowActive) {
-                // Notificar promoción activa
                 $service->notifyPromotion($product, $variant->fresh());
             } else {
-                // Solo si TENÍA una promo previa activa y ahora se desactivó/venció, verificamos si otras variantes la mantienen
                 $stillHasActivePromo = $product->variants()
                     ->where('id', '!=', $variant->id)
                     ->where('is_on_promo', true)
@@ -72,7 +98,6 @@ class ProductVariantObserver
                     ->exists();
 
                 if (!$stillHasActivePromo) {
-                    // Quita la notificación de promo que ya tenía el producto.
                     $service->removePromotion($product);
                 }
             }
