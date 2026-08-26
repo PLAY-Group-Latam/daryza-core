@@ -124,155 +124,156 @@ class NotificationService
     }
 
     private function fetchNotifications(?string $customerId, ?string $visitorId, int $perPage, int $page): array
-{
-    $deletedIds = $this->identifierQuery(
-        NotificationRead::where('is_deleted', true),
-        $customerId,
-        $visitorId
-    )->pluck('notification_id')->toArray();
+    {
+        $deletedIds = $this->identifierQuery(
+            NotificationRead::where('is_deleted', true),
+            $customerId,
+            $visitorId
+        )->pluck('notification_id')->toArray();
 
-    $readMap = $this->identifierQuery(
-        NotificationRead::where('is_deleted', false)->whereNotNull('read_at'),
-        $customerId,
-        $visitorId
-    )->pluck('read_at', 'notification_id');
+        $readMap = $this->identifierQuery(
+            NotificationRead::where('is_deleted', false)->whereNotNull('read_at'),
+            $customerId,
+            $visitorId
+        )->pluck('read_at', 'notification_id');
 
-    $paginator = Notification::whereNotIn('id', $deletedIds)
-        ->orderByDesc('created_at')
-        ->paginate($perPage, ['*'], 'page', $page);
+        $paginator = Notification::whereNotIn('id', $deletedIds)
+            ->orderByDesc('created_at')
+            ->paginate($perPage, ['*'], 'page', $page);
 
-    $notifications = $paginator->getCollection();
+        $notifications = $paginator->getCollection();
 
-    $productIds = $notifications
-        ->whereIn('type', ['new_product', 'product_promotion'])
-        ->pluck('data.product_id')
-        ->filter()->unique()->values();
+        $productIds = $notifications
+            ->whereIn('type', ['new_product', 'product_promotion'])
+            ->pluck('data.product_id')
+            ->filter()->unique()->values();
 
-    $packIds = $notifications
-        ->whereIn('type', ['new_pack', 'pack_promotion'])
-        ->pluck('data.product_id')
-        ->filter()->unique()->values();
+        $packIds = $notifications
+            ->whereIn('type', ['new_pack', 'pack_promotion'])
+            ->pluck('data.product_id')
+            ->filter()->unique()->values();
 
-    $products = Product::with([
-        'variants' => function ($q) {
-            $q->where('is_active', true)
-                ->with(['media' => function ($m) {
-                    $m->whereIn('type', ['image', 'video'])
-                        ->orderBy('order', 'asc');
-                }]);
-        },
-    ])
-        ->whereIn('id', $productIds)
-        ->get()
-        ->keyBy('id');
+        $products = Product::with([
+            'variants' => function ($q) {
+                $q->where('is_active', true)
+                    ->with(['media' => function ($m) {
+                        $m->whereIn('type', ['image', 'video'])
+                            ->orderBy('order', 'asc');
+                    }]);
+            },
+        ])
+            ->whereIn('id', $productIds)
+            ->get()
+            ->keyBy('id');
 
-    $packs = ProductPack::with(['media' => function ($m) {
-        $m->whereIn('type', ['image', 'video'])
-            ->orderBy('order', 'asc');
-    }])
-        ->whereIn('id', $packIds)
-        ->get()
-        ->keyBy('id');
+        $packs = ProductPack::with(['media' => function ($m) {
+            $m->whereIn('type', ['image', 'video'])
+                ->orderBy('order', 'asc');
+        }])
+            ->whereIn('id', $packIds)
+            ->get()
+            ->keyBy('id');
 
-    $data = $notifications->map(function (Notification $n) use ($readMap, $products, $packs) {
-        $data = $n->data ?? [];
+        $data = $notifications->map(function (Notification $n) use ($readMap, $products, $packs) {
+            $data = $n->data ?? [];
 
-        $data['type']    = $n->type;
-        $data['title']   = $n->title;
-        $data['message'] = $n->message;
+            $data['type']    = $n->type;
+            $data['title']   = $n->title;
+            $data['message'] = $n->message;
 
-        // ── Productos ──
-        if (in_array($n->type, ['new_product', 'product_promotion'])) {
-            $product = $products[$data['product_id'] ?? null] ?? null;
+            // ── Productos ──
+            if (in_array($n->type, ['new_product', 'product_promotion'])) {
+                $product = $products[$data['product_id'] ?? null] ?? null;
 
-            if (!$product) {
-                $data['productName']      = 'Producto no disponible';
-                $data['productImage']     = null;
-                $data['productMediaType'] = null;
-                $data['url']              = null;
-                $data['inPromotion']      = false;
-            } else {
-                $variant = null;
+                if (!$product) {
+                    $data['productName']      = 'Producto no disponible';
+                    $data['productImage']     = null;
+                    $data['productMediaType'] = null;
+                    $data['url']              = null;
+                    $data['inPromotion']      = false;
+                } else {
+                    $variant = null;
 
-                if ($n->type === 'product_promotion') {
-                    $variant = isset($data['variant_id'])
-                        ? $product->variants->firstWhere('id', $data['variant_id'])
-                        : null;
+                    if ($n->type === 'product_promotion') {
+                        $variant = isset($data['variant_id'])
+                            ? $product->variants->firstWhere('id', $data['variant_id'])
+                            : null;
 
-                    $now = now();
-                    $variant ??= $product->variants
-                        ->filter(function ($v) use ($now) {
-                            if (!$v->is_active || !$v->is_on_promo) return false;
-                            $hasValidPrice = !empty($v->promo_price)
-                                && (float) $v->promo_price > 0
-                                && (float) $v->promo_price < (float) $v->price;
-                            if (!$hasValidPrice) return false;
-                            $startOk = is_null($v->promo_start_at) || $v->promo_start_at->lte($now);
-                            $endOk   = is_null($v->promo_end_at)   || $v->promo_end_at->gte($now);
-                            return $startOk && $endOk;
-                        })
-                        ->first();
+                        $now = now();
+                        $variant ??= $product->variants
+                            ->filter(function ($v) use ($now) {
+                                if (!$v->is_active || !$v->is_on_promo) return false;
+                                $hasValidPrice = !empty($v->promo_price)
+                                    && (float) $v->promo_price > 0
+                                    && (float) $v->promo_price < (float) $v->price;
+                                if (!$hasValidPrice) return false;
+                                $startOk = is_null($v->promo_start_at) || $v->promo_start_at->lte($now);
+                                $endOk   = is_null($v->promo_end_at)   || $v->promo_end_at->gte($now);
+                                return $startOk && $endOk;
+                            })
+                            ->sortByDesc('is_main')  // ← principal primero
+                            ->first();
+                    }
+
+                    $variant ??= $product->variants->firstWhere('is_main', true)
+                        ?? $product->variants->first();
+
+                    $media = $this->resolveVariantMedia($variant?->media ?? collect());
+
+                    $data['productName']      = $product->name;
+                    $data['productImage']     = $media['file'];
+                    $data['productMediaType'] = $media['mediaType'];
+                    $data['url']              = $variant
+                        ? $product->slug . '?variant_id=' . $variant->id
+                        : $product->slug;
+                    $data['inPromotion']      = $n->type === 'product_promotion';
                 }
-
-                $variant ??= $product->variants->firstWhere('is_main', true)
-                    ?? $product->variants->first();
-
-                $media = $this->resolveVariantMedia($variant?->media ?? collect());
-
-                $data['productName']      = $product->name;
-                $data['productImage']     = $media['file'];
-                $data['productMediaType'] = $media['mediaType'];
-                $data['url']              = $variant
-                    ? $product->slug . '?variant_id=' . $variant->id
-                    : $product->slug;
-                $data['inPromotion']      = $n->type === 'product_promotion';
             }
-        }
 
-        // ── Packs ──
-        if (in_array($n->type, ['new_pack', 'pack_promotion'])) {
-            $pack = $packs[$data['product_id'] ?? null] ?? null;
+            // ── Packs ──
+            if (in_array($n->type, ['new_pack', 'pack_promotion'])) {
+                $pack = $packs[$data['product_id'] ?? null] ?? null;
 
-            if ($pack) {
-                $firstMedia = $pack->media
-                    ->whereIn('type', ['image', 'video'])
-                    ->sortBy('order')
-                    ->first();
+                if ($pack) {
+                    $firstMedia = $pack->media
+                        ->whereIn('type', ['image', 'video'])
+                        ->sortBy('order')
+                        ->first();
 
-                $data['productName']      = $pack->name;
-                $data['productImage']     = $firstMedia?->file_path ?? null;
-                $data['productMediaType'] = $firstMedia?->type ?? null;
-                $data['url']              = $pack->slug;
-                $data['inPromotion']      = $n->type === 'pack_promotion';
-            } else {
-                $data['productName']      = 'Pack no disponible';
-                $data['productImage']     = null;
-                $data['productMediaType'] = null;
-                $data['url']              = null;
-                $data['inPromotion']      = false;
+                    $data['productName']      = $pack->name;
+                    $data['productImage']     = $firstMedia?->file_path ?? null;
+                    $data['productMediaType'] = $firstMedia?->type ?? null;
+                    $data['url']              = $pack->slug;
+                    $data['inPromotion']      = $n->type === 'pack_promotion';
+                } else {
+                    $data['productName']      = 'Pack no disponible';
+                    $data['productImage']     = null;
+                    $data['productMediaType'] = null;
+                    $data['url']              = null;
+                    $data['inPromotion']      = false;
+                }
             }
-        }
+
+            return [
+                'id'      => $n->id,
+                'type'    => $n->type,
+                'data'    => $data,
+                'read_at' => $readMap[$n->id] ?? null,
+            ];
+        });
+
+        $unreadTotal = Notification::whereNotIn('id', array_merge(
+            $deletedIds,
+            $readMap->keys()->toArray()
+        ))->count();
 
         return [
-            'id'      => $n->id,
-            'type'    => $n->type,
-            'data'    => $data,
-            'read_at' => $readMap[$n->id] ?? null,
+            'data'        => $data,
+            'total'       => (int) $unreadTotal,
+            'currentPage' => $paginator->currentPage(),
+            'lastPage'    => $paginator->lastPage(),
         ];
-    });
-
-    $unreadTotal = Notification::whereNotIn('id', array_merge(
-        $deletedIds,
-        $readMap->keys()->toArray()
-    ))->count();
-
-    return [
-        'data'        => $data,
-        'total'       => (int) $unreadTotal,
-        'currentPage' => $paginator->currentPage(),
-        'lastPage'    => $paginator->lastPage(),
-    ];
-}
+    }
 
     // ─────────────────────────────────────────────────────────────
     // MARK AS READ
