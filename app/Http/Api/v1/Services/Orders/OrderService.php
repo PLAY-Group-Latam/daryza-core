@@ -572,7 +572,7 @@ class OrderService
         $cutoff = now()->subDays(max(1, $days));
 
         return Order::query()
-            ->where('payment_method_type', 'bank_transfer')
+            ->whereIn('payment_method_type', ['bank_transfer', 'niubiz'])
             ->where('state', 'pending_payment')
             ->where(function ($query) use ($cutoff) {
                 $query->where(function ($sub) use ($cutoff) {
@@ -603,12 +603,12 @@ class OrderService
                 return false;
             }
 
-            $isStillPendingTransfer = $order->payment_method_type === 'bank_transfer'
+            $isStillPendingPayment = in_array($order->payment_method_type, ['bank_transfer', 'niubiz'], true)
                 && $order->state === 'pending_payment';
             $referenceDate = $order->placed_at ?? $order->created_at;
             $isExpired = $referenceDate && $referenceDate->lte($cutoff);
 
-            if (!$isStillPendingTransfer || !$isExpired) {
+            if (!$isStillPendingPayment || !$isExpired) {
                 return false;
             }
 
@@ -617,7 +617,7 @@ class OrderService
             $order->update([
                 'state' => 'cancelled',
                 'cancelled_at' => now(),
-                'notes' => trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada automáticamente por falta de pago (más de 5 días).'),
+                'notes' => trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada automáticamente por falta de pago pendiente.'),
             ]);
 
             $payment = $order->payments()->latest()->first();
@@ -635,7 +635,7 @@ class OrderService
                 'cancelled',
                 'system',
                 null,
-                'Cancelación automática por vencimiento de pago en transferencia bancaria'
+                'Cancelación automática por vencimiento de pago pendiente'
             );
             $this->orderNotificationService->sendStateChanged($order, $previousState, 'cancelled');
 
