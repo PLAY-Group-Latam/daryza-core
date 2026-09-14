@@ -19,6 +19,7 @@ class Order extends Model
 
     protected $appends = [
         'has_voucher',
+        'expires_at',
     ];
 
     protected $fillable = [
@@ -118,6 +119,27 @@ class Order extends Model
             : $this->payments()->latest()->first();
 
         return (string) ($payment?->voucher_url ?? '') !== '';
+    }
+
+    /**
+     * Fecha límite real en la que el backend cancela una orden pendiente de pago
+     * (job `orders:expire-pending-transfers`, ventana configurable en días).
+     * Solo aplica mientras la orden siga en `pending_payment`.
+     */
+    public function getExpiresAtAttribute(): ?string
+    {
+        if ($this->state !== 'pending_payment') {
+            return null;
+        }
+
+        $reference = $this->placed_at ?? $this->created_at;
+        if (!$reference) {
+            return null;
+        }
+
+        $days = max(1, (int) config('orders.pending_payment_expire_days', 5));
+
+        return $reference->copy()->addDays($days)->toIso8601String();
     }
 
 }
