@@ -1,7 +1,49 @@
-storage/app/private
-storage/app/public
-storage/logs
-bootstrap/cache
-node_modules
-vendor
+# Archivos y carpetas de Git
 .git
+.gitignore
+.gitattributes
+
+# Entornos y claves de desarrollo local
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+gcs-key.json
+
+# Dependencias locales (se instalan dentro del Dockerfile)
+vendor/
+node_modules/
+
+# Assets compilados en local (se compilan en el Dockerfile)
+public/build/
+public/hot
+public/storage
+
+# Logs y almacenamiento temporal de Laravel
+storage/app/*
+!storage/app/.gitignore
+storage/framework/cache/*
+!storage/framework/cache/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/logs/*
+!storage/logs/.gitignore
+
+# IDEs y herramientas de desarrollo
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Docker y archivos del sistema
+Dockerfile*
+docker-compose*
+.dockerignore
+.DS_Store
+Thumbs.db
