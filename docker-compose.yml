@@ -31,6 +31,9 @@ x-app: &app
     DB_PORT: '5432'
   volumes:
     - daryza_storage:/var/www/storage/app/public
+    # Archivos privados (imports de Excel, etc.). Debe compartirse entre app y
+    # queue: la app sube el archivo y el worker lo procesa desde el mismo disco.
+    - daryza_private:/var/www/storage/app/private
     # Keyfile de Google Cloud Storage (secreto, solo lectura).
     # Debe existir en el host: ./storage/app/gcs-key.json
     - ./storage/app/gcs-key.json:/var/www/storage/app/gcs-key.json:ro
@@ -126,6 +129,7 @@ services:
 volumes:
   postgres_data:
   daryza_storage:
+  daryza_private:
 
 networks:
   daryza:
