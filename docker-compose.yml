@@ -18,10 +18,6 @@ x-logging: &default-logging
     max-file: '5'
 
 x-app: &app
-  build:
-    context: .
-    dockerfile: infrastructure/docker/Dockerfile
-    target: app
   image: daryza_app:latest
   restart: unless-stopped
   env_file:
@@ -53,6 +49,10 @@ services:
   # -------------------------------------------------------------------------
   app:
     <<: *app
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile
+      target: app
     container_name: daryza_app
 
   # -------------------------------------------------------------------------
@@ -99,7 +99,7 @@ services:
   # Base de datos
   # -------------------------------------------------------------------------
   postgresql:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: daryza_postgresql
     restart: unless-stopped
     environment:

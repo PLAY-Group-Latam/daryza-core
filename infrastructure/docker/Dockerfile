@@ -139,8 +139,7 @@ RUN set -eux; \
     chown -R www-data:www-data storage bootstrap/cache public/build; \
     chmod -R ug+rwX storage bootstrap/cache
 
-COPY infrastructure/scripts/default.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY --chmod=755 infrastructure/scripts/default.sh /usr/local/bin/docker-entrypoint.sh
 
 STOPSIGNAL SIGQUIT
 
