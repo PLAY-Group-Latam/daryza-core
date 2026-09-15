@@ -16,18 +16,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copiar el proyecto
 COPY . /var/www
 
-# Crear un .env temporal para que Artisan no falle en npm run build
-RUN cp .env.example .env && php artisan key:generate
+# 1. Instalar dependencias de PHP primero (genera la carpeta vendor)
+RUN composer install --no-dev --optimize-autoloader
 
-# Instalar dependencias PHP y Node + Compilar assets
-RUN composer install --no-dev --optimize-autoloader \
+# 2. Instalar NPM, crear .env temporal y generar la clave para Wayfinder/Vite
+RUN cp .env.example .env \
+    && php artisan key:generate \
     && npm ci \
-    && npm run build
+    && npm run build \
+    && rm .env
 
-# Limpiar el .env temporal para no sobreescribir el de producción
-RUN rm .env
-
-# Permisos
+# Permisos y carpetas de storage
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
