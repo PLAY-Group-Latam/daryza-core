@@ -1,106 +1,127 @@
+# =============================================================================
+# Daryza Core - Docker Compose de PRODUCCIÓN
+#
+#   Levantar:   docker compose up -d --build
+#   Migrar:     docker compose run --rm app php artisan migrate --force
+#   Logs:       docker compose logs -f
+#
+# Requiere un archivo .env en la raíz (basado en .env.example).
+# La imagen es inmutable: NO se monta el código fuente en los contenedores.
+# =============================================================================
+
+name: daryza-core
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: infrastructure/docker/Dockerfile
+    target: app
+  image: daryza_app:latest
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    # Se fuerzan valores de producción aunque el .env sea de desarrollo
+    APP_ENV: production
+    APP_DEBUG: 'false'
+    DB_CONNECTION: pgsql
+    DB_HOST: postgresql
+    DB_PORT: '5432'
+  volumes:
+    - daryza_storage:/var/www/storage/app/public
+    # Keyfile de Google Cloud Storage (secreto, solo lectura).
+    # Debe existir en el host: ./storage/app/gcs-key.json
+    - ./storage/app/gcs-key.json:/var/www/storage/app/gcs-key.json:ro
+  security_opt:
+    - no-new-privileges:true
+  logging: *default-logging
+  depends_on:
+    postgresql:
+      condition: service_healthy
+  networks:
+    - daryza
+
 services:
+  # -------------------------------------------------------------------------
+  # Aplicación (PHP-FPM)
+  # -------------------------------------------------------------------------
   app:
+    <<: *app
+    container_name: daryza_app
+
+  # -------------------------------------------------------------------------
+  # Colas
+  # -------------------------------------------------------------------------
+  queue:
+    <<: *app
+    container_name: daryza_queue
+    command: php artisan queue:work --queue=default --tries=3 --timeout=3600 --sleep=1 --backoff=5 --max-time=3600
+
+  # -------------------------------------------------------------------------
+  # Scheduler (tareas programadas)
+  # -------------------------------------------------------------------------
+  scheduler:
+    <<: *app
+    container_name: daryza_scheduler
+    command: php artisan schedule:work
+
+  # -------------------------------------------------------------------------
+  # Nginx (reverse proxy + assets estáticos)
+  # -------------------------------------------------------------------------
+  nginx:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    image: daryza_app:latest # <--- Asigna la etiqueta para que queue y scheduler la reutilicen
-    container_name: daryza_app
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: postgresql
-      DB_PORT: 5432
-    volumes:
-      - daryza_storage:/var/www/storage/app/public
-      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    networks:
-      - daryza
-
-  queue:
-    image: daryza_app:latest
-    pull_policy: build # <--- Le indica que espere a la compilación local
-    container_name: daryza_queue
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: postgresql
-      DB_PORT: 5432
-    volumes:
-      - daryza_storage:/var/www/storage/app/public
-      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-    depends_on:
-      app:
-        condition: service_started
-      postgresql:
-        condition: service_healthy
-    networks:
-      - daryza
-    command: php artisan queue:work --queue=default --tries=1 --timeout=3600 --sleep=1 --backoff=5
-
-  scheduler:
-    image: daryza_app:latest
-    pull_policy: build # <--- Le indica que espere a la compilación local
-    container_name: daryza_scheduler
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: postgresql
-      DB_PORT: 5432
-    volumes:
-      - daryza_storage:/var/www/storage/app/public
-      - ./infrastructure/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-    depends_on:
-      app:
-        condition: service_started
-      postgresql:
-        condition: service_healthy
-    networks:
-      - daryza
-    command: php artisan schedule:work
-
-  nginx:
-    image: nginx:alpine
+      target: nginx
+    image: daryza_nginx:latest
     container_name: daryza_nginx
     restart: unless-stopped
     ports:
-      - '127.0.0.1:8082:80'
+      # Se publica solo en localhost; el TLS lo termina el proxy del host.
+      - '127.0.0.1:${APP_HTTP_PORT:-8082}:80'
     volumes:
-      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    volumes_from:
-      - app:ro
+      - daryza_storage:/var/www/storage/app/public:ro
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     depends_on:
       - app
     networks:
       - daryza
 
+  # -------------------------------------------------------------------------
+  # Base de datos
+  # -------------------------------------------------------------------------
   postgresql:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: daryza_postgresql
     restart: unless-stopped
-    ports:
-      - '127.0.0.1:${FORWARD_DB_PORT:-5432}:5432'
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - daryza
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}']
-      interval: 5s
-      retries: 5
+      interval: 10s
       timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+    networks:
+      - daryza
+    # No se expone al host. Descomenta solo para acceso local:
+    # ports:
+    #   - '127.0.0.1:5432:5432'
 
 volumes:
   postgres_data:

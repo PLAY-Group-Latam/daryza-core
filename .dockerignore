@@ -32,6 +32,10 @@ storage/framework/views/*
 storage/logs/*
 !storage/logs/.gitignore
 
+# Cachés de Laravel generados en el entorno local (se regeneran en build/runtime)
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
 # IDEs y herramientas de desarrollo
 .idea/
 .vscode/
