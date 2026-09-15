@@ -23,6 +23,7 @@ services:
 
   queue:
     image: daryza_app:latest
+    pull_policy: build # <--- Le indica que espere a la compilación local
     container_name: daryza_queue
     restart: unless-stopped
     env_file:
@@ -45,6 +46,7 @@ services:
 
   scheduler:
     image: daryza_app:latest
+    pull_policy: build # <--- Le indica que espere a la compilación local
     container_name: daryza_scheduler
     restart: unless-stopped
     env_file:
