@@ -37,6 +37,7 @@ class PageSeeder extends Seeder
                 ['home_promo_dynamic', 'Imágenes Promocionales', ['dynamic' => true]],
                 ['home_attributes',    'Items de Atributos',     ['max_items' => 4]],
                 ['home_section_title',      'Titulo de Sección',[]],
+                ['home_newsletter',    'Newsletter',             []],
             ]);
 
         /*
@@ -65,6 +66,7 @@ class PageSeeder extends Seeder
             ['footer_logo_footer',  'Logo Footer',             []],
             ['footer_contact_info', 'Información de Contacto', []], 
             ['footer_socials',        'Redes Sociales',        ['dynamic' => true]],
+            ['faqs_info','Preguntas Frecuentes',[]],
         ]);
 
         /*

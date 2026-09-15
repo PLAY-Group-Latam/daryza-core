@@ -16,7 +16,7 @@ export default function OrderPaymentInfoCard({ order }: { order: OrderDetail }) 
             <div className="grid gap-4 text-sm md:grid-cols-2">
                 <div>
                     <p className="text-xs text-muted-foreground">Metodo de pago</p>
-                    <p className="font-semibold">{order.payment_method_type === 'bank_transfer' ? 'Transferencia bancaria' : 'Niubiz'}</p>
+                    <p className="font-semibold">{order.payment_method_type === 'bank_transfer' ? 'Transferencia bancaria' : 'Tarjeta de Crédito / Débito o QR'}</p>
                 </div>
                 <div>
                     <p className="text-xs text-muted-foreground">Estado del pedido</p>

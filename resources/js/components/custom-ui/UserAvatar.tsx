@@ -26,13 +26,17 @@ export function UserAvatar({ name, image, size = 'md' }: UserAvatarProps) {
                 sizes[size],
             )}
         >
-            {image ? (
-                <AvatarImage src={image} alt={name} />
-            ) : (
-                <AvatarFallback className="bg-transparent">
-                    {initials}
-                </AvatarFallback>
-            )}
+            {/* Se envía sin ternario y con referrerPolicy para evitar bloqueos de Google */}
+            <AvatarImage 
+                src={image ?? undefined} 
+                alt={name} 
+                referrerPolicy="no-referrer"
+            />
+            
+            {/* Fallback siempre presente */}
+            <AvatarFallback className="bg-transparent">
+                {initials}
+            </AvatarFallback>
         </Avatar>
     );
 }

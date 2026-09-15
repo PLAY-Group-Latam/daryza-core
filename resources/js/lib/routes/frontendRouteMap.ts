@@ -9,12 +9,14 @@ export const FRONTEND_ROUTE_MAP: Record<string, (slug?: string) => string> = {
   home_promo_dynamic: () => `${FRONTEND_BASE}/`,
   home_attributes: () => `${FRONTEND_BASE}/`,
   home_section_title: () => `${FRONTEND_BASE}/`,
+  home_newsletter: () => `${FRONTEND_BASE}/`,
 
   // Footer (también vive en home)
   footer_logo_header: () => `${FRONTEND_BASE}/`,
   footer_logo_footer: () => `${FRONTEND_BASE}/`,
   footer_contact_info: () => `${FRONTEND_BASE}/`,
   footer_socials: () => `${FRONTEND_BASE}/`,
+  faqs_info:() => `${FRONTEND_BASE}/preguntas-frecuentes`,
 
   // Legales
   tyc_editor: () => `${FRONTEND_BASE}/terminos-y-condiciones`,

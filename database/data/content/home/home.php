@@ -33,7 +33,7 @@ return [
                 'type'       => 'image',
                 'is_active'  => true,
                 'link_url'   => null,
-                'src_desktop'=> 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d4220b0474.webp',
+                'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d4220b0474.webp',
                 'src_mobile' => 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d400995a36.webp',
             ],
             [
@@ -41,7 +41,7 @@ return [
                 'type'       => 'url',
                 'is_active'  => true,
                 'link_url'   => 'https://dev-daryza.playgrouplatam.com/',
-                'src_desktop'=> 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d422288763.webp',
+                'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d422288763.webp',
                 'src_mobile' => 'https://storage.googleapis.com/daryza_dev/sections/2/images/699d400b3d851.jpg',
             ],
         ],
@@ -55,7 +55,7 @@ return [
     */
     'home_promo_image' => [
         'link_url'     => 'https://dev-daryza.playgrouplatam.com/',
-        'image_desktop'=> 'https://storage.googleapis.com/daryza_dev/sections/4/images/699d4306564c0.webp',
+        'image_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/4/images/699d4306564c0.webp',
         'image_mobile' => 'https://storage.googleapis.com/daryza_dev/sections/4/images/699d4307cae49.webp',
     ],
 
@@ -115,10 +115,22 @@ return [
     'home_section_title' => [
         'titles' => [
             ['key' => 'brands',      'label' => 'Marcas Aliadas'],
-            ['key' => 'best_sellers','label' => 'Los más vendidos'],
+            ['key' => 'best_sellers', 'label' => 'Los más vendidos'],
             ['key' => 'pack',        'label' => 'Pack de Productos'],
             ['key' => 'blog',        'label' => 'Nuestro Blog'],
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | HOME NEWSLETTER
+    |--------------------------------------------------------------------------
+    */
+    'home_newsletter' => [
+        'title'             => 'No te pierdas las últimas novedades',
+        'description'       => 'Recibe y no teperderas bro en tu correo electrónico promociones exclusivas, campañas especiales, las últimas novedades, nuevos lanzamientos e innovaciones de las soluciones Daryza.',
+        'input_placeholder' => 'correo@e12jemplo.com',
+        'button_text'       => 'Suscribiddrse',
     ],
 
 ];

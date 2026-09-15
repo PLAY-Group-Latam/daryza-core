@@ -37,7 +37,7 @@ Artisan::command('orders:expire-pending-transfers {--days=5} {--chunk=100} {--sy
     Log::info('orders:expire-pending-transfers encolado', ['days' => $days, 'chunk' => $chunk, 'mode' => 'queued']);
 })->purpose('Cancela automáticamente órdenes de transferencia pendientes y repone stock');
 
-Schedule::command('orders:expire-pending-transfers --days=5')->hourly();
+Schedule::command('orders:expire-pending-transfers --days=' . (int) config('orders.pending_payment_expire_days', 5))->hourly();
 
 Artisan::command('imports:cleanup-files {--days=5} {--chunk=200}', function () {
     $days = max(1, (int) $this->option('days'));

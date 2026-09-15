@@ -50,24 +50,58 @@ public function searchProductsByName(?string $search, int $limit = 10): array
     $searchTerm = "%{$search}%";
 
     $products = Product::query()
-        ->select('id', 'name', 'slug') // Traemos slug por si quieres linkear
-        ->where('name', 'ilike', $searchTerm)
-        ->active() 
+        ->select('id', 'name', 'slug')
+        ->where(function ($query) use ($searchTerm) {
+            $query->where('name', 'ilike', $searchTerm)
+                  ->orWhereHas('mainVariant', function ($q) use ($searchTerm) {
+                      $q->where('sku', 'ilike', $searchTerm);
+                  });
+        })
+        ->active()
         ->with([
             'mainVariant' => function ($q) {
-                // Seleccionamos todos los campos necesarios para el cálculo de promo
+                // Seleccionamos campos necesarios de la variante
                 $q->select(
-                    'id', 'product_id', 'sku', 'price', 
+                    'id', 'product_id', 'sku', 'price',
                     'promo_price', 'is_on_promo', 'promo_start_at', 'promo_end_at'
                 )
-                ->with(['media' => function($q) {
-                    $q->where('type', 'image')
-                      ->select('id', 'mediable_id', 'mediable_type', 'file_path')
-                      ->orderBy('order', 'asc');
-                }]);
+                // Cargamos la relación mainImage que ya tienes en el modelo
+                ->with(['mainImage']); 
             }
         ])
         ->limit($limit)
+        ->get()
+        ->map(fn($p) => [
+            'product_id'      => $p->id,
+            'variant_id'      => $p->mainVariant?->id,
+            'product_name'    => $p->name,
+            'slug'            => $p->slug,
+            'sku'             => $p->mainVariant?->sku ?? 'S/N',
+            // Accedemos a file_path a través de la relación mainImage
+            'image'           => $p->mainVariant?->mainImage?->file_path ?? '/default-placeholder.png',
+            'price'           => $p->mainVariant?->price,
+            'promo_price'     => $p->mainVariant?->promo_price,
+            'is_on_promo'     => $p->mainVariant?->is_on_promo ?? false,
+            'active_price'    => $p->mainVariant?->active_price,
+            'has_valid_promo' => $p->mainVariant ? (
+                $p->mainVariant->is_on_promo &&
+                (!$p->mainVariant->promo_start_at || $p->mainVariant->promo_start_at->isPast()) &&
+                (!$p->mainVariant->promo_end_at || $p->mainVariant->promo_end_at->isFuture())
+            ) : false,
+        ]);
+
+    return ['searchResults' => $products];
+}
+
+public function getProductsByIds(array $ids): array
+{
+    if (empty($ids)) return [];
+
+    return Product::query()
+        ->whereIn('id', $ids)
+        ->active()
+        // Usamos la misma estructura de carga anidada
+        ->with(['mainVariant.mainImage'])
         ->get()
         ->map(fn($p) => [
             'product_id'   => $p->id,
@@ -75,26 +109,14 @@ public function searchProductsByName(?string $search, int $limit = 10): array
             'product_name' => $p->name,
             'slug'         => $p->slug,
             'sku'          => $p->mainVariant?->sku ?? 'S/N',
-            'image'        => $p->mainVariant?->media->first()?->file_path ?? null,
-            
-            // --- Información de Precios ---
+            // Consistencia con el nombre del campo 'image'
+            'image'        => $p->mainVariant?->mainImage?->file_path ?? '/default-placeholder.png',
+            'active_price' => $p->mainVariant?->active_price,
             'price'        => $p->mainVariant?->price,
             'promo_price'  => $p->mainVariant?->promo_price,
             'is_on_promo'  => $p->mainVariant?->is_on_promo ?? false,
-            // Usamos el Accessor que ya tienes definido en ProductVariant
-            'active_price' => $p->mainVariant?->active_price, 
-            
-            // Opcional: Calcular si la promo es válida realmente ahora mismo
-            'has_valid_promo' => $p->mainVariant ? (
-                $p->mainVariant->is_on_promo && 
-                (!$p->mainVariant->promo_start_at || $p->mainVariant->promo_start_at->isPast()) && 
-                (!$p->mainVariant->promo_end_at || $p->mainVariant->promo_end_at->isFuture())
-            ) : false,
-        ]);
-
-    return [
-        'searchResults' => $products
-    ];
+        ])
+        ->toArray();
 }
 
     public function updateSectionContent(int $sectionId, array $content): bool
@@ -300,7 +322,7 @@ public function searchProductsByName(?string $search, int $limit = 10): array
         return $content;
     }
 
-   private function processItemsArray(array $content, int $sectionId, SectionContent $sectionContent): array
+  private function processItemsArray(array $content, int $sectionId, SectionContent $sectionContent): array
 {
     if (!isset($content['items']) || !is_array($content['items'])) {
         return $content;
@@ -320,9 +342,17 @@ public function searchProductsByName(?string $search, int $limit = 10): array
 
     foreach ($content['items'] as $item) {
         $idKey = isset($item['product_id']) ? 'product_id' : 'id';
-        if (!isset($item[$idKey])) continue; 
+        if (!isset($item[$idKey])) continue;
 
-        $itemId   = $item[$idKey];
+        $itemId = $item[$idKey];
+
+        // Producto de blog: solo guardamos el ID, nada mas
+        if ($idKey === 'product_id') {
+            $processed[] = ['product_id' => $itemId];
+            continue;
+        }
+
+        // Items promocionales: comportamiento original intacto
         $existing = $existingById[$itemId] ?? [];
         $result   = [$idKey => $itemId];
 
@@ -331,14 +361,9 @@ public function searchProductsByName(?string $search, int $limit = 10): array
 
             if ($value instanceof UploadedFile) {
                 $result[$field] = $this->uploadFile($value, $sectionId);
-            } 
-            // CAMBIO AQUÍ: 
-            // Solo rescatamos lo existente si el campo NI SIQUIERA viene en el request.
-            // Si el campo viene pero es null o "null" string, lo guardamos como null (borrado).
-            elseif (!array_key_exists($field, $item)) {
+            } elseif (!array_key_exists($field, $item)) {
                 $result[$field] = $existing[$field] ?? null;
             } else {
-                // Si el valor es "null" (string que a veces manda FormData) o null real, guardamos null
                 $result[$field] = ($value === 'null' || empty($value)) ? null : $value;
             }
         }

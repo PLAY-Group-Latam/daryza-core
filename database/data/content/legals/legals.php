@@ -27,24 +27,27 @@ return [
     | LIBRO EDITOR - Libro de Reclamaciones
     |--------------------------------------------------------------------------
     */
-   'libro_editor' => [
-    'text' => '',
-    'body' => '<p><strong>Tener en cuenta:</strong></p><ul><li>La presente hoja de reclamación forma parte del Libro de Reclamaciones del proveedor.</li><li>La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.</li><li>El proveedor deberá dar respuesta al reclamo o queja en un plazo no mayor a quince (15) días hábiles, el cual es improrrogable.</li><li>Al enviar el presente formulario, el consumidor recibirá una copia de la hoja de reclamación en el correo electrónico consignado.</li><li>Se informa que los datos personales consignados en la presente hoja serán tratados por Daryza con la finalidad de gestionar el reclamo o queja presentado, conforme a lo establecido en la Ley N.º 29733 – Ley de Protección de Datos Personales (Perú). Para más información puede revisar nuestra Política de Protección de Datos Personales.</li></ul>',
-],
-/*
+    'libro_editor' => [
+        'title'    => 'Libro de Reclamaciones',
+        'subtitle' => 'DARYZA S.A.C. | 20144109458 | NRO. . GRANJA 1 (ALTURA KM 30 PANAMERICANA SUR) LIMA - LIMA - LURIN',
+        'text'     => '',
+        'body'     => '<p><strong>Tener en cuenta:</strong></p><ul><li>La presente hoja de reclamación forma parte del Libro de Reclamaciones del proveedor.</li><li>La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.</li><li>El proveedor deberá dar respuesta al reclamo o queja en un plazo no mayor a quince (15) días hábiles, el cual es improrrogable.</li><li>Al enviar el presente formulario, el consumidor recibirá una copia de la hoja de reclamación en el correo electrónico consignado.</li><li>Se informa que los datos personales consignados en la presente hoja serán tratados por Daryza con la finalidad de gestionar el reclamo o queja presentado, conforme a lo establecido en la Ley N.º 29733 – Ley de Protección de Datos Personales (Perú). Para más información puede revisar nuestra Política de Protección de Datos Personales.</li></ul>',
+       
+    ],
+    /*
 |--------------------------------------------------------------------------
 | COOKIES EDITOR - Política de Cookies
 |--------------------------------------------------------------------------
 */
-/*
+    /*
 |--------------------------------------------------------------------------
 | COOKIES EDITOR - Política de Cookies
 |--------------------------------------------------------------------------
 */
-'cookies_editor' => [
-    'title' => 'Política de Cookies',
-    'intro' => 'En Daryza respetamos tu privacidad. Esta política explica qué cookies utilizamos, con qué finalidad y cómo puedes gestionar tus preferencias.',
-    'body' => '
+    'cookies_editor' => [
+        'title' => 'Política de Cookies',
+        'intro' => 'En Daryza respetamos tu privacidad. Esta política explica qué cookies utilizamos, con qué finalidad y cómo puedes gestionar tus preferencias.',
+        'body' => '
         <h2>1. Identificación del responsable del tratamiento</h2>
         <p>La presente Política de Cookies corresponde al sitio web de <strong>Daryza</strong> (ecommerce), en cumplimiento de la Ley N.° 29733, Ley de Protección de Datos Personales, su Reglamento aprobado por Decreto Supremo N.° 003-2013-JUS, y normativa complementaria aplicable en Perú.</p>
         <ul>
@@ -109,5 +112,5 @@ return [
             <li><strong>Canal de atención:</strong> [COMPLETAR CANAL]</li>
         </ul>
     ',
-],
+    ],
 ];

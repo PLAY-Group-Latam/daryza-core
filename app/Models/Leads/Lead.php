@@ -20,6 +20,7 @@ class Lead extends Model
     const TYPE_CUSTOMER_SERVICE = 'customer_service';
     const TYPE_WORK_WITH_US = 'work_with_us';
     const TYPE_CLAIM = 'claim';
+    const TYPE_NEWSLETTER = 'newsletter';
 
     const STATUS_NEW = 'new';
     const STATUS_CONTACTED = 'contacted';
@@ -64,6 +65,7 @@ class Lead extends Model
             self::TYPE_CUSTOMER_SERVICE => 'Atención al Cliente',
             self::TYPE_WORK_WITH_US     => 'Trabaja con Nosotros',
             self::TYPE_CLAIM            => 'Reclamación',
+            self::TYPE_NEWSLETTER       => 'Suscripción Newsletter',
         ];
         
         return $types[$this->type] ?? 'Desconocido';

@@ -1,10 +1,14 @@
 #!/bin/bash
-set -ex
+set -e
 
-# 4️⃣ Arrancar PHP-FPM
-php-fpm -F
+echo "==> [1/3] Creando enlace simbólico de Storage..."
+php artisan storage:link --force || true
 
-npm run install
-npm run build
+echo "==> [2/3] Generando cachés de producción..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache || true
 
-
+echo "==> [3/3] Iniciando PHP-FPM..."
+exec php-fpm -F

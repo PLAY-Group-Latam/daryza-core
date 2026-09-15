@@ -55,6 +55,11 @@ return [
         'password' => env('NIUBIZ_PASSWORD'),
         'timeout' => env('NIUBIZ_TIMEOUT', 15),
     ],
+       'mailchimp' => [
+        'api_key' => env('MAILCHIMP_API_KEY'),
+        'audience_id' => env('MAILCHIMP_AUDIENCE_ID'),
+        'server' => env('MAILCHIMP_SERVER'),
+    ],
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),
