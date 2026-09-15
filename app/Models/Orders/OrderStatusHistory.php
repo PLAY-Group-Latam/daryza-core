@@ -2,6 +2,7 @@
 
 namespace App\Models\Orders;
 
+use App\Models\User; // Importar User
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,5 +27,13 @@ class OrderStatusHistory extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Usuario (admin) que realizó el cambio de estado.
+     */
+    public function changedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by_id');
     }
 }

@@ -132,7 +132,7 @@ export default function TableList({ data }: TableListProps) {
             data={data}
             onSearch={handleSearch}
             initialSearch={filters?.search || ''}
-            placeholder="Buscar por nombre del pack..."
+            placeholder="Buscar por nombre..."
         />
     );
 }

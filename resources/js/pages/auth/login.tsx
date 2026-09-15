@@ -43,7 +43,7 @@ export default function Login({ status }: LoginProps) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
-                                    placeholder="email@example.com"
+                                    placeholder="correo@ejemplo.com"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -58,7 +58,7 @@ export default function Login({ status }: LoginProps) {
                                         required
                                         tabIndex={2}
                                         autoComplete="current-password"
-                                        placeholder="Password"
+                                        placeholder="••••••••"
                                         className="pr-10" // Espacio para que el texto no choque con el icono
                                     />
                                     <button

@@ -42,6 +42,15 @@ export default function TableList({ data, filters }: TableListProps) {
 
     const columns: ColumnDef<Claim>[] = [
         {
+            id: 'code',
+            header: 'Código',
+            cell: ({ row }) => (
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {row.original.claim_code ?? row.original.data?.claim_code}
+                </span>
+            ),
+        },
+        {
             accessorKey: 'full_name',
             header: 'Nombre completo',
             cell: ({ row }) => (
@@ -63,7 +72,7 @@ export default function TableList({ data, filters }: TableListProps) {
             id: 'document',
             header: 'Documento',
             cell: ({ row }) => (
-                <span className="text-x font-mono text-slate-700 dark:text-slate-300">
+                <span className="font-mono text-xs text-slate-700 dark:text-slate-300">
                     {row.original.data.document_type_id}:{' '}
                     {row.original.data.document_number}
                 </span>
@@ -89,7 +98,7 @@ export default function TableList({ data, filters }: TableListProps) {
                 const isClaim = type === 'reclamo';
                 return (
                     <span
-                        className={`text-xs font-bold tracking-wider uppercase ${isClaim ? 'text-amber-600 dark:text-amber-500' : 'text-blue-600 dark:text-blue-500'}`}
+                        className={`text-xs font-bold uppercase tracking-wider ${isClaim ? 'text-amber-600 dark:text-amber-500' : 'text-blue-600 dark:text-blue-500'}`}
                     >
                         {row.original.data.type_of_claim_id}
                     </span>
@@ -128,7 +137,7 @@ export default function TableList({ data, filters }: TableListProps) {
                 data={data}
                 onSearch={handleSearch}
                 initialSearch={filters?.search}
-                placeholder="Buscar por nombre, correo o documento..."
+                placeholder="Buscar por código, nombre, correo o documento..."
             />
 
             <ModalClaimList

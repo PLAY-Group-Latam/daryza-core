@@ -15,6 +15,7 @@ import { UploadMultiple } from '@/components/custom-ui/UploadMultiple';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '../../rich-text-tiptap/RichTextEditor';
 import { Switch } from '@/components/ui/switch';
 import {
     Table,
@@ -228,10 +229,9 @@ export default function EditPackForm({ pack, searchResults = [] }: Props) {
                                 render={({ field }) => (
                                     <div className="flex flex-col gap-3">
                                         <Label>Descripción Detallada</Label>
-                                        <Textarea
-                                            {...field}
+                                        <RichTextEditor
                                             value={field.value ?? ''}
-                                            className="h-40"
+                                            onChange={field.onChange}
                                         />
                                     </div>
                                 )}

@@ -20,7 +20,7 @@ class PayMethodsRequest extends FormRequest
     $baseRules = $isUpdate ? ['sometimes', 'required'] : ['required'];
 
     return [
-        'company_type'   => array_merge($baseRules, ['string', 'in:daryza,itp']),
+        'company_type'   => array_merge($baseRules, ['string']),
         'bank_name'      => array_merge($baseRules, ['string', 'max:255']),
         'currency'       => array_merge($baseRules, [Rule::in(CurrencyType::values())]),
         'account_number' => array_merge($baseRules, ['string', 'max:255']),

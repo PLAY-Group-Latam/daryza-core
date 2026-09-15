@@ -1,25 +1,37 @@
-import { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2 } from 'lucide-react';
 import { BackButton } from '@/components/custom-ui/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import AppLayout from '@/layouts/app-layout';
+import { Loader2 } from 'lucide-react';
 
 interface Props {
     currencies: string[]; // Recibido desde el Controller via Inertia
 }
 
 const paymentMethodSchema = z.object({
-    company_type: z.string().min(1, 'Debes seleccionar una marca'),
+    company_type: z.string().min(1, 'Debe haber una marca'),
     bank_name: z.string().min(1, 'Ingresa el nombre del banco'),
     currency: z.string().min(1, 'Selecciona una moneda'), // Agregado
     account_number: z.string().min(5, 'El número de cuenta es demasiado corto'),
@@ -60,22 +72,28 @@ export default function Create({ currencies }: Props) {
     }
 
     return (
-        <AppLayout >
+        <AppLayout>
             <Head title="Crear nueva cuenta bancaria" />
-             <div className="mb-6 flex items-end gap-4">
+            <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
-            
+
             <div className="flex justify-center p-4">
                 <div className="w-full max-w-xl space-y-6 rounded-xl border bg-card p-6 shadow-sm">
                     <div className="space-y-1">
-                        <h2 className="text-2xl font-bold">Crear nueva cuenta bancaria</h2>
-                        <p className="text-sm text-muted-foreground">Completa los datos para registrar un nuevo método.</p>
+                        <h2 className="text-2xl font-bold">
+                            Crear nueva cuenta bancaria
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Completa los datos para registrar un nuevo método.
+                        </p>
                     </div>
 
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            
+                        <form
+                            onSubmit={form.handleSubmit(onSubmit)}
+                            className="space-y-4"
+                        >
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {/* Marca / company_type */}
                                 <FormField
@@ -84,22 +102,16 @@ export default function Create({ currencies }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Marca</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona una Marca" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="daryza">Daryza</SelectItem>
-                                                    
-                                                </SelectContent>
-                                            </Select>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Daryza"
+                                                    {...field}
+                                                />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-
                                 {/* Moneda / currency (Dinámico del Enum) */}
                                 <FormField
                                     control={form.control}
@@ -107,18 +119,26 @@ export default function Create({ currencies }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Moneda</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                            >
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Moneda" />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {currencies?.map((currency) => (
-                                                        <SelectItem key={currency} value={currency}>
-                                                            {currency}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {currencies?.map(
+                                                        (currency) => (
+                                                            <SelectItem
+                                                                key={currency}
+                                                                value={currency}
+                                                            >
+                                                                {currency}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -135,7 +155,10 @@ export default function Create({ currencies }: Props) {
                                     <FormItem>
                                         <FormLabel>Entidad Bancaria</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Ej: BCP, BBVA, Interbank" {...field} />
+                                            <Input
+                                                placeholder="Ej: BCP, BBVA, Interbank"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -150,7 +173,10 @@ export default function Create({ currencies }: Props) {
                                     <FormItem>
                                         <FormLabel>Número de cuenta</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Número de cuenta" {...field} />
+                                            <Input
+                                                placeholder="Número de cuenta"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -165,7 +191,10 @@ export default function Create({ currencies }: Props) {
                                     <FormItem>
                                         <FormLabel>CCI (opcional)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Código de Cuenta Interbancario" {...field} />
+                                            <Input
+                                                placeholder="Código de Cuenta Interbancario"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -180,12 +209,15 @@ export default function Create({ currencies }: Props) {
                                     <FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
                                         <div className="space-y-0.5">
                                             <FormLabel>Cuenta activa</FormLabel>
-                                            <p className="text-xs text-muted-foreground">La cuenta será visible para operaciones.</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                La cuenta será visible para
+                                                operaciones.
+                                            </p>
                                         </div>
                                         <FormControl>
-                                            <Switch 
-                                                checked={field.value} 
-                                                onCheckedChange={field.onChange} 
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
                                             />
                                         </FormControl>
                                     </FormItem>
@@ -193,11 +225,21 @@ export default function Create({ currencies }: Props) {
                             />
 
                             <div className="flex items-center justify-end gap-3 pt-4">
-                                <Button type="button" variant="ghost" onClick={() => window.history.back()}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => window.history.back()}
+                                >
                                     Cancelar
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="min-w-[120px]"
+                                >
+                                    {isSubmitting && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
                                     Guardar Cuenta
                                 </Button>
                             </div>

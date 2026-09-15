@@ -15,7 +15,7 @@ export default function Index() {
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold lg:text-2xl">
-                        Dinámicas de Negocio
+                        Lista de Dinámicas de Negocio
                     </h1>
                     <Link
                         href="/productos/categorias-dinamicas/create"

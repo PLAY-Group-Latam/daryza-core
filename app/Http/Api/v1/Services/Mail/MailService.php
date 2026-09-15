@@ -27,15 +27,16 @@ class MailService
     public function send(Mailable $mailable): void
     {
         try {
-            // USAMOS EL FACADE NATIVO: 
-            // 1. Respeta el .env (si es 'log' en local, no gasta Mailgun)
-            // 2. Si el Mailable tiene 'ShouldQueue', se envía en segundo plano automáticamente
+           
             Mail::to($this->to)->send($mailable);
         } catch (\Throwable $e) {
             Log::error("Error en MailService: {$e->getMessage()}", [
                 'to' => $this->to,
                 'mailable' => get_class($mailable)
             ]);
+
+
+            throw $e;
         }
     }
 

@@ -80,13 +80,31 @@ export const columns: ColumnDef<Product>[] = [
             const mainVariant = getMainVariant(product);
             const image = getVariantFirstImage(mainVariant);
 
+            // 🔍 Buscamos el video dentro del array 'media' donde el tipo sea 'video'
+            const videoMedia =
+                mainVariant?.media?.find((item) => item.type === 'video') ||
+                product?.media?.find((item) => item.type === 'video');
+
+            const videoUrl = videoMedia?.file_path;
+
             return (
                 <div className="flex items-center gap-3">
-                    <img
-                        src={image}
-                        alt={product.name}
-                        className="h-14 w-14 rounded-md border object-cover"
-                    />
+                    {videoUrl ? (
+                        <video
+                            src={videoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="h-14 w-14 rounded-md border object-cover"
+                        />
+                    ) : (
+                        <img
+                            src={image}
+                            alt={product.name}
+                            className="h-14 w-14 rounded-md border object-cover"
+                        />
+                    )}
 
                     <div className="flex flex-col text-sm">
                         {mainVariant ? (
@@ -186,7 +204,7 @@ export default function TableList({ data, filters }: TableListProps) {
             data={data}
             onSearch={handleSearch}
             initialSearch={filters?.search}
-            placeholder="Buscar por nombre o SKU..."
+            placeholder="Buscar por nombre o sku daryza..."
         />
     );
 }

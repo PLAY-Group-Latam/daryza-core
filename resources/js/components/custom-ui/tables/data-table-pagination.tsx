@@ -45,9 +45,9 @@ export function DataTablePagination<TData>({
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {/* 🧩 Info de selección */}
         <div className="text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} de{' '}
+            {/* {table.getFilteredSelectedRowModel().rows.length} de{' '}
             {table.getFilteredRowModel().rows.length} fila(s) seleccionadas
-            ({total} en total).
+            ({total} en total). */}
         </div>
 
         <div className="flex flex-wrap items-center gap-4">

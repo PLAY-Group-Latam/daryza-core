@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import productRoutes from '@/routes/products';
 import { Product } from '@/types/products/product';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 
 export default function Index() {
     const { products, filters } = usePage<{
@@ -17,44 +17,51 @@ export default function Index() {
         <AppLayout>
             <Head title="Lista de Productos" />
 
-            <div className="flex flex-1 flex-col gap-6 rounded-xl">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-lg font-bold lg:text-2xl">
+            <div className="flex flex-1 flex-col gap-6 rounded-xl p-4 sm:p-6">
+                {/* Cabecera responsiva: se apila en móvil y se pone en fila en pantallas medianas/grandes */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-xl font-bold lg:text-2xl">
                         Lista de Productos
                     </h1>
 
-                    <div className="flex gap-2">
+                    {/* Contenedor de botones adaptado para móviles (scroll horizontal o wrap) */}
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Botón para crear producto */}
                         <Link
                             href="/productos/items/create"
-                            className="flex items-center gap-2 rounded-sm bg-gray-900 px-2.5 py-1.5 text-sm text-white"
+                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Crear Producto
+                            <Plus className="h-4 w-4 shrink-0" />
+                            <span>Crear Producto</span>
                         </Link>
 
                         {/* Botón para importar Excel */}
                         <Link
                             href="/productos/items/import"
-                            className="flex items-center gap-2 rounded-sm bg-green-600 px-2.5 py-1.5 text-sm text-white hover:bg-green-700"
+                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Importar Productos
+                            <Upload className="h-4 w-4 shrink-0" />
+                            <span>Importar</span>
                         </Link>
+
+                        {/* Botón para exportar */}
                         <button
                             onClick={() => {
                                 window.location.href =
                                     productRoutes.items.export().url;
                             }}
-                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-blue-600 px-2.5 py-1.5 text-sm text-white hover:bg-blue-700"
+                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Exportar Productos
+                            <Download className="h-4 w-4 shrink-0" />
+                            <span>Exportar</span>
                         </button>
                     </div>
                 </div>
 
-                <TableList data={products} filters={filters} />
+                {/* Contenedor de la tabla con scroll horizontal para evitar desbordamientos en móvil */}
+                <div className="w-full overflow-x-auto">
+                    <TableList data={products} filters={filters} />
+                </div>
             </div>
         </AppLayout>
     );
