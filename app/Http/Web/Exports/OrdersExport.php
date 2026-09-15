@@ -215,7 +215,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
     private function mapPaymentMethodForExport(string $method, array $latestPayment): string
     {
         if ($method === 'bank_transfer') {
-            return 'Transferencia bancaria';
+            return 'Transferencia bancaria o QR';
         }
 
         if ($method !== 'niubiz') {

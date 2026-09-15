@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import productRoutes from '@/routes/products';
 import { Product } from '@/types/products/product';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 
 export default function Index() {
     const { products, filters } = usePage<{
@@ -29,7 +29,7 @@ export default function Index() {
                         {/* Botón para crear producto */}
                         <Link
                             href="/productos/items/create"
-                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs sm:text-sm text-white hover:bg-black/90"
+                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
                             <Plus className="h-4 w-4 shrink-0" />
                             <span>Crear Producto</span>
@@ -38,9 +38,9 @@ export default function Index() {
                         {/* Botón para importar Excel */}
                         <Link
                             href="/productos/items/import"
-                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs sm:text-sm text-white hover:bg-black/90"
+                            className="flex items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
-                            <Plus className="h-4 w-4 shrink-0" />
+                            <Upload className="h-4 w-4 shrink-0" />
                             <span>Importar</span>
                         </Link>
 
@@ -50,9 +50,9 @@ export default function Index() {
                                 window.location.href =
                                     productRoutes.items.export().url;
                             }}
-                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs sm:text-sm text-white hover:bg-black/90"
+                            className="flex cursor-pointer items-center gap-2 rounded-sm bg-black px-3 py-2 text-xs text-white hover:bg-black/90 sm:text-sm"
                         >
-                            <Plus className="h-4 w-4 shrink-0" />
+                            <Download className="h-4 w-4 shrink-0" />
                             <span>Exportar</span>
                         </button>
                     </div>

@@ -33,8 +33,21 @@ class CartService
                 'item_type' => $modelClass,
             ])->first();
 
-            $newQuantity = (int) ($cartItem?->quantity ?? 0) + $quantity;
-            $this->ensureStock($item, $newQuantity);
+            $currentQty = (int) ($cartItem?->quantity ?? 0);
+            $requestedTotal = $currentQty + $quantity;
+
+            $stock = (int) ($item->stock ?? 0);
+
+            if ($stock === 0) {
+                throw new \InvalidArgumentException('El producto está agotado.');
+            }
+
+            // FIX: ya NO clampeamos acá. Guardamos la cantidad solicitada tal cual.
+            // loadCart() (que corre al final de este método) es la única fuente de verdad
+            // para detectar exceso de stock, clampear y generar el warning `insufficient_stock`.
+            // Antes: $finalQuantity = min($requestedTotal, $stock);  <-- esto "borraba" el
+            // conflicto antes de que loadCart() pudiera verlo, por eso nunca disparaba el toast.
+            $finalQuantity = $requestedTotal;
 
             $name = $type === 'pack'
                 ? $item->name
@@ -42,7 +55,7 @@ class CartService
 
             if ($cartItem) {
                 $cartItem->update([
-                    'quantity'   => $newQuantity,
+                    'quantity'   => $finalQuantity,
                     'currency'   => 'PEN',
                     'unit_price' => (float) $item->active_price,
                     'metadata'   => array_merge($cartItem->metadata ?? [], ['name' => $name]),
@@ -51,13 +64,15 @@ class CartService
                 $cart->items()->create([
                     'item_id'    => $item->id,
                     'item_type'  => $modelClass,
-                    'quantity'   => $quantity,
+                    'quantity'   => $finalQuantity,
                     'currency'   => 'PEN',
                     'unit_price' => (float) $item->active_price,
                     'metadata'   => ['name' => $name],
                 ]);
             }
 
+            // loadCart() detecta si $finalQuantity > stock, clampea en BD y
+            // arma cart_warnings con code: insufficient_stock + available_stock.
             return $this->loadCart($cart->fresh());
         });
     }
@@ -154,7 +169,8 @@ class CartService
         $stock = (int) ($item->stock ?? 0);
 
         if ($stock < $quantity) {
-            throw new \InvalidArgumentException('Stock insuficiente para la cantidad solicitada.');
+            // Ya no lanza excepción aquí para evitar romper el flujo de merge,
+            // el control de límite se hace directamente en addItem y loadCart.
         }
     }
 
@@ -196,12 +212,12 @@ class CartService
             $item = $cartItem->item;
             $savedName = $cartItem->metadata['name'] ?? null;
 
-            // Eliminado de BD (migrate o admin)
             if (!$item) {
                 $label      = $savedName ? "\"$savedName\"" : 'Un producto';
                 $warnings[] = [
-                    'code'    => 'deleted',
-                    'message' => "$label fue eliminado del catálogo y removido de tu carrito.",
+                    'code'         => 'deleted',
+                    'product_name' => $savedName ?? 'Un producto',
+                    'message'      => "$label fue eliminado del catálogo y removido de tu carrito.",
                 ];
                 $cartItem->delete();
                 continue;
@@ -212,11 +228,11 @@ class CartService
                 ? $item->name
                 : ($item->product?->name ?? $savedName ?? 'Producto');
 
-            // Inactivo
             if (!$item->is_active) {
                 $warnings[] = [
-                    'code'    => 'inactive',
-                    'message' => "\"$name\" ya no está disponible y fue eliminado de tu carrito.",
+                    'code'         => 'inactive',
+                    'product_name' => $name,
+                    'message'      => "\"$name\" ya no está disponible y fue eliminado de tu carrito.",
                 ];
                 $cartItem->delete();
                 continue;
@@ -225,20 +241,20 @@ class CartService
             $stock    = (int) ($item->stock ?? 0);
             $quantity = (int) $cartItem->quantity;
 
-            // Sin stock
             if ($stock === 0) {
                 $warnings[] = [
-                    'code'    => 'out_of_stock',
-                    'message' => "\"$name\" está agotado y fue eliminado de tu carrito.",
+                    'code'         => 'out_of_stock',
+                    'product_name' => $name,
+                    'message'      => "\"$name\" está agotado y fue eliminado de tu carrito.",
                 ];
                 $cartItem->delete();
                 continue;
             }
 
-            // Stock insuficiente → ajustar cantidad
             if ($stock < $quantity) {
                 $warnings[] = [
                     'code'            => 'insufficient_stock',
+                    'product_name'    => $name,
                     'message'         => "Solo hay $stock unidad(es) de \"$name\" disponibles. Se ajustó la cantidad en tu carrito.",
                     'available_stock' => $stock,
                 ];

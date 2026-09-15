@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000', 'https://dev-daryza.playgrouplatam.com'], // tu frontend
+   'allowed_origins' => [
+        'http://localhost:3000', 
+        'https://dev-daryza.playgrouplatam.com',
+        'https://3mb899v9-3000.brs.devtunnels.ms', // <-- ¡Agrega esta línea aquí!
+    ],
 
     'allowed_origins_patterns' => [],
 
