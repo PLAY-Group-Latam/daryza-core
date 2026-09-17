@@ -3,11 +3,13 @@
 namespace App\Models\Orders;
 
 use App\Models\Customers\Customer;
+use App\Models\Coupons\CouponRedemption;
 use App\Models\Settings\PaymentMethod;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
@@ -91,6 +93,10 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    public function couponRedemptions(): HasMany
+    {
+        return $this->hasMany(CouponRedemption::class, 'order_id');
+    }
 
     public function payments(): HasMany
     {
@@ -141,5 +147,4 @@ class Order extends Model
 
         return $reference->copy()->addDays($days)->toIso8601String();
     }
-
 }

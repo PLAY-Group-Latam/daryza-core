@@ -16,13 +16,17 @@ class AwaitingPayment extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(private Order $order) {}
+    public function __construct(public Order $order) 
+    {
+        // Aseguramos cargar las relaciones necesarias para el correo
+        $this->order->loadMissing(['items', 'paymentMethod', 'couponRedemptions.coupon']);
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Tu pedido #' . $this->order->code . ' ha sido recibido',
+            subject: '¡Gracias por tu compra! Hemos recibido tu pedido ' . $this->order->code,
         );
     }
 
@@ -31,6 +35,7 @@ class AwaitingPayment extends Mailable
         return new Content(
             view: 'mail.order.1-awaiting-payment',
             with: [
+                'order' => $this->order,
                 'customer' => trim($this->order->customer_first_name . ' ' . $this->order->customer_last_name),
                 'purchase_number' => $this->order->code,
                 'accounts' => $this->mapActiveBankAccounts(),

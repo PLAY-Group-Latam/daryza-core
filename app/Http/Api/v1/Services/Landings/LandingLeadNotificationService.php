@@ -7,12 +7,16 @@ use App\Mail\Landings\LandingLeadCustomerReply;
 use App\Mail\Landings\LandingLeadToDaryza;
 use App\Models\Landings\Landing;
 use App\Models\Landings\LandingLead;
+use App\Models\Settings\DestinationEmail;
+use App\Services\Mail\DestinationEmailResolver;
 
 class LandingLeadNotificationService
 {
+    public function __construct(private readonly DestinationEmailResolver $destinationEmailResolver) {}
+
     public function notify(LandingLead $lead, Landing $landing): void
     {
-        $adminEmail = config('emails.landing_leads.admin_email');
+        $adminEmail = $this->destinationEmailResolver->resolve(DestinationEmail::PAGE_LANDING_LEADS);
         $attentionSchedule = (string) config('emails.landing_leads.attention_schedule');
         $adminUrl = $this->resolveAdminUrl($landing);
 
@@ -30,12 +34,10 @@ class LandingLeadNotificationService
             );
         }
 
-        if (!empty($adminEmail)) {
-            SendEmailJob::dispatch(
-                new LandingLeadToDaryza($leadPayload, $landingPayload, $adminUrl),
-                $adminEmail
-            );
-        }
+        SendEmailJob::dispatch(
+            new LandingLeadToDaryza($leadPayload, $landingPayload, $adminUrl),
+            $adminEmail
+        );
     }
 
     private function resolveAdminUrl(Landing $landing): string

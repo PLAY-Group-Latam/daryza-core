@@ -15,12 +15,11 @@ class PaymentAproved extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(private Order $order) {}
-
     public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pago confirmado - Pedido #' . $this->order->code,
+            subject: '¡Listo! Hemos confirmado el pago de tu pedido ' . $this->order->code,
         );
     }
 

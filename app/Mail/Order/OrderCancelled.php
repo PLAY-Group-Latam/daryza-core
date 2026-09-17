@@ -16,14 +16,13 @@ class OrderCancelled extends Mailable
 
     public function __construct(private Order $order) {}
 
-    public function envelope(): Envelope
+public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pedido #' . $this->order->code . ' cancelado',
+            subject: 'Tu pedido ' . $this->order->code . ' ha sido cancelado',
         );
     }
-
     public function content(): Content
     {
         return new Content(

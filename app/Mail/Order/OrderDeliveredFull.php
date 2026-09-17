@@ -20,10 +20,9 @@ class OrderDeliveredFull extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Tu pedido #' . $this->order->code . ' ha sido entregado con éxito',
+            subject: 'Tu pedido ' . $this->order->code . ' ha sido entregado',
         );
     }
-
     public function content(): Content
     {
         return new Content(

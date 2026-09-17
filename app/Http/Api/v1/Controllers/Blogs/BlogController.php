@@ -5,6 +5,7 @@ namespace App\Http\Api\v1\Controllers\Blogs;
 use App\Http\Api\v1\Controllers\Controller;
 use App\Models\Blogs\Blog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BlogController extends Controller
 {
@@ -71,18 +72,22 @@ class BlogController extends Controller
   }
 
   public function latest()
-  {
-    $blogs = Blog::select(['id', 'title', 'slug', 'publication_date', 'author', 'miniature'])
-      ->with('categories:id,name')
+{
+    $cacheKey = 'blogs:latest_public';
 
-      ->where('visibility', true)
-      ->latest() // usa created_at por defecto
-      ->limit(10)
-      ->get();
+    $blogs = Cache::remember($cacheKey, now()->addMinutes(30), function () {
+        $items = Blog::select(['id', 'title', 'slug', 'publication_date', 'author', 'miniature'])
+            ->with('categories:id,name')
+            ->where('visibility', true)
+            ->latest()
+            ->limit(10)
+            ->get();
 
-    $blogs->each(fn($blog) => $blog->categories->makeHidden('pivot'));
-
+        $items->each(fn($blog) => $blog->categories->makeHidden('pivot'));
+        
+        return $items;
+    });
 
     return $this->success('Últimos blogs', $blogs);
-  }
+}
 }

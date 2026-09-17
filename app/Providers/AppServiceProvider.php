@@ -10,6 +10,15 @@ use App\Models\Products\DynamicCategory;
 use App\Models\Products\BusinessLine;
 use App\Models\Products\Brand;
 use App\Models\Products\AttributesValue;
+// 1. Importamos los nuevos modelos y observers de Distribuidores
+use App\Models\Distributors\Distributor;
+use App\Models\Distributors\MapPinSetting;
+use App\Observers\Api\Distributors\DistributorObserver;
+use App\Observers\Api\Distributors\MapPinSettingObserver;
+
+use App\Models\Blogs\Blog;
+use App\Observers\Api\BlogObserver;
+
 use App\Observers\Web\Product\ProductCategoryObserver;
 use App\Observers\Web\Product\ProductObserver;
 use App\Observers\Web\Product\ProductPackObserver;
@@ -61,5 +70,12 @@ class AppServiceProvider extends ServiceProvider
         DynamicCategory::observe(NavigationObserver::class);  
         ProductVariant::observe(InventoryLowStockObserver::class);
         ProductPack::observe(PackLowStockObserver::class);  
+
+        // 2. Registramos los observers de Distribuidores para la caché de Redis
+        Distributor::observe(DistributorObserver::class);
+        MapPinSetting::observe(MapPinSettingObserver::class);
+
+        // Blogs para la caché de Redis
+        Blog::observe(BlogObserver::class);
     }
 }

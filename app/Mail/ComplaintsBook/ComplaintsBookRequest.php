@@ -9,21 +9,26 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ComplaintsBookRequest extends Mailable {
+class ComplaintsBookRequest extends Mailable
+{
 
     public object $complaintsBook;
     use Queueable, SerializesModels;
 
-    public function __construct(array $complaintsBook) {
+    public function __construct(array $complaintsBook)
+    {
         $this->complaintsBook = (object) $complaintsBook;
     }
 
     public function envelope(): Envelope
     {
+
+        $data = $this->complaintsBook->data ?? [];
+        $claimCode = is_array($data) ? ($data['claim_code'] ?? 'S/N') : ($data->claim_code ?? 'S/N');
+
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Recibimos tu reclamo',
-
+            subject: "Libro de Reclamaciones | Daryza | Reclamo #{$claimCode}",
         );
     }
 
@@ -37,4 +42,3 @@ class ComplaintsBookRequest extends Mailable {
         );
     }
 }
-

@@ -9,13 +9,16 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\SendEmailJob;
 use App\Mail\Job\JobsRequest as JobsRequestMail;
-use App\Models\Leads\Lead;
-use Illuminate\Support\Facades\Log;
+use App\Models\Settings\DestinationEmail;
+use App\Services\Mail\DestinationEmailResolver;
 
 
 class ApplicationService
 {
-    public function __construct(private readonly ApplicationCvStorageService $cvStorageService) {}
+    public function __construct(
+        private readonly ApplicationCvStorageService $cvStorageService,
+        private readonly DestinationEmailResolver $destinationEmailResolver,
+    ) {}
 
     public function paginate(array $filters, int $perPage = 10)
 {
@@ -58,14 +61,12 @@ class ApplicationService
                 'job_id'     => $data->jobId,
             ])->load('job.area', 'job.place');
 
-            $adminEmail = config('emails.contact_recipients.' . Lead::TYPE_WORK_WITH_US);
+            $adminEmail = $this->destinationEmailResolver->resolve(DestinationEmail::PAGE_WORK_WITH_US);
 
-            if ($adminEmail) {
-                SendEmailJob::dispatch(
-                    new JobsRequestMail($application->toArray()),
-                    $adminEmail
-                );
-            }
+            SendEmailJob::dispatch(
+                new JobsRequestMail($application->toArray()),
+                $adminEmail
+            );
 
             return $application;
         });

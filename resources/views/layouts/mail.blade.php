@@ -61,7 +61,7 @@
         /* Header styles */
         .header-cell {
             background-color: #44ac34;
-            padding: 16px 30px;
+            padding: 30px 30px;
             text-align: center;
         }
 
@@ -223,13 +223,13 @@
         /* Footer styles */
         .footer-cell {
             background-color: #333333;
-            padding: 30px;
+            padding: 30px 30px;
             color: #ffffff;
         }
 
         .footer-text {
             margin: 0;
-            font-size: 12px;
+            font-size: 14px;
             line-height: 1.4;
             color: #ffffff;
         }
@@ -358,30 +358,9 @@
 
 <body class="email-body">
     @php
-    $socialLinks = array_filter((array) config('emails.social_links', []), fn($url) => filled($url));
-    $frontendUrl = rtrim((string) config('app.frontend_url', 'https://www.daryza.com'), '/');
-    $phone = (string) config('emails.contact_phone', '+51 1 234 5678');
     $mailAssets = (array) config('emails.assets', []);
-    $logoUrl = (string) ($mailAssets['logo'] ?? 'https://storage.googleapis.com/daryza_dev/logo-email-daryza.png');
-    $websiteIcon = (string) ($mailAssets['website_icon'] ??
-    'https://img.icons8.com/material-rounded/48/ffffff/globe--v1.png');
-    $phoneIcon = (string) ($mailAssets['phone_icon'] ?? 'https://img.icons8.com/ios-filled/50/ffffff/phone.png');
-    $locationIcon = (string) ($mailAssets['location_icon'] ?? 'https://img.icons8.com/ios-filled/50/ffffff/marker.png');
-    $socialIcons = [
-    'facebook' => (string) data_get($mailAssets, 'social.facebook',
-    'https://img.icons8.com/ios-filled/50/ffffff/facebook-new.png'),
-    'instagram' => (string) data_get($mailAssets, 'social.instagram', 'https://cdn.simpleicons.org/instagram/FFFFFF'),
-    'youtube' => (string) data_get($mailAssets, 'social.youtube',
-    'https://img.icons8.com/ios-filled/50/ffffff/youtube-play.png'),
-    'linkedin' => (string) data_get($mailAssets, 'social.linkedin',
-    'https://img.icons8.com/ios-filled/50/ffffff/linkedin.png'),
-    ];
-    $socialLabels = [
-    'facebook' => 'Facebook',
-    'instagram' => 'Instagram',
-    'youtube' => 'YouTube',
-    'linkedin' => 'LinkedIn',
-    ];
+    $logoUrl = (string) ($mailAssets['logo'] ?? 'https://storage.googleapis.com/daryza_dev/assets-mails/logo_daryza.png');
+    $ruc = (string) config('emails.ruc', '20144109458');
     @endphp
     <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
@@ -420,43 +399,9 @@
                                         <img class="footer-logo" src="{{ $logoUrl }}" alt="Daryza Logo"
                                             style="margin: 0 auto 2px auto;" />
 
-                                        @if (!empty($socialLinks))
-                                        <div class="social-container">
-                                            @foreach ($socialLinks as $network => $url)
-                                            @if (isset($socialIcons[$network], $socialLabels[$network]))
-                                            <a href="{{ $url }}" class="social-link" target="_blank"
-                                                rel="noopener noreferrer" aria-label="{{ $socialLabels[$network] }}">
-                                                <img class="social-icon" src="{{ $socialIcons[$network] }}"
-                                                    alt="{{ $socialLabels[$network] }}" />
-                                            </a>
-                                            @endif
-                                            @endforeach
-                                        </div>
-                                        @endif
-
-                                        <div class="footer-contact-row">
-                                            <a href="{{ $frontendUrl }}" class="footer-contact-item" target="_blank"
-                                                rel="noopener noreferrer"
-                                                style="color:#ffffff !important; text-decoration:none !important;">
-                                                <img class="footer-inline-icon" src="{{ $websiteIcon }}"
-                                                    alt="Sitio web" />
-                                                {{ $frontendUrl }}
-                                            </a>
-                                            <a href="tel:{{ preg_replace('/\s+/', '', $phone) }}"
-                                                class="footer-contact-item" target="_blank" rel="noopener noreferrer"
-                                                style="color:#ffffff !important; text-decoration:none !important;">
-                                                <img class="footer-inline-icon" src="{{ $phoneIcon }}" alt="Telefono" />
-                                                {{ $phone }}
-                                            </a>
-                                            <span class="footer-contact-item">
-                                                <img class="footer-inline-icon" src="{{ $locationIcon }}"
-                                                    alt="Ubicacion" />
-                                                Lima, Perú
-                                            </span>
-                                        </div>
-
-                                        <p class="footer-text" style="text-align: center; margin-top: 8px;">© 2026
-                                            Daryza Sac. Todos los derechos reservados.</p>
+                                        <p class="footer-text" style="text-align: center; margin-top: 8px;">
+                                            © 2026 Daryza Sac. Todos los derechos reservados. RUC {{ $ruc }}
+                                        </p>
                                     </td>
                                 </tr>
 

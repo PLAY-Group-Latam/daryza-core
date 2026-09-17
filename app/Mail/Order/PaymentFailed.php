@@ -20,7 +20,7 @@ class PaymentFailed extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Pago fallido - Pedido#' . $this->order->code,
+            subject: 'Hubo un inconveniente con el pago de tu pedido ' . $this->order->code,
         );
     }
 

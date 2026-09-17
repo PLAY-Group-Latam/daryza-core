@@ -1,10 +1,6 @@
 @extends('layouts.mail')
 
 @section('content')
-    <h1 class="content-title">
-        Entrega fallida
-    </h1>
-
     <p class="content-text">Hola <strong>{{ $customer }}</strong>,</p>
 
     <p class="content-text">
@@ -12,32 +8,18 @@
     </p>
 
     <p class="content-text">
-        Nuestra unidad de transporte se acercó a la dirección indicada, sin embargo, no obtuvo respuesta al momento de la
-        visita.
+        Nuestro equipo de transporte se acercó a la dirección registrada, pero no logró completar la entrega, ya que no se obtuvo respuesta en el domicilio ni fue posible establecer contacto al número registrado.
     </p>
 
     <p class="content-text">
-        Recuerda que la entrega es gratuita solo en el primer intento, por lo que te agradeceremos confirmarnos una nueva
-        fecha o horario para coordinar la reprogramación.
+        Para coordinar una nueva entrega, te agradeceremos que nos confirmes una nueva fecha u horario conveniente. Puedes escribirnos a 
+        <a style="color:#2563eb; font-weight:bold; text-decoration:none;" href="mailto:{{ config('emails.orders_contact_email') }}">
+            {{ config('emails.orders_contact_email') }}
+        </a> 
+        o por WhatsApp al <strong>{{ config('emails.orders_contact_phone') }}</strong>.
     </p>
 
     <p class="content-text">
-        A continuación, te compartimos nuestros medios de contacto para cualquier duda o consulta
-        adicional:
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.orders_notifications.contact_email') }}">
-            {{ config('app.orders_notifications.contact_email') }}
-        </a>
-        o al
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.orders_notifications.contact_phone') }}">
-            {{ config('app.orders_notifications.contact_phone') }}
-        </a>.
-    </p>
-
-    <p class="content-text">
-        Gracias
-    </p>
-
-    <p class="content-text">
-        Equipo {{ config('app.name') }}
+        Equipo Daryza
     </p>
 @endsection
