@@ -333,54 +333,22 @@ class ProductImportService
     return ProductVariant::create($variantData);
   }
 
-  protected function resolveUniqueSkuForImport(string $baseSku, ?string $currentVariantId = null): string
+  /**
+   * Busca una variante (de otro producto o de otra combinación) que ya use el
+   * SKU de proveedor indicado. El SKU de proveedor es único.
+   */
+  public function findSkuSupplierConflict(string $supplierSku, string $productId, string $sku): ?ProductVariant
   {
-    $sku = $baseSku;
-    $counter = 1;
-
-    while (true) {
-      $query = ProductVariant::withTrashed()->where('sku', $sku);
-
-      if ($currentVariantId) {
-        $query->where('id', '!=', $currentVariantId);
-      }
-
-      if (!$query->exists()) {
-        return $sku;
-      }
-
-      $counter++;
-      $sku = "{$baseSku}-{$counter}";
-    }
-  }
-
-  public function findGlobalSkuConflict(string $sku, string $productId, ?string $ignoreVariantId = null): ?ProductVariant
-  {
-    $normalizedSku = trim($sku);
-    if ($normalizedSku === '') {
-      return null;
-    }
-
-    $query = ProductVariant::withTrashed()
-      ->where('sku', $normalizedSku)
-      ->where('product_id', '!=', $productId);
-
-    if ($ignoreVariantId) {
-      $query->where('id', '!=', $ignoreVariantId);
-    }
-
-    return $query->first();
-  }
-
-  public function findSku(string $sku): ?ProductVariant
-  {
-    $normalizedSku = trim($sku);
-    if ($normalizedSku === '') {
+    $normalized = trim($supplierSku);
+    if ($normalized === '') {
       return null;
     }
 
     return ProductVariant::withTrashed()
-      ->where('sku', $normalizedSku)
+      ->where('sku_supplier', $normalized)
+      ->whereNot(function ($query) use ($productId, $sku) {
+        $query->where('product_id', $productId)->where('sku', $sku);
+      })
       ->first();
   }
 

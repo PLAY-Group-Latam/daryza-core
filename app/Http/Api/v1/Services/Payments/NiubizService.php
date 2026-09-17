@@ -2,27 +2,23 @@
 
 namespace App\Http\Api\v1\Services\Payments;
 
-use Illuminate\Support\Facades\Log;
+use App\Models\Orders\Order;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class NiubizService
 {
-    public function createSession(
-        string $purchaseNumber,
-        float $amount,
-        string $currency = 'PEN',
-        array $antifraud = [],
-        array $dataMap = []
-    ): array
+    public function createSession(Order $order, string $purchaseNumber, string $clientIp): array
     {
-        [$merchantId, $baseUrl, $timeout] = $this->baseConfig();
+        $this->ensureEnabled();
+        $merchantId = $this->merchantId();
+        $timeout = $this->timeout();
         $securityToken = $this->requestSecurityToken();
-        $endpoint = $baseUrl . '/api.ecommerce/v2/ecommerce/token/session/' . $merchantId;
+        $endpoint = $this->sessionUrl() . '/' . $merchantId;
 
         $this->debugLog('create_session_request', [
             'method' => 'POST',
-            'base_url' => $baseUrl,
             'endpoint' => $endpoint,
             'merchant_id' => $merchantId,
             'has_access_token' => $securityToken !== '',
@@ -32,12 +28,9 @@ class NiubizService
 
         $sessionPayload = [
             'channel' => 'web',
-            'amount' => round($amount, 2),
-            'antifraud' => [
-                'clientIp' => (string) data_get($antifraud, 'clientIp', ''),
-                'merchantDefineData' => (array) data_get($antifraud, 'merchantDefineData', []),
-            ],
-            'dataMap' => $dataMap,
+            'amount' => round((float) $order->total, 2),
+            'antifraud' => $this->sessionAntifraud($order, $clientIp),
+            'dataMap' => $this->sessionDataMap($order),
         ];
 
         $response = $this->niubizHttp()->withHeaders([
@@ -66,20 +59,18 @@ class NiubizService
     }
 
     public function confirmWithTransactionToken(
-        string $transactionToken,
+        Order $order,
         string $purchaseNumber,
-        float $amount,
-        string $currency = 'PEN',
-        ?string $orderId = null,
-        array $dataMap = []
+        string $transactionToken
     ): array {
-        [$merchantId, $baseUrl, $timeout] = $this->baseConfig();
+        $this->ensureEnabled();
+        $merchantId = $this->merchantId();
+        $timeout = $this->timeout();
         $securityToken = $this->requestSecurityToken();
-        $endpoint = $baseUrl . '/api.authorization/v3/authorization/ecommerce/' . $merchantId;
+        $endpoint = $this->authorizationUrl() . '/' . $merchantId;
 
         $this->debugLog('confirm_transaction_request', [
             'method' => 'POST',
-            'base_url' => $baseUrl,
             'endpoint' => $endpoint,
             'merchant_id' => $merchantId,
             'has_access_token' => $securityToken !== '',
@@ -94,13 +85,11 @@ class NiubizService
             'order' => [
                 'tokenId' => $transactionToken,
                 'purchaseNumber' => $purchaseNumber,
-                'amount' => round($amount, 2),
-                'currency' => strtoupper($currency),
+                'amount' => round((float) $order->total, 2),
+                'currency' => $this->currency($order),
             ],
+            'dataMap' => $this->authorizationDataMap(),
         ];
-        if ($dataMap !== []) {
-            $authorizationPayload['dataMap'] = $dataMap;
-        }
 
         $response = $this->niubizHttp(false)->withHeaders([
                 'Authorization' => $securityToken,
@@ -120,7 +109,7 @@ class NiubizService
             // Algunos rechazos de tarjeta llegan con HTTP 400 pero con ACTION_CODE/ACTION_DESCRIPTION.
             if ($responseCode !== '' || $responseMessage !== '' || $this->hasBusinessStatus($payload)) {
                 Log::info('niubiz.confirm_with_transaction_token_declined_http_error', [
-                    'order_id' => $orderId,
+                    'order_id' => $order->id,
                     'purchase_number' => $purchaseNumber,
                     'http_status' => $response->status(),
                     'response_code' => $responseCode,
@@ -144,7 +133,7 @@ class NiubizService
         }
 
         Log::info('niubiz.confirm_with_transaction_token_result', [
-            'order_id' => $orderId,
+            'order_id' => $order->id,
             'purchase_number' => $purchaseNumber,
             'response_code' => $responseCode,
             'response_message' => $responseMessage,
@@ -169,47 +158,128 @@ class NiubizService
         throw new \RuntimeException('confirmAuthorization está deshabilitado. Usa confirmWithTransactionToken.');
     }
 
-    private function baseConfig(): array
+    /**
+     * Datos antifraude de la sesión. El correo/documento salen de la orden.
+     */
+    private function sessionAntifraud(Order $order, string $clientIp): array
     {
-        if (!config('services.niubiz.enabled')) {
-            throw new \RuntimeException('Niubiz no está habilitado en la configuración.');
+        $email = (string) ($order->customer_email ?: '');
+        $identifier = (string) ($order->customer_document_number ?: ($email ?: $order->id));
+
+        return [
+            'clientIp' => $clientIp,
+            'merchantDefineData' => [
+                'MDD4' => $email,
+                'MDD32' => $identifier,
+                'MDD75' => 'Registrado',
+                'MDD77' => $this->registrationDays($order),
+            ],
+        ];
+    }
+
+    /**
+     * dataMap de la sesión: info del cliente/comercio.
+     */
+    private function sessionDataMap(Order $order): array
+    {
+        // La doc pide info del cliente; en su defecto, la del comercio.
+        return [
+            'cardholderCity' => (string) ($order->province_name ?: $order->department_name ?: config('niubiz.cardholder.city')),
+            'cardholderCountry' => (string) config('niubiz.cardholder.country'),
+            'cardholderAddress' => (string) ($order->shipping_address_line ?: config('niubiz.cardholder.address')),
+            'cardholderPostalCode' => (string) config('niubiz.cardholder.postal_code'),
+            'cardholderState' => (string) config('niubiz.cardholder.state'),
+            'cardholderPhoneNumber' => (string) ($order->customer_mobile_phone ?: config('niubiz.cardholder.phone')),
+        ];
+    }
+
+    /**
+     * dataMap de la autorización: datos de ubicación del comercio.
+     */
+    private function authorizationDataMap(): array
+    {
+        return [
+            'urlAddress' => (string) config('niubiz.url_address'),
+            'serviceLocationCityName' => (string) config('niubiz.cardholder.city'),
+            'serviceLocationCountrySubdivisionCode' => (string) config('niubiz.cardholder.state'),
+            'serviceLocationCountryCode' => (string) config('niubiz.service_location_country'),
+            'serviceLocationPostalCode' => (string) config('niubiz.cardholder.postal_code'),
+        ];
+    }
+
+    private function registrationDays(Order $order): int
+    {
+        $reference = $order->customer?->created_at ?? $order->created_at;
+
+        if (!$reference) {
+            return 0;
         }
 
-        $merchantId = (string) config('services.niubiz.merchant_id');
-        $baseUrl = rtrim((string) config('services.niubiz.api_url', config('services.niubiz.base_url')), '/');
-        $timeout = (int) config('services.niubiz.timeout', 15);
+        return max(0, (int) $reference->diffInDays(now()));
+    }
 
-        if (!$merchantId || !$baseUrl) {
+    private function currency(Order $order): string
+    {
+        return strtoupper((string) ($order->currency ?: config('niubiz.currency', 'PEN')));
+    }
+
+    private function ensureEnabled(): void
+    {
+        if (!config('niubiz.enabled')) {
+            throw new \RuntimeException('Niubiz no está habilitado en la configuración.');
+        }
+    }
+
+    private function merchantId(): string
+    {
+        $merchantId = (string) config('niubiz.merchant_id');
+
+        if ($merchantId === '') {
             throw new \RuntimeException('Configuración de Niubiz incompleta.');
         }
 
-        return [$merchantId, $baseUrl, $timeout];
+        return $merchantId;
+    }
+
+    private function timeout(): int
+    {
+        return (int) config('niubiz.timeout', 15);
+    }
+
+    private function securityUrl(): string
+    {
+        return rtrim((string) config('niubiz.security_url'), '/');
+    }
+
+    private function sessionUrl(): string
+    {
+        return rtrim((string) config('niubiz.session_url'), '/');
+    }
+
+    private function authorizationUrl(): string
+    {
+        return rtrim((string) config('niubiz.authorization_url'), '/');
     }
 
     private function requestSecurityToken(): string
     {
-        [$merchantId, $baseUrl, $timeout] = $this->baseConfig();
-        $username = (string) config('services.niubiz.user', config('services.niubiz.username'));
-        $password = (string) config('services.niubiz.password');
+        $username = (string) config('niubiz.user');
+        $password = (string) config('niubiz.password');
+        $endpoint = $this->securityUrl();
 
-        if (!$merchantId || !$baseUrl || !$username || !$password) {
+        if ($username === '' || $password === '' || $endpoint === '') {
             throw new \RuntimeException('Credenciales de Niubiz incompletas.');
         }
 
-        $endpoint = $baseUrl . '/api.security/v1/security';
-
         $this->debugLog('security_token_request', [
             'method' => 'POST',
-            'base_url' => $baseUrl,
             'endpoint' => $endpoint,
-            'merchant_id' => $merchantId,
             'has_username' => $username !== '',
             'has_password' => $password !== '',
-            'timeout' => $timeout,
         ]);
 
         $response = $this->niubizHttp()->withBasicAuth($username, $password)
-            ->timeout($timeout)
+            ->timeout($this->timeout())
             ->accept('text/plain')
             ->post($endpoint);
 
@@ -225,8 +295,6 @@ class NiubizService
         }
 
         $this->debugLog('security_token_ok', [
-            'base_url' => $baseUrl,
-            'merchant_id' => $merchantId,
             'has_access_token' => true,
         ]);
 
@@ -238,7 +306,7 @@ class NiubizService
         $pending = $enableRetries
             ? Http::retry(2, 300)
             : Http::retry(0, 300);
-        $resolveIp = (string) config('services.niubiz.resolve_ip', '');
+        $resolveIp = (string) config('niubiz.resolve_ip', '');
 
         if ($resolveIp === '') {
             $this->debugLog('http_client_mode', [
@@ -248,7 +316,7 @@ class NiubizService
             return $pending;
         }
 
-        $host = parse_url((string) config('services.niubiz.api_url', ''), PHP_URL_HOST);
+        $host = parse_url($this->sessionUrl(), PHP_URL_HOST);
         if (!is_string($host) || $host === '' || !filter_var($resolveIp, FILTER_VALIDATE_IP)) {
             $this->warningLogSimple('invalid_resolve_ip_config', [
                 'host' => $host,
@@ -345,7 +413,7 @@ class NiubizService
 
     private function debugLog(string $event, array $context): void
     {
-        if (!(bool) config('services.niubiz.debug', false)) {
+        if (!(bool) config('niubiz.debug', false)) {
             return;
         }
 

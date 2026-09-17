@@ -57,17 +57,54 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 401);
             }
         });
+        $exceptions->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recurso no encontrado.',
+                ], 404);
+            }
+        });
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recurso no encontrado.',
+                ], 404);
+            }
+        });
+        $exceptions->renderable(function (\Illuminate\Auth\Access\AuthorizationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado.',
+                ], 403);
+            }
+        });
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado.',
+                ], 403);
+            }
+        });
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'Error en la petición.',
+                ], $e->getStatusCode());
+            }
+        });
         $exceptions->renderable(function (\Throwable $e, $request) {
             if ($request->is('api/*')) {
-                $status = (int) $e->getCode();
-                if ($status < 100 || $status >= 600) {
-                    $status = 500; // fallback
-                }
+                report($e);
 
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage() ?: 'Error interno del servidor',
-                ], $status);
+                    'message' => 'Error interno del servidor',
+                ], 500);
             }
         });
     })->create();

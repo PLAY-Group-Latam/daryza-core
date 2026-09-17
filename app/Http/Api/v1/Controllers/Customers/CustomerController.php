@@ -22,10 +22,10 @@ class CustomerController extends Controller
 
     $customer->update([
     'full_name'      => $data['full_name'],
-    'full_last_name' => $data['full_last_name'],
+    'full_last_name' => $data['full_last_name'] ?? null,
     'document_type'  => $data['document_type'] ?? null,
     'email'          => $data['email'],
-    'dni'            => $data['dni'],
+    'dni'            => $data['dni'] ?? null,
     'phone'          => $data['phone'],
 ]);
 
@@ -33,9 +33,9 @@ class CustomerController extends Controller
       $customer->billingProfile()->updateOrCreate(
         ['customer_id' => $customer->id],
         [
-          'ruc' => $data['ruc'],
-          'social_reason' => $data['social_reason'],
-          'fiscal_address' => $data['fiscal_address'],
+          'ruc' => $data['ruc'] ?? null,
+          'social_reason' => $data['social_reason'] ?? null,
+          'fiscal_address' => $data['fiscal_address'] ?? null,
         ]
       );
     }

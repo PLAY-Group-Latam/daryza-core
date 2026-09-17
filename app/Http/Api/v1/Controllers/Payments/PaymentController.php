@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
+    /**
+     * Estados con pago ya confirmado (o reembolsado). No deben reiniciar ni
+     * degradar su estado por una nueva confirmación de Niubiz.
+     */
+    private const PAID_STATES = ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'];
+
     public function __construct(
         protected NiubizService $niubizService,
         protected OrderNotificationService $orderNotificationService
@@ -23,10 +29,6 @@ class PaymentController extends Controller
         $payload = $request->validate([
             'purchaseNumber' => ['nullable', 'string', 'max:40'],
             'purchase_number' => ['nullable', 'string', 'max:40'],
-            'antifraud' => ['required', 'array'],
-            'antifraud.clientIp' => ['nullable', 'ip'],
-            'antifraud.merchantDefineData' => ['required', 'array'],
-            'dataMap' => ['required', 'array'],
         ]);
 
         try {
@@ -49,19 +51,18 @@ class PaymentController extends Controller
             }
 
             $session = $this->niubizService->createSession(
+                $order,
                 $purchaseNumberForNiubiz,
-                (float) $order->total,
-                strtoupper((string) ($order->currency ?: 'PEN')),
-                (array) ($payload['antifraud'] ?? []),
-                (array) ($payload['dataMap'] ?? [])
+                (string) $request->ip()
             );
 
             return $this->success('Sesión de Niubiz creada correctamente.', [
                 'sessionKey' => $session['session_key'],
+                'merchantId' => (string) config('niubiz.merchant_id'),
                 'purchaseNumber' => $purchaseNumberForNiubiz,
                 'orderCode' => $order->code,
                 'amount' => (float) $order->total,
-                'currency' => strtoupper((string) ($order->currency ?: 'PEN')),
+                'currency' => strtoupper((string) ($order->currency ?: config('niubiz.currency', 'PEN'))),
             ]);
         } catch (\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), null, 422);
@@ -80,7 +81,6 @@ class PaymentController extends Controller
             'transaction_token' => ['nullable', 'string', 'max:255'],
             'purchaseNumber' => ['nullable', 'string', 'max:40'],
             'purchase_number' => ['nullable', 'string', 'max:40'],
-            'dataMap' => ['sometimes', 'array'],
         ]);
 
         $customerId = (string) auth('api')->id();
@@ -100,7 +100,7 @@ class PaymentController extends Controller
             return $this->error('El purchaseNumber para Niubiz debe ser numérico y máximo 12 dígitos.', null, 422);
         }
 
-        if ($order->state === 'payment_received' || $order->state === 'delivered') {
+        if (in_array($order->state, self::PAID_STATES, true)) {
             return $this->success('La orden ya tiene pago aprobado.', [
                 'is_approved' => true,
                 'authorization_code' => null,
@@ -123,12 +123,9 @@ class PaymentController extends Controller
             ]);
 
             $confirmation = $this->niubizService->confirmWithTransactionToken(
-                $transactionToken,
+                $order,
                 $purchaseNumberForNiubiz,
-                (float) $order->total,
-                strtoupper((string) ($order->currency ?: 'PEN')),
-                $order->id,
-                (array) ($payload['dataMap'] ?? [])
+                $transactionToken
             );
 
             $order = $this->syncOrderAfterNiubizConfirmation(
@@ -233,6 +230,11 @@ class PaymentController extends Controller
                     ]);
                 }
             } else {
+                // Idempotencia: nunca degradar una orden que ya tiene pago aprobado.
+                if (in_array($order->state, self::PAID_STATES, true)) {
+                    return $order->fresh(['payments', 'statusHistory']);
+                }
+
                 $order->update([
                     'state' => 'payment_failed',
                 ]);
@@ -286,7 +288,7 @@ class PaymentController extends Controller
             throw new \InvalidArgumentException('La orden está cancelada y no puede iniciar pago Niubiz.');
         }
 
-        if ($order->state === 'payment_received' || $order->state === 'delivered') {
+        if (in_array($order->state, self::PAID_STATES, true)) {
             throw new \InvalidArgumentException('La orden ya tiene pago aprobado.');
         }
     }

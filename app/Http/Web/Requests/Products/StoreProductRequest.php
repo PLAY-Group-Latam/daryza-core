@@ -131,7 +131,6 @@ class StoreProductRequest extends FormRequest
             'variants.required'          => 'El producto debe tener al menos una variante.',
             'variants.min'               => 'El producto debe tener al menos una variante.',
             'variants.*.sku.required'    => 'El SKU es obligatorio en cada variante.',
-            'variants.*.sku.unique'      => 'El SKU :input ya existe, ingresa uno diferente.',
             'variants.*.sku.max'         => 'El SKU no puede superar los 100 caracteres.',
             'variants.*.price.required'  => 'El precio es obligatorio en cada variante.',
             'variants.*.price.numeric'   => 'El precio debe ser un valor numérico.',
@@ -186,8 +185,7 @@ class StoreProductRequest extends FormRequest
                 $validator,
                 $variants,
                 $selectedVariantAttributeIds,
-                null,
-                true
+                null
             );
 
             app(PromotionPayloadValidator::class)->validate(

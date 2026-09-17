@@ -15,6 +15,11 @@ class RecommendProductResource extends JsonResource
         $promoPrice    = (float) ($variant?->promo_price ?? 0);
         $isOnPromo     = (bool)  ($variant?->is_on_promo ?? false);
 
+        $isPromoActive = $isOnPromo
+            && $promoPrice > 0
+            && (!$variant?->promo_start_at || $variant->promo_start_at->isPast())
+            && (!$variant?->promo_end_at || $variant->promo_end_at->isFuture());
+
         return [
             'id'         => $variant?->id,
             'product_id' => $this->id,
@@ -25,8 +30,8 @@ class RecommendProductResource extends JsonResource
 
             'price' => [
                 'original'    => $originalPrice,
-                'current'     => ($isOnPromo && $promoPrice > 0) ? $promoPrice : $originalPrice,
-                'is_on_promo' => $isOnPromo,
+                'current'     => $isPromoActive ? $promoPrice : $originalPrice,
+                'is_on_promo' => $isPromoActive,
             ],
 
             'main_image' => [

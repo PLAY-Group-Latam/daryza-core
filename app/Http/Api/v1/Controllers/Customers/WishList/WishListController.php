@@ -56,14 +56,19 @@ class WishListController extends Controller
             return $this->error('Usuario no autenticado', null, 401);
         }
 
-        $result = $this->WishListservice->toggle(
-            $customer->id,
-            $validated['item_id'],
-            $validated['type']
-        );
+        try {
+            $result = $this->WishListservice->toggle(
+                $customer->id,
+                $validated['item_id'],
+                $validated['type']
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), null, 422);
+        }
 
         return $this->success($result['message'], [
-            'action' => $result['action']
+            'action' => $result['action'],
+            'current_count' => $result['current_count'],
         ]);
     }
 

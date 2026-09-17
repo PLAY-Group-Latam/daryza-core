@@ -13,6 +13,9 @@ class VariantPayloadValidator
     /**
      * Valida coherencia de variantes para create/update.
      *
+     * El SKU Daryza puede repetirse entre productos, por lo que NO se valida su
+     * unicidad. El SKU de proveedor SÍ es único.
+     *
      * @param  array<int, array<string, mixed>>  $variants
      * @param  array<int, string>  $selectedVariantAttributeIds
      */
@@ -20,15 +23,13 @@ class VariantPayloadValidator
         Validator $validator,
         array $variants,
         array $selectedVariantAttributeIds = [],
-        ?Product $product = null,
-        bool $validateSkuInDatabase = false
+        ?Product $product = null
     ): void {
         $attributeValueAttributeMap = $this->buildAttributeValueAttributeMap($variants);
 
         $seenCombinations = [];
         foreach ($variants as $variantIndex => $variant) {
             $variantId = $variant['id'] ?? null;
-            $sku = trim((string) ($variant['sku'] ?? ''));
             $attributes = collect($variant['attributes'] ?? []);
 
             $this->validateVariantBelongsToProduct(
@@ -38,13 +39,11 @@ class VariantPayloadValidator
                 $variantIndex
             );
 
-            $this->validateSku(
+            $this->validateSkuSupplier(
                 $validator,
-                $sku,
+                trim((string) ($variant['sku_supplier'] ?? '')),
                 $variantId,
-                $variantIndex,
-                $product,
-                $validateSkuInDatabase
+                $variantIndex
             );
 
             $this->validateDuplicatedAttributes($validator, $attributes, $variantIndex);
@@ -105,32 +104,25 @@ class VariantPayloadValidator
         }
     }
 
-    private function validateSku(
+    private function validateSkuSupplier(
         Validator $validator,
-        string $sku,
+        string $supplierSku,
         ?string $variantId,
-        int $variantIndex,
-        ?Product $product,
-        bool $validateSkuInDatabase
+        int $variantIndex
     ): void {
-        if ($sku === '') {
+        if ($supplierSku === '') {
             return;
         }
 
-        if (!$validateSkuInDatabase) {
-            return;
-        }
-
-        $skuInUse = ProductVariant::withTrashed()
-            ->where('sku', $sku)
-            ->when($product, fn($q) => $q->where('product_id', '!=', $product->id))
+        $inUse = ProductVariant::withTrashed()
+            ->where('sku_supplier', $supplierSku)
             ->when($variantId, fn($q) => $q->where('id', '!=', $variantId))
             ->exists();
 
-        if ($skuInUse) {
+        if ($inUse) {
             $validator->errors()->add(
-                "variants.$variantIndex.sku",
-                'El SKU ya está en uso por otra variante.'
+                "variants.$variantIndex.sku_supplier",
+                'El SKU de proveedor ya está en uso por otra variante.'
             );
         }
     }

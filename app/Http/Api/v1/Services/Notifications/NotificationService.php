@@ -8,28 +8,41 @@ use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class NotificationService
 {
     const DEFAULT_IMAGE = '/images/daryza-default.png';
     private const CACHE_TTL = 60;
 
-    private function cacheKey(string $prefix, ?string $customerId, ?string $visitorId, int $page): string
+    private function versionKey(): string
     {
-        $id = $customerId ? "c:{$customerId}" : "v:{$visitorId}";
-        return "notifications:{$prefix}:{$id}:p{$page}";
+        return 'notifications:version';
     }
 
-    public function invalidateCache(?string $customerId, ?string $visitorId): void
+    private function currentVersion(): string
     {
-        for ($p = 1; $p <= 10; $p++) {
-            Cache::forget($this->cacheKey('list', $customerId, $visitorId, $p));
-        }
+        return (string) Cache::rememberForever($this->versionKey(), fn () => (string) Str::uuid());
+    }
+
+    private function cacheKey(string $prefix, ?string $customerId, ?string $visitorId, int $perPage, int $page): string
+    {
+        $id = $customerId ? "c:{$customerId}" : "v:{$visitorId}";
+        $version = $this->currentVersion();
+
+        return "notifications:{$version}:{$prefix}:{$id}:pp{$perPage}:p{$page}";
+    }
+
+    public function invalidateCache(?string $customerId = null, ?string $visitorId = null): void
+    {
+        // Invalida todas las entradas cambiando la versión. Es compatible con
+        // cualquier driver (incluido `database`, que no soporta Cache::tags()).
+        Cache::forever($this->versionKey(), (string) Str::uuid());
     }
 
     public function clearNotificationCache(): void
     {
-        Cache::tags(['notifications'])->flush();
+        $this->invalidateCache();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -38,16 +51,17 @@ class NotificationService
 
     private function identifierQuery($query, $customerId, ?string $visitorId)
     {
-        return $query->where(function ($q) use ($customerId, $visitorId) {
-            if ($customerId && $visitorId) {
-                $q->where('customer_id', $customerId)
-                    ->orWhere('visitor_id', $visitorId);
-            } elseif ($customerId) {
-                $q->where('customer_id', $customerId);
-            } else {
-                $q->where('visitor_id', $visitorId);
-            }
-        });
+        // Una sola identidad por consulta: nunca se mezclan customer y visitor.
+        if ($customerId) {
+            return $query->where('customer_id', $customerId);
+        }
+
+        if ($visitorId) {
+            return $query->whereNull('customer_id')->where('visitor_id', $visitorId);
+        }
+
+        // Sin identidad no se debe tocar el estado de nadie.
+        return $query->whereRaw('1 = 0');
     }
 
     private function findRecord(string $notificationId, ?string $customerId, ?string $visitorId): ?NotificationRead
@@ -70,6 +84,11 @@ class NotificationService
         ?string $visitorId,
         array $attributes
     ): void {
+        // Sin identidad no se crea ni modifica estado.
+        if (!$customerId && !$visitorId) {
+            return;
+        }
+
         try {
             $record = $this->findRecord($notificationId, $customerId, $visitorId);
 
@@ -87,6 +106,9 @@ class NotificationService
             if ($code === '23505' || $code === '23000') {
                 $this->findRecord($notificationId, $customerId, $visitorId)
                     ?->update($attributes);
+            } elseif ($code === '23503') {
+                // La notificación no existe: no hay estado que registrar.
+                return;
             } else {
                 throw $e;
             }
@@ -116,9 +138,9 @@ class NotificationService
 
     public function getNotifications(?string $customerId, ?string $visitorId, int $perPage = 5, int $page = 1): array
     {
-        $cacheKey = $this->cacheKey('list', $customerId, $visitorId, $page);
+        $cacheKey = $this->cacheKey('list', $customerId, $visitorId, $perPage, $page);
 
-        return Cache::tags(['notifications'])->remember($cacheKey, self::CACHE_TTL, function () use ($customerId, $visitorId, $perPage, $page) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($customerId, $visitorId, $perPage, $page) {
             return $this->fetchNotifications($customerId, $visitorId, $perPage, $page);
         });
     }
@@ -294,6 +316,11 @@ class NotificationService
 
     public function markAllAsRead(?string $customerId, ?string $visitorId): void
     {
+        // Sin identidad no se crea ni modifica estado.
+        if (!$customerId && !$visitorId) {
+            return;
+        }
+
         $existingIds = $this->identifierQuery(
             NotificationRead::query(),
             $customerId,
@@ -401,7 +428,7 @@ class NotificationService
             ]);
         }
 
-        Cache::tags(['notifications'])->flush();
+        $this->invalidateCache();
 
         return $notification;
     }
@@ -412,7 +439,7 @@ class NotificationService
             ->whereJsonContains('data->product_id', $productId)
             ->delete();
 
-        Cache::tags(['notifications'])->flush();
+        $this->invalidateCache();
     }
 
     // ─────────────────────────────────────────────────────────────

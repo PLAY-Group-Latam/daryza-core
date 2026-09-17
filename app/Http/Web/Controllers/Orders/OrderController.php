@@ -122,7 +122,7 @@ class OrderController extends Controller
     public function updateAdminAction(Request $request, Order $order)
     {
         $data = $request->validate([
-            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order'],
+            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order,mark_refunded'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -145,7 +145,7 @@ class OrderController extends Controller
         $data = $request->validate([
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['required', 'string'],
-            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order'],
+            'action' => ['required', 'in:accept_payment,reject_payment,reset_to_pending_payment,start_preparing,schedule_shipping,start_transit,mark_delivered_full,mark_delivery_failed,cancel_order,mark_refunded'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 

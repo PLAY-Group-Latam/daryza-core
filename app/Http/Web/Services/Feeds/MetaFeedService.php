@@ -287,13 +287,8 @@ class MetaFeedService
 
     private function resolveFeedId(ProductVariant $variant): string
     {
-        foreach (['sku', 'sku_supplier'] as $field) {
-            $value = $variant->getAttribute($field);
-            if (filled($value)) {
-                return (string) $value;
-            }
-        }
-
+        // El SKU puede repetirse entre productos, por lo que no sirve como id
+        // único del feed. Se usa el id (ULID) de la variante.
         return (string) $variant->id;
     }
 

@@ -36,17 +36,32 @@ class CustomerService
 
   public function findOrCreateFromGoogle(array $data): Customer
 {
-    return Customer::updateOrCreate(
-        [
-            'email' => $data['email'],
-        ],
-        [
-            'full_name'      => $data['full_name'],
-            'full_last_name' => $data['full_last_name'] ?? '', 
-            'google_id'      => $data['google_id'],
-            'photo'          => $data['photo'] ?? null,
-            'password'       => null,
-        ]
-    );
+    $customer = Customer::withTrashed()
+        ->where('email', $data['email'])
+        ->first();
+
+    if ($customer) {
+        if ($customer->trashed()) {
+            $customer->restore();
+        }
+
+        // No se sobrescribe la contraseña ni los datos de perfil existentes.
+        $customer->fill([
+            'google_id' => $data['google_id'],
+            'photo'     => $data['photo'] ?? $customer->photo,
+        ]);
+        $customer->save();
+
+        return $customer;
+    }
+
+    return Customer::create([
+        'email'          => $data['email'],
+        'full_name'      => $data['full_name'],
+        'full_last_name' => $data['full_last_name'] ?? '',
+        'google_id'      => $data['google_id'],
+        'photo'          => $data['photo'] ?? null,
+        'password'       => null,
+    ]);
 }
 }

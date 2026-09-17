@@ -191,8 +191,7 @@ class UpdateProductRequest extends FormRequest
         $validator,
         $variants,
         $selectedVariantAttributeIds,
-        $product,
-        true
+        $product
       );
 
       app(PromotionPayloadValidator::class)->validate(

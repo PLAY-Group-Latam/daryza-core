@@ -13,6 +13,11 @@ class WishListService
 {
     $modelClass = $type === 'pack' ? ProductPack::class : ProductVariant::class;
 
+    // No se permiten favoritos de ítems inexistentes.
+    if (!$modelClass::query()->whereKey($itemId)->exists()) {
+        throw new \InvalidArgumentException('El ítem no existe.');
+    }
+
     $wishlist = Wishlist::where([
         'customer_id' => $customerId,
         'item_id'     => $itemId,
@@ -66,6 +71,6 @@ class WishListService
 
     public function getCount(string $customerId): int
     {
-        return Wishlist::where('customer_id', $customerId)->count();
+        return $this->getCustomerWishlist($customerId)->count();
     }
 }

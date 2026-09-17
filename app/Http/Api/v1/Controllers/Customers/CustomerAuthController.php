@@ -8,6 +8,7 @@ use App\Http\Api\v1\Requests\Customers\LoginCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\RegisterCustomerRequest;
 use App\Http\Api\v1\Requests\Customers\ResetPasswordRequest;
 use App\Http\Api\v1\Services\CustomerService;
+use App\Http\Api\v1\Services\Notifications\NotificationService;
 use App\Jobs\SendEmailJob;
 use App\Mail\Login\SuccessLogin;
 use App\Mail\ResetPassword\RecoveryPassword;
@@ -22,7 +23,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class CustomerAuthController extends Controller
 {
 
-  public function __construct(protected CustomerService $customerService) {}
+  public function __construct(
+    protected CustomerService $customerService,
+    protected NotificationService $notificationService
+  ) {}
 
   public function register(RegisterCustomerRequest $request)
   {
@@ -46,11 +50,12 @@ class CustomerAuthController extends Controller
     $auth = auth('api');
 
     if (!$token = $auth->attempt($credentials)) {
-      return $this->error('Credenciales incorrectas.', 401);
+      return $this->error('Credenciales incorrectas.', null, 401);
     }
 
     $customer = auth('api')->user();
 
+    $this->syncVisitorNotifications($customer->id, $request);
     $this->dispatchSuccessLoginEmail($customer);
 
     return $this->successWithCookie(
@@ -74,15 +79,21 @@ class CustomerAuthController extends Controller
     );
 
     if (!$response->ok()) {
-      return $this->error('Token de Google inválido', 401);
+      return $this->error('Token de Google inválido', null, 401);
     }
 
     $googleUser = $response->json();
 
     // 🔐 Validar que el token fue emitido para TU APP
-    if ($googleUser['aud'] !== config('services.google.client_id')) {
-      return $this->error('Token no válido para esta aplicación', 401);
+    if (($googleUser['aud'] ?? null) !== config('services.google.client_id')) {
+      return $this->error('Token no válido para esta aplicación', null, 401);
     }
+
+    // 🔐 Validar que el correo de Google esté verificado
+    if (!filter_var($googleUser['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+      return $this->error('El correo de Google no está verificado.', null, 401);
+    }
+
     $nameParts = explode(' ', $googleUser['name'] ?? '', 2);
 
   $customer = $this->customerService->findOrCreateFromGoogle([
@@ -94,6 +105,7 @@ class CustomerAuthController extends Controller
 ]);
 
     $token = JWTAuth::fromUser($customer);
+    $this->syncVisitorNotifications($customer->id, $request);
     $this->dispatchSuccessLoginEmail($customer);
 
     return $this->successWithCookie(
@@ -109,7 +121,7 @@ class CustomerAuthController extends Controller
         $oldToken = JWTAuth::getToken();
 
         if (!$oldToken) {
-            return $this->error('Token no encontrado', 401);
+            return $this->error('Token no encontrado', null, 401);
         }
 
         $newToken = JWTAuth::setToken($oldToken)->refresh();
@@ -120,13 +132,13 @@ class CustomerAuthController extends Controller
             $newToken
         );
     } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-        return $this->error('Sesión expirada, inicia sesión nuevamente', 401)
+        return $this->error('Sesión expirada, inicia sesión nuevamente', null, 401)
             ->withCookie($this->forgetJwtCookie());
     } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-        return $this->error('Token inválido', 401)
+        return $this->error('Token inválido', null, 401)
             ->withCookie($this->forgetJwtCookie());
     } catch (JWTException $e) {
-        return $this->error('No se pudo renovar el token', 401)
+        return $this->error('No se pudo renovar el token', null, 401)
             ->withCookie($this->forgetJwtCookie());
     }
 }
@@ -170,7 +182,7 @@ class CustomerAuthController extends Controller
     );
 
     if ($status !== Password::PASSWORD_RESET) {
-      return $this->error('Token inválido o expirado.', 400);
+      return $this->error('Token inválido o expirado.', null, 400);
     }
 
     return $this->success('Contraseña actualizada correctamente.');
@@ -224,5 +236,21 @@ class CustomerAuthController extends Controller
       new SuccessLogin($customer->full_name ?? 'Usuario'),
       $customer->email
     );
+  }
+
+  private function syncVisitorNotifications(string $customerId, Request $request): void
+  {
+    $visitorId = $request->header('X-Device-ID');
+
+    if (!$visitorId) {
+      return;
+    }
+
+    try {
+      $this->notificationService->syncVisitorToCustomer($customerId, $visitorId);
+    } catch (\Throwable $e) {
+      // La sincronización no debe bloquear el login.
+      report($e);
+    }
   }
 }

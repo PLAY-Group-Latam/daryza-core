@@ -307,14 +307,20 @@ class CouponService
         $subtotal = 0.0;
 
         foreach ($items as $item) {
-            /** @var ProductVariant $variant */
-            $variant = $variants->get($item['variant_id']);
-
-            if (!$predicate($variant)) {
+            // Los packs no tienen variante: no aplican a scopes de producto,
+            // categoría ni categoría dinámica.
+            if (($item['item_type'] ?? null) === 'product_pack') {
                 continue;
             }
 
-            $subtotal += ((float) $variant->active_price) * (int) $item['quantity'];
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get($item['variant_id'] ?? null);
+
+            if (!$variant || !$predicate($variant)) {
+                continue;
+            }
+
+            $subtotal += ((float) $variant->active_price) * (int) ($item['quantity'] ?? 0);
         }
 
         return round($subtotal, 2);
@@ -330,6 +336,8 @@ class CouponService
             $discount = min($discount, (float) $coupon->maximum_discount_amount);
         }
 
-        return max(0.0, min(round($discount, 2), $subtotal));
+        // El descuento nunca puede superar ni el subtotal elegible por scope
+        // ni el subtotal total de la orden.
+        return max(0.0, min(round($discount, 2), $discountableSubtotal, $subtotal));
     }
 }

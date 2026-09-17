@@ -388,58 +388,6 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 }
             }
 
-            if ($ctx['has_sku']) {
-                if (isset($this->seenSkus[$ctx['sku_normalized']])) {
-                    $previous = $this->seenSkus[$ctx['sku_normalized']];
-
-                    // ← Solo rechazar si es un producto DIFERENTE
-                    if ($previous['code'] !== $code) {
-                        $this->summary['sku_duplicates']++;
-                        $this->registerRowError(
-                            $excelRow,
-                            "SKU duplicado. Ya se uso en la fila {$previous['row']} para otro producto.",
-                            [
-                                'codigo' => $code,
-                                'sku_daryza' => $sku_daryza,
-                            ],
-                            [ProductImportRowMapper::HEADER_SKU_DARYZA],
-                            $row
-                        );
-                        continue;
-                    }
-                    // mismo producto → ok, no registrar en seenSkus de nuevo
-                } else {
-                    $this->seenSkus[$ctx['sku_normalized']] = [
-                        'row' => $excelRow,
-                        'code' => $code,
-                        'sku' => $sku_daryza,
-                    ];
-                }
-            }
-
-            if ($ctx['has_sku']) {
-                $skuConflict = $productId
-                    ? $service->findGlobalSkuConflict($sku_daryza, $productId)
-                    : $service->findSku($sku_daryza);
-
-                if ($skuConflict) {
-                    $this->summary['sku_duplicates']++;
-                    $this->registerRowError(
-                        $excelRow,
-                        'SKU duplicado contra otro producto existente. Corrige el SKU en el Excel.',
-                        [
-                            'codigo' => $code,
-                            'sku_daryza' => $sku_daryza,
-                            'producto_conflicto_id' => $skuConflict->product_id,
-                            'variante_conflicto_id' => $skuConflict->id,
-                        ],
-                        [ProductImportRowMapper::HEADER_SKU_DARYZA],
-                        $row
-                    );
-                    continue;
-                }
-            }
-
             $hasValidCode = $code && $name;
             if ($this->shouldDeferHeaderRow($ctx, $hasValidCode)) {
                 $this->pendingHeaderRows[$code] = [
@@ -535,6 +483,31 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             if ($ctx['has_sku'] && $code) {
                 $this->variantsIntendedByCode[$code] = true;
                 unset($this->pendingHeaderRows[$code]);
+            }
+
+            // El SKU de proveedor no puede repetirse.
+            $supplierSku = trim((string) ($mapped['variant']['sku_supplier'] ?? ''));
+            if ($supplierSku !== '') {
+                $supplierConflict = $service->findSkuSupplierConflict(
+                    $supplierSku,
+                    (string) $product->id,
+                    (string) $sku_daryza
+                );
+
+                if ($supplierConflict) {
+                    $this->registerRowError(
+                        $excelRow,
+                        'El SKU de proveedor ya está en uso por otra variante.',
+                        [
+                            'codigo' => $product->code ?? $code,
+                            'sku_proveedor' => $supplierSku,
+                            'variante_conflicto_id' => $supplierConflict->id,
+                        ],
+                        [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
+                        $row
+                    );
+                    continue;
+                }
             }
 
             // Crear variante si hay SKU Daryza y precio (con o sin atributos)
@@ -993,21 +966,25 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 continue;
             }
 
-            $pendingSku = trim((string) ($pending['variant']['sku_daryza'] ?? ''));
-            if ($pendingSku !== '') {
-                $skuConflict = $service->findGlobalSkuConflict($pendingSku, $product->id);
-                if ($skuConflict) {
-                    $this->summary['sku_duplicates']++;
+            $pendingSupplierSku = trim((string) ($pending['variant']['sku_supplier'] ?? ''));
+            if ($pendingSupplierSku !== '') {
+                $pendingSku = trim((string) ($pending['variant']['sku_daryza'] ?? ''));
+                $supplierConflict = $service->findSkuSupplierConflict(
+                    $pendingSupplierSku,
+                    (string) $product->id,
+                    $pendingSku
+                );
+
+                if ($supplierConflict) {
                     $this->registerRowError(
                         $pending['row'],
-                        'SKU duplicado contra otro producto existente. Corrige el SKU en el Excel.',
+                        'El SKU de proveedor ya está en uso por otra variante.',
                         [
                             'codigo' => $pending['product_code'],
-                            'sku_daryza' => $pendingSku,
-                            'producto_conflicto_id' => $skuConflict->product_id,
-                            'variante_conflicto_id' => $skuConflict->id,
+                            'sku_proveedor' => $pendingSupplierSku,
+                            'variante_conflicto_id' => $supplierConflict->id,
                         ],
-                        [ProductImportRowMapper::HEADER_SKU_DARYZA],
+                        [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
                         $pending['raw_row']
                     );
                     continue;

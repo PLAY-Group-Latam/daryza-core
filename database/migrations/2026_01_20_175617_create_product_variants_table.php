@@ -16,7 +16,9 @@ return new class extends Migration
             $table->foreignUlid('product_id')
                 ->constrained()
                 ->cascadeOnDelete();
-            $table->string('sku')->unique();
+            // El SKU Daryza puede repetirse entre productos (no es único).
+            $table->string('sku')->index();
+            // El SKU de proveedor no puede repetirse.
             $table->string('sku_supplier')->unique()->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('promo_price', 10, 2)->nullable();

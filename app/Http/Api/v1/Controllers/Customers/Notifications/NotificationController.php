@@ -22,7 +22,8 @@ class NotificationController extends Controller
         $data = $this->service->getNotifications(
             customerId: auth('api')->user()?->id,
             visitorId: $visitorId,
-            perPage: (int) $request->get('per_page', 5),
+            perPage: max(1, min((int) $request->get('per_page', 5), 50)),
+            page: max(1, (int) $request->get('page', 1)),
         );
 
         return $this->success('Notificaciones obtenidas correctamente', $data);

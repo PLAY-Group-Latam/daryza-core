@@ -333,6 +333,7 @@ class OrderService
             ]);
 
             $this->restoreStockForOrder($order);
+            $this->releaseCouponRedemptionForOrder($order);
             $this->registerStatusHistory($order, $previousStatus, 'cancelled', 'customer', $customerId, $reason ?: 'Cancelada por cliente');
 
             $this->orderNotificationService->sendStateChanged($order, $previousStatus, 'cancelled');
@@ -343,34 +344,54 @@ class OrderService
 
     public function uploadVoucher(Order $order, string $customerId, UploadedFile $voucherFile): Order
     {
-        $this->ensureOwnership($order, $customerId);
+        return DB::transaction(function () use ($order, $customerId, $voucherFile) {
+            $order = Order::query()->with('items')->lockForUpdate()->findOrFail($order->id);
+            $this->ensureOwnership($order, $customerId);
 
-        if ($order->payment_method_type !== 'bank_transfer') {
-            throw new \InvalidArgumentException('Solo las órdenes por transferencia aceptan voucher.');
-        }
+            if ($order->payment_method_type !== 'bank_transfer') {
+                throw new \InvalidArgumentException('Solo las órdenes por transferencia aceptan voucher.');
+            }
 
-        $payment = $order->payments()->latest()->first();
+            if (!in_array($order->state, ['pending_payment', 'payment_failed'], true)) {
+                throw new \InvalidArgumentException('La orden no permite subir voucher en su estado actual.');
+            }
 
-        if (!$payment) {
-            throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
-        }
+            $payment = $order->payments()->latest()->first();
 
-        $url = $this->uploadVoucherFile($voucherFile, $order->id);
+            if (!$payment) {
+                throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
+            }
 
-        $payment->update([
-            'voucher_url' => $url,
-            'voucher_uploaded_at' => now(),
-            'status' => 'pending',
-            'paid_at' => null,
-            'rejected_at' => null,
-        ]);
+            $previousState = $order->state;
 
-        $order->update([
-            'state' => 'pending_payment',
-            'paid_at' => null,
-        ]);
+            $url = $this->uploadVoucherFile($voucherFile, $order->id);
 
-        return $order->fresh(['payments', 'items', 'statusHistory']);
+            $payment->update([
+                'voucher_url' => $url,
+                'voucher_uploaded_at' => now(),
+                'status' => 'pending',
+                'paid_at' => null,
+                'rejected_at' => null,
+            ]);
+
+            $order->update([
+                'state' => 'pending_payment',
+                'paid_at' => null,
+            ]);
+
+            if ($previousState !== 'pending_payment') {
+                $this->registerStatusHistory(
+                    $order,
+                    $previousState,
+                    'pending_payment',
+                    'customer',
+                    $customerId,
+                    'Voucher subido por el cliente'
+                );
+            }
+
+            return $order->fresh(['payments', 'items', 'statusHistory']);
+        });
     }
 
     public function updateStateByAdmin(Order $order, string $newState, ?string $note = null, ?string $adminId = null): Order
@@ -457,6 +478,7 @@ class OrderService
 
             if ($newState === 'cancelled') {
                 $this->restoreStockForOrder($order);
+                $this->releaseCouponRedemptionForOrder($order);
             }
             if ($previousState === 'cancelled' && $newState !== 'cancelled') {
                 $this->reserveStockForOrder($order);
@@ -497,6 +519,7 @@ class OrderService
             'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
             'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
             'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
+            'mark_refunded' => $this->updateStateByAdmin($order, 'refunded', $note, $adminId),
             default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
         };
     }
@@ -629,6 +652,7 @@ class OrderService
             }
 
             $this->restoreStockForOrder($order);
+            $this->releaseCouponRedemptionForOrder($order);
             $this->registerStatusHistory(
                 $order,
                 $previousState,
@@ -654,6 +678,7 @@ class OrderService
             'mark_delivered_full',
             'mark_delivery_failed',
             'cancel_order',
+            'mark_refunded',
         ];
 
         $allowedActions = collect($actionsOrder)
@@ -1028,6 +1053,17 @@ class OrderService
         }
     }
 
+    /**
+     * Libera la redención del cupón asociada a la orden al anularla, para que
+     * el cliente pueda reutilizar el cupón.
+     */
+    private function releaseCouponRedemptionForOrder(Order $order): void
+    {
+        CouponRedemption::query()
+            ->where('order_id', $order->id)
+            ->delete();
+    }
+
     private function reserveStockForOrder(Order $order): void
     {
         foreach ($order->items as $item) {
@@ -1074,7 +1110,13 @@ class OrderService
 
     private function assertStateTransition(string $from, string $to): void
     {
-        return;
+        if ($from === $to) {
+            return;
+        }
+
+        if (!$this->isStateTransitionAllowed($from, $to)) {
+            throw new \InvalidArgumentException("Transición de estado no permitida: {$from} -> {$to}.");
+        }
     }
 
     private function isStateTransitionAllowed(string $from, string $to): bool
@@ -1109,6 +1151,7 @@ class OrderService
             'mark_delivered_full' => 'delivered',
             'mark_delivery_failed' => 'delivery_failed',
             'cancel_order' => 'cancelled',
+            'mark_refunded' => 'refunded',
             default => null,
         };
     }
@@ -1216,19 +1259,15 @@ class OrderService
 
     private function generateOrderCode(): string
     {
-        $lastCode = Order::query()
-            ->where('code', 'like', 'DAR-%')
-            ->latest('id')
-            ->value('code');
+        for ($i = 0; $i < 5; $i++) {
+            $numericPart = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
+            $code = 'DAR-' . $numericPart;
 
-        if (!$lastCode) {
-            return 'DAR-' . str_pad('1', 12, '0', STR_PAD_LEFT);
+            if (!Order::query()->where('code', $code)->exists()) {
+                return $code;
+            }
         }
 
-        // Extraer la parte numérica y sumar 1
-        $numericPart = (int) str_replace('DAR-', '', $lastCode);
-        $nextNumericPart = str_pad((string) ($numericPart + 1), 12, '0', STR_PAD_LEFT);
-
-        return 'DAR-' . $nextNumericPart;
+        throw new \RuntimeException('No se pudo generar un código único de orden.');
     }
 }

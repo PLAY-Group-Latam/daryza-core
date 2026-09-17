@@ -10,6 +10,10 @@ class CustomerAddressController extends Controller
 {
     public function store(Request $request, Customer $customer)
     {
+        if ((string) auth('api')->id() !== (string) $customer->id) {
+            return $this->error('No autorizado.', null, 403);
+        }
+
         $validated = $request->validate([
             'address'       => 'required|string|max:255',
             'department_id' => 'required|exists:departments,id',
@@ -32,6 +36,10 @@ class CustomerAddressController extends Controller
 
     public function index(Customer $customer)
     {
+        if ((string) auth('api')->id() !== (string) $customer->id) {
+            return $this->error('No autorizado.', null, 403);
+        }
+
         // Trae solo la última dirección del cliente
         $address = $customer->addresses()->latest()->first();
 

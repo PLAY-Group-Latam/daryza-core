@@ -24,6 +24,7 @@ export type AdminOrderAction =
 
 type OrderActionMeta = {
     state: string;
+    allowed_actions?: string[];
 };
 
 const unifiedStatusMeta: Record<UnifiedOrderStatus, { label: string; className: string }> = {
@@ -119,7 +120,17 @@ export const ADMIN_ACTION_OPTIONS: Array<{ value: AdminOrderAction; label: strin
 export function isAdminActionAvailable(order: OrderActionMeta, action: AdminOrderAction): boolean {
     const current = getUnifiedOrderStatus(order);
     const target = actionTargetStateMap[action];
-    return current !== target;
+
+    if (current === target) {
+        return false;
+    }
+
+    // Si el backend envía las acciones permitidas, respetarlas.
+    if (Array.isArray(order.allowed_actions)) {
+        return order.allowed_actions.includes(action);
+    }
+
+    return true;
 }
 
 export function getAdminActionLabel(_order: OrderActionMeta, action: AdminOrderAction): string {
