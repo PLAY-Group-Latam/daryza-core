@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { BackButton } from '@/components/custom-ui/PageHeader';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 
 type Option = { id: string; name: string; city?: string; area_ids?: string[] };
 
@@ -150,7 +151,7 @@ export default function Create() {
                                         <FormLabel>Título</FormLabel>
                                         <FormControl>
                                             <Input
-                                                placeholder="Ej: Backend Developer Laravel"
+                                                placeholder="Ej: Marketing Digital"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -332,49 +333,41 @@ export default function Create() {
                                 />
                             </div>
 
-                            <FormField
-                                control={form.control}
-                                name="requirements"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>
-                                            Requisitos (uno por línea)
-                                        </FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="min-h-28"
-                                                placeholder={
-                                                    'Ej:\n3+ años en Laravel\nSQL avanzado\nBuenas prácticas SOLID'
-                                                }
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                          <FormField
+                                    control={form.control}
+                                    name="requirements"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col gap-3">
+                                            <FormLabel>Requisitos</FormLabel>
+                                            <FormControl>
+                                                <RichTextEditor
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    placeholder="Escribe los requisitos aquí..."
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
                             <FormField
-                                control={form.control}
-                                name="benefits"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>
-                                            Beneficios (uno por línea)
-                                        </FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="min-h-28"
-                                                placeholder={
-                                                    'Ej:\nTrabajo híbrido\nSeguro de salud\nCapacitaciones'
-                                                }
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                    control={form.control}
+                                    name="benefits"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col gap-3">
+                                            <FormLabel>Beneficios</FormLabel>
+                                            <FormControl>
+                                                <RichTextEditor
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    placeholder="Escribe los beneficios aquí..."
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                         </div>
 
                         <aside className="space-y-6">

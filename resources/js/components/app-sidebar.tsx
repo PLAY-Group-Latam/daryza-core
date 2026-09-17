@@ -21,6 +21,7 @@ import {
     ClipboardList,
     CreditCard,
     FileCode,
+    Mail,
     Headset,
     LayoutGrid,
     LayoutTemplate,
@@ -107,6 +108,11 @@ const mainNavItems: NavItem[] = [
         title: 'Leads',
         icon: Headset,
         children: [
+             {
+                title: 'Emails de Destino',
+                href: '/destination-emails',
+                icon: Mail,
+            },
             {
                 title: 'Lista de Reclamaciones',
                 href: '/claims/items',

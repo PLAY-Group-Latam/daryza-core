@@ -16,14 +16,13 @@ class OrderDeliveredFailed extends Mailable
 
     public function __construct(private Order $order) {}
 
-    public function envelope(): Envelope
+public function envelope(): Envelope
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Entrega fallida - Pedido #' . $this->order->code,
+            subject: 'Tuvimos un inconveniente con la entrega de tu pedido ' . $this->order->code,
         );
     }
-
     public function content(): Content
     {
         return new Content(

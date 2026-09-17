@@ -9,16 +9,25 @@
     <p style="margin: 5px 0; font-size: 15px;">
         <strong style="color: #666;">NOMBRE:</strong> {{ strtoupper($contact->full_name) }}
     </p>
+
+
+
     <p style="margin: 5px 0; font-size: 15px;">
         <strong style="color: #666;">DNI/CE O RUC:</strong> {{ $contact->data['ruc_or_dni'] ?? '---' }}
     </p>
+
+    @if(!empty($contact->data['company_name']))
+    <p style="margin: 5px 0; font-size: 15px;">
+        <strong style="color: #666;">RAZÓN SOCIAL:</strong> {{ strtoupper($contact->data['company_name']) }}
+    </p>
+    @endif
 
     <p style="margin: 5px 0; font-size: 15px;">
         <strong style="color: #666;">TELÉFONO:</strong> {{ $contact->phone ?? '---' }}
     </p>
 
     <p style="margin: 5px 0; font-size: 15px;">
-        <strong style="color: #666;">EMAIL:</strong> 
+        <strong style="color: #666;">EMAIL:</strong>
         <span style="color: #0056b3; text-decoration: underline;">{{ $contact->email }}</span>
     </p>
 

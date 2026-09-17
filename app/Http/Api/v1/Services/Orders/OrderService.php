@@ -83,7 +83,7 @@ class OrderService
         ];
     }
 
-    public function create(Customer $customer, array $payload): Order
+  public function create(Customer $customer, array $payload): Order
     {
         return DB::transaction(function () use ($customer, $payload) {
             $items = $this->normalizeItems($payload['items']);
@@ -169,16 +169,23 @@ class OrderService
 
             foreach ($items as $item) {
                 $quantity = (int) $item['quantity'];
+                
                 if ($item['item_type'] === 'product_pack') {
                     /** @var ProductPack $pack */
                     $pack = $packs[$item['pack_id']];
+                    $name = $pack->name;
+                    $stock = (int) ($pack->stock ?? 0);
                     $unitPrice = (float) $pack->active_price;
                     $isPromoActive = (bool) $pack->is_on_promotion
                         && (!$pack->promo_start_at || $pack->promo_start_at->isPast())
                         && (!$pack->promo_end_at || $pack->promo_end_at->isFuture());
 
-                    if ($pack->stock < $quantity) {
-                        throw new \InvalidArgumentException("Stock insuficiente para el pack {$pack->name}.");
+                    if ($stock === 0) {
+                        throw new \InvalidArgumentException("\"$name\" está agotado.");
+                    }
+
+                    if ($stock < $quantity) {
+                        throw new \InvalidArgumentException("Solo hay $stock unidad(es) de \"$name\" disponibles.");
                     }
 
                     $order->items()->create([
@@ -205,13 +212,20 @@ class OrderService
 
                 /** @var ProductVariant $variant */
                 $variant = $variants[$item['variant_id']];
+                $savedName = $item['metadata']['name'] ?? null;
+                $name = $variant->product?->name ?? $savedName ?? 'Producto';
+                $stock = (int) ($variant->stock ?? 0);
                 $unitPrice = (float) $variant->active_price;
                 $isPromoActive = (bool) $variant->is_on_promo
                     && (!$variant->promo_start_at || $variant->promo_start_at->isPast())
                     && (!$variant->promo_end_at || $variant->promo_end_at->isFuture());
 
-                if ($variant->stock < $quantity) {
-                    throw new \InvalidArgumentException("Stock insuficiente para SKU {$variant->sku}.");
+                if ($stock === 0) {
+                    throw new \InvalidArgumentException("\"$name\" está agotado.");
+                }
+
+                if ($stock < $quantity) {
+                    throw new \InvalidArgumentException("Solo hay $stock unidad(es) de \"$name\" disponibles.");
                 }
 
                 $order->items()->create([
@@ -219,7 +233,7 @@ class OrderService
                     'variant_id' => $variant->id,
                     'pack_id' => null,
                     'item_type' => 'product_variant',
-                    'product_name' => $variant->product?->name ?? 'Producto',
+                    'product_name' => $name,
                     'variant_sku' => $variant->sku,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
@@ -485,21 +499,22 @@ class OrderService
         return $this->updateStateByAdmin($order, $this->mapLegacyShippingStatusToState($newStatus), $note, $adminId);
     }
 
-    public function applyAdminAction(Order $order, string $action, ?string $note = null, ?string $adminId = null): Order
-    {
-        return match ($action) {
-            'accept_payment' => $this->updateStateByAdmin($order, 'payment_received', $note, $adminId),
-            'reject_payment' => $this->updateStateByAdmin($order, 'payment_failed', $note, $adminId),
-            'reset_to_pending_payment' => $this->updateStateByAdmin($order, 'pending_payment', $note, $adminId),
-            'start_preparing' => $this->updateStateByAdmin($order, 'preparing', $note, $adminId),
-            'schedule_shipping' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
-            'start_transit' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
-            'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
-            'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
-            'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
-            default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
-        };
-    }
+public function applyAdminAction(Order $order, string $action, ?string $note = null, ?string $adminId = null): Order
+{
+    return match ($action) {
+        'accept_payment' => $this->updateStateByAdmin($order, 'payment_received', $note, $adminId),
+        'reject_payment' => $this->updateStateByAdmin($order, 'payment_failed', $note, $adminId),
+        'reset_to_pending_payment' => $this->updateStateByAdmin($order, 'pending_payment', $note, $adminId),
+        'start_preparing' => $this->updateStateByAdmin($order, 'preparing', $note, $adminId),
+        'schedule_shipping' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+        'start_transit' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+        'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
+        'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
+        'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
+        'mark_refunded' => $this->updateStateByAdmin($order, 'refunded', $note, $adminId), // <-- nuevo
+        default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
+    };
+}
 
     public function applyAdminActionBulk(array $orderIds, string $action, ?string $note = null, ?string $adminId = null): array
     {
@@ -653,6 +668,7 @@ class OrderService
             'start_transit',
             'mark_delivered_full',
             'mark_delivery_failed',
+            'mark_refunded', 
             'cancel_order',
         ];
 
@@ -812,9 +828,8 @@ class OrderService
 
         $query = ProductVariant::query()
             ->whereIn('id', $ids)
-            ->where('is_active', true)
             ->with([
-                'product:id,name',
+                'product:id,name,is_active',
                 'product.categories:id',
                 'product.businessLines:id',
                 'attributes.attribute:id,name',
@@ -827,8 +842,26 @@ class OrderService
 
         $variants = $query->get()->keyBy('id');
 
-        if ($variants->count() !== $ids->count()) {
-            throw new \InvalidArgumentException('Uno o más productos no son válidos o no están activos.');
+        // Validamos uno por uno contra los ítems del payload para detectar el caso exacto
+        foreach ($items as $item) {
+            if ($item['item_type'] !== 'product_variant') continue;
+
+            $variantId = $item['variant_id'] ?? null;
+            $variant = $variants[$variantId] ?? null;
+            $savedName = $item['metadata']['name'] ?? 'Un producto';
+
+            // CASO 1: Eliminado de la BD
+            if (!$variant) {
+                $label = "\"$savedName\"";
+                throw new \InvalidArgumentException("$label fue eliminado del catálogo.");
+            }
+
+            $name = $variant->product?->name ?? $savedName;
+
+            // CASO 2: Inactivo (tanto variante como producto padre)
+            if (!$variant->is_active || ($variant->product && !$variant->product->is_active)) {
+                throw new \InvalidArgumentException("\"$name\" ya no está disponible.");
+            }
         }
 
         return $variants->all();
@@ -1098,38 +1131,38 @@ class OrderService
         return in_array($to, $map[$from] ?? [], true);
     }
 
-    private function targetStateFromAction(string $action): ?string
-    {
-        return match ($action) {
-            'accept_payment' => 'payment_received',
-            'reject_payment' => 'payment_failed',
-            'reset_to_pending_payment' => 'pending_payment',
-            'start_preparing' => 'preparing',
-            'schedule_shipping', 'start_transit' => 'in_delivery',
-            'mark_delivered_full' => 'delivered',
-            'mark_delivery_failed' => 'delivery_failed',
-            'cancel_order' => 'cancelled',
-            default => null,
-        };
+private function targetStateFromAction(string $action): ?string
+{
+    return match ($action) {
+        'accept_payment' => 'payment_received',
+        'reject_payment' => 'payment_failed',
+        'reset_to_pending_payment' => 'pending_payment',
+        'start_preparing' => 'preparing',
+        'schedule_shipping', 'start_transit' => 'in_delivery',
+        'mark_delivered_full' => 'delivered',
+        'mark_delivery_failed' => 'delivery_failed',
+        'cancel_order' => 'cancelled',
+        'mark_refunded' => 'refunded', // <-- nuevo
+        default => null,
+    };
+}
+ private function canApplyAdminAction(Order $order, string $action): bool
+{
+    $targetState = $this->targetStateFromAction($action);
+    if (!$targetState) {
+        return false;
     }
 
-    private function canApplyAdminAction(Order $order, string $action): bool
-    {
-        $targetState = $this->targetStateFromAction($action);
-        if (!$targetState) {
-            return false;
-        }
+    $from = $order->state;
+    $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
+        && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
 
-        $from = $order->state;
-        $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
-            && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
-
-        if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
-            return false;
-        }
-
-        return $this->isStateTransitionAllowed($from, $targetState);
+    if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
+        return false;
     }
+
+    return true;
+}
 
     private function getPreviousStateForRollback(string $state, ?string $paymentMethodType): ?string
     {

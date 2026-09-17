@@ -6,7 +6,7 @@
     Se ha recibido un nuevo reclamo <strong>#{{ $complaintsBook->data['claim_code'] ?? 'N/A' }}</strong> a través del Libro de Reclamaciones. A continuación, los detalles:
 </p>
 
-<div style="background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 20px 0; font-family: Arial, Helvetica, sans-serif !important; font-size: 14px; color: #333; line-height: 1.6;">
+<div style="background-color: #ffffff; ; border-radius: 6px; padding: 20px; margin: 20px 0; font-family: Arial, Helvetica, sans-serif !important; font-size: 14px; color: #333; line-height: 1.6;">
     <p style="margin: 5px 0;"><strong>NOMBRE Y APELLIDO:</strong> {{ strtoupper($complaintsBook->full_name) }}</p>
     <p style="margin: 5px 0;"><strong>CORREO:</strong> {{ $complaintsBook->email }}</p>
     <p style="margin: 5px 0;"><strong>TIPO DE DOCUMENTO:</strong> {{ $complaintsBook->data['document_type_id'] ?? 'N/A' }}</p>

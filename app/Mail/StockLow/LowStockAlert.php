@@ -20,21 +20,20 @@ class LowStockAlert extends Mailable {
 
     public function envelope(): Envelope
     {
-        $type = strtoupper($this->data['type']);
-        $identifier = $this->data['sku_or_code'];
-       
-        $status = ($this->data['stock'] <= 0) ? 'AGOTADO' : 'STOCK BAJO';
+        // Definimos el asunto según el nivel de stock
+        $status = ($this->data['stock'] <= 0) 
+            ? '[DARYZA] Producto agotado' 
+            : '[DARYZA] Producto con pocas existencias';
         
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: "[{$status}] {$type} {$identifier} - {$this->data['name']}",
+            subject: $status,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-          
             view: 'mail.low-stock.low-stock-alert', 
             with: [
                 'item' => $this->data,

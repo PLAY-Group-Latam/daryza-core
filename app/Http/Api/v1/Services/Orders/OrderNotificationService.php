@@ -11,19 +11,29 @@ use App\Mail\Order\OrderPreparing;
 use App\Mail\Order\OrderShipping;
 use App\Mail\Order\PaymentAproved;
 use App\Mail\Order\PaymentFailed;
+use App\Mail\Order\NewOrderAdminNotification;
+use App\Mail\Order\OrderRefunded;
 use App\Models\Orders\Order;
+use App\Models\Settings\DestinationEmail;
+use App\Services\Mail\DestinationEmailResolver;
 use Illuminate\Mail\Mailable;
 
 class OrderNotificationService
 {
+    public function __construct(
+        private readonly DestinationEmailResolver $destinationEmailResolver
+    ) {}
+
     public function sendOrderCreated(Order $order): void
     {
         if ($order->state === 'pending_payment') {
             $this->dispatchToCustomer($order, new AwaitingPayment($order));
-            return;
+        } else {
+            $this->sendForState($order, $order->state);
         }
 
-        $this->sendForState($order, $order->state);
+        // Notificamos al administrador con el modelo Order directamente
+        $this->dispatchToAdmin($order);
     }
 
     public function sendStateChanged(Order $order, ?string $fromState, string $toState): void
@@ -46,6 +56,7 @@ class OrderNotificationService
             'delivery_failed' => new OrderDeliveredFailed($order),
             'cancelled' => new OrderCancelled($order),
             'payment_failed' => new PaymentFailed($order),
+            'refunded' => new OrderRefunded($order), 
             default => null,
         };
 
@@ -64,5 +75,18 @@ class OrderNotificationService
 
         SendEmailJob::dispatch($mailable, $to);
     }
-}
 
+    private function dispatchToAdmin(Order $order): void
+    {
+        $adminEmail = $this->destinationEmailResolver->resolve(DestinationEmail::PAGE_CHECKOUT_ADMIN);
+
+        if (!$adminEmail) {
+            return;
+        }
+
+        SendEmailJob::dispatch(
+            new NewOrderAdminNotification($order),
+            $adminEmail
+        );
+    }
+}

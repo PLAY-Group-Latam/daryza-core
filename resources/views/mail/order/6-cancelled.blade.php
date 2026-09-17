@@ -1,40 +1,29 @@
 @extends('layouts.mail')
 
 @section('content')
-    <h1 class="content-title">
-        Pedido cancelado
-    </h1>
-
     <p class="content-text">Hola <strong>{{ $customer }}</strong>,</p>
 
     <p class="content-text">
-        El pedido <strong>#{{ $purchase_number }}</strong> fue cancelado.
+        Te informamos que tu pedido <strong>#{{ $purchase_number }} ha sido cancelado.</strong>
     </p>
 
     <p class="content-text">
-        Si deseas mayor información o conocer el motivo puedes comunicarte con nosotros por correo a
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="mailto:{{ config('app.orders_notifications.contact_email') }}">
-            {{ config('app.orders_notifications.contact_email') }}
-        </a>
-        o al
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="tel:{{ config('app.orders_notifications.contact_phone') }}">
-            {{ config('app.orders_notifications.contact_phone') }}
-        </a>.
+        Si deseas más información o conocer el motivo de la cancelación, puedes comunicarte con nosotros al correo 
+        <a style="color:#2563eb; font-weight:bold; text-decoration:none;" href="mailto:{{ config('emails.orders_contact_email') }}">
+            {{ config('emails.orders_contact_email') }}
+        </a> 
+        o al <strong>{{ config('emails.orders_contact_phone') }}</strong>.
     </p>
 
     <p class="content-text">
-        No te preocupes, puedes realizar una nueva compra, a continuación te compartimos todas las
-        <a style="color:#ff9900; font-weight:bold; text-decoration:none;" href="{{ env('APP_URL_CLIENT') . '/p' }}">
-            promociones
-        </a>
-        que tenemos disponibles para ti.
+        Si lo deseas, puedes realizar una nueva compra en cualquier momento. A continuación, te compartimos nuestras 
+   <a style="color:#2563eb; font-weight:bold; text-decoration:none;" href="{{ env('APP_URL_CLIENT') }}/productos?on_offer=true&price_max=1000">
+    promociones
+</a>
+        vigentes para que puedas aprovecharlas.
     </p>
 
     <p class="content-text">
-        Gracias
-    </p>
-
-    <p class="content-text">
-        Equipo {{ config('app.name') }}
+        Equipo Daryza
     </p>
 @endsection

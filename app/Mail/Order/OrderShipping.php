@@ -20,7 +20,7 @@ class OrderShipping extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Tu pedido ' . $this->order->code . ' está en camino hoy',
+            subject: '¡Buenas noticias! Tu pedido ' . $this->order->code . ' está en camino hoy',
         );
     }
 
