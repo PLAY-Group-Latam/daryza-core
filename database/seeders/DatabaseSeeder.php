@@ -6,6 +6,7 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Artisan; // <-- 1. Importamos Artisan
 use Database\Seeders\Content\HomeContentSeeder;
 use Database\Seeders\Content\FooterContentSeeder;
 use Database\Seeders\Content\LegalsContentSeeder;
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
             UbigeoSeeder::class,
             DeliveryLimaOnlySeeder::class,
             CategoriesProductsSeeder::class,
+            DeliveryZoneDaryzaSeeder::class,
             AttributesProductSeeder::class,
             // CommercialCatalogCouponSeeder::class,
             PageSeeder::class,
@@ -45,7 +47,11 @@ class DatabaseSeeder extends Seeder
             // OrderDemoSeeder::class,
             // DashboardDemoSeeder::class,
             DistributorSeeder::class
-
         ]);
+
+   
+        Artisan::call('cache:clear');
+        
+        $this->command->info('¡Base de datos sembrada y caché de Redis purgada con éxito! 🚀');
     }
 }

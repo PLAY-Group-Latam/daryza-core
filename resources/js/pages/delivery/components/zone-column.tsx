@@ -46,7 +46,7 @@ export function ZoneColumns({ departments }: ZoneColumnsProps) {
     ];
 
     return (
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
 
             {/* Mobile nav bar */}
             <div className="flex items-center gap-2 md:hidden">
@@ -107,7 +107,7 @@ export function ZoneColumns({ departments }: ZoneColumnsProps) {
             )}
 
             {/* Columns grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 
                 {/* Departamentos */}
                 <div className={mobileStep === 0 ? 'block' : 'hidden md:block'}>
@@ -193,17 +193,9 @@ export function ZoneColumns({ departments }: ZoneColumnsProps) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Column({
-    title,
-    count,
-    children,
-}: {
-    title: string;
-    count: number;
-    children: React.ReactNode;
-}) {
+function Column({ title, count, children }: { title: string; count: number; children: React.ReactNode; }) {
     return (
-        <div className="flex flex-col rounded-xl border bg-card overflow-hidden">
+        <div className="flex h-[380px] flex-col rounded-xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     {title}
@@ -214,14 +206,12 @@ function Column({
                     </span>
                 )}
             </div>
-            {/* Sin max-h fijo en mobile para que no corte */}
-            <div className="overflow-y-auto md:max-h-[520px] divide-y">
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y">
                 {children}
             </div>
         </div>
     );
 }
-
 interface ColumnRowProps {
     name: string;
     hasZone: boolean;

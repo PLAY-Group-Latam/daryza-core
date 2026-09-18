@@ -13,18 +13,17 @@ class DistributorService
     protected int $cacheTtl = 86400;
 
     public function getAllForMap(): Collection
-    {
-        $distributors = Cache::remember('distributors_map_all', $this->cacheTtl, function () {
-            return $this->getDistributors();
-        });
-
+{
+    return Cache::remember('distributors_map_all_final', $this->cacheTtl, function () {
+        $distributors = $this->getDistributors();
         $mapPinUrl = $this->getGlobalMapPinUrl();
 
         return $distributors->map(function ($distributor) use ($mapPinUrl) {
             $distributor->map_pin = $mapPinUrl;
             return $distributor;
         });
-    }
+    });
+}
 
     private function getDistributors(): Collection
     {
