@@ -2,6 +2,8 @@
 
 namespace App\Http\Api\Traits;
 
+use App\Http\Api\Support\JwtCookie;
+
 trait ApiTrait
 {
   public function success($message = null, $data = null, $status = 200)
@@ -45,38 +47,12 @@ trait ApiTrait
   // Nuevo método para generar cookie JWT con soporte local/prod
   public function jwtCookie($token)
   {
-    $isProd = config('app.env') === 'production';
-    $cookieName = config('jwt.access_cookie_name', 'jwt');
-    $minutes =  config('jwt.refresh_ttl');
-    return cookie(
-      name: $cookieName,
-      value: $token,
-      minutes: $minutes,
-      path: '/',
-      domain: $isProd ? '.playgrouplatam.com' : null, // dominio en prod, null en local
-      secure: $isProd,
-      httpOnly: true,
-      raw: false,
-      sameSite: $isProd ? 'None' : 'Lax'
-    );
+    return JwtCookie::make($token);
   }
 
   public function forgetJwtCookie()
   {
-    $isProd = config('app.env') === 'production';
-    $cookieName = config('jwt.access_cookie_name', 'jwt');
-
-    return cookie(
-      name: $cookieName,
-      value: null,
-      minutes: -1,
-      path: '/',
-      domain: $isProd ? '.playgrouplatam.com' : null,
-      secure: $isProd,
-      httpOnly: true,
-      raw: false,
-      sameSite: $isProd ? 'None' : 'Lax'
-    );
+    return JwtCookie::forget();
   }
 
   // Nuevo método para responder con cookie usando el helper

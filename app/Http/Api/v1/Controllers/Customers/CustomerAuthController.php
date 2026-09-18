@@ -121,10 +121,27 @@ class CustomerAuthController extends Controller
         $oldToken = JWTAuth::getToken();
 
         if (!$oldToken) {
-            return $this->error('Token no encontrado', null, 401);
+            return $this->error('Token no encontrado', null, 401)
+                ->withCookie($this->forgetJwtCookie());
         }
 
         $newToken = JWTAuth::setToken($oldToken)->refresh();
+
+        // El token se pudo renovar, pero el usuario puede haber sido eliminado
+        // (p. ej. tras `migrate:fresh`). Si ya no existe, no renovamos la sesión.
+        $payload = JWTAuth::setToken($newToken)->getPayload();
+        $user = auth('api')->getProvider()->retrieveById($payload->get('sub'));
+
+        if (!$user) {
+            try {
+                JWTAuth::setToken($newToken)->invalidate();
+            } catch (\Throwable $e) {
+                // noop
+            }
+
+            return $this->error('Sesión inválida, inicia sesión nuevamente', null, 401)
+                ->withCookie($this->forgetJwtCookie());
+        }
 
         return $this->successWithCookie(
             'Token renovado correctamente',
