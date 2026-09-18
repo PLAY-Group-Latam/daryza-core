@@ -77,7 +77,31 @@ return [
             'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f7a4219.svg',
             'url' => 'https://www.coolbox.pe/',
         ],
+
+        
     ],
+   
 ],
+
+ /*
+    |--------------------------------------------------------------------------
+    | FAQS INFO (Preguntas Frecuentes)
+    |--------------------------------------------------------------------------
+    */
+    'faqs_info' => [
+        'title' => 'Preguntas frecuentes',
+        'items' => [
+            [
+                'id' => 'faq-1',
+                'question' => '¿Cuál es el tiempo estimado de entrega?',
+                'answer' => '<p>Los tiempos de entrega varían según la ubicación del destino y el tipo de producto seleccionado.</p>',
+            ],
+            [
+                'id' => 'faq-2',
+                'question' => '¿Cómo puedo realizar el seguimiento de mi pedido?',
+                'answer' => '<p>Puedes realizar el seguimiento ingresando a la sección de tu cuenta o mediante el enlace enviado a tu correo electrónico.</p>',
+            ],
+        ],
+    ],
 
 ];

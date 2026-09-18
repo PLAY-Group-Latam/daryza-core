@@ -155,7 +155,7 @@ export function SidebarSection({
             <ProductSwitch
                 name="is_active"
                 sectionLabel="Producto Público"
-                title="Activo"
+                title="Publicado"
                 description="Visible para los clientes"
             />
 

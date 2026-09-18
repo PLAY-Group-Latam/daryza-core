@@ -5,7 +5,6 @@ namespace App\Http\Api\v1\Controllers\Blogs;
 use App\Http\Api\v1\Controllers\Controller;
 use App\Models\Blogs\Blog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class BlogController extends Controller
 {
@@ -41,7 +40,6 @@ class BlogController extends Controller
     // Traer blogs visibles, con relaciones y ordenados por fecha
     $blogs = $query->paginate($perPage);
 
-
     $blogs->getCollection()->transform(function ($blog) {
       $blog->categories->makeHidden('pivot');
       return $blog;
@@ -52,7 +50,6 @@ class BlogController extends Controller
       $blogs
     );
   }
-
 
   /**
    * Mostrar un solo blog por slug
@@ -71,23 +68,22 @@ class BlogController extends Controller
     return $this->success('Detalle del blog', $blog);
   }
 
+  /**
+   * Obtener los últimos blogs
+   */
   public function latest()
-{
-    $cacheKey = 'blogs:latest_public';
+  {
+    $blogs = Blog::select(['id', 'title', 'slug', 'publication_date', 'author', 'miniature'])
+      ->with('categories:id,name')
 
-    $blogs = Cache::remember($cacheKey, now()->addMinutes(30), function () {
-        $items = Blog::select(['id', 'title', 'slug', 'publication_date', 'author', 'miniature'])
-            ->with('categories:id,name')
-            ->where('visibility', true)
-            ->latest()
-            ->limit(10)
-            ->get();
+      ->where('visibility', true)
+      ->latest() // usa created_at por defecto
+      ->limit(10)
+      ->get();
 
-        $items->each(fn($blog) => $blog->categories->makeHidden('pivot'));
-        
-        return $items;
-    });
+    $blogs->each(fn($blog) => $blog->categories->makeHidden('pivot'));
+
 
     return $this->success('Últimos blogs', $blogs);
-}
+  }
 }

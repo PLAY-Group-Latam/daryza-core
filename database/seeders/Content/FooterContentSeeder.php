@@ -11,25 +11,29 @@ class FooterContentSeeder extends Seeder
     {
         $footer = Page::where('slug', 'footer')->first();
 
-        if (!$footer) return;
+        if (!$footer) {
+            return;
+        }
 
         $defaults = require database_path('data/content/footer/footer.php');
 
         foreach ($defaults as $type => $content) {
-
             $section = $footer->sections()->where('type', $type)->first();
 
-            if (!$section) continue;
+            if (!$section) {
+                continue;
+            }
 
             $sectionContent = $section->content;
 
-            if (!$sectionContent) continue;
-
-            if (empty($sectionContent->content)) {
-                $sectionContent->update([
-                    'content' => $content
-                ]);
+            if (!$sectionContent) {
+                continue;
             }
+
+            // Forzamos la actualización para que cargue la data por defecto
+            $sectionContent->update([
+                'content' => $content
+            ]);
         }
     }
 }

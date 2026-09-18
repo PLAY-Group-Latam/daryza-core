@@ -50,9 +50,13 @@ export const columns: ColumnDef<Product>[] = [
         },
     },
     {
-        accessorKey: 'is_active',
+        id: 'status',
         header: 'Estado',
-        cell: ({ row }) => <StatusBadge status={row.original.is_active} />,
+        cell: ({ row }) => {
+            const product = row.original;
+            const mainVariant = getMainVariant(product);
+            return <StatusBadge status={mainVariant?.is_active ?? false} />;
+        },
     },
     // {
     //     accessorKey: 'brief_description',

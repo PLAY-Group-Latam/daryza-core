@@ -127,10 +127,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'home_newsletter' => [
-        'title'             => 'No te pierdas las últimas novedades',
-        'description'       => 'Recibe y no teperderas bro en tu correo electrónico promociones exclusivas, campañas especiales, las últimas novedades, nuevos lanzamientos e innovaciones de las soluciones Daryza.',
-        'input_placeholder' => 'correo@e12jemplo.com',
-        'button_text'       => 'Suscribiddrse',
+        'title'             => 'Suscríbete y recibe las últimas novedades',
+        'description'       => 'Recibe en tu correo electrónico promociones exclusivas, campañas especiales, las últimas novedades, nuevos lanzamientos e innovaciones de Daryza.',
+        'input_placeholder' => 'correo@ejemplo.com',
+        'button_text'       => 'Suscribirse',
     ],
 
 ];
