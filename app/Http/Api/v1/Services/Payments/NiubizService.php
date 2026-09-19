@@ -26,11 +26,34 @@ class NiubizService
             'timeout' => $timeout,
         ]);
 
+        $email = (string) ($order->customer_email ?: '');
+        $identifier = (string) ($order->customer_document_number ?: ($email ?: $order->id));
+        $registrationReference = $order->customer?->created_at ?? $order->created_at;
+        $registrationDays = $registrationReference
+            ? max(0, (int) $registrationReference->diffInDays(now()))
+            : 0;
+
         $sessionPayload = [
             'channel' => 'web',
             'amount' => round((float) $order->total, 2),
-            'antifraud' => $this->sessionAntifraud($order, $clientIp),
-            'dataMap' => $this->sessionDataMap($order),
+            'antifraud' => [
+                'clientIp' => $clientIp,
+                'merchantDefineData' => [
+                    'MDD4' => $email,
+                    'MDD32' => $identifier,
+                    'MDD75' => 'Registrado',
+                    'MDD77' => $registrationDays,
+                ],
+            ],
+            'dataMap' => [
+                // La doc pide info del cliente; en su defecto, la del comercio.
+                'cardholderCity' => (string) ($order->province_name ?: $order->department_name ?: config('niubiz.cardholder.city')),
+                'cardholderCountry' => (string) config('niubiz.cardholder.country'),
+                'cardholderAddress' => (string) ($order->shipping_address_line ?: config('niubiz.cardholder.address')),
+                'cardholderPostalCode' => (string) config('niubiz.cardholder.postal_code'),
+                'cardholderState' => (string) config('niubiz.cardholder.state'),
+                'cardholderPhoneNumber' => (string) ($order->customer_mobile_phone ?: config('niubiz.cardholder.phone')),
+            ],
         ];
 
         $response = $this->niubizHttp()->withHeaders([
@@ -86,9 +109,15 @@ class NiubizService
                 'tokenId' => $transactionToken,
                 'purchaseNumber' => $purchaseNumber,
                 'amount' => round((float) $order->total, 2),
-                'currency' => $this->currency($order),
+                'currency' => strtoupper((string) ($order->currency ?: config('niubiz.currency', 'PEN'))),
             ],
-            'dataMap' => $this->authorizationDataMap(),
+            'dataMap' => [
+                'urlAddress' => (string) config('niubiz.url_address'),
+                'serviceLocationCityName' => (string) config('niubiz.cardholder.city'),
+                'serviceLocationCountrySubdivisionCode' => (string) config('niubiz.cardholder.state'),
+                'serviceLocationCountryCode' => (string) config('niubiz.service_location_country'),
+                'serviceLocationPostalCode' => (string) config('niubiz.cardholder.postal_code'),
+            ],
         ];
 
         $response = $this->niubizHttp(false)->withHeaders([
@@ -156,71 +185,6 @@ class NiubizService
     public function confirmAuthorization(string $purchaseNumber): array
     {
         throw new \RuntimeException('confirmAuthorization está deshabilitado. Usa confirmWithTransactionToken.');
-    }
-
-    /**
-     * Datos antifraude de la sesión. El correo/documento salen de la orden.
-     */
-    private function sessionAntifraud(Order $order, string $clientIp): array
-    {
-        $email = (string) ($order->customer_email ?: '');
-        $identifier = (string) ($order->customer_document_number ?: ($email ?: $order->id));
-
-        return [
-            'clientIp' => $clientIp,
-            'merchantDefineData' => [
-                'MDD4' => $email,
-                'MDD32' => $identifier,
-                'MDD75' => 'Registrado',
-                'MDD77' => $this->registrationDays($order),
-            ],
-        ];
-    }
-
-    /**
-     * dataMap de la sesión: info del cliente/comercio.
-     */
-    private function sessionDataMap(Order $order): array
-    {
-        // La doc pide info del cliente; en su defecto, la del comercio.
-        return [
-            'cardholderCity' => (string) ($order->province_name ?: $order->department_name ?: config('niubiz.cardholder.city')),
-            'cardholderCountry' => (string) config('niubiz.cardholder.country'),
-            'cardholderAddress' => (string) ($order->shipping_address_line ?: config('niubiz.cardholder.address')),
-            'cardholderPostalCode' => (string) config('niubiz.cardholder.postal_code'),
-            'cardholderState' => (string) config('niubiz.cardholder.state'),
-            'cardholderPhoneNumber' => (string) ($order->customer_mobile_phone ?: config('niubiz.cardholder.phone')),
-        ];
-    }
-
-    /**
-     * dataMap de la autorización: datos de ubicación del comercio.
-     */
-    private function authorizationDataMap(): array
-    {
-        return [
-            'urlAddress' => (string) config('niubiz.url_address'),
-            'serviceLocationCityName' => (string) config('niubiz.cardholder.city'),
-            'serviceLocationCountrySubdivisionCode' => (string) config('niubiz.cardholder.state'),
-            'serviceLocationCountryCode' => (string) config('niubiz.service_location_country'),
-            'serviceLocationPostalCode' => (string) config('niubiz.cardholder.postal_code'),
-        ];
-    }
-
-    private function registrationDays(Order $order): int
-    {
-        $reference = $order->customer?->created_at ?? $order->created_at;
-
-        if (!$reference) {
-            return 0;
-        }
-
-        return max(0, (int) $reference->diffInDays(now()));
-    }
-
-    private function currency(Order $order): string
-    {
-        return strtoupper((string) ($order->currency ?: config('niubiz.currency', 'PEN')));
     }
 
     private function ensureEnabled(): void
