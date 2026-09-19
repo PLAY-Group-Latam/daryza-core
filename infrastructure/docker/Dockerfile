@@ -93,6 +93,8 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends curl ca-certificates gnupg; \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
+    corepack enable; \
+    corepack prepare pnpm@10 --activate; \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=vendor /var/www/vendor ./vendor
@@ -110,8 +112,8 @@ RUN set -eux; \
     sed -i 's#^GCS_KEY_FILE=.*#GCS_KEY_FILE=storage/app/gcs-key.json#' .env; \
     sed -i 's#^GCS_PROJECT_ID=.*#GCS_PROJECT_ID=build#' .env; \
     sed -i 's#^GCS_BUCKET=.*#GCS_BUCKET=build#' .env; \
-    npm ci --no-audit --no-fund; \
-    npm run build; \
+    pnpm install --frozen-lockfile; \
+    pnpm run build; \
     rm -f .env storage/app/gcs-key.json public/hot
 
 # =============================================================================
