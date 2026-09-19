@@ -29,6 +29,11 @@ x-app: &app
     DB_CONNECTION: pgsql
     DB_HOST: postgresql
     DB_PORT: '5432'
+    CACHE_STORE: redis
+    SESSION_DRIVER: redis
+    QUEUE_CONNECTION: redis
+    REDIS_HOST: redis
+    REDIS_PORT: '6379'
   volumes:
     - daryza_storage:/var/www/storage/app/public
     # Archivos privados (imports de Excel, etc.). Debe compartirse entre app y
@@ -42,6 +47,8 @@ x-app: &app
   logging: *default-logging
   depends_on:
     postgresql:
+      condition: service_healthy
+    redis:
       condition: service_healthy
   networks:
     - daryza
@@ -126,8 +133,31 @@ services:
     # ports:
     #   - '127.0.0.1:5432:5432'
 
+  # -------------------------------------------------------------------------
+  # Redis (caché)
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: daryza_redis
+    restart: unless-stopped
+    # AOF: persistencia de cada escritura (importante para la cola en Redis).
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+    networks:
+      - daryza
+
 volumes:
   postgres_data:
+  redis_data:
   daryza_storage:
   daryza_private:
 

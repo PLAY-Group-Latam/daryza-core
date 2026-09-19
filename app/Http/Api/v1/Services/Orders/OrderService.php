@@ -1290,15 +1290,26 @@ private function targetStateFromAction(string $action): ?string
 
     private function generateOrderCode(): string
     {
-        for ($i = 0; $i < 5; $i++) {
-            $numericPart = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
-            $code = 'DAR-' . $numericPart;
+        $sequence = DB::table('order_sequences')->lockForUpdate()->first();
 
-            if (!Order::query()->where('code', $code)->exists()) {
-                return $code;
-            }
+        if ($sequence === null) {
+            DB::table('order_sequences')->insert([
+                'id' => 1,
+                'last_number' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $sequence = DB::table('order_sequences')->lockForUpdate()->first();
         }
 
-        throw new \RuntimeException('No se pudo generar un código único de orden.');
+        $nextNumber = (int) $sequence->last_number + 1;
+
+        DB::table('order_sequences')->where('id', $sequence->id)->update([
+            'last_number' => $nextNumber,
+            'updated_at' => now(),
+        ]);
+
+        return 'DAR-' . str_pad((string) $nextNumber, 12, '0', STR_PAD_LEFT);
     }
 }
