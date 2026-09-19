@@ -10,15 +10,15 @@ return [
     'contact_general' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5eed23aeb.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5ef4a9d4c.webp',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
         'cards' => [
             [
                 'titulo_normal' => 'Centro de',
                 'titulo_bold'   => 'ayuda',
-                'imagen'        => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5ef55b6fc.webp',
+                'imagen'        => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
                 'items' => [
                     ['texto' => 'Deseo soporte para comprar en la página web'],
                     ['texto' => 'Quiero conocer el status de mi pedido online'],
@@ -28,7 +28,7 @@ return [
             [
                 'titulo_normal' => 'Quiero ser parte de',
                 'titulo_bold'   => 'la red de distribuidores',
-                'imagen'        => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5ef5edb9f.webp',
+                'imagen'        => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
                 'items' => [
                     ['texto' => 'Requisitos para ser distribuidor o socio comercial.'],
                     ['texto' => 'Capacitación o materiales para ventas.'],
@@ -38,7 +38,7 @@ return [
             [
                 'titulo_normal' => 'Contactar con un',
                 'titulo_bold'   => 'asesor comercial',
-                'imagen'        => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5ef685f31.webp',
+                'imagen'        => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
                 'items' => [
                     ['texto' => 'Quiero solicitar una cotización'],
                     ['texto' => 'Deseo asesoría para el proceso de compra'],
@@ -48,7 +48,7 @@ return [
             [
                 'titulo_normal' => 'Servicio al',
                 'titulo_bold'   => 'cliente',
-                'imagen'        => 'https://storage.googleapis.com/daryza_dev/sections/15/images/699d5ef73b813.webp',
+                'imagen'        => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
                 'items' => [
                     ['texto' => 'Consulta sobre uso de productos'],
                     ['texto' => 'Documentación de productos'],
@@ -67,11 +67,11 @@ return [
     'contact_service' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/16/images/699d5f4e7cc5b.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/16/images/699d5f4fce4c4.jpg',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
-        'form_image' => 'https://storage.googleapis.com/daryza_dev/sections/16/images/699d5f4d2e065.webp',
+        'form_image' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
     ],
 
     /*
@@ -82,31 +82,31 @@ return [
     'contact_distributors' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d617302dd3.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d61749b54e.webp',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
-        'form_image' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d61719a97d.webp',
+        'form_image' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
         'cards' => [
             [
                 'titulo' => 'Marca Peruana',
                 'texto'  => 'Más de 30 años en el mercado ofreciendo soluciones de limpieza que representan calidad y confianza peruana.',
-                'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d61752333c.png',
+                'imagen' => 'https://storage.googleapis.com/daryza/static/contact/marca-redcomercial%C3%B1.png',
             ],
             [
                 'titulo' => 'Calidad',
                 'texto'  => 'Fórmulas efectivas que limpian, desinfectan y garantizan resultados reales en cada uso',
-                'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d6175da683.png',
+                'imagen' => 'https://storage.googleapis.com/daryza/static/contact/calidad-redcomercial.png',
             ],
             [
                 'titulo' => 'Soporte y Acompañamiento',
                 'texto'  => 'Te ofrecemos asesoría, capacitación y respuesta rápida para tu negocio.',
-                'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d6176810bf.png',
+                'imagen' => 'https://storage.googleapis.com/daryza/static/contact/soport-redcomercial.png',
             ],
             [
                 'titulo' => 'Confianza y Sostenibilidad',
                 'texto'  => 'Abastecimiento seguro, entregas puntuales y compromiso ambiental.',
-                'imagen' => 'https://storage.googleapis.com/daryza_dev/sections/17/images/699d61771e2bf.png',
+                'imagen' => 'https://storage.googleapis.com/daryza/static/contact/confianza-redcomerical.png',
             ],
         ],
     ],
@@ -119,11 +119,11 @@ return [
     'contact_advisor' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/18/images/699d61a6d1ed8.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/18/images/699d61a837565.webp',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
-        'form_image' => 'https://storage.googleapis.com/daryza_dev/sections/18/images/699d61a57ee6f.webp',
+        'form_image' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
     ],
 
     /*
@@ -134,11 +134,11 @@ return [
     'contact_help' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/19/images/699d61c500fdd.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/19/images/699d61c640676.jpg',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
-        'form_image' => 'https://storage.googleapis.com/daryza_dev/sections/19/images/699d61c3a7c93.webp',
+        'form_image' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
     ],
 
     /*
@@ -149,11 +149,11 @@ return [
     'contact_work' => [
         'banner' => [
             'type'        => 'url',
-            'src_desktop' => 'https://storage.googleapis.com/daryza_dev/sections/20/images/699d625d0214c.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza_dev/sections/20/images/699d625e8f562.webp',
-            'link_url'    => 'https://www.coolbox.pe/',
+            'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            'link_url'    => 'https://daryza.com/',
         ],
-        'form_image' => 'https://storage.googleapis.com/daryza_dev/sections/20/images/699d625bb3410.webp',
+        'form_image' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
     ],
 
 ];

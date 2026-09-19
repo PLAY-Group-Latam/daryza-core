@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'footer_logo_header' => [
-        'image' => 'https://storage.googleapis.com/daryza_dev/sections/8/images/69e630a13c487.webp',
+        'image' => 'https://storage.googleapis.com/daryza/static/globales/daryza_logo_header.webp',
     ],
 
     /*
@@ -17,7 +17,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'footer_logo_footer' => [
-        'image' => 'https://storage.googleapis.com/daryza_dev/sections/9/images/69e630d3ca85a.webp',
+        'image' => 'https://storage.googleapis.com/daryza/static/globales/daryza_logo_footer.webp',
     ],
 
     /*
@@ -36,12 +36,12 @@ return [
         'saturday_from'  => '08:00',
         'saturday_to'    => '12:00',
         'banks' => [
-            ['id' => '1771919733836', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59cc3f627.png'],
-            ['id' => '1771919732774', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59cd504fb.png'],
-            ['id' => '1771919732154', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59cdc9e0c.png'],
-            ['id' => '1771919809486', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59ce4ef14.png'],
-            ['id' => '1771919731566', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59cec5204.png'],
-            ['id' => '1771919730471', 'image' => 'https://storage.googleapis.com/daryza_dev/sections/10/images/699d59cf4850c.png'],
+            ['id' => '1771919733836', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank-1.png'],
+            ['id' => '1771919732774', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank2-daryza.png'],
+            ['id' => '1771919732154', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank3.png'],
+            ['id' => '1771919809486', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank4.png'],
+            ['id' => '1771919731566', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank5.png'],
+            ['id' => '1771919730471', 'image' => 'https://storage.googleapis.com/daryza/static/globales/methods/bank6.png'],
         ],
     ],
 
@@ -54,28 +54,28 @@ return [
     'socials' => [
         [
             'id' => '1771955137502',
-            'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699de3f4116b8.png',
+            'image' => 'https://storage.googleapis.com/daryza/static/globales/socials/fb-footer.png',
             'url' => '',
         ],
         [
             'id' => '1771919833333',
-            'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f6b2299.svg',
-            'url' => 'https://www.coolbox.pe/',
+            'image' => 'https://storage.googleapis.com/daryza/static/globales/socials/ig-footer.svg',
+            'url' => 'https://daryza.com/',
         ],
         [
             'id' => '1771919832615',
-            'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f5bae38.svg',
-            'url' => 'https://www.coolbox.pe/',
+            'image' => 'https://storage.googleapis.com/daryza/static/globales/socials/linkding-footer.svg',
+            'url' => 'https://daryza.com/',
         ],
         [
             'id' => '1771919834241',
-            'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f73ff6e.svg',
-            'url' => 'https://www.coolbox.pe/',
+            'image' => 'https://storage.googleapis.com/daryza/static/globales/socials/tiktok-logo.svg',
+            'url' => 'https://daryza.com/',
         ],
         [
             'id' => '1771919834835',
-            'image' => 'https://storage.googleapis.com/daryza_dev/sections/11/images/699d59f7a4219.svg',
-            'url' => 'https://www.coolbox.pe/',
+            'image' => 'https://storage.googleapis.com/daryza/static/globales/socials/yt-footer.svg',
+            'url' => 'https://daryza.com/',
         ],
 
         
