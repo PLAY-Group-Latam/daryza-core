@@ -7,6 +7,12 @@
 #
 # Requiere un archivo .env en la raíz (basado en .env.example).
 # La imagen es inmutable: NO se monta el código fuente en los contenedores.
+#
+# IMPORTANTE: VITE_FRONTEND_URL, APP_NAME y VITE_APP_NAME se "hornean" dentro
+# del bundle JS en tiempo de BUILD (Vite), no se leen en runtime. Por eso se
+# pasan explícitamente como build.args, tomados del .env del host. Si cambias
+# alguno de estos valores en el .env, debes reconstruir las imágenes:
+#   docker compose build --no-cache app nginx && docker compose up -d
 # =============================================================================
 
 name: daryza-core
@@ -16,6 +22,11 @@ x-logging: &default-logging
   options:
     max-size: '10m'
     max-file: '5'
+
+x-build-args: &build-args
+  VITE_FRONTEND_URL: ${VITE_FRONTEND_URL}
+  APP_NAME: ${APP_NAME}
+  VITE_APP_NAME: ${VITE_APP_NAME}
 
 x-app: &app
   image: daryza_app:latest
@@ -63,6 +74,8 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
       target: app
+      args:
+        <<: *build-args
     container_name: daryza_app
 
   # -------------------------------------------------------------------------
@@ -89,6 +102,8 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
       target: nginx
+      args:
+        <<: *build-args
     image: daryza_nginx:latest
     container_name: daryza_nginx
     restart: unless-stopped
@@ -141,7 +156,8 @@ services:
     container_name: daryza_redis
     restart: unless-stopped
     # AOF: persistencia de cada escritura (importante para la cola en Redis).
-    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    command:
+      ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
     volumes:
       - redis_data:/data
     healthcheck:

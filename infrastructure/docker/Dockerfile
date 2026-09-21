@@ -92,6 +92,13 @@ RUN composer dump-autoload \
 # =============================================================================
 FROM php-base AS assets
 
+# Variables de entorno del FRONTEND público que Vite necesita "hornear" dentro
+# del bundle JS en tiempo de build (no se pueden inyectar en runtime).
+# Se pasan desde docker-compose.yml -> build.args, tomadas del .env real del host.
+ARG VITE_FRONTEND_URL
+ARG APP_NAME
+ARG VITE_APP_NAME
+
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl ca-certificates gnupg; \
@@ -116,6 +123,9 @@ RUN set -eux; \
     sed -i 's#^GCS_KEY_FILE=.*#GCS_KEY_FILE=storage/app/gcs-key.json#' .env; \
     sed -i 's#^GCS_PROJECT_ID=.*#GCS_PROJECT_ID=build#' .env; \
     sed -i 's#^GCS_BUCKET=.*#GCS_BUCKET=build#' .env; \
+    sed -i "s#^VITE_FRONTEND_URL=.*#VITE_FRONTEND_URL=${VITE_FRONTEND_URL}#" .env; \
+    sed -i "s#^APP_NAME=.*#APP_NAME=${APP_NAME}#" .env; \
+    sed -i "s#^VITE_APP_NAME=.*#VITE_APP_NAME=${VITE_APP_NAME}#" .env; \
     pnpm install --frozen-lockfile; \
     pnpm run build; \
     rm -f .env storage/app/gcs-key.json public/hot
