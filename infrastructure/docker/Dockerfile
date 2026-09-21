@@ -16,15 +16,14 @@
 ARG PHP_VERSION=8.4
 
 # =============================================================================
-# 1) Base: PHP-FPM + extensiones necesarias + Composer
-#    Extensiones según el uso real: PostgreSQL (pdo_pgsql), cadenas (mbstring),
-#    Excel/zip (zip), imágenes (gd, exif), colas (pcntl), matemática (bcmath).
+# 1) Base: PHP-FPM + extensiones necesarias (incluye redis) + Composer
 # =============================================================================
 FROM php:${PHP_VERSION}-fpm AS php-base
 
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        $PHPIZE_DEPS \
         libzip-dev \
         libpng-dev \
         libjpeg62-turbo-dev \
@@ -41,6 +40,11 @@ RUN set -eux; \
         bcmath \
         gd \
         opcache; \
+    # Instalar e habilitar la extensión nativa de Redis para PHP
+    pecl install redis; \
+    docker-php-ext-enable redis; \
+    # Limpieza de dependencias de compilación para mantener la imagen liviana
+    apt-get purge -y --auto-remove $PHPIZE_DEPS; \
     printf '%s\n' \
         'opcache.enable=1' \
         'opcache.validate_timestamps=0' \
