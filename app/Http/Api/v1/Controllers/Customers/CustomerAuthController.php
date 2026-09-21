@@ -68,41 +68,48 @@ class CustomerAuthController extends Controller
   public function loginWithGoogle(Request $request)
   {
     $request->validate([
-      'token' => 'required|string',
+      'access_token' => 'required|string',
     ]);
 
-    $idToken = $request->input('token');
+    $accessToken = $request->input('access_token');
 
-    $response = Http::get(
+    // Validamos que el token sea de Google y emitido para esta aplicación.
+    $tokenInfo = Http::get(
       'https://oauth2.googleapis.com/tokeninfo',
-      ['id_token' => $idToken]
+      ['access_token' => $accessToken]
     );
 
-    if (!$response->ok()) {
+    if (!$tokenInfo->ok()) {
       return $this->error('Token de Google inválido', null, 401);
     }
 
-    $googleUser = $response->json();
-
-    // 🔐 Validar que el token fue emitido para TU APP
-    if (($googleUser['aud'] ?? null) !== config('services.google.client_id')) {
+    if (($tokenInfo->json('aud') ?? null) !== config('services.google.client_id')) {
       return $this->error('Token no válido para esta aplicación', null, 401);
     }
 
-    // 🔐 Validar que el correo de Google esté verificado
+    // Perfil del usuario (nombre, foto y email verificado).
+    $profile = Http::withToken($accessToken)
+      ->get('https://www.googleapis.com/oauth2/v3/userinfo');
+
+    if (!$profile->ok()) {
+      return $this->error('No se pudo obtener el perfil de Google.', null, 401);
+    }
+
+    $googleUser = $profile->json();
+
     if (!filter_var($googleUser['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
       return $this->error('El correo de Google no está verificado.', null, 401);
     }
 
     $nameParts = explode(' ', $googleUser['name'] ?? '', 2);
 
-  $customer = $this->customerService->findOrCreateFromGoogle([
-  'email'          => $googleUser['email'],
-  'full_name'      => $nameParts[0] ?? $googleUser['email'],
-  'full_last_name' => $nameParts[1] ?? '',
-  'google_id'      => $googleUser['sub'],
-  'photo'          => $googleUser['picture'] ?? null,
-]);
+    $customer = $this->customerService->findOrCreateFromGoogle([
+      'email'          => $googleUser['email'],
+      'full_name'      => $nameParts[0] ?? $googleUser['email'],
+      'full_last_name' => $nameParts[1] ?? '',
+      'google_id'      => $googleUser['sub'],
+      'photo'          => $googleUser['picture'] ?? null,
+    ]);
 
     $token = JWTAuth::fromUser($customer);
     $this->syncVisitorNotifications($customer->id, $request);
