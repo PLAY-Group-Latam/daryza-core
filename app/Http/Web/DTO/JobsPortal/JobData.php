@@ -12,8 +12,8 @@ readonly class JobData
         public string $slug,
         public ?UploadedFile $image,
         public string $description,
-        public array $requirements,
-        public array $benefits,
+        public string $requirements, // <--- Cambiado a string
+        public string $benefits,     // <--- Cambiado a string
         public JobModality $modality,
         public int $vacancies,
         public bool $isActive,
@@ -30,8 +30,8 @@ readonly class JobData
             slug: $data['slug'],
             image: $data['image'] ?? null,
             description: $data['description'],
-            requirements: $data['requirements'],
-            benefits: $data['benefits'],
+            requirements: $data['requirements'] ?? '',
+            benefits: $data['benefits'] ?? '',
             modality: $data['modality'] instanceof JobModality ? $data['modality'] : JobModality::from($data['modality']),
             vacancies: (int) $data['vacancies'],
             isActive: (bool) ($data['is_active'] ?? true),

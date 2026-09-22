@@ -21,9 +21,7 @@ class StoreJobRequest extends FormRequest
             'slug' => ['required', 'string', 'max:180', Rule::unique('job_offers', 'slug')],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
             'description' => ['required', 'string'],
-            'requirements' => ['required', 'array', 'min:1'],
             'requirements' => ['required', 'string'],
-            'benefits' => ['required', 'array', 'min:1'],
             'benefits' => ['required', 'string'],
             'modality' => ['required', Rule::enum(JobModality::class)],
             'vacancies' => ['required', 'integer', 'min:1'],
@@ -55,15 +53,12 @@ class StoreJobRequest extends FormRequest
             'image.image' => 'El archivo debe ser una imagen válida.',
             'image.max' => 'La imagen no puede superar 5MB.',
             'description.required' => 'La descripción es obligatoria.',
-            'requirements.required' => 'Debes ingresar al menos un requisito.',
-            'requirements.array' => 'Los requisitos deben enviarse como lista.',
-            'requirements.min' => 'Debes ingresar al menos un requisito.',
-            'requirements.*.required' => 'Cada requisito es obligatorio.',
-           
-            'benefits.required' => 'Debes ingresar al menos un beneficio.',
-            'benefits.array' => 'Los beneficios deben enviarse como lista.',
-            'benefits.min' => 'Debes ingresar al menos un beneficio.',
-            'benefits.*.required' => 'Cada beneficio es obligatorio.',
+            
+            'requirements.required' => 'Debes ingresar los requisitos de la oferta.',
+            'requirements.string' => 'Los requisitos deben ser un texto válido.',
+            
+            'benefits.required' => 'Debes ingresar los beneficios de la oferta.',
+            'benefits.string' => 'Los beneficios deben ser un texto válido.',
 
             'modality.required' => 'La modalidad es obligatoria.',
             'vacancies.required' => 'La cantidad de vacantes es obligatoria.',

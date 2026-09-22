@@ -2,6 +2,8 @@ import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { BackButton } from '@/components/custom-ui/PageHeader';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
@@ -25,8 +27,6 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-import { BackButton } from '@/components/custom-ui/PageHeader';
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 
 type Option = { id: string; name: string; city?: string; area_ids?: string[] };
 type Offer = {
@@ -35,8 +35,8 @@ type Offer = {
     slug: string;
     image_url?: string | null;
     description: string;
-    requirements: string[];
-    benefits: string[];
+    requirements: string | string[];
+    benefits: string | string[];
     modality: string;
     vacancies: number;
     is_active: boolean;
@@ -85,20 +85,26 @@ export default function Edit() {
         places: Option[];
         modalities: string[];
     }>().props;
+    // Función auxiliar para transformar requirements/benefits a string de forma segura
+    const parseToString = (value: string | string[] | undefined | null): string => {
+        if (!value) return '';
+        if (Array.isArray(value)) return value.join('\n');
+        return String(value);
+    };
 
-    const form = useForm<FormValues>({
+   const form = useForm<FormValues>({
         defaultValues: {
-            title: offer.title,
-            slug: offer.slug,
+            title: offer.title ?? '',
+            slug: offer.slug ?? '',
             image: null,
-            description: offer.description,
-            requirements: (offer.requirements ?? []).join('\n'),
-            benefits: (offer.benefits ?? []).join('\n'),
-            modality: offer.modality,
-            vacancies: offer.vacancies,
-            is_active: offer.is_active,
-            area_id: offer.area_id,
-            place_id: offer.place_id,
+            description: offer.description ?? '',
+            requirements: parseToString(offer.requirements),
+            benefits: parseToString(offer.benefits),
+            modality: offer.modality ?? '',
+            vacancies: offer.vacancies ?? 1,
+            is_active: offer.is_active ?? true,
+            area_id: offer.area_id ?? '',
+            place_id: offer.place_id ?? '',
             metadata: {
                 meta_title: offer.metadata?.meta_title ?? '',
                 meta_description: offer.metadata?.meta_description ?? '',
@@ -132,12 +138,15 @@ export default function Edit() {
         }
     }, [filteredPlaces, form]);
 
-    const onSubmit = (values: FormValues) => {
+   const onSubmit = (values: FormValues) => {
         router.post(
             `/admin/jobs/offers/${offer.id}`,
             {
                 _method: 'put',
                 ...values,
+                // Si tu backend ahora espera un string del editor enriquecido, puedes enviarlo directamente.
+                // Si aún requiere un array separado por saltos de línea, descomenta la lógica de abajo:
+                /*
                 requirements: values.requirements
                     .split('\n')
                     .map((item) => item.trim())
@@ -146,6 +155,7 @@ export default function Edit() {
                     .split('\n')
                     .map((item) => item.trim())
                     .filter(Boolean),
+                */
             },
             { forceFormData: true },
         );
@@ -154,7 +164,7 @@ export default function Edit() {
     return (
         <AppLayout>
             <Head title="Editar Oferta" />
-             <div className="mb-6 flex items-end gap-4">
+            <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
@@ -173,7 +183,10 @@ export default function Edit() {
                                     <FormItem>
                                         <FormLabel>Título</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Ej: Backend Developer Laravel" {...field} />
+                                            <Input
+                                                placeholder="Ej: Backend Developer Laravel"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -353,40 +366,40 @@ export default function Edit() {
                                 />
                             </div>
 
-                           <FormField
-                                    control={form.control}
-                                    name="requirements"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col gap-3">
-                                            <FormLabel>Requisitos</FormLabel>
-                                            <FormControl>
-                                                <RichTextEditor
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    placeholder="Escribe los requisitos aquí..."
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             <FormField
-                                    control={form.control}
-                                    name="benefits"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col gap-3">
-                                            <FormLabel>Beneficios</FormLabel>
-                                            <FormControl>
-                                                <RichTextEditor
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    placeholder="Escribe los beneficios aquí..."
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                control={form.control}
+                                name="requirements"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col gap-3">
+                                        <FormLabel>Requisitos</FormLabel>
+                                        <FormControl>
+                                            <RichTextEditor
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Escribe los requisitos aquí..."
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="benefits"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col gap-3">
+                                        <FormLabel>Beneficios</FormLabel>
+                                        <FormControl>
+                                            <RichTextEditor
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Escribe los beneficios aquí..."
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
                         <aside className="space-y-6">
@@ -439,7 +452,9 @@ export default function Edit() {
                                     )}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Regla de publicación: en el portal público solo se mostrará la oferta si están activos la oferta, el área y la sede seleccionada.
+                                    Regla de publicación: en el portal público
+                                    solo se mostrará la oferta si están activos
+                                    la oferta, el área y la sede seleccionada.
                                 </p>
                             </div>
 
@@ -454,7 +469,10 @@ export default function Edit() {
                                         <FormItem>
                                             <FormLabel>Meta title</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Título SEO de la oferta" {...field} />
+                                                <Input
+                                                    placeholder="Título SEO de la oferta"
+                                                    {...field}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -486,7 +504,10 @@ export default function Edit() {
                                         <FormItem>
                                             <FormLabel>Canonical URL</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="https://tu-frontend.com/trabajos/slug-oferta" {...field} />
+                                                <Input
+                                                    placeholder="https://tu-frontend.com/trabajos/slug-oferta"
+                                                    {...field}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

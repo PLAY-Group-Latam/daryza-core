@@ -2,6 +2,8 @@ import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { BackButton } from '@/components/custom-ui/PageHeader';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
@@ -25,8 +27,6 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-import { BackButton } from '@/components/custom-ui/PageHeader';
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
 
 type Option = { id: string; name: string; city?: string; area_ids?: string[] };
 
@@ -115,14 +115,8 @@ export default function Create() {
             '/admin/jobs/offers',
             {
                 ...values,
-                requirements: values.requirements
-                    .split('\n')
-                    .map((item) => item.trim())
-                    .filter(Boolean),
-                benefits: values.benefits
-                    .split('\n')
-                    .map((item) => item.trim())
-                    .filter(Boolean),
+                requirements: values.requirements,
+                benefits: values.benefits,
             },
             { forceFormData: true },
         );
@@ -131,7 +125,7 @@ export default function Create() {
     return (
         <AppLayout>
             <Head title="Crear Oferta" />
-             <div className="mb-6 flex items-end gap-4">
+            <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
@@ -333,41 +327,41 @@ export default function Create() {
                                 />
                             </div>
 
-                          <FormField
-                                    control={form.control}
-                                    name="requirements"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col gap-3">
-                                            <FormLabel>Requisitos</FormLabel>
-                                            <FormControl>
-                                                <RichTextEditor
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    placeholder="Escribe los requisitos aquí..."
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            <FormField
+                                control={form.control}
+                                name="requirements"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col gap-3">
+                                        <FormLabel>Requisitos</FormLabel>
+                                        <FormControl>
+                                            <RichTextEditor
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Escribe los requisitos aquí..."
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <FormField
-                                    control={form.control}
-                                    name="benefits"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col gap-3">
-                                            <FormLabel>Beneficios</FormLabel>
-                                            <FormControl>
-                                                <RichTextEditor
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    placeholder="Escribe los beneficios aquí..."
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                control={form.control}
+                                name="benefits"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col gap-3">
+                                        <FormLabel>Beneficios</FormLabel>
+                                        <FormControl>
+                                            <RichTextEditor
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Escribe los beneficios aquí..."
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
                         <aside className="space-y-6">
@@ -416,7 +410,9 @@ export default function Create() {
                                     )}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Regla de publicación: en el portal público solo se mostrará la oferta si están activos la oferta, el área y la sede seleccionada.
+                                    Regla de publicación: en el portal público
+                                    solo se mostrará la oferta si están activos
+                                    la oferta, el área y la sede seleccionada.
                                 </p>
                             </div>
 
