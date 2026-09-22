@@ -136,6 +136,11 @@ class ProductFilterService
             ->where('is_active', true)
             ->with('mainImage');
 
+        $term = $this->searchTerm($params);
+        if ($term !== null) {
+            $query->where('name', 'ILIKE', '%' . $this->escapeLike($term) . '%');
+        }
+
         if ($this->bool($params, 'on_offer')) {
             $query->where('is_on_promotion', true)
                 ->whereNotNull('promo_price')
@@ -219,8 +224,28 @@ class ProductFilterService
         $dynSlugs = $this->slugArray($params, 'dynamics');
         $brandSlugs = $this->slugArray($params, 'brands');
         $blSlugs  = $this->slugArray($params, 'business_lines');
+        $term     = $this->searchTerm($params);
 
         return [
+            'search' => [
+                'active' => $term !== null,
+                'apply'  => function (Builder $q) use ($term) {
+                    $like = '%' . $this->escapeLike((string) $term) . '%';
+                    $q->where(function (Builder $sub) use ($like) {
+                        $sub->where('products.name', 'ILIKE', $like)
+                            // Cualquier variante activa (no solo la principal).
+                            ->orWhereHas(
+                                'variants',
+                                fn($v) => $v->where('is_active', true)->where('sku', 'ILIKE', $like)
+                            )
+                            ->orWhereHas('brand', fn($b) => $b->where('name', 'ILIKE', $like))
+                            ->orWhereHas('categories', fn($c) => $c->where('name', 'ILIKE', $like))
+                            ->orWhereHas('businessLines', fn($b) => $b->where('name', 'ILIKE', $like))
+                            ->orWhereHas('dynamicCategories', fn($d) => $d->where('name', 'ILIKE', $like));
+                    });
+                },
+            ],
+
             'categories_and_subs' => [
                 'active' => !empty($catSlugs) || !empty($subSlugs),
                 'apply'  => function (Builder $q) use ($catSlugs, $subSlugs) {
@@ -443,6 +468,17 @@ private function getNormalizedBrands()
     private function slugArray(array $params, string $key): array
     {
         return array_values(array_filter((array) ($params[$key] ?? [])));
+    }
+
+    private function searchTerm(array $params): ?string
+    {
+        $term = trim((string) ($params['q'] ?? ''));
+        return mb_strlen($term) >= 2 ? $term : null;
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function idArray(array $params, string $key): array
