@@ -14,7 +14,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
 {
     public function __construct(private readonly array $filters = []) {}
 
-    public function collection()
+  public function collection()
     {
         $query = Order::query()
             ->with(['items.variant.attributes.attribute', 'payments'])
@@ -35,58 +35,48 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             });
         }
 
-        return $query->get()->map(function (Order $order) {
-            $latestPayment = $order->payments->sortByDesc('created_at')->first();
-            $placedAt = $order->placed_at ?? $order->created_at;
-            $customerName = trim((string) $order->customer_first_name . ' ' . (string) $order->customer_last_name);
-            $paymentMethod = $this->mapPaymentMethodForExport((string) $order->payment_method_type, $latestPayment?->toArray() ?? []);
-            $paymentStatus = $this->resolvePaymentStatus($order, $latestPayment?->status);
+        $rows = new Collection();
 
-            // Formato de SKUs con guion
-            $skusDaryza = $order->items
-                ->map(fn($item) => $item->variant_sku ? "- {$item->variant_sku}" : null)
-                ->filter()
-                ->implode("\n");
+        $query->get()->each(function (Order $order) use (&$rows) {
+            $latestPayment   = $order->payments->sortByDesc('created_at')->first();
+            $placedAt        = $order->placed_at ?? $order->created_at;
+            $customerName    = trim((string) $order->customer_first_name . ' ' . (string) $order->customer_last_name);
+            $paymentMethod   = $this->mapPaymentMethodForExport((string) $order->payment_method_type, $latestPayment?->toArray() ?? []);
+            $paymentStatus   = $this->resolvePaymentStatus($order, $latestPayment?->status);
+            $shippingAddress = $this->buildShippingAddress($order);
 
-            $skusProveedor = $order->items
-                ->map(fn($item) => $item->variant?->sku_supplier ? "- {$item->variant->sku_supplier}" : null)
-                ->filter()
-                ->implode("\n");
-
-            // Formato de productos con guion: - 1x Producto...
-            $productsList = $order->items->map(function ($item) {
+            foreach ($order->items as $item) {
                 $productDesc = $this->buildProductWithVariant((string) ($item->product_name ?? ''), $item->variant);
-                return "- {$item->quantity}x {$productDesc}";
-            })->implode("\n");
 
-            $totalQuantity = $order->items->sum('quantity');
-
-            return [
-                (string) $order->code,
-                $placedAt ? $placedAt->format('d/m/Y H:i') : '',
-                $customerName,
-                (string) $order->customer_mobile_phone,
-                (string) $order->customer_email,
-                (string) $order->customer_document_type,
-                (string) $order->customer_document_number,
-                (string) $order->department_name,
-                (string) $order->province_name,
-                (string) $order->district_name,
-                $paymentMethod,
-                $paymentStatus,
-                $skusDaryza,
-                $skusProveedor,
-                $productsList,
-                (int) $totalQuantity,
-                (float) $order->subtotal,
-                (float) $order->discount_total,
-                (float) $order->delivery_cost,
-                (float) $order->total,
-                $this->buildShippingAddress($order),
-                (string) $order->billing_ruc,
-                (string) $order->billing_social_reason,
-            ];
+                $rows->push([
+                    (string) $order->code,
+                    $placedAt ? $placedAt->format('d/m/Y H:i') : '',
+                    $customerName,
+                    (string) $order->customer_mobile_phone,
+                    (string) $order->customer_email,
+                    (string) $order->customer_document_type,
+                    (string) $order->customer_document_number,
+                    (string) $order->department_name,
+                    (string) $order->province_name,
+                    (string) $order->district_name,
+                    $paymentMethod,
+                    $paymentStatus,
+                    $item->variant_sku ?? '',
+                    $item->variant?->sku_supplier ?? '',
+                    $productDesc,
+                    (int) $item->quantity,
+                    (float) $order->subtotal,
+                    (float) $order->discount_total,
+                    (float) $order->delivery_cost,
+                    (float) $order->total,
+                    $shippingAddress,
+                    (string) $order->billing_ruc,
+                    (string) $order->billing_social_reason,
+                ]);
+            }
         });
+
+        return $rows;
     }
 
     public function registerEvents(): array
@@ -116,8 +106,8 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'metodo_pago',
             'estado_pago',
             'sku_daryza',
-            'sku_proovedor',
-            'producto_describir_el_nombre_y_sus_variantes',
+            'sku_proveedor',
+            'producto',
             'cantidad',
             'subtotal',
             'descuento',

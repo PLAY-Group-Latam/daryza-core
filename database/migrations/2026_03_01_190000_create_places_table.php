@@ -12,7 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('address');
-            $table->string('city')->index();
+            $table->string('city')->nullable()->index();
             $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
         });

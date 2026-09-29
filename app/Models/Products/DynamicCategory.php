@@ -36,11 +36,13 @@ class DynamicCategory extends Model
     return $this->hasMany(DynamicCategoryItem::class, 'dynamic_category_id');
   }
 
-   public function scopeActiveNow(Builder $query): void
-{
+  public function scopeActiveNow(Builder $query): void
+  {
+    $today = now()->toDateString();
+
     $query
-        ->where('is_active', true)
-        ->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
-        ->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()));
-}
+      ->where('is_active', true)
+      ->where(fn($q) => $q->whereNull('starts_at')->orWhereDate('starts_at', '<=', $today))
+      ->where(fn($q) => $q->whereNull('ends_at')->orWhereDate('ends_at', '>=', $today));
+  }
 }

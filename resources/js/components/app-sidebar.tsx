@@ -125,10 +125,7 @@ const mainNavItems: NavItem[] = [
                 title: 'Lista de Nosotros',
                 href: '/aboutus/items',
             },
-            {
-                title: 'Lista de Trabajos',
-                href: '/jobs/items',
-            },
+         
             {
                 title:'Lista de Suscripciones',
                 href:'/subscriptions/items',
@@ -179,6 +176,10 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Postulaciones',
                 href: '/admin/jobs/applications',
+            },
+               {
+                title: 'Lista de Trabajos',
+                href: '/jobs/items',
             },
         ],
     },

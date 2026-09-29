@@ -4,6 +4,7 @@ namespace App\Http\Web\Requests\Products;
 
 use App\Models\Products\DynamicCategory;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class UpdateDynamicCategoryRequest extends FormRequest
@@ -11,6 +12,23 @@ class UpdateDynamicCategoryRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $tz = config('app.timezone');
+
+        foreach (['starts_at', 'ends_at'] as $field) {
+            if ($this->filled($field)) {
+                try {
+                    $this->merge([
+                        $field => Carbon::parse($this->input($field))->setTimezone($tz)->toDateString(),
+                    ]);
+                } catch (\Throwable $e) {
+                    // si no es una fecha válida, la regla 'date' se encarga del error
+                }
+            }
+        }
     }
 
     public function rules(): array

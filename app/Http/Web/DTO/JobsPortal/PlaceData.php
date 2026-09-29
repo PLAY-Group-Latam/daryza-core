@@ -7,7 +7,7 @@ readonly class PlaceData
     public function __construct(
         public string $name,
         public string $address,
-        public string $city,
+        public ?string $city, // <-- Se agrega ? para permitir null
         public bool $isActive,
         public array $areaIds,
     ) {
@@ -18,7 +18,7 @@ readonly class PlaceData
         return new self(
             name: $data['name'],
             address: $data['address'],
-            city: $data['city'],
+            city: $data['city'] ?? null, // <-- Fallback a null si no viene
             isActive: (bool) ($data['is_active'] ?? true),
             areaIds: $data['area_ids'] ?? [],
         );

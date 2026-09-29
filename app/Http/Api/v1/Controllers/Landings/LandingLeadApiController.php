@@ -27,7 +27,7 @@ class LandingLeadApiController extends Controller
                 $request->userAgent()
             );
 
-            return $this->created('Lead registrado correctamente.', $lead);
+            return $this->created('¡Gracias! Tu solicitud ha sido recibida correctamente.', $lead);
         } catch (ModelNotFoundException) {
             return $this->error('Landing no encontrada o inactiva.', null, 404);
         } catch (\Throwable $e) {

@@ -35,12 +35,7 @@ return [
                 'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
                 'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
             ],
-            [
-                'id'          => 'a95c2139-2c9b-424c-813c-a25c032a5d4a',
-                'link_url'    => 'https://daryza.com/',
-                'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-                'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-            ],
+          
         ],
     ],
 

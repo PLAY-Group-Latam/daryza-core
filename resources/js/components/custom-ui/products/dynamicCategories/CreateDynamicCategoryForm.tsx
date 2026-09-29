@@ -53,10 +53,12 @@ const dynamicCategorySchema = z
             )
             .min(1, 'Selecciona al menos un producto para la categoría'),
     })
-    .refine(
+       .refine(
         (data) => {
             if (!data.starts_at || !data.ends_at) return true;
-            return data.ends_at >= data.starts_at;
+            const start = new Date(data.starts_at).setHours(0, 0, 0, 0);
+            const end = new Date(data.ends_at).setHours(0, 0, 0, 0);
+            return end >= start;
         },
         {
             message: 'La fecha de fin no puede ser anterior al inicio',

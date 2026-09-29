@@ -15,7 +15,7 @@ class ProductCategoryService
 
     public function getMenu(): array
     {
-        return Cache::rememberForever(self::CACHE_KEY, function () {
+        return Cache::remember(self::CACHE_KEY, now()->addMinutes(10), function () {
             return [
                 'dynamics'   => $this->getDynamicCategories(),
                 'packs'      => $this->getPacks(),

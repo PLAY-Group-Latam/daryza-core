@@ -16,7 +16,7 @@ export default function ImagePromotionalEditor({ section }: Props) {
     }>({
         content: {
             // Limitamos a 3 items máximo según tu lógica
-            items: rawContent?.items?.slice(0, 3) ?? [],
+            items: rawContent?.items?.slice(0, 2) ?? [],
         },
     });
 
@@ -35,7 +35,7 @@ export default function ImagePromotionalEditor({ section }: Props) {
 };
 
     const addItem = () => {
-        if (items.length >= 3) return;
+        if (items.length >= 2) return;
         setData('content', {
             items: [
                 ...items,
@@ -85,12 +85,12 @@ export default function ImagePromotionalEditor({ section }: Props) {
                                 Imágenes Promocionales
                             </h3>
                             <p className="text-sm font-medium text-slate-500">
-                                {items.length} de 3 promociones configuradas.
+                                {items.length} de 2 promociones configuradas.
                             </p>
                         </div>
                     </div>
 
-                    {items.length < 3 && (
+                    {items.length < 2 && (
                         <Button
                             type="button"
                             variant="outline"

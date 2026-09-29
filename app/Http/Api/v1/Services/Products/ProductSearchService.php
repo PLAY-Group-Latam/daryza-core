@@ -84,7 +84,9 @@ class ProductSearchService
             ->get();
 
         if ($variantsBySku->isNotEmpty()) {
-            return $variantsBySku;
+            // Si hay duplicados de SKU, priorizar la variante principal
+            $main = $variantsBySku->firstWhere('is_main', true) ?? $variantsBySku->first();
+            return collect([$main]);
         }
 
         // =========================================================
@@ -92,9 +94,10 @@ class ProductSearchService
         // =========================================================
 
         $products = Product::active()
-            ->where(fn($query) =>
+            ->where(
+                fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                    ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->with([
                 'mainVariant.mainImage',
@@ -113,9 +116,10 @@ class ProductSearchService
 
         if ($remainingLimit > 0) {
             $packs = ProductPack::where('is_active', true)
-                ->where(fn($query) =>
+                ->where(
+                    fn($query) =>
                     $query->where('name', 'ILIKE', "%{$q}%")
-                          ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                        ->orWhere('name', 'ILIKE', "%{$qClean}%")
                 )
                 ->with('mainImage')
                 ->limit($remainingLimit)
@@ -160,9 +164,10 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
         return ProductCategory::active()
-            ->where(fn($query) =>
+            ->where(
+                fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                    ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->with('parent:id,slug')
             ->limit(3)
@@ -180,9 +185,10 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
         return Brand::where('is_active', true)
-            ->where(fn($query) =>
+            ->where(
+                fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                    ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->limit(3)
             ->get()
@@ -197,9 +203,10 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
         return BusinessLine::where('is_active', true)
-            ->where(fn($query) =>
+            ->where(
+                fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                    ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->limit(2)
             ->get()
@@ -215,9 +222,10 @@ class ProductSearchService
         $qClean = $this->sanitizeQuery($q);
 
         return DynamicCategory::activeNow()
-            ->where(fn($query) =>
+            ->where(
+                fn($query) =>
                 $query->where('name', 'ILIKE', "%{$q}%")
-                      ->orWhere('name', 'ILIKE', "%{$qClean}%")
+                    ->orWhere('name', 'ILIKE', "%{$qClean}%")
             )
             ->limit(2)
             ->get()
@@ -305,7 +313,7 @@ class ProductSearchService
         $isPromoActive = false;
         if ($v && $v->is_on_promo) {
             $isPromoActive = (!$v->promo_start_at || $v->promo_start_at->isPast()) &&
-                             (!$v->promo_end_at || $v->promo_end_at->isFuture());
+                (!$v->promo_end_at || $v->promo_end_at->isFuture());
         }
 
         return [
@@ -324,11 +332,11 @@ class ProductSearchService
                 : "/producto/{$product->slug}",
             'attributes'     => $v?->selections
                 ? $v->selections
-                    ->map(fn($s) => [
-                        'attribute' => $s->attributeValue?->attribute?->name,
-                        'value'     => $s->attributeValue?->value,
-                    ])
-                    ->values()
+                ->map(fn($s) => [
+                    'attribute' => $s->attributeValue?->attribute?->name,
+                    'value'     => $s->attributeValue?->value,
+                ])
+                ->values()
                 : [],
         ];
     }

@@ -23,7 +23,7 @@ type Place = {
     id: string;
     name: string;
     address: string;
-    city: string;
+    city?: string;
     is_active: boolean;
     area_ids: string[];
 };
@@ -32,7 +32,7 @@ type AreaOption = { id: string; name: string };
 const schema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio.'),
     address: z.string().min(1, 'La dirección es obligatoria.'),
-    city: z.string().min(1, 'La ciudad es obligatoria.'),
+    city: z.string().optional(), // Ya no es requerido
     is_active: z.boolean(),
     area_ids: z.array(z.string()).min(1, 'Selecciona al menos un área.'),
 });
@@ -48,7 +48,7 @@ export default function Edit() {
         defaultValues: {
             name: place.name,
             address: place.address,
-            city: place.city,
+            city: place.city ?? '',
             is_active: place.is_active,
             area_ids: place.area_ids ?? [],
         },
@@ -61,7 +61,7 @@ export default function Edit() {
     return (
         <AppLayout>
             <Head title="Editar Sede" />
-             <div className="mb-6 flex items-end gap-4">
+            <div className="mb-6 flex items-end gap-4">
                 <BackButton></BackButton>
             </div>
             <div className="flex flex-1 flex-col gap-6 rounded-xl">
@@ -100,6 +100,7 @@ export default function Edit() {
                             )}
                         />
 
+                        {/* Campo Ciudad Ocultado/Comentado
                         <FormField
                             control={form.control}
                             name="city"
@@ -112,7 +113,8 @@ export default function Edit() {
                                     <FormMessage />
                                 </FormItem>
                             )}
-                        />
+                        /> 
+                        */}
 
                         <FormField
                             control={form.control}

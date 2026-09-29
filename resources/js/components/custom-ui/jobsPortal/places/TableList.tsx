@@ -27,7 +27,7 @@ interface TableListProps {
 export const columns: ColumnDef<Place>[] = [
     { accessorKey: 'name', header: 'Nombre' },
     { accessorKey: 'address', header: 'Dirección' },
-    { accessorKey: 'city', header: 'Ciudad' },
+    // { accessorKey: 'city', header: 'Ciudad' },
     {
         accessorKey: 'is_active',
         header: 'Estado',
