@@ -187,34 +187,8 @@ class ProductImportService
       ->where('product_id', $product->id)
       ->where('sku', $data['sku_daryza']);
 
-    // Si vienen atributos, intentar matchear por combinación exacta
-    $variant = null;
-    if (!empty($attributes)) {
-      $candidates = $existingQuery->get();
-
-      foreach ($candidates as $candidate) {
-        $candidateAttrValues = $candidate->attributes()
-          ->pluck('value')
-          ->map(fn($v) => strtolower(trim($v)))
-          ->sort()
-          ->values()
-          ->all();
-
-        $incomingAttrValues = collect($attributes)
-          ->values()
-          ->map(fn($v) => strtolower(trim((string) $v)))
-          ->sort()
-          ->values()
-          ->all();
-
-        if ($candidateAttrValues === $incomingAttrValues) {
-          $variant = $candidate;
-          break;
-        }
-      }
-    } else {
-      $variant = $existingQuery->first();
-    }
+       // La variante se identifica por producto + SKU; los atributos se actualizan después.
+    $variant = $existingQuery->first();
 
     $variantData = [
       'product_id'     => $product->id,

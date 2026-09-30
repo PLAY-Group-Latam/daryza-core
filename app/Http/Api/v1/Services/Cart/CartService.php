@@ -261,6 +261,20 @@ class CartService
                 $cartItem->update(['quantity' => $stock]);
                 $cartItem->quantity = $stock;
             }
+            $currentPrice = (float) $item->active_price;
+            $savedPrice   = (float) $cartItem->unit_price;
+
+            if (abs($currentPrice - $savedPrice) > 0.001) {
+                $warnings[] = [
+                    'code'         => 'price_changed',
+                    'product_name' => $name,
+                    'message'      => "El precio de \"$name\" cambió.",
+                    'old_price'    => $savedPrice,
+                    'new_price'    => $currentPrice,
+                ];
+                $cartItem->update(['unit_price' => $currentPrice]);
+                $cartItem->unit_price = $currentPrice;
+            }
 
             $validItems->push($cartItem);
         }

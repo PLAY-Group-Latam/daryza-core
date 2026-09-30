@@ -129,32 +129,58 @@ class ProductImportRowMapper
         return $raw . ' ' . $unit;
     }
 
-    private function transformDate(mixed $value): ?Carbon
+    /**
+     * Parsea la fecha y la devuelve en formato 'Y-m-d' (cadena)
+     */
+    private function transformDate(mixed $value): ?string
     {
         if ($value === null || $value === '') {
             return null;
         }
 
-        try {
-            if (is_numeric($value)) {
-                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value))
-                    ->setTime(12, 0, 0);
-            }
+        // 1. Si PhpSpreadsheet/Laravel Excel ya devolvió un objeto DateTime o Carbon
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)->format('Y-m-d');
+        }
 
-            $raw = trim((string) $value);
-            if ($raw === '') {
+        // 2. Manejo de serial numérico nativo de Excel (ej. 45559)
+        if (is_numeric($value)) {
+            try {
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value))
+                    ->format('Y-m-d');
+            } catch (\Throwable) {
                 return null;
             }
+        }
 
-            $formats = ['d/m/Y', 'd-m-Y'];
-            foreach ($formats as $format) {
-                $parsed = Carbon::createFromFormat($format, $raw);
-                if ($parsed !== false) {
-                    return $parsed->setTime(12, 0, 0);
-                }
-            }
-
+        $raw = trim((string) $value);
+        if ($raw === '') {
             return null;
+        }
+
+        $formats = [
+            'd/m/Y',
+            'd-m-Y',
+            'Y-m-d',
+            'Y/m/d',
+            'd/m/Y H:i:s',
+            'd-m-Y H:i:s',
+            'Y-m-d H:i:s',
+            'Y/m/d H:i:s',
+        ];
+
+        // 3. Evaluar cada formato dentro de un try/catch para evitar que rompa Carbon
+        foreach ($formats as $format) {
+            try {
+                return Carbon::createFromFormat($format, $raw)->format('Y-m-d');
+            } catch (\Throwable) {
+                continue; // Si el string no empareja con el formato, salta al siguiente sin romper
+            }
+        }
+
+        // 4. Fallback genérico para formatos legibles no listados (ej: "24 Sep 2026")
+        try {
+            return Carbon::parse($raw)->format('Y-m-d');
         } catch (\Throwable) {
             return null;
         }

@@ -85,9 +85,30 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
     private array $seenSkus = [];
 
     /**
+     * SKUs de proveedor ya vistos en el archivo: sku => fila de Excel.
+     *
+     * @var array<string, int>
+     */
+    private array $seenSupplierSkus = [];
+    /**
      * Estado entre chunks: último código válido procesado.
      */
     private ?string $lastCode = null;
+    /**
+     * Códigos de producto ya vistos en el archivo: código => fila de Excel.
+     *
+     * @var array<string, int>
+     */
+
+    /**
+     * Combinaciones de atributos ya vistas por producto: código => [combinación => fila de Excel].
+     *
+     * @var array<string, array<string, int>>
+     */
+    private array $seenVariantCombinations = [];
+
+
+    private array $seenProductCodes = [];
 
     /**
      * Cache de productos ya resueltos/creados durante toda la importación.
@@ -137,7 +158,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function shouldCreateVariant(array $ctx): bool
     {
-        return $ctx['has_sku'] && $ctx['has_price'];    
+        return $ctx['has_sku'] && $ctx['has_price'];
     }
 
     private function validateVariantRequirements(
@@ -277,6 +298,29 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 continue;
             }
 
+            // El código de producto debe ser único dentro del archivo.
+            if ($code !== '' && $name !== '') {
+                if (isset($this->seenProductCodes[$code])) {
+                    $this->registerRowError(
+                        $excelRow,
+                        "El código de producto {$code} está repetido (ya aparece en la fila {$this->seenProductCodes[$code]}).",
+                        [
+                            'codigo' => $code,
+                            'nombre' => $name,
+                            'fila_original' => $this->seenProductCodes[$code],
+                        ],
+                        [ProductImportRowMapper::HEADER_CODE],
+                        $row
+                    );
+
+                    // Evita que las filas hijas siguientes se cuelguen del producto equivocado.
+                    $this->lastCode = null;
+                    continue;
+                }
+
+                $this->seenProductCodes[$code] = $excelRow;
+            }
+
             if (($code === '' || $name === '') && ($sku_daryza !== '' || $price !== null) && !$this->lastCode) {
                 $this->registerRowError(
                     $excelRow,
@@ -403,6 +447,80 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
             if (!$this->validateVariantRequirements($excelRow, $mapped, $ctx, $row)) {
                 continue;
+            }
+            // La combinación completa de atributos no puede repetirse dentro del mismo producto.
+            if (!empty($mapped['attributes'])) {
+                $normalizedAttributes = [];
+                foreach ($mapped['attributes'] as $attributeName => $attributeValue) {
+                    $normalizedAttributes[mb_strtolower(trim((string) $attributeName))] = mb_strtolower(trim((string) $attributeValue));
+                }
+                ksort($normalizedAttributes);
+                $combinationKey = md5(json_encode($normalizedAttributes));
+
+                if (isset($this->seenVariantCombinations[$code][$combinationKey])) {
+                    $this->registerRowError(
+                        $excelRow,
+                        'La combinación de atributos (' . implode(' / ', $mapped['attributes']) . ') está repetida para este producto (ya aparece en la fila ' . $this->seenVariantCombinations[$code][$combinationKey] . ').',
+                        [
+                            'codigo' => $code,
+                            'combinacion' => $mapped['attributes'],
+                            'fila_original' => $this->seenVariantCombinations[$code][$combinationKey],
+                        ],
+                        [
+                            ProductImportRowMapper::HEADER_PRESENTATION,
+                            ProductImportRowMapper::HEADER_AROMA,
+                            ProductImportRowMapper::HEADER_COLOR,
+                            ProductImportRowMapper::HEADER_SIZE,
+                        ],
+                        $row
+                    );
+                    continue;
+                }
+
+                $this->seenVariantCombinations[$code][$combinationKey] = $excelRow;
+            }
+            // El SKU de proveedor no puede repetirse (ni en el archivo ni en BD).
+            $supplierSku = trim((string) ($mapped['variant']['sku_supplier'] ?? ''));
+            if ($supplierSku !== '') {
+                $supplierKey = strtoupper($supplierSku);
+
+                if (isset($this->seenSupplierSkus[$supplierKey])) {
+                    $this->registerRowError(
+                        $excelRow,
+                        "El SKU de proveedor {$supplierSku} está repetido (ya aparece en la fila {$this->seenSupplierSkus[$supplierKey]}).",
+                        [
+                            'codigo' => $code,
+                            'sku_proveedor' => $supplierSku,
+                            'fila_original' => $this->seenSupplierSkus[$supplierKey],
+                        ],
+                        [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
+                        $row
+                    );
+                    continue;
+                }
+
+                $supplierConflict = $service->findSkuSupplierConflict(
+                    $supplierSku,
+                    (string) ($productId ?? ''),
+                    (string) $sku_daryza
+                );
+
+                if ($supplierConflict) {
+                    $this->registerRowError(
+                        $excelRow,
+                        'El SKU de proveedor ya está en uso por otra variante.',
+                        [
+                            'codigo' => $code,
+                            'sku_proveedor' => $supplierSku,
+                            'variante_conflicto_id' => $supplierConflict->id,
+                        ],
+                        [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
+                        $row
+                    );
+                    continue;
+                }
+
+                $this->seenSupplierSkus[$supplierKey] = $excelRow;
             }
 
             if ($this->dryRun) {
@@ -738,9 +856,18 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 'columns' => [ProductImportRowMapper::HEADER_PROMO_END],
             ];
         }
+        // El precio en promoción debe ser menor que el precio original.
+        $promoPrice = $mapped['variant']['promo_price'] ?? null;
+        if (is_numeric($promoPrice) && is_numeric($price) && (float) $promoPrice >= (float) $price) {
+            $errors[] = [
+                'message' => 'El precio en promoción debe ser menor que el precio original.',
+                'columns' => [ProductImportRowMapper::HEADER_PROMO_PRICE, ProductImportRowMapper::HEADER_PRICE],
+            ];
+        }
 
         return $errors;
     }
+
 
     /**
      * @param array<string, mixed> $context

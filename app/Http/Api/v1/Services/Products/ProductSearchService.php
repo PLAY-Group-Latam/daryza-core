@@ -70,10 +70,10 @@ class ProductSearchService
         $qClean = $this->sanitizeQuery($q);
 
         // =========================================================
-        // 1. SKU EXACTO → DEVOLVER VARIANTE REAL
+        // 1. SKU EXACTO
         // =========================================================
 
-        $variantsBySku = ProductVariant::query()
+        $matchingVariants = ProductVariant::query()
             ->where('is_active', true)
             ->where('sku', 'ILIKE', $q)
             ->with([
@@ -83,10 +83,32 @@ class ProductSearchService
             ])
             ->get();
 
-        if ($variantsBySku->isNotEmpty()) {
-            // Si hay duplicados de SKU, priorizar la variante principal
-            $main = $variantsBySku->firstWhere('is_main', true) ?? $variantsBySku->first();
-            return collect([$main]);
+        if ($matchingVariants->isNotEmpty()) {
+            // Caso A: Si solo hay una variante en todo el sistema con ese SKU, la devolvemos tal cual (sea main o no)
+            if ($matchingVariants->count() === 1) {
+                return collect([$matchingVariants->first()]);
+            }
+
+            // Caso B: Si hay varias variantes con el mismo SKU, filtramos por producto 
+            // priorizando la variante principal (is_main = true) de cada uno
+            $variantsByProduct = $matchingVariants->groupBy('product_id');
+            $finalVariants = collect();
+
+            foreach ($variantsByProduct as $productId => $variants) {
+                // Buscamos si hay una variante main en este producto
+                $selected = $variants->firstWhere('is_main', true);
+
+                // Si este producto específico no tiene main, tomamos su primera variante como fallback
+                if (!$selected) {
+                    $selected = $variants->first();
+                }
+
+                if ($selected) {
+                    $finalVariants->push($selected);
+                }
+            }
+
+            return $finalVariants->take($limit);
         }
 
         // =========================================================

@@ -97,6 +97,7 @@ export const ProductSchema = z
             .array(z.string())
             .min(1, 'Selecciona al menos una subcategoría'),
         business_lines: z.array(z.string()).optional(),
+        
         brand_id: z.string().nullable().optional(),
         recommended_product_ids: z.array(z.string()).optional(),
         variant_attribute_ids: z.array(z.string()),
@@ -127,8 +128,10 @@ export const ProductSchema = z
                 });
             }
         }
-
-        data.variants.forEach((variant, index) => {
+        const supplierSkuMap = new Map<string, number>();
+        
+       data.variants.forEach((variant, index) => {
+            // --- Tu validación existente ---
             if (!variant.is_active && variant.is_main) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -136,22 +139,41 @@ export const ProductSchema = z
                     message: 'Una variante inactiva no puede ser principal.',
                 });
             }
+
+            // --- NUEVA VALIDACIÓN: SKU Proveedor repetido en el form ---
+            const rawSupplierSku = variant.sku_supplier?.trim();
+
+            if (rawSupplierSku) {
+                const normalizedSku = rawSupplierSku.toLowerCase();
+
+                if (supplierSkuMap.has(normalizedSku)) {
+                    // Marcamos el error en la variante duplicada actual
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['variants', index, 'sku_supplier'],
+                        message: 'El SKU Proveedor no se puede repetir en otra variante.',
+                    });
+                } else {
+                    supplierSkuMap.set(normalizedSku, index);
+                }
+            }
         });
         const hasAnyActiveVariant = data.variants.some((v) => v.is_active);
 
-       if (hasAnyActiveVariant) {
-    const activeMainCount = data.variants.filter(
-        (v) => v.is_active && v.is_main,
-    ).length;
+        if (hasAnyActiveVariant) {
+            const activeMainCount = data.variants.filter(
+                (v) => v.is_active && v.is_main,
+            ).length;
 
-    if (activeMainCount !== 1) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['variants'],
-            message: 'Debe existir exactamente una variante principal activa.',
-        });
-    }
-}
+            if (activeMainCount !== 1) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['variants'],
+                    message:
+                        'Debe existir exactamente una variante principal activa.',
+                });
+            }
+        }
 
         data.variants.forEach((variant, index) => {
             if (!variant.is_on_promo) return;

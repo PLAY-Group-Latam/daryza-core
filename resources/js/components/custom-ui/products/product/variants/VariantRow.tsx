@@ -148,10 +148,15 @@ export function VariantRow({
                     <Controller
                         name={`variants.${index}.sku_supplier`}
                         control={control}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                             <div className="flex flex-col gap-1">
                                 <Label className="text-xs">SKU Proveedor</Label>
-                                <Input {...field} />
+                                <Input {...field} value={field.value ?? ''} />
+                                {fieldState.error && (
+                                    <p className="text-xs text-red-500">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
                             </div>
                         )}
                     />

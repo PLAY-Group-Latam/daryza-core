@@ -28,6 +28,7 @@ class VariantPayloadValidator
         $attributeValueAttributeMap = $this->buildAttributeValueAttributeMap($variants);
 
         $seenCombinations = [];
+        $seenSupplierSkus = [];
         foreach ($variants as $variantIndex => $variant) {
             $variantId = $variant['id'] ?? null;
             $attributes = collect($variant['attributes'] ?? []);
@@ -39,13 +40,14 @@ class VariantPayloadValidator
                 $variantIndex
             );
 
+           // Pasamos $seenSupplierSkus por referencia
             $this->validateSkuSupplier(
                 $validator,
                 trim((string) ($variant['sku_supplier'] ?? '')),
                 $variantId,
-                $variantIndex
+                $variantIndex,
+                $seenSupplierSkus
             );
-
             $this->validateDuplicatedAttributes($validator, $attributes, $variantIndex);
             $this->validateAttributeValueBelongsToAttribute(
                 $validator,
@@ -108,12 +110,27 @@ class VariantPayloadValidator
         Validator $validator,
         string $supplierSku,
         ?string $variantId,
-        int $variantIndex
+        int $variantIndex,
+        array &$seenSupplierSkus // 👈 Recibe el array acumulador
     ): void {
         if ($supplierSku === '') {
             return;
         }
 
+        $normalizedSku = mb_strtolower($supplierSku);
+
+        // 1. Validar duplicados dentro del mismo payload enviado en el formulario
+        if (isset($seenSupplierSkus[$normalizedSku])) {
+            $validator->errors()->add(
+                "variants.$variantIndex.sku_supplier",
+                'El SKU de proveedor se repite en otra variante del mismo producto.'
+            );
+            return;
+        }
+
+        $seenSupplierSkus[$normalizedSku] = $variantIndex;
+
+        // 2. Validar contra los registros de la Base de Datos
         $inUse = ProductVariant::withTrashed()
             ->where('sku_supplier', $supplierSku)
             ->when($variantId, fn($q) => $q->where('id', '!=', $variantId))
@@ -122,7 +139,7 @@ class VariantPayloadValidator
         if ($inUse) {
             $validator->errors()->add(
                 "variants.$variantIndex.sku_supplier",
-                'El SKU de proveedor ya está en uso por otra variante.'
+                'El SKU de proveedor ya está en uso por otra variante en el sistema.'
             );
         }
     }
