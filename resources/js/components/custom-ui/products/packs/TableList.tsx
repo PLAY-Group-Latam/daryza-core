@@ -27,7 +27,7 @@ const columns: ColumnDef<ProductPack>[] = [
         accessorKey: 'price',
         header: 'Precio',
         cell: ({ row }) => (
-            <span className="font-medium text-green-700">
+            <span className="font-bold text-black ">
                 S/ {Number(row.original.price).toFixed(2)}
             </span>
         ),

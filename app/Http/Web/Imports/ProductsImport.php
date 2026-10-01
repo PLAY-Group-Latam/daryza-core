@@ -2,23 +2,26 @@
 
 namespace App\Http\Web\Imports;
 
-use App\Http\Web\Services\Products\ProductImportService;
 use App\Http\Web\Services\Products\ProductImportRowMapper;
+use App\Http\Web\Services\Products\ProductImportService;
 use App\Models\Products\Product;
+use App\Models\Products\ProductCategory;
 use App\Models\Products\ProductImportSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Events\AfterImport;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+use Maatwebsite\Excel\Events\AfterImport;
 
-class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, WithEvents, WithStartRow
+class ProductsImport implements ToCollection, WithChunkReading, WithEvents, WithHeadingRow, WithStartRow
 {
     private const CANCELLED_EXCEPTION_MARKER = '__PRODUCT_IMPORT_CANCELLED__';
+
     public function __construct(
         private readonly bool $dryRun = false,
         private readonly ?string $importSessionId = null,
@@ -29,6 +32,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      * @var array<string, array<int, string>>
      */
     private array $pendingRecommendationsByProductCode = [];
+
     private array $summary = [
         'total' => 0,
         'processed' => 0,
@@ -44,6 +48,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         'variants_without_attributes' => 0,
         'sku_duplicates' => 0,
     ];
+
     /**
      * @var array<int, string>
      */
@@ -90,6 +95,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      * @var array<string, int>
      */
     private array $seenSupplierSkus = [];
+
     /**
      * Estado entre chunks: último código válido procesado.
      */
@@ -107,6 +113,19 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      */
     private array $seenVariantCombinations = [];
 
+    /**
+     * Subcategorías ya vistas en el archivo: slug => [padre (slug), fila de Excel].
+     *
+     * @var array<string, array{parent: string, row: int}>
+     */
+    private array $seenSubcategoryParents = [];
+
+    /**
+     * Productos padre que fallaron validación: código => fila de Excel.
+     *
+     * @var array<string, int>
+     */
+    private array $failedProductCodes = [];
 
     private array $seenProductCodes = [];
 
@@ -116,15 +135,19 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
      * @var array<string, mixed>
      */
     private array $productsCache = [];
+
     /**
      * @var array<string, string|null>
      */
     private array $productIdByCodeCache = [];
+
     /**
      * @var array<string, string>
      */
     private array $canonicalBrandByCode = [];
+
     private int $lastProgressPersistedAt = 0;
+
     private int $processedOffset = 0;
 
     /**
@@ -136,7 +159,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         $name = $mapped['product']['name'] ?? '';
         $sku = $mapped['variant']['sku_daryza'] ?? '';
         $price = $mapped['variant']['price'] ?? null;
-        $hasAttributes = !empty($mapped['attributes']);
+        $hasAttributes = ! empty($mapped['attributes']);
         $hasSku = trim((string) $sku) !== '';
         $hasPrice = $price !== null;
 
@@ -153,7 +176,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function shouldDeferHeaderRow(array $ctx, bool $hasValidCode): bool
     {
-        return $hasValidCode && !$ctx['has_variant_signal'];
+        return $hasValidCode && ! $ctx['has_variant_signal'];
     }
 
     private function shouldCreateVariant(array $ctx): bool
@@ -167,7 +190,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         array $ctx,
         array|Collection $row
     ): bool {
-        if ($ctx['has_attributes'] && (!$ctx['has_sku'] || !$ctx['has_price'])) {
+        if ($ctx['has_attributes'] && (! $ctx['has_sku'] || ! $ctx['has_price'])) {
             $this->registerRowError(
                 $excelRow,
                 'Falta SKU o precio para una variante con atributos.',
@@ -178,10 +201,11 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 [ProductImportRowMapper::HEADER_SKU_DARYZA, ProductImportRowMapper::HEADER_PRICE],
                 $row
             );
+
             return false;
         }
 
-        if ($ctx['has_sku'] && !$ctx['has_price']) {
+        if ($ctx['has_sku'] && ! $ctx['has_price']) {
             $this->registerRowError(
                 $excelRow,
                 'Falta precio para la variante.',
@@ -192,6 +216,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 [ProductImportRowMapper::HEADER_PRICE],
                 $row
             );
+
             return false;
         }
 
@@ -235,6 +260,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             }
 
             $mapped = $mapper->map($row);
+            Log::info("Stock fila {$excelRow}", [
+                'stock' => $mapped['variant']['stock'] ?? 'NO EXISTE',
+                'stock_raw' => $mapped['variant']['stock_raw'] ?? 'NO EXISTE',
+            ]);
             $originalCode = $mapped['product']['code'];
             $originalName = $mapped['product']['name'];
             $code = $originalCode;
@@ -252,7 +281,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             $brandOwnerCode = $code ?: $this->lastCode;
             if ($brandOwnerCode) {
                 if ($currentBrand !== '') {
-                    if (!isset($this->canonicalBrandByCode[$brandOwnerCode])) {
+                    if (! isset($this->canonicalBrandByCode[$brandOwnerCode])) {
                         $this->canonicalBrandByCode[$brandOwnerCode] = $currentBrand;
                     }
                 }
@@ -264,9 +293,8 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 }
             }
 
-
             $rowValidationErrors = $this->validateMappedRow($mapped, $this->lastCode);
-            if (!empty($rowValidationErrors)) {
+            if (! empty($rowValidationErrors)) {
                 foreach ($rowValidationErrors as $error) {
                     $this->registerRowError(
                         $excelRow,
@@ -279,6 +307,13 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         $row
                     );
                 }
+
+                // Si es una fila padre, las hijas siguientes deben seguir colgadas de ella.
+                if ($code !== '' && $name !== '') {
+                    $this->lastCode = $code;
+                    $this->failedProductCodes[$code] = $excelRow;
+                }
+
                 continue;
             }
 
@@ -295,7 +330,65 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     [ProductImportRowMapper::HEADER_SUBCATEGORY, ProductImportRowMapper::HEADER_CATEGORY],
                     $row
                 );
+
                 continue;
+            }
+
+            // Una subcategoría (slug único global) no puede colgar de dos padres distintos.
+            if (trim((string) $childCategories) !== '' && trim((string) $parentCategory) !== '') {
+                $parentSlug = Str::slug(trim((string) $parentCategory));
+                $parentId = ProductCategory::where('slug', $parentSlug)->value('id');
+                $subConflict = null;
+
+                foreach (explode(',', (string) $childCategories) as $subName) {
+                    $subName = trim($subName);
+                    if ($subName === '') {
+                        continue;
+                    }
+                    $subSlug = Str::slug($subName);
+
+                    // 1. Contra lo ya visto en el archivo.
+                    if (
+                        isset($this->seenSubcategoryParents[$subSlug])
+                        && $this->seenSubcategoryParents[$subSlug]['parent'] !== $parentSlug
+                    ) {
+                        $seen = $this->seenSubcategoryParents[$subSlug];
+                        $subConflict = "La subcategoría {$subName} ya se usó en la fila {$seen['row']} bajo otra categoría ({$seen['parent']}).";
+                        break;
+                    }
+
+                  // 2. Contra la BD (sin withTrashed ya que el modelo no lo usa).
+                    $existing = ProductCategory::where('slug', $subSlug)->first();
+                    if ($existing && $existing->parent_id !== $parentId) {
+                        $subConflict = "La subcategoría {$subName} ya existe en el sistema bajo otra categoría principal.";
+                        break;
+                    }
+                }
+
+                if ($subConflict !== null) {
+                    $this->registerRowError(
+                        $excelRow,
+                        $subConflict,
+                        [
+                            'codigo' => $code,
+                            'categoria' => $parentCategory,
+                            'sub_categorias' => $childCategories,
+                        ],
+                        [ProductImportRowMapper::HEADER_SUBCATEGORY, ProductImportRowMapper::HEADER_CATEGORY],
+                        $row
+                    );
+                    continue;
+                }
+
+                foreach (explode(',', (string) $childCategories) as $subName) {
+                    $subName = trim($subName);
+                    if ($subName !== '') {
+                        $this->seenSubcategoryParents[Str::slug($subName)] = [
+                            'parent' => $parentSlug,
+                            'row' => $excelRow,
+                        ];
+                    }
+                }
             }
 
             // El código de producto debe ser único dentro del archivo.
@@ -315,13 +408,14 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
                     // Evita que las filas hijas siguientes se cuelguen del producto equivocado.
                     $this->lastCode = null;
+
                     continue;
                 }
 
                 $this->seenProductCodes[$code] = $excelRow;
             }
 
-            if (($code === '' || $name === '') && ($sku_daryza !== '' || $price !== null) && !$this->lastCode) {
+            if (($code === '' || $name === '') && ($sku_daryza !== '' || $price !== null) && ! $this->lastCode) {
                 $this->registerRowError(
                     $excelRow,
                     'Variante sin producto base válido (no hay último código).',
@@ -332,6 +426,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     [ProductImportRowMapper::HEADER_SKU_DARYZA, ProductImportRowMapper::HEADER_PRICE],
                     $row
                 );
+
                 continue;
             }
 
@@ -339,10 +434,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             if ($code && $name) {
                 $this->lastCode = $code;
 
-                if (!array_key_exists($code, $this->pendingRecommendationsByProductCode)) {
+                if (! array_key_exists($code, $this->pendingRecommendationsByProductCode)) {
                     // Permite limpiar recomendaciones cuando la celda viene vacía.
                     $this->pendingRecommendationsByProductCode[$code] = $recommendedCodes;
-                } elseif (!empty($recommendedCodes)) {
+                } elseif (! empty($recommendedCodes)) {
                     // Si vuelve a aparecer el mismo producto con nuevos códigos, consolidamos.
                     $this->pendingRecommendationsByProductCode[$code] = array_values(
                         array_unique(array_merge(
@@ -353,7 +448,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 }
 
                 // Crear producto solo si no existe en cache
-                if (!isset($this->productsCache[$code])) {
+                if (! isset($this->productsCache[$code])) {
                     if ($this->dryRun) {
                         $existingProductId = $this->resolveProductIdByCode($code);
                         $this->productsCache[$code] = ['id' => $existingProductId ?: $code];
@@ -405,15 +500,19 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             }
 
             // Si no hay código/nombre, usar último código válido
-            if (!$code || !$name) {
-                if (!$this->lastCode || !isset($this->productsCache[$this->lastCode])) {
+            if (! $code || ! $name) {
+                if (! $this->lastCode || ! isset($this->productsCache[$this->lastCode])) {
+                    $failedRow = $this->lastCode ? ($this->failedProductCodes[$this->lastCode] ?? null) : null;
                     $this->registerRowError(
                         $excelRow,
-                        'Variante sin producto base válido.',
+                        $failedRow !== null
+                            ? "No se importa esta variante: el producto base {$this->lastCode} (fila {$failedRow}) tiene errores. Corrígelo primero."
+                            : 'Variante sin producto base válido.',
                         [],
                         [ProductImportRowMapper::HEADER_SKU_DARYZA, ProductImportRowMapper::HEADER_CODE],
                         $row
                     );
+
                     continue;
                 }
                 $code = $this->lastCode;
@@ -442,14 +541,15 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     ],
                     'raw_row' => $row,
                 ];
+
                 continue;
             }
 
-            if (!$this->validateVariantRequirements($excelRow, $mapped, $ctx, $row)) {
+            if (! $this->validateVariantRequirements($excelRow, $mapped, $ctx, $row)) {
                 continue;
             }
             // La combinación completa de atributos no puede repetirse dentro del mismo producto.
-            if (!empty($mapped['attributes'])) {
+            if (! empty($mapped['attributes'])) {
                 $normalizedAttributes = [];
                 foreach ($mapped['attributes'] as $attributeName => $attributeValue) {
                     $normalizedAttributes[mb_strtolower(trim((string) $attributeName))] = mb_strtolower(trim((string) $attributeValue));
@@ -474,6 +574,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         ],
                         $row
                     );
+
                     continue;
                 }
 
@@ -496,6 +597,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
                         $row
                     );
+
                     continue;
                 }
 
@@ -517,6 +619,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
                         $row
                     );
+
                     continue;
                 }
 
@@ -525,12 +628,13 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
             if ($this->dryRun) {
                 $this->summary['processed']++;
+
                 continue;
             }
 
             if (
                 ($originalCode === '' || $originalName === '')
-                && !$ctx['has_attributes']
+                && ! $ctx['has_attributes']
                 && $ctx['has_sku']
                 && $ctx['has_price']
             ) {
@@ -549,10 +653,11 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     ],
                     $row
                 );
+
                 continue;
             }
 
-            if (!$ctx['has_attributes'] && !$ctx['has_sku'] && $ctx['has_price']) {
+            if (! $ctx['has_attributes'] && ! $ctx['has_sku'] && $ctx['has_price']) {
                 $this->registerRowError(
                     $excelRow,
                     'Falta SKU Daryza para el producto.',
@@ -563,10 +668,11 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     [ProductImportRowMapper::HEADER_SKU_DARYZA],
                     $row
                 );
+
                 continue;
             }
 
-            if (!$ctx['has_attributes'] && $ctx['has_sku'] && $ctx['has_price']) {
+            if (! $ctx['has_attributes'] && $ctx['has_sku'] && $ctx['has_price']) {
                 if (isset($this->pendingSingleVariantRows[$product->code]) || ($this->variantsIntendedByCode[$product->code] ?? false)) {
                     $this->registerRowError(
                         $excelRow,
@@ -578,6 +684,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         [ProductImportRowMapper::HEADER_SKU_DARYZA],
                         $row
                     );
+
                     continue;
                 }
 
@@ -595,6 +702,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     'raw_row' => $row,
                 ];
                 $this->summary['processed']++;
+
                 continue;
             }
 
@@ -624,6 +732,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
                         $row
                     );
+
                     continue;
                 }
             }
@@ -636,12 +745,12 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         $variant = $service->createVariant($product, $mapped['variant'], $variantStatus, $mapped['attributes']);
 
                         $attributes = $mapped['attributes'];
-                        if (!empty($attributes)) {
+                        if (! empty($attributes)) {
                             $service->associateVariantAttributes($variant, $attributes);
                         }
 
                         $specs = $mapped['specifications'];
-                        if (!empty($specs)) {
+                        if (! empty($specs)) {
                             $service->associateVariantSpecifications($variant, $specs);
                         }
 
@@ -651,7 +760,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
                         return [
                             'status' => $variantStatus,
-                            'without_attributes' => !$ctx['has_attributes'],
+                            'without_attributes' => ! $ctx['has_attributes'],
                         ];
                     }),
                     $excelRow,
@@ -782,7 +891,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
     }
 
     /**
-     * @param array<string, mixed> $mapped
+     * @param  array<string, mixed>  $mapped
      * @return array<int, array{message: string, columns: array<int, string>}>
      */
     private function validateMappedRow(array $mapped, ?string $lastCode): array
@@ -799,7 +908,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         $promoEndRaw = trim((string) ($mapped['variant']['promo_end_raw'] ?? ''));
         $childCategories = trim((string) ($mapped['categories']['children'] ?? ''));
         $parentCategory = trim((string) ($mapped['categories']['parent'] ?? ''));
-        $hasAttributes = !empty($mapped['attributes']);
+        $hasAttributes = ! empty($mapped['attributes']);
 
         if (($code === '' xor $name === '')) {
             $errors[] = [
@@ -815,7 +924,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             ];
         }
 
-        if (($code === '' || $name === '') && $sku !== '' && !$lastCode) {
+        if (($code === '' || $name === '') && $sku !== '' && ! $lastCode) {
             $errors[] = [
                 'message' => 'La fila trae variante, pero no hay producto base previo válido.',
                 'columns' => [ProductImportRowMapper::HEADER_SKU_DARYZA, ProductImportRowMapper::HEADER_CODE],
@@ -830,7 +939,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 ];
             }
 
-            if (!is_numeric($price)) {
+            if (! is_numeric($price)) {
                 $errors[] = [
                     'message' => 'Falta precio válido para una variante configurable.',
                     'columns' => [ProductImportRowMapper::HEADER_PRICE],
@@ -864,13 +973,36 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 'columns' => [ProductImportRowMapper::HEADER_PROMO_PRICE, ProductImportRowMapper::HEADER_PRICE],
             ];
         }
+        // Inventario: número no negativo.
+        $stockRaw = trim((string) ($mapped['variant']['stock_raw'] ?? ''));
+        if ($stockRaw !== '') {
+            if (! is_numeric($stockRaw)) {
+                $errors[] = [
+                    'message' => 'El inventario debe ser un número.',
+                    'columns' => [ProductImportRowMapper::HEADER_STOCK],
+                ];
+            } elseif ((float) $stockRaw < 0) {
+                $errors[] = [
+                    'message' => 'El inventario no puede ser negativo.',
+                    'columns' => [ProductImportRowMapper::HEADER_STOCK],
+                ];
+            }
+        }
+
+        // Disponibilidad: solo D, ND, Disponible o No disponible.
+        $availabilityRaw = trim((string) ($mapped['variant']['availability_raw'] ?? ''));
+        if ($availabilityRaw !== '' && ! in_array($availabilityRaw, ['D', 'ND', 'DISPONIBLE', 'NO DISPONIBLE'], true)) {
+            $errors[] = [
+                'message' => 'La disponibilidad debe ser D, ND, Disponible o No disponible.',
+                'columns' => [ProductImportRowMapper::HEADER_AVAILABILITY],
+            ];
+        }
 
         return $errors;
     }
 
-
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     private function registerRowError(
         int $excelRow,
@@ -885,7 +1017,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         $this->rowErrors[] = $line;
 
         $normalizedColumns = array_values(array_filter(array_map('strval', $columns)));
-        if (!empty($normalizedColumns)) {
+        if (! empty($normalizedColumns)) {
             foreach ($normalizedColumns as $column) {
                 $this->columnErrorCounts[$column] = ($this->columnErrorCounts[$column] ?? 0) + 1;
             }
@@ -908,12 +1040,12 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function persistProgressIfNeeded(bool $force = false): void
     {
-        if (!$this->importSessionId) {
+        if (! $this->importSessionId) {
             return;
         }
 
         $current = (int) ($this->summary['total'] ?? 0);
-        if (!$force && ($current - $this->lastProgressPersistedAt) < 25) {
+        if (! $force && ($current - $this->lastProgressPersistedAt) < 25) {
             return;
         }
 
@@ -923,7 +1055,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
             ->select(['id', 'total_rows', 'status'])
             ->find($this->importSessionId);
 
-        if (!$session) {
+        if (! $session) {
             return;
         }
 
@@ -965,7 +1097,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
         }
 
         $values = [];
-        $keys = !empty($columns) ? $columns : [$field];
+        $keys = ! empty($columns) ? $columns : [$field];
         foreach ($keys as $key) {
             $values[] = $this->getRowValue($row, $key);
         }
@@ -1021,15 +1153,15 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     private function trackProductCode(string $code, ?string $productId = null): void
     {
-        if (!array_key_exists($code, $this->productIdByCodeCache)) {
+        if (! array_key_exists($code, $this->productIdByCodeCache)) {
             $this->productIdByCodeCache[$code] = $productId;
         }
 
-        if (!isset($this->variantsCreatedByCode[$code])) {
+        if (! isset($this->variantsCreatedByCode[$code])) {
             $this->variantsCreatedByCode[$code] = false;
         }
 
-        if (!isset($this->variantsIntendedByCode[$code])) {
+        if (! isset($this->variantsIntendedByCode[$code])) {
             $this->variantsIntendedByCode[$code] = false;
         }
     }
@@ -1082,7 +1214,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                 ? $service->resolveProductById($pending['product_id'])
                 : null;
 
-            if (!$product) {
+            if (! $product) {
                 $this->registerRowError(
                     $pending['row'],
                     'No se pudo crear el producto unico por falta de referencia.',
@@ -1090,6 +1222,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     [ProductImportRowMapper::HEADER_CODE],
                     $pending['raw_row']
                 );
+
                 continue;
             }
 
@@ -1114,6 +1247,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                         [ProductImportRowMapper::HEADER_SKU_SUPPLIER],
                         $pending['raw_row']
                     );
+
                     continue;
                 }
             }
@@ -1124,7 +1258,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
                     $variant = $service->createOrUpdateSingleVariant($product, $pending['variant'], $variantStatus);
 
                     $specs = $pending['specifications'] ?? [];
-                    if (!empty($specs)) {
+                    if (! empty($specs)) {
                         $service->associateVariantSpecifications($variant, $specs);
                     }
 
@@ -1185,10 +1319,10 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
 
     /**
      * @template T
-     * @param callable():T $callback
-     * @param array<string, mixed> $context
-     * @param array<int, string> $columns
-     * @param array|Collection|null $row
+     *
+     * @param  callable():T  $callback
+     * @param  array<string, mixed>  $context
+     * @param  array<int, string>  $columns
      * @return T|null
      */
     private function runTransactionalWithRowError(
@@ -1222,8 +1356,8 @@ class ProductsImport implements ToCollection, WithChunkReading, WithHeadingRow, 
     }
 
     /**
-     * @param callable():void $callback
-     * @param array<string, mixed> $context
+     * @param  callable():void  $callback
+     * @param  array<string, mixed>  $context
      */
     private function runTransactionalWithWarning(
         callable $callback,

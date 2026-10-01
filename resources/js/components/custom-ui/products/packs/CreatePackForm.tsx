@@ -29,6 +29,7 @@ import products from '@/routes/products';
 import { VariantSearchResult } from '@/types/products/search';
 import { PackagePlus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
+import { RichTextEditor } from '../../rich-text-tiptap/RichTextEditor';
 import { SlugInput } from '../../slug-text';
 import { VariantIdentity } from '../shared/VariantIdentity';
 import { PackProductSearch } from './SearchProduct';
@@ -233,10 +234,10 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
                                     render={({ field }) => (
                                         <div className="flex flex-col gap-3">
                                             <Label>Descripción Completa</Label>
-                                            <Textarea
-                                                {...field}
+                                            <RichTextEditor
                                                 value={field.value ?? ''}
-                                                className="min-h-[180px]"
+                                                onChange={field.onChange}
+                                                placeholder="Escribe la descripción completa aquí..."
                                             />
                                         </div>
                                     )}

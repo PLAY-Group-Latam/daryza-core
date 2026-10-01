@@ -8,12 +8,14 @@ use Illuminate\Support\Collection;
 
 class RecommendProductsService
 {
+    private const PER_PRODUCT = 2;
+
     public function get(array $ids = []): Collection
     {
         if (empty($ids)) {
             return collect();
         }
-        
+
         $productIdsFromVariants = ProductVariant::whereIn('id', $ids)
             ->pluck('product_id');
 
@@ -32,7 +34,7 @@ class RecommendProductsService
             ->whereIn('id', $productIds)
             ->with([
                 'recommendedProducts' => function ($q) {
-                    $q->active() 
+                    $q->active()
                         ->with([
                             'mainVariant' => fn($v) => $v->select(
                                 'id',
@@ -52,22 +54,32 @@ class RecommendProductsService
                 }
             ])
             ->get();
+
+        // Candidatos por producto (sin los que ya están en el carrito)
+        $candidates = $products->map(
+            fn($product) => collect($product->recommendedProducts)
+                ->reject(fn($rec) => in_array($rec->id, $productIds))
+                ->values()
+        );
+
+        // En cuántos productos del carrito aparece cada recomendado
+        $popularity = $candidates
+            ->flatMap(fn($list) => $list->pluck('id'))
+            ->countBy();
+
         $seen = collect();
 
-        return $products
-            ->flatMap(function ($product) use ($productIds, $seen) {
+        return $candidates
+            ->flatMap(function ($mine) use ($popularity, $seen) {
+                $picked = $mine
+                    ->sortBy(fn($rec) => $popularity[$rec->id]) // exclusivos primero
+                    ->reject(fn($rec) => $seen->contains($rec->id))
+                    ->take(self::PER_PRODUCT)
+                    ->values();
 
-                return collect($product->recommendedProducts)
-                   
-                    ->reject(fn($rec) => in_array($rec->id, $productIds))
-                    ->reject(function ($rec) use ($seen) {
-                        if ($seen->contains($rec->id)) {
-                            return true;
-                        }
-                        $seen->push($rec->id);
-                        return false;
-                    })
-                    ->take(2);
+                $seen->push(...$picked->pluck('id')->all());
+
+                return $picked;
             })
             ->values();
     }

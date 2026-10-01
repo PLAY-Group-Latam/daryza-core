@@ -17,6 +17,7 @@ use App\Models\Ubigeos\Province;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use App\Http\Api\v1\Services\Cart\CartService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,8 @@ class OrderService
     public function __construct(
         protected GcsService $gcsService,
         protected OrderNotificationService $orderNotificationService,
-        protected CouponService $couponService
+        protected CouponService $couponService,
+        protected CartService $cartService
     ) {}
 
     public function validateOrder(array $payload): array
@@ -82,8 +84,74 @@ class OrderService
             'items' => $this->previewItemsPayload($items, $variants, $packs),
         ];
     }
+    public function repeat(Order $order, string $customerId): array
+    {
+        $this->ensureOwnership($order, $customerId);
 
-  public function create(Customer $customer, array $payload): Order
+        $order->load(['items.variant.product', 'items.pack']);
+
+        $skipped  = [];
+        $warnings = [];
+        $added    = 0;
+
+        foreach ($order->items as $item) {
+            $isPack = $item->item_type === 'product_pack';
+            $itemId = $isPack ? $item->pack_id : $item->variant_id;
+
+            // Eliminado (soft delete) o sin referencia
+            $model = $isPack ? $item->pack : $item->variant;
+
+            if (!$itemId || !$model) {
+                $skipped[] = [
+                    'name'    => $item->product_name,
+                    'message' => 'fue eliminado del catálogo.',
+                ];
+                continue;
+            }
+
+            // Variante activa pero producto padre inactivo
+            if (!$isPack && $model->product && !$model->product->is_active) {
+                $skipped[] = [
+                    'name'    => $item->product_name,
+                    'message' => 'ya no está disponible.',
+                ];
+                continue;
+            }
+
+            try {
+                $cart = $this->cartService->addItem(
+                    $customerId,
+                    (string) $itemId,
+                    $isPack ? 'pack' : 'product',
+                    (int) $item->quantity
+                );
+
+                $warnings = array_merge($warnings, $cart->cart_warnings ?? []);
+                $added++;
+            } catch (\InvalidArgumentException $e) {
+                // inactivo o agotado
+                $skipped[] = [
+                    'name'    => $item->product_name,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'added_count' => $added,
+            'skipped'     => $skipped,
+            'warnings'    => $warnings,
+            'shipping'    => [
+                'department_id' => $order->department_id,
+                'province_id'   => $order->province_id,
+                'district_id'   => $order->district_id,
+                'address_line'  => $order->shipping_address_line,
+                'reference'     => $order->shipping_reference,
+            ],
+        ];
+    }
+
+    public function create(Customer $customer, array $payload): Order
     {
         return DB::transaction(function () use ($customer, $payload) {
             $items = $this->normalizeItems($payload['items']);
@@ -169,7 +237,7 @@ class OrderService
 
             foreach ($items as $item) {
                 $quantity = (int) $item['quantity'];
-                
+
                 if ($item['item_type'] === 'product_pack') {
                     /** @var ProductPack $pack */
                     $pack = $packs[$item['pack_id']];
@@ -521,22 +589,22 @@ class OrderService
         return $this->updateStateByAdmin($order, $this->mapLegacyShippingStatusToState($newStatus), $note, $adminId);
     }
 
-public function applyAdminAction(Order $order, string $action, ?string $note = null, ?string $adminId = null): Order
-{
-    return match ($action) {
-        'accept_payment' => $this->updateStateByAdmin($order, 'payment_received', $note, $adminId),
-        'reject_payment' => $this->updateStateByAdmin($order, 'payment_failed', $note, $adminId),
-        'reset_to_pending_payment' => $this->updateStateByAdmin($order, 'pending_payment', $note, $adminId),
-        'start_preparing' => $this->updateStateByAdmin($order, 'preparing', $note, $adminId),
-        'schedule_shipping' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
-        'start_transit' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
-        'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
-        'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
-        'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
-        'mark_refunded' => $this->updateStateByAdmin($order, 'refunded', $note, $adminId), // <-- nuevo
-        default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
-    };
-}
+    public function applyAdminAction(Order $order, string $action, ?string $note = null, ?string $adminId = null): Order
+    {
+        return match ($action) {
+            'accept_payment' => $this->updateStateByAdmin($order, 'payment_received', $note, $adminId),
+            'reject_payment' => $this->updateStateByAdmin($order, 'payment_failed', $note, $adminId),
+            'reset_to_pending_payment' => $this->updateStateByAdmin($order, 'pending_payment', $note, $adminId),
+            'start_preparing' => $this->updateStateByAdmin($order, 'preparing', $note, $adminId),
+            'schedule_shipping' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+            'start_transit' => $this->updateStateByAdmin($order, 'in_delivery', $note, $adminId),
+            'mark_delivered_full' => $this->updateStateByAdmin($order, 'delivered', $note, $adminId),
+            'mark_delivery_failed' => $this->updateStateByAdmin($order, 'delivery_failed', $note, $adminId),
+            'cancel_order' => $this->updateStateByAdmin($order, 'cancelled', $note, $adminId),
+            'mark_refunded' => $this->updateStateByAdmin($order, 'refunded', $note, $adminId), // <-- nuevo
+            default => throw new \InvalidArgumentException('Accion administrativa no soportada.'),
+        };
+    }
 
     public function applyAdminActionBulk(array $orderIds, string $action, ?string $note = null, ?string $adminId = null): array
     {
@@ -691,7 +759,7 @@ public function applyAdminAction(Order $order, string $action, ?string $note = n
             'start_transit',
             'mark_delivered_full',
             'mark_delivery_failed',
-            'mark_refunded', 
+            'mark_refunded',
             'cancel_order',
             'mark_refunded',
         ];
@@ -906,7 +974,6 @@ public function applyAdminAction(Order $order, string $action, ?string $note = n
 
         $query = ProductPack::query()
             ->whereIn('id', $ids)
-            ->where('is_active', true)
             ->with([
                 'mainImage:id,mediable_id,mediable_type,file_path',
             ]);
@@ -917,8 +984,16 @@ public function applyAdminAction(Order $order, string $action, ?string $note = n
 
         $packs = $query->get()->keyBy('id');
 
-        if ($packs->count() !== $ids->count()) {
-            throw new \InvalidArgumentException('Uno o más packs no son válidos o no están activos.');
+        foreach ($ids as $id) {
+            $pack = $packs->get($id);
+
+            if (!$pack) {
+                throw new \InvalidArgumentException('Un pack fue eliminado del catálogo.');
+            }
+
+            if (!$pack->is_active) {
+                throw new \InvalidArgumentException("\"{$pack->name}\" ya no está disponible.");
+            }
         }
 
         return $packs->all();
@@ -1172,38 +1247,38 @@ public function applyAdminAction(Order $order, string $action, ?string $note = n
         return in_array($to, $map[$from] ?? [], true);
     }
 
-private function targetStateFromAction(string $action): ?string
-{
-    return match ($action) {
-        'accept_payment' => 'payment_received',
-        'reject_payment' => 'payment_failed',
-        'reset_to_pending_payment' => 'pending_payment',
-        'start_preparing' => 'preparing',
-        'schedule_shipping', 'start_transit' => 'in_delivery',
-        'mark_delivered_full' => 'delivered',
-        'mark_delivery_failed' => 'delivery_failed',
-        'cancel_order' => 'cancelled',
-        'mark_refunded' => 'refunded', // <-- nuevo
-        default => null,
-    };
-}
- private function canApplyAdminAction(Order $order, string $action): bool
-{
-    $targetState = $this->targetStateFromAction($action);
-    if (!$targetState) {
-        return false;
+    private function targetStateFromAction(string $action): ?string
+    {
+        return match ($action) {
+            'accept_payment' => 'payment_received',
+            'reject_payment' => 'payment_failed',
+            'reset_to_pending_payment' => 'pending_payment',
+            'start_preparing' => 'preparing',
+            'schedule_shipping', 'start_transit' => 'in_delivery',
+            'mark_delivered_full' => 'delivered',
+            'mark_delivery_failed' => 'delivery_failed',
+            'cancel_order' => 'cancelled',
+            'mark_refunded' => 'refunded', // <-- nuevo
+            default => null,
+        };
     }
+    private function canApplyAdminAction(Order $order, string $action): bool
+    {
+        $targetState = $this->targetStateFromAction($action);
+        if (!$targetState) {
+            return false;
+        }
 
-    $from = $order->state;
-    $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
-        && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
+        $from = $order->state;
+        $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
+            && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
 
-    if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
-        return false;
+        if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
+            return false;
+        }
+
+        return true;
     }
-
-    return true;
-}
 
     private function getPreviousStateForRollback(string $state, ?string $paymentMethodType): ?string
     {

@@ -50,8 +50,8 @@ class ProductImportRowMapper
         $promoStart = $this->transformDate($promoStartRaw);
         $promoEnd = $this->transformDate($promoEndRaw);
 
-        $availability = strtoupper($this->normalizeText($get(self::HEADER_AVAILABILITY)));
-        $isActive = ($availability === 'D');
+        $availability = mb_strtoupper($this->normalizeText($get(self::HEADER_AVAILABILITY)));
+        $isActive = in_array($availability, ['D', 'DISPONIBLE'], true);
 
         return [
             'product' => [
@@ -74,6 +74,8 @@ class ProductImportRowMapper
                 'promo_start_raw' => $promoStartRaw,
                 'promo_end_raw' => $promoEndRaw,
                 'stock' => (int) ($get(self::HEADER_STOCK) ?? 0),
+                'stock_raw' => $this->normalizeText($get(self::HEADER_STOCK)),
+                'availability_raw' => $availability,
                 'is_active' => $isActive,
             ],
             'attributes' => array_filter([

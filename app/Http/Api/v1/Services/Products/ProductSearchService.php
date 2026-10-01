@@ -70,12 +70,15 @@ class ProductSearchService
         $qClean = $this->sanitizeQuery($q);
 
         // =========================================================
-        // 1. SKU EXACTO
+        // 1. SKU EXACTO (Validando que el producto padre esté activo)
         // =========================================================
 
         $matchingVariants = ProductVariant::query()
             ->where('is_active', true)
             ->where('sku', 'ILIKE', $q)
+            ->whereHas('product', function ($query) {
+                $query->where('is_active', true);
+            })
             ->with([
                 'product',
                 'mainImage',
@@ -84,7 +87,7 @@ class ProductSearchService
             ->get();
 
         if ($matchingVariants->isNotEmpty()) {
-            // Caso A: Si solo hay una variante en todo el sistema con ese SKU, la devolvemos tal cual (sea main o no)
+            // Caso A: Si solo hay una variante en todo el sistema con ese SKU, la devolvemos tal cual
             if ($matchingVariants->count() === 1) {
                 return collect([$matchingVariants->first()]);
             }
@@ -112,7 +115,7 @@ class ProductSearchService
         }
 
         // =========================================================
-        // 2. PRODUCTOS POR NOMBRE
+        // 2. PRODUCTOS POR NOMBRE (Ya usa Product::active() del modelo)
         // =========================================================
 
         $products = Product::active()

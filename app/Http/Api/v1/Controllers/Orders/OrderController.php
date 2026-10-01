@@ -100,4 +100,19 @@ class OrderController extends Controller
         }
     }
 
+    public function repeat(Order $order)
+    {
+        $customerId = (string) auth('api')->id();
+
+        try {
+            $data = $this->orderService->repeat($order, $customerId);
+
+            return $this->success('Productos agregados al carrito.', $data);
+        } catch (\InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), null, 403);
+        } catch (\Throwable $exception) {
+            report($exception);
+            return $this->error('No se pudo repetir la compra.', null, 500);
+        }
+    }
 }

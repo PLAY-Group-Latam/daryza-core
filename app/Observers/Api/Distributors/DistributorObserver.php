@@ -27,9 +27,10 @@ class DistributorObserver
         $this->clearCache($distributor);
     }
 
+    // DistributorObserver
     private function clearCache(Distributor $distributor): void
     {
-        Cache::forget('distributors_map_all');
+        Cache::forget('distributors_map_all_final');
         Cache::forget("distributor_detail_{$distributor->id}");
     }
 }
