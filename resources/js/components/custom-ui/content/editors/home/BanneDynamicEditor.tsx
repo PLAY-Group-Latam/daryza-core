@@ -335,7 +335,6 @@ export default function BannerDinamicoEditor({ section }: ContentSectionProps) {
             {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => toast.success('¡Banner actualizado!'),
                 onError: () => toast.error('Error al guardar'),
             },
         );

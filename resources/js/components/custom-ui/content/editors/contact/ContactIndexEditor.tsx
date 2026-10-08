@@ -1,16 +1,19 @@
 'use client';
 
-import { useForm } from '@inertiajs/react';
-import { Save, Phone, Plus, Trash2, X } from 'lucide-react';
+import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
-import { Upload } from '@/components/custom-ui/upload';
-import { ContactContent, ConsultaCard, BannerContent } from '@/types/content/content-types';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import {
+    BannerContent,
+    ConsultaCard,
+    ContactContent,
+} from '@/types/content/content-types';
+import { useForm } from '@inertiajs/react';
+import { Phone, Save, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -40,11 +43,11 @@ function UploadFixed({
     className?: string;
 }) {
     return (
-        <div className={`relative rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden group ${className ?? ''}`}>
-           
-            
+        <div
+            className={`group relative overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 ${className ?? ''}`}
+        >
             {/* Contenedor del Upload */}
-            <div className="w-full h-full [&>*]:!w-full [&>*]:!h-full [&_img]:!w-full [&_img]:!h-full [&_img]:!object-cover [&_img]:!rounded-none">
+            <div className="h-full w-full [&_img]:!h-full [&_img]:!w-full [&_img]:!rounded-none [&_img]:!object-cover [&>*]:!h-full [&>*]:!w-full">
                 <Upload
                     value={value}
                     onFileChange={onChange}
@@ -84,38 +87,50 @@ function CardEditor({
     };
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-all hover:border-slate-300">
-            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-slate-300">
+            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                    {label}
+                </p>
             </div>
 
-            <div className="p-5 flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-col gap-6 p-5 sm:flex-row">
                 {/* Imagen opcional con botón de reset */}
-                <div className="flex-shrink-0 w-full sm:w-40 space-y-2">
-                    <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Imagen (Opcional)</Label>
+                <div className="w-full flex-shrink-0 space-y-2 sm:w-40">
+                    <Label className="text-[9px] font-semibold tracking-widest text-slate-400 uppercase">
+                        Imagen (Opcional)
+                    </Label>
                     <UploadFixed
                         value={card.imagen}
                         onChange={(file) => onUpdate({ imagen: file })}
-                        className="w-full aspect-square max-w-[140px] mx-auto sm:mx-0"
+                        className="mx-auto aspect-square w-full max-w-[140px] sm:mx-0"
                     />
                 </div>
 
                 <div className="flex-1 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Título</Label>
+                            <Label className="text-[9px] font-semibold tracking-widest text-slate-400 uppercase">
+                                Título
+                            </Label>
                             <Input
                                 value={card.titulo_normal || ''}
-                                onChange={(e) => onUpdate({ titulo_normal: e.target.value })}
+                                onChange={(e) =>
+                                    onUpdate({ titulo_normal: e.target.value })
+                                }
                                 placeholder="Ej: Centro de"
                                 className="text-sm"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Resaltado</Label>
+                            <Label className="text-[9px] font-semibold tracking-widest text-slate-400 uppercase">
+                                Resaltado
+                            </Label>
                             <Input
                                 value={card.titulo_bold || ''}
-                                onChange={(e) => onUpdate({ titulo_bold: e.target.value })}
+                                onChange={(e) =>
+                                    onUpdate({ titulo_bold: e.target.value })
+                                }
                                 placeholder="Ej: Ayuda"
                                 className="text-sm font-bold text-primary"
                             />
@@ -124,7 +139,9 @@ function CardEditor({
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Ítems</Label>
+                            <Label className="text-[9px] font-semibold tracking-widest text-slate-400 uppercase">
+                                Ítems
+                            </Label>
                             <button
                                 type="button"
                                 onClick={addItem}
@@ -139,12 +156,18 @@ function CardEditor({
                                 <div key={i} className="flex gap-2">
                                     <Input
                                         value={item.texto || ''}
-                                        onChange={(e) => updateItem(i, e.target.value)}
+                                        onChange={(e) =>
+                                            updateItem(i, e.target.value)
+                                        }
                                         placeholder="Texto del ítem"
-                                        className="text-xs h-8"
+                                        className="h-8 text-xs"
                                     />
                                     {card.items.length > 1 && (
-                                        <button type="button" onClick={() => removeItem(i)} className="text-slate-300 hover:text-red-400">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(i)}
+                                            className="text-slate-300 hover:text-red-400"
+                                        >
                                             <Trash2 size={14} />
                                         </button>
                                     )}
@@ -162,7 +185,9 @@ export default function ContactIndexEditor({ section }: Props) {
     const rawContent = section.content?.content as ContactContent;
     const rawBanner = rawContent?.banner;
 
-    const { data, setData, put, processing } = useForm<{ content: ContactContent }>({
+    const { data, setData, put, processing } = useForm<{
+        content: ContactContent;
+    }>({
         content: {
             banner: {
                 type: rawBanner?.type ?? 'image',
@@ -183,7 +208,7 @@ export default function ContactIndexEditor({ section }: Props) {
     const handleBannerChange = (updates: Partial<BannerContent>) => {
         setData('content', {
             ...data.content,
-            banner: { ...data.content.banner, ...updates }
+            banner: { ...data.content.banner, ...updates },
         });
     };
 
@@ -195,35 +220,50 @@ export default function ContactIndexEditor({ section }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Cambios guardados!'),
-            onError: () => toast.error('Error al guardar'),
-        });
+        put(
+            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar');
+                },
+            },
+        );
     };
 
     return (
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6 pb-20">
+        <form
+            onSubmit={handleSubmit}
+            className="mx-auto max-w-4xl space-y-6 pb-20"
+        >
             <ResponsiveBannerEditor
                 title="Banner de Contacto"
                 description="Imagen principal de la cabecera."
                 allowedType="image"
                 data={data.content.banner}
                 onChange={handleBannerChange}
-                showTypeTabs={false} 
+                showTypeTabs={false}
             />
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary"><Phone size={22} /></div>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5">
+                    <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+                        <Phone size={22} />
+                    </div>
                     <div>
-                        <h3 className="text-lg font-bold text-slate-900">Tarjetas de consulta</h3>
-                        <p className="text-xs text-slate-500 font-medium">Puedes dejar campos vacíos o eliminar imágenes si no son necesarias.</p>
+                        <h3 className="text-lg font-bold text-slate-900">
+                            Tarjetas de consulta
+                        </h3>
+                        <p className="text-xs font-medium text-slate-500">
+                            Puedes dejar campos vacíos o eliminar imágenes si no
+                            son necesarias.
+                        </p>
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="space-y-6 p-6">
                     {data.content.cards.map((card, index) => (
                         <CardEditor
                             key={index}
@@ -235,8 +275,12 @@ export default function ContactIndexEditor({ section }: Props) {
                 </div>
             </div>
 
-            <div className="fixed bottom-6 right-6 sm:static flex justify-end">
-                <Button type="submit" disabled={processing} className="w-full sm:w-auto px-10 py-6 rounded-xl shadow-xl gap-2 text-base font-bold transition-transform active:scale-95">
+            <div className="fixed right-6 bottom-6 flex justify-end sm:static">
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="w-full gap-2 rounded-xl px-10 py-6 text-base font-bold shadow-xl transition-transform active:scale-95 sm:w-auto"
+                >
                     <Save size={20} />
                     {processing ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>

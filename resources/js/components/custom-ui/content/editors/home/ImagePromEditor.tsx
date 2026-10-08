@@ -1,15 +1,14 @@
 'use client';
 
+import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 import { Button } from '@/components/ui/button';
 import {
     ImagenPromocionalContent,
     ContentSectionProps as Props,
 } from '@/types/content/content';
-import { FormDataConvertible } from '@inertiajs/core'; 
+import { FormDataConvertible } from '@inertiajs/core';
 import { router, useForm } from '@inertiajs/react';
 import { Save } from 'lucide-react';
-import { toast } from 'sonner';
-import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 
 export default function ImagenPromocionalEditor({ section }: Props) {
     const isImagenContent = (
@@ -63,14 +62,8 @@ export default function ImagenPromocionalEditor({ section }: Props) {
             {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => {
-                    toast.success(
-                        '¡Imagen promocional actualizada correctamente!',
-                    );
-                },
                 onError: (errors) => {
-                    console.error('❌ Errores:', errors);
-                    toast.error('Error al guardar la imagen.');
+                    console.error('Errores:', errors);
                 },
             },
         );
@@ -78,7 +71,6 @@ export default function ImagenPromocionalEditor({ section }: Props) {
 
     return (
         <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-          
             <ResponsiveBannerEditor
                 title={`Configuración de ${section.name}`}
                 description="Imagen promocional en la vista de inicio."

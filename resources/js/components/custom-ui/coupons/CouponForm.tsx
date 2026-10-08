@@ -304,7 +304,9 @@ export function CouponForm({ coupon }: CouponFormProps) {
             category_ids: data.scope === 'category' ? data.category_ids : [],
             pack_ids: data.scope === 'pack' ? data.pack_ids : [],
             business_dynamic_ids:
-                data.scope === 'business_dynamic' ? data.business_dynamic_ids : [],
+                data.scope === 'business_dynamic'
+                    ? data.business_dynamic_ids
+                    : [],
             customer_ids: data.scope === 'customer' ? data.customer_ids : [],
             maximum_discount_amount:
                 data.discount_type === 'percentage'
@@ -315,11 +317,6 @@ export function CouponForm({ coupon }: CouponFormProps) {
         const options = {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(
-                    isEditing
-                        ? 'Cupón actualizado exitosamente'
-                        : 'Cupón creado exitosamente',
-                );
                 if (!isEditing) form.reset();
             },
             onError: (errors: Record<string, string>) => {
@@ -477,6 +474,15 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                             </div>
                                         </div>
                                     </FormControl>
+                                    {discountType === 'fixed' &&
+                                        (scope === 'product' ||
+                                            scope === 'pack') && (
+                                            <FormDescription>
+                                                Se aplica por cada unidad
+                                                elegible. Ej: S/ 15 con 3
+                                                unidades = S/ 45.
+                                            </FormDescription>
+                                        )}
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -691,8 +697,8 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                             Dinámicas de negocio *
                                         </FormLabel>
                                         <FormDescription>
-                                            Busque y seleccione las dinámicas
-                                            de negocio aplicables
+                                            Busque y seleccione las dinámicas de
+                                            negocio aplicables
                                         </FormDescription>
                                         <AsyncMultiSelectProducts
                                             value={field.value || []}

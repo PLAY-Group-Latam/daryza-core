@@ -19,15 +19,16 @@ export default function TermsConditionsEditor({ section }: Props) {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-      preserveScroll: true,
-      onSuccess: () => toast.success('¡Términos y Condiciones actualizados!'),
-      onError: () => toast.error('Error al guardar'),
+        preserveScroll: true,
+        onError: (errors) => {
+            console.error('Errores:', errors);
+            toast.error('Error al guardar');
+        },
     });
-  };
-
+};
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

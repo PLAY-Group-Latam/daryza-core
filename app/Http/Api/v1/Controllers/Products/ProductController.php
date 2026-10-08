@@ -27,7 +27,8 @@ class ProductController extends Controller
                     $q->select('id', 'product_id', 'sku', 'price', 'promo_price', 'is_on_promo', 'promo_start_at', 'promo_end_at');
                 },
                 'mainVariant.mainImage' => function ($q) {
-                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path');
+                    // 'order' incluido por si mainImage se resuelve ordenando por esa columna
+                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'order');
                 }
             ]);
 
@@ -65,7 +66,7 @@ class ProductController extends Controller
                 },
                 'mainVariant.selections.attributeValue.attribute',
                 'mainVariant.mainImage' => function ($q) {
-                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path');
+                    $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'order');
                 }
             ])
             ->latest()
@@ -85,7 +86,8 @@ class ProductController extends Controller
             ->activeOnHome()
             ->with([
                 'mainImage',
-                'media',
+                // ✅ Orden explícito de la galería
+                'media' => fn($q) => $q->orderBy('order')->orderBy('id'),
                 'items.product',
                 'items.variant',
             ])
@@ -97,14 +99,15 @@ class ProductController extends Controller
         return $this->success('Packs para Home listados correctamente', $packs);
     }
 
- public function showPack(string $slug)
+    public function showPack(string $slug)
     {
         $pack = ProductPack::query()
             ->where('slug', $slug)
             ->where('is_active', true)
             ->with([
                 'mainImage',
-                'media',
+                // ✅ Orden explícito de la galería
+                'media' => fn($q) => $q->orderBy('order')->orderBy('id'),
                 'items.product.brand', // Cargamos la marca de cada producto del pack
                 'items.variant.mainImage',
             ])
@@ -172,14 +175,14 @@ class ProductController extends Controller
         ]);
     }
 
-   public function show(Request $request, string $slug)
+    public function show(Request $request, string $slug)
     {
         $product = Product::query()
             ->active()
             ->where('slug', $slug)
             ->with([
                 'brand', // Cargamos la marca del producto
-                'technicalSheets', 
+                'technicalSheets',
                 'recommendedProducts.brand', // Marca para las cards de recomendados
                 'recommendedProducts.mainVariant.mainImage'
             ])
@@ -197,7 +200,11 @@ class ProductController extends Controller
 
         $activeVariant = $showState['active_variant'];
         if ($activeVariant) {
-            $activeVariant->loadMissing(['media', 'specifications.attribute']);
+            $activeVariant->loadMissing([
+                // ✅ Mismo orden que el administrador (order, con id como desempate)
+                'media' => fn($q) => $q->orderBy('order')->orderBy('id'),
+                'specifications.attribute',
+            ]);
             $activeVariant->price_resolution = $this->variantResolver->resolvePriceData($activeVariant);
         }
 
@@ -220,7 +227,7 @@ class ProductController extends Controller
         ]);
     }
 
-  private function mapProductCard(Product $product, bool $includeVariantAttrs = false): array
+    private function mapProductCard(Product $product, bool $includeVariantAttrs = false): array
     {
         $mainVariant = $product->mainVariant;
         $card = [

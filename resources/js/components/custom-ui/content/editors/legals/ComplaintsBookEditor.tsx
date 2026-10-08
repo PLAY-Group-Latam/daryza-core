@@ -11,16 +11,22 @@ import { FileText, Save, Type } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Ítems fijos: solo Queja y Reclamo, no editables en cantidad
-const FIXED_ITEMS: Array<{ key: 'queja' | 'reclamo'; label: string; placeholder: string }> = [
+const FIXED_ITEMS: Array<{
+    key: 'queja' | 'reclamo';
+    label: string;
+    placeholder: string;
+}> = [
     {
         key: 'reclamo',
         label: 'Reclamo',
-        placeholder: 'Ej: Disconformidad relacionada al producto o servicio adquirido...',
+        placeholder:
+            'Ej: Disconformidad relacionada al producto o servicio adquirido...',
     },
     {
         key: 'queja',
         label: 'Queja',
-        placeholder: 'Ej: Disconformidad relacionada con la atención al cliente...',
+        placeholder:
+            'Ej: Disconformidad relacionada con la atención al cliente...',
     },
 ];
 
@@ -63,14 +69,15 @@ export default function ComplaintsBookEditor({ section }: Props) {
             `/content/update/${section.page.slug}/${section.type}/${section.id}`,
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('¡Contenido actualizado!'),
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar el contenido');
+                },
             },
         );
     };
-
     return (
         <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-
             {/* CUADRO 1: TÍTULO Y SUBTÍTULO */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="mb-4 flex items-center gap-2 font-bold text-slate-900">
@@ -136,11 +143,10 @@ export default function ComplaintsBookEditor({ section }: Props) {
             {/* CUADRO 3: DEFINICIONES FIJAS (solo Reclamo y Queja) */}
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-                    <h3 className="font-bold text-slate-900">
-                        Definiciones
-                    </h3>
+                    <h3 className="font-bold text-slate-900">Definiciones</h3>
                     <p className="mt-0.5 text-xs text-slate-400">
-                        Edita la descripción de cada tipo. El orden y los nombres no cambian.
+                        Edita la descripción de cada tipo. El orden y los
+                        nombres no cambian.
                     </p>
                 </div>
 
@@ -155,8 +161,12 @@ export default function ComplaintsBookEditor({ section }: Props) {
                             </p>
                             <Textarea
                                 placeholder={placeholder}
-                                value={data.content.info_items[index]?.value ?? ''}
-                                onChange={(e) => updateItemValue(index, e.target.value)}
+                                value={
+                                    data.content.info_items[index]?.value ?? ''
+                                }
+                                onChange={(e) =>
+                                    updateItemValue(index, e.target.value)
+                                }
                                 className="min-h-[80px] resize-none"
                             />
                         </div>

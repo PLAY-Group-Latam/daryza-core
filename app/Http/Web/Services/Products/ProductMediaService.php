@@ -42,59 +42,50 @@ class ProductMediaService
      * - Actualiza el order de las existentes (drag & drop)
      * - Sube las nuevas
      */
-  public function sync(ProductVariant $variant, array $media): void
-{
-    // Filtramos strings vacíos — señal del frontend de "borrar todo"
-    $media = array_filter($media, fn($item) => $item !== '');
+    public function sync(ProductVariant $variant, array $media): void
+    {
+        // Quitamos vacíos y reindexamos: la posición en este array ES el orden final
+        $media = array_values(array_filter($media, fn($item) => $item !== ''));
 
-    if (empty($media)) {
-        $variant->media()->get()->each(function ($mediaItem) {
-            $this->gcsService->delete($mediaItem->file_path);
-            $mediaItem->delete();
-        });
-        return;
-    }
-
-    $existingItems = collect($media)
-        ->filter(fn($item) => is_array($item) && isset($item['file_path']))
-        ->map(fn($item, $index) => [
-            'file_path' => $item['file_path'],
-            'order'     => isset($item['position']) ? (int) $item['position'] : $index,
-        ])
-        ->values()
-        ->toArray();
-
-    $existingPaths = collect($existingItems)->pluck('file_path')->toArray();
-
-    $newFiles = collect($media)
-        ->filter(fn($item) => $item instanceof UploadedFile);
-
-    $variant->media()->get()->each(function ($mediaItem) use ($existingPaths) {
-        if (!in_array($mediaItem->file_path, $existingPaths)) {
-            $this->gcsService->delete($mediaItem->file_path);
-            $mediaItem->delete();
+        if (empty($media)) {
+            $variant->media()->get()->each(function ($mediaItem) {
+                $this->gcsService->delete($mediaItem->file_path);
+                $mediaItem->delete();
+            });
+            return;
         }
-    });
 
-    foreach ($existingItems as $item) {
-        $variant->media()
-            ->where('file_path', $item['file_path'])
-            ->update(['order' => $item['order']]);
+        $existingPaths = collect($media)
+            ->filter(fn($item) => is_array($item) && isset($item['file_path']))
+            ->pluck('file_path')
+            ->all();
+
+        // Eliminar las que el usuario quitó
+        $variant->media()->get()->each(function ($mediaItem) use ($existingPaths) {
+            if (!in_array($mediaItem->file_path, $existingPaths)) {
+                $this->gcsService->delete($mediaItem->file_path);
+                $mediaItem->delete();
+            }
+        });
+
+        // Existentes: actualizar order. Nuevas: crear con su posición real
+        foreach ($media as $position => $item) {
+            if (is_array($item) && isset($item['file_path'])) {
+                $variant->media()
+                    ->where('file_path', $item['file_path'])
+                    ->update(['order' => $position]);
+            } elseif ($item instanceof UploadedFile) {
+                [$type, $folder] = $this->resolveTypeAndFolder($item, $variant->product_id);
+
+                $variant->media()->create([
+                    'file_path' => $this->gcsService->uploadFile($item, $folder),
+                    'type'      => $type,
+                    'folder'    => $folder,
+                    'order'     => $position,
+                ]);
+            }
+        }
     }
-
-    $nextOrder = count($existingItems);
-
-    foreach ($newFiles as $file) {
-        [$type, $folder] = $this->resolveTypeAndFolder($file, $variant->product_id);
-
-        $variant->media()->create([
-            'file_path' => $this->gcsService->uploadFile($file, $folder),
-            'type'      => $type,
-            'folder'    => $folder,
-            'order'     => $nextOrder++,
-        ]);
-    }
-}
     // =========================================================================
     // Fichas técnicas del producto
     // =========================================================================
@@ -169,58 +160,58 @@ class ProductMediaService
     // Media de packs
     // =========================================================================
 
-  public function syncPackMedia(ProductPack $pack, array $media): void
-{
-    // Filtramos strings vacíos — señal del frontend de "borrar todo"
-    $media = array_filter($media, fn($item) => $item !== '');
+    public function syncPackMedia(ProductPack $pack, array $media): void
+    {
+        // Filtramos strings vacíos — señal del frontend de "borrar todo"
+        $media = array_filter($media, fn($item) => $item !== '');
 
-    if (empty($media)) {
-        $pack->media()->get()->each(function ($mediaItem) {
-            $this->gcsService->delete($mediaItem->file_path);
-            $mediaItem->delete();
-        });
-        return;
-    }
-
-    $existingItems = collect($media)
-        ->filter(fn($item) => is_array($item) && isset($item['file_path']))
-        ->map(fn($item, $index) => [
-            'file_path' => $item['file_path'],
-            'order'     => isset($item['position']) ? (int) $item['position'] : $index,
-        ])
-        ->values()
-        ->toArray();
-
-    $existingPaths = collect($existingItems)->pluck('file_path')->toArray();
-
-    $newFiles = collect($media)
-        ->filter(fn($item) => $item instanceof UploadedFile);
-
-    $pack->media()->get()->each(function ($mediaItem) use ($existingPaths) {
-        if (!in_array($mediaItem->file_path, $existingPaths)) {
-            $this->gcsService->delete($mediaItem->file_path);
-            $mediaItem->delete();
+        if (empty($media)) {
+            $pack->media()->get()->each(function ($mediaItem) {
+                $this->gcsService->delete($mediaItem->file_path);
+                $mediaItem->delete();
+            });
+            return;
         }
-    });
 
-    foreach ($existingItems as $item) {
-        $pack->media()
-            ->where('file_path', $item['file_path'])
-            ->update(['order' => $item['order']]);
+        $existingItems = collect($media)
+            ->filter(fn($item) => is_array($item) && isset($item['file_path']))
+            ->map(fn($item, $index) => [
+                'file_path' => $item['file_path'],
+                'order'     => isset($item['position']) ? (int) $item['position'] : $index,
+            ])
+            ->values()
+            ->toArray();
+
+        $existingPaths = collect($existingItems)->pluck('file_path')->toArray();
+
+        $newFiles = collect($media)
+            ->filter(fn($item) => $item instanceof UploadedFile);
+
+        $pack->media()->get()->each(function ($mediaItem) use ($existingPaths) {
+            if (!in_array($mediaItem->file_path, $existingPaths)) {
+                $this->gcsService->delete($mediaItem->file_path);
+                $mediaItem->delete();
+            }
+        });
+
+        foreach ($existingItems as $item) {
+            $pack->media()
+                ->where('file_path', $item['file_path'])
+                ->update(['order' => $item['order']]);
+        }
+
+        $nextOrder = count($existingItems);
+        foreach ($newFiles as $file) {
+            [$type, $folder] = $this->resolveTypeAndFolderForPack($file, $pack->id);
+
+            $pack->media()->create([
+                'file_path' => $this->gcsService->uploadFile($file, $folder),
+                'type'      => $type,
+                'folder'    => $folder,
+                'order'     => $nextOrder++,
+            ]);
+        }
     }
-
-    $nextOrder = count($existingItems);
-    foreach ($newFiles as $file) {
-        [$type, $folder] = $this->resolveTypeAndFolderForPack($file, $pack->id);
-
-        $pack->media()->create([
-            'file_path' => $this->gcsService->uploadFile($file, $folder),
-            'type'      => $type,
-            'folder'    => $folder,
-            'order'     => $nextOrder++,
-        ]);
-    }
-}
 
     public function clearPackMedia(ProductPack $pack): void
     {
