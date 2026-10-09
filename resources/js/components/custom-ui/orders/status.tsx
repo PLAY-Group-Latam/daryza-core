@@ -121,16 +121,7 @@ export function isAdminActionAvailable(order: OrderActionMeta, action: AdminOrde
     const current = getUnifiedOrderStatus(order);
     const target = actionTargetStateMap[action];
 
-    if (current === target) {
-        return false;
-    }
-
-    // Si el backend envía las acciones permitidas, respetarlas.
-    if (Array.isArray(order.allowed_actions)) {
-        return order.allowed_actions.includes(action);
-    }
-
-    return true;
+    return current !== target;
 }
 
 export function getAdminActionLabel(_order: OrderActionMeta, action: AdminOrderAction): string {

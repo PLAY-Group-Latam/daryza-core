@@ -2,13 +2,14 @@
 
 namespace App\Http\Api\v1\Services\Orders;
 
+use App\Http\Api\v1\Services\Cart\CartService;
 use App\Http\Api\v1\Services\Coupons\CouponService;
 use App\Http\Api\v1\Services\GcsService;
 use App\Models\Coupons\CouponRedemption;
+use App\Models\Customers\Customer;
 use App\Models\Orders\Order;
 use App\Models\Products\ProductPack;
 use App\Models\Products\ProductVariant;
-use App\Models\Customers\Customer;
 use App\Models\Settings\DeliverySetting;
 use App\Models\Settings\DeliveryZone;
 use App\Models\Ubigeos\Department;
@@ -17,7 +18,6 @@ use App\Models\Ubigeos\Province;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use App\Http\Api\v1\Services\Cart\CartService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -84,15 +84,16 @@ class OrderService
             'items' => $this->previewItemsPayload($items, $variants, $packs),
         ];
     }
+
     public function repeat(Order $order, string $customerId): array
     {
         $this->ensureOwnership($order, $customerId);
 
         $order->load(['items.variant.product', 'items.pack']);
 
-        $skipped  = [];
+        $skipped = [];
         $warnings = [];
-        $added    = 0;
+        $added = 0;
 
         foreach ($order->items as $item) {
             $isPack = $item->item_type === 'product_pack';
@@ -101,20 +102,22 @@ class OrderService
             // Eliminado (soft delete) o sin referencia
             $model = $isPack ? $item->pack : $item->variant;
 
-            if (!$itemId || !$model) {
+            if (! $itemId || ! $model) {
                 $skipped[] = [
-                    'name'    => $item->product_name,
+                    'name' => $item->product_name,
                     'message' => 'fue eliminado del catálogo.',
                 ];
+
                 continue;
             }
 
             // Variante activa pero producto padre inactivo
-            if (!$isPack && $model->product && !$model->product->is_active) {
+            if (! $isPack && $model->product && ! $model->product->is_active) {
                 $skipped[] = [
-                    'name'    => $item->product_name,
+                    'name' => $item->product_name,
                     'message' => 'ya no está disponible.',
                 ];
+
                 continue;
             }
 
@@ -131,7 +134,7 @@ class OrderService
             } catch (\InvalidArgumentException $e) {
                 // inactivo o agotado
                 $skipped[] = [
-                    'name'    => $item->product_name,
+                    'name' => $item->product_name,
                     'message' => $e->getMessage(),
                 ];
             }
@@ -139,14 +142,14 @@ class OrderService
 
         return [
             'added_count' => $added,
-            'skipped'     => $skipped,
-            'warnings'    => $warnings,
-            'shipping'    => [
+            'skipped' => $skipped,
+            'warnings' => $warnings,
+            'shipping' => [
                 'department_id' => $order->department_id,
-                'province_id'   => $order->province_id,
-                'district_id'   => $order->district_id,
-                'address_line'  => $order->shipping_address_line,
-                'reference'     => $order->shipping_reference,
+                'province_id' => $order->province_id,
+                'district_id' => $order->district_id,
+                'address_line' => $order->shipping_address_line,
+                'reference' => $order->shipping_reference,
             ],
         ];
     }
@@ -245,8 +248,8 @@ class OrderService
                     $stock = (int) ($pack->stock ?? 0);
                     $unitPrice = (float) $pack->active_price;
                     $isPromoActive = (bool) $pack->is_on_promotion
-                        && (!$pack->promo_start_at || $pack->promo_start_at->isPast())
-                        && (!$pack->promo_end_at || $pack->promo_end_at->isFuture());
+                        && (! $pack->promo_start_at || $pack->promo_start_at->isPast())
+                        && (! $pack->promo_end_at || $pack->promo_end_at->isFuture());
 
                     if ($stock === 0) {
                         throw new \InvalidArgumentException("\"$name\" está agotado.");
@@ -275,6 +278,7 @@ class OrderService
                     ]);
 
                     $pack->decrement('stock', $quantity);
+
                     continue;
                 }
 
@@ -285,8 +289,8 @@ class OrderService
                 $stock = (int) ($variant->stock ?? 0);
                 $unitPrice = (float) $variant->active_price;
                 $isPromoActive = (bool) $variant->is_on_promo
-                    && (!$variant->promo_start_at || $variant->promo_start_at->isPast())
-                    && (!$variant->promo_end_at || $variant->promo_end_at->isFuture());
+                    && (! $variant->promo_start_at || $variant->promo_start_at->isPast())
+                    && (! $variant->promo_end_at || $variant->promo_end_at->isFuture());
 
                 if ($stock === 0) {
                     throw new \InvalidArgumentException("\"$name\" está agotado.");
@@ -402,7 +406,7 @@ class OrderService
             $order = Order::query()->with('items')->lockForUpdate()->findOrFail($order->id);
             $this->ensureOwnership($order, $customerId);
 
-            if (!$order->canBeCancelledByCustomer()) {
+            if (! $order->canBeCancelledByCustomer()) {
                 throw new \InvalidArgumentException('La orden no puede ser cancelada en su estado actual.');
             }
 
@@ -411,7 +415,7 @@ class OrderService
             $order->update([
                 'state' => 'cancelled',
                 'cancelled_at' => now(),
-                'notes' => $reason ? trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada por cliente: ' . $reason) : $order->notes,
+                'notes' => $reason ? trim(($order->notes ? $order->notes."\n" : '').'Cancelada por cliente: '.$reason) : $order->notes,
             ]);
 
             $this->restoreStockForOrder($order);
@@ -434,13 +438,13 @@ class OrderService
                 throw new \InvalidArgumentException('Solo las órdenes por transferencia aceptan voucher.');
             }
 
-            if (!in_array($order->state, ['pending_payment', 'payment_failed'], true)) {
+            if (! in_array($order->state, ['pending_payment', 'payment_failed'], true)) {
                 throw new \InvalidArgumentException('La orden no permite subir voucher en su estado actual.');
             }
 
             $payment = $order->payments()->latest()->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 throw new \InvalidArgumentException('No existe un registro de pago para esta orden.');
             }
 
@@ -482,29 +486,6 @@ class OrderService
             $order = Order::query()->with('items')->lockForUpdate()->findOrFail($order->id);
 
             $previousState = $order->state;
-
-            // Regla de negocio: si Niubiz ya confirmó pago, no se permite volver a pendiente.
-            if (
-                $newState === 'pending_payment'
-                && $order->payment_method_type === 'niubiz'
-                && in_array($previousState, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true)
-            ) {
-                throw new \InvalidArgumentException(
-                    'No se puede volver a pendiente en una orden Niubiz con pago confirmado. Usa reembolso/correccion operativa.'
-                );
-            }
-
-            if (
-                $newState === 'payment_failed'
-                && $order->payment_method_type === 'niubiz'
-                && in_array($previousState, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true)
-            ) {
-                throw new \InvalidArgumentException(
-                    'El pago Niubiz ya fue aprobado y no puede marcarse como rechazado/fallido.'
-                );
-            }
-
-            $this->assertStateTransition($previousState, $newState);
 
             if ($previousState === $newState) {
                 return $order->fresh(['items', 'payments', 'statusHistory']);
@@ -622,11 +603,12 @@ class OrderService
             foreach ($orderIds as $orderId) {
                 /** @var Order|null $order */
                 $order = $orders->get($orderId);
-                if (!$order) {
+                if (! $order) {
                     $failed[] = [
                         'id' => $orderId,
                         'reason' => 'Orden no encontrada.',
                     ];
+
                     continue;
                 }
 
@@ -704,7 +686,7 @@ class OrderService
                 ->lockForUpdate()
                 ->find($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return false;
             }
 
@@ -713,7 +695,7 @@ class OrderService
             $referenceDate = $order->placed_at ?? $order->created_at;
             $isExpired = $referenceDate && $referenceDate->lte($cutoff);
 
-            if (!$isStillPendingPayment || !$isExpired) {
+            if (! $isStillPendingPayment || ! $isExpired) {
                 return false;
             }
 
@@ -722,7 +704,7 @@ class OrderService
             $order->update([
                 'state' => 'cancelled',
                 'cancelled_at' => now(),
-                'notes' => trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada automáticamente por falta de pago pendiente.'),
+                'notes' => trim(($order->notes ? $order->notes."\n" : '').'Cancelada automáticamente por falta de pago pendiente.'),
             ]);
 
             $payment = $order->payments()->latest()->first();
@@ -765,7 +747,7 @@ class OrderService
         ];
 
         $allowedActions = collect($actionsOrder)
-            ->filter(fn(string $action) => $this->canApplyAdminAction($order, $action))
+            ->filter(fn (string $action) => $this->canApplyAdminAction($order, $action))
             ->values()
             ->all();
 
@@ -785,11 +767,11 @@ class OrderService
                 if ($this->targetStateFromAction($candidate) !== $rollbackState) {
                     continue;
                 }
-                if (!$this->canApplyAdminAction($order, $candidate)) {
+                if (! $this->canApplyAdminAction($order, $candidate)) {
                     continue;
                 }
                 $rollbackAction = $candidate;
-                $rollbackLabel = 'Regresar a ' . $this->stateLabel($rollbackState);
+                $rollbackLabel = 'Regresar a '.$this->stateLabel($rollbackState);
                 break;
             }
         }
@@ -837,14 +819,14 @@ class OrderService
         $zone = DeliveryZone::query()
             ->where('delivery_cost', '>', 0)
             ->where(function ($query) use ($departmentId, $provinceId, $districtId) {
-                $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $districtId))
-                    ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $provinceId))
-                    ->orWhere(fn($q) => $q->where('zone_type', 'department')->where('zone_id', $departmentId));
+                $query->where(fn ($q) => $q->where('zone_type', 'district')->where('zone_id', $districtId))
+                    ->orWhere(fn ($q) => $q->where('zone_type', 'province')->where('zone_id', $provinceId))
+                    ->orWhere(fn ($q) => $q->where('zone_type', 'department')->where('zone_id', $departmentId));
             })
             ->orderByRaw("CASE zone_type WHEN 'district' THEN 1 WHEN 'province' THEN 2 ELSE 3 END")
             ->first();
 
-        if (!$zone) {
+        if (! $zone) {
             throw new \InvalidArgumentException('No hay cobertura de delivery para la zona seleccionada.');
         }
 
@@ -856,7 +838,7 @@ class OrderService
             throw new \InvalidArgumentException("El monto mínimo para comprar es S/ {$minimumOrder}.");
         }
 
-        $deliveryCost = !is_null($freeDeliveryThreshold) && $subtotal >= $freeDeliveryThreshold
+        $deliveryCost = ! is_null($freeDeliveryThreshold) && $subtotal >= $freeDeliveryThreshold
             ? 0
             : (float) $zone->delivery_cost;
 
@@ -895,9 +877,9 @@ class OrderService
     {
         $zone = DeliveryZone::query()
             ->where(function ($query) use ($order) {
-                $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $order->district_id))
-                    ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $order->province_id))
-                    ->orWhere(fn($q) => $q->where('zone_type', 'department')->where('zone_id', $order->department_id));
+                $query->where(fn ($q) => $q->where('zone_type', 'district')->where('zone_id', $order->district_id))
+                    ->orWhere(fn ($q) => $q->where('zone_type', 'province')->where('zone_id', $order->province_id))
+                    ->orWhere(fn ($q) => $q->where('zone_type', 'department')->where('zone_id', $order->department_id));
             })
             ->orderByRaw("CASE zone_type WHEN 'district' THEN 1 WHEN 'province' THEN 2 ELSE 3 END")
             ->first();
@@ -936,14 +918,16 @@ class OrderService
 
         // Validamos uno por uno contra los ítems del payload para detectar el caso exacto
         foreach ($items as $item) {
-            if ($item['item_type'] !== 'product_variant') continue;
+            if ($item['item_type'] !== 'product_variant') {
+                continue;
+            }
 
             $variantId = $item['variant_id'] ?? null;
             $variant = $variants[$variantId] ?? null;
             $savedName = $item['metadata']['name'] ?? 'Un producto';
 
             // CASO 1: Eliminado de la BD
-            if (!$variant) {
+            if (! $variant) {
                 $label = "\"$savedName\"";
                 throw new \InvalidArgumentException("$label fue eliminado del catálogo.");
             }
@@ -951,7 +935,7 @@ class OrderService
             $name = $variant->product?->name ?? $savedName;
 
             // CASO 2: Inactivo (tanto variante como producto padre)
-            if (!$variant->is_active || ($variant->product && !$variant->product->is_active)) {
+            if (! $variant->is_active || ($variant->product && ! $variant->product->is_active)) {
                 throw new \InvalidArgumentException("\"$name\" ya no está disponible.");
             }
         }
@@ -987,11 +971,11 @@ class OrderService
         foreach ($ids as $id) {
             $pack = $packs->get($id);
 
-            if (!$pack) {
+            if (! $pack) {
                 throw new \InvalidArgumentException('Un pack fue eliminado del catálogo.');
             }
 
-            if (!$pack->is_active) {
+            if (! $pack->is_active) {
                 throw new \InvalidArgumentException("\"{$pack->name}\" ya no está disponible.");
             }
         }
@@ -1014,6 +998,7 @@ class OrderService
                 }
 
                 $subtotal += (float) $pack->active_price * $quantity;
+
                 continue;
             }
 
@@ -1080,7 +1065,7 @@ class OrderService
                     'quantity' => (int) data_get($item, 'quantity', 0),
                 ];
             })
-            ->groupBy(fn($item) => $item['item_type'] . ':' . ($item['variant_id'] ?? $item['pack_id']))
+            ->groupBy(fn ($item) => $item['item_type'].':'.($item['variant_id'] ?? $item['pack_id']))
             ->map(function ($group) {
                 $first = $group->first();
 
@@ -1088,10 +1073,10 @@ class OrderService
                     'item_type' => $first['item_type'],
                     'variant_id' => $first['variant_id'],
                     'pack_id' => $first['pack_id'],
-                    'quantity' => $group->sum(fn($item) => (int) ($item['quantity'] ?? 0)),
+                    'quantity' => $group->sum(fn ($item) => (int) ($item['quantity'] ?? 0)),
                 ];
             })
-            ->filter(fn($item) => $item['quantity'] > 0)
+            ->filter(fn ($item) => $item['quantity'] > 0)
             ->values()
             ->all();
     }
@@ -1122,6 +1107,7 @@ class OrderService
     private function uploadVoucherFile(UploadedFile $file, string $orderId): string
     {
         $directory = "orders/{$orderId}/payments";
+
         return $this->gcsService->uploadFile($file, $directory);
     }
 
@@ -1144,6 +1130,7 @@ class OrderService
                 if ($pack) {
                     $pack->increment('stock', (int) $item->quantity);
                 }
+
                 continue;
             }
 
@@ -1182,7 +1169,7 @@ class OrderService
                     ->lockForUpdate()
                     ->first();
 
-                if (!$pack) {
+                if (! $pack) {
                     throw new \InvalidArgumentException("No existe el pack {$item->pack_id} para reactivar la orden.");
                 }
 
@@ -1191,10 +1178,11 @@ class OrderService
                 }
 
                 $pack->decrement('stock', $quantity);
+
                 continue;
             }
 
-            if (!$item->variant_id) {
+            if (! $item->variant_id) {
                 continue;
             }
 
@@ -1203,7 +1191,7 @@ class OrderService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$variant) {
+            if (! $variant) {
                 throw new \InvalidArgumentException("No existe la variante {$item->variant_id} para reactivar la orden.");
             }
 
@@ -1221,7 +1209,7 @@ class OrderService
             return;
         }
 
-        if (!$this->isStateTransitionAllowed($from, $to)) {
+        if (! $this->isStateTransitionAllowed($from, $to)) {
             throw new \InvalidArgumentException("Transición de estado no permitida: {$from} -> {$to}.");
         }
     }
@@ -1262,23 +1250,11 @@ class OrderService
             default => null,
         };
     }
-    private function canApplyAdminAction(Order $order, string $action): bool
-    {
-        $targetState = $this->targetStateFromAction($action);
-        if (!$targetState) {
-            return false;
-        }
 
-        $from = $order->state;
-        $isNiubizConfirmed = $order->payment_method_type === 'niubiz'
-            && in_array($from, ['payment_received', 'preparing', 'in_delivery', 'delivered', 'refunded'], true);
-
-        if ($isNiubizConfirmed && in_array($targetState, ['pending_payment', 'payment_failed'], true)) {
-            return false;
-        }
-
-        return true;
-    }
+ private function canApplyAdminAction(Order $order, string $action): bool
+{
+    return $this->targetStateFromAction($action) !== null;
+}
 
     private function getPreviousStateForRollback(string $state, ?string $paymentMethodType): ?string
     {
@@ -1385,6 +1361,6 @@ class OrderService
             'updated_at' => now(),
         ]);
 
-        return 'DAR-' . str_pad((string) $nextNumber, 12, '0', STR_PAD_LEFT);
+        return 'DAR-'.str_pad((string) $nextNumber, 12, '0', STR_PAD_LEFT);
     }
 }

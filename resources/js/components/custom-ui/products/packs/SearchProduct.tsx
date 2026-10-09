@@ -26,7 +26,7 @@ export function PackProductSearch({
     searchResults = [],
     searchUrl,
     onSelect,
-    placeholder = 'Buscar por Sku daryza...',
+    placeholder = 'Buscar por SKU DARYZA...',
 }: PackProductSearchProps) {
     const [showResults, setShowResults] = React.useState(false);
     const [query, setQuery] = React.useState('');

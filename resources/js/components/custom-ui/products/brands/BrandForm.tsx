@@ -36,10 +36,14 @@ export default function BrandForm({ brand }: Props) {
             : productsNamespace.brands.store().url;
 
         if (isEdit) {
+            const { image, ...rest } = data;
+
             router.post(
                 action,
                 {
-                    ...data,
+                    ...rest,
+                    // Solo enviamos la imagen si el usuario subió una nueva
+                    ...(image instanceof File ? { image } : {}),
                     _method: 'PUT',
                 },
                 {

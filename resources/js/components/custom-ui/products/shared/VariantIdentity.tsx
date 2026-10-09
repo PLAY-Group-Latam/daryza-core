@@ -63,7 +63,7 @@ export function VariantIdentity({
                     )}
                     {label && <span className="text-xs">({label})</span>}
                 </div>
-                <p className={skuClassName}>Sku daryza: {sku}</p>
+                <p className={skuClassName}>SKU DARYZA: {sku}</p>
             </div>
         </div>
     );

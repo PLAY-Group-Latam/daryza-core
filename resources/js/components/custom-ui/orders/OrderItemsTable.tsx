@@ -73,7 +73,7 @@ export default function OrderItemsTable({ items }: { items: OrderItem[] }) {
                                             {item.product_name}{' '}
                                             {isOnPromo && (
                                                 <span className="inline-flex w-fit items-center rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white">
-                                                    En promo
+                                                   En promoción
                                                 </span>
                                             )}
                                         </span>
