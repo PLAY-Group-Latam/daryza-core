@@ -1,18 +1,23 @@
 'use client';
 
+import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import { Button } from '@/components/ui/button';
+import { ContentSectionProps as Props } from '@/types/content/content';
+import {
+    BannerContent,
+    BannerPromotionalContent,
+} from '@/types/content/content-types';
 import { useForm } from '@inertiajs/react';
 import { Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ContentSectionProps as Props } from '@/types/content/content';
-import { BannerPromotionalContent, BannerContent } from '@/types/content/content-types';
-import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
 
 export default function BannerPromotionalEditor({ section }: Props) {
     const rawContent = section.content?.content as BannerPromotionalContent;
     const rawBanner = rawContent?.banner;
 
-    const { data, setData, put, processing } = useForm<{ content: BannerPromotionalContent }>({
+    const { data, setData, put, processing } = useForm<{
+        content: BannerPromotionalContent;
+    }>({
         content: {
             banner: {
                 type: 'url',
@@ -31,17 +36,21 @@ export default function BannerPromotionalEditor({ section }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Banner promocional actualizado!'),
-            onError: () => toast.error('Error al guardar los cambios'),
-        });
+        put(
+            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar los cambios');
+                },
+            },
+        );
     };
 
     return (
         <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-            
             {/* Banner Principal Unificado */}
             <ResponsiveBannerEditor
                 title="Banner promocional"

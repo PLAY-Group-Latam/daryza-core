@@ -1,15 +1,19 @@
 'use client';
 
-import { useForm } from '@inertiajs/react';
-import { Save, Image, LayoutGrid, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { ContentSectionProps as Props } from '@/types/content/content';
-import { Upload } from '@/components/custom-ui/upload';
-import { BannerContent, DistributorCard, DistributorNetworkContent } from '@/types/content/content';
 import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import { Upload } from '@/components/custom-ui/upload';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    BannerContent,
+    DistributorCard,
+    DistributorNetworkContent,
+    ContentSectionProps as Props,
+} from '@/types/content/content';
+import { useForm } from '@inertiajs/react';
+import { Image, LayoutGrid, Save, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const DEFAULT_CARD: DistributorCard = { imagen: null, titulo: '', texto: '' };
 const CARD_LABELS = ['Tarjeta 1', 'Tarjeta 2', 'Tarjeta 3', 'Tarjeta 4'];
@@ -21,7 +25,7 @@ const checkerboardStyle = {
                     linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
                     linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)`,
     backgroundSize: '10px 10px',
-    backgroundPosition: '0 0, 0 5px, 5px 5px, 5px 0'
+    backgroundPosition: '0 0, 0 5px, 5px 5px, 5px 0',
 };
 
 // ─── Upload para elementos secundarios (Cards y Form) ─────────────────────────
@@ -36,8 +40,10 @@ function UploadFixed({
     className?: string;
 }) {
     return (
-        <div className={`rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden ${className ?? ''}`}>
-            <div className="w-full h-full [&>*]:!w-full [&>*]:!h-full [&_img]:!w-full [&_img]:!h-full [&_img]:!object-cover [&_img]:!rounded-none">
+        <div
+            className={`overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 ${className ?? ''}`}
+        >
+            <div className="h-full w-full [&_img]:!h-full [&_img]:!w-full [&_img]:!rounded-none [&_img]:!object-cover [&>*]:!h-full [&>*]:!w-full">
                 <Upload
                     value={value}
                     onFileChange={onChange}
@@ -61,14 +67,16 @@ function CardEditor({
     onUpdate: (patch: Partial<DistributorCard>) => void;
 }) {
     return (
-        <div className="group rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-            <div className="px-5 py-2.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{label}</p>
+        <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-2.5">
+                <p className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+                    {label}
+                </p>
                 {card.imagen && (
                     <button
                         type="button"
                         onClick={() => onUpdate({ imagen: null })}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
+                        className="text-slate-400 transition-colors hover:text-red-500"
                     >
                         <Trash2 size={14} />
                     </button>
@@ -76,38 +84,48 @@ function CardEditor({
             </div>
 
             <div className="p-5">
-                <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col gap-6 md:flex-row">
                     <div className="flex flex-col items-center gap-2">
-                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center w-full">Imagen</Label>
+                        <Label className="w-full text-center text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+                            Imagen
+                        </Label>
                         <div
-                            className="relative w-24 h-24 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center group/img"
+                            className="group/img relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-slate-200"
                             style={checkerboardStyle}
                         >
                             <UploadFixed
                                 value={card.imagen}
                                 onChange={(file) => onUpdate({ imagen: file })}
-                                className="w-full h-full border-0 bg-transparent"
+                                className="h-full w-full border-0 bg-transparent"
                             />
                         </div>
                     </div>
 
-                    <div className="flex-1 min-w-0 space-y-4">
+                    <div className="min-w-0 flex-1 space-y-4">
                         <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Título</Label>
+                            <Label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+                                Título
+                            </Label>
                             <Input
                                 value={card.titulo}
-                                onChange={(e) => onUpdate({ titulo: e.target.value })}
+                                onChange={(e) =>
+                                    onUpdate({ titulo: e.target.value })
+                                }
                                 placeholder="Ej: Marca Peruana"
                                 className="text-sm font-medium"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Descripción</Label>
+                            <Label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+                                Descripción
+                            </Label>
                             <textarea
                                 value={card.texto}
-                                onChange={(e) => onUpdate({ texto: e.target.value })}
+                                onChange={(e) =>
+                                    onUpdate({ texto: e.target.value })
+                                }
                                 placeholder="Escribe el contenido..."
-                                className="w-full text-sm rounded-lg border border-slate-200 bg-white px-3 py-2 focus:ring-1 focus:ring-primary/30 min-h-[80px] resize-none"
+                                className="min-h-[80px] w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-1 focus:ring-primary/30"
                             />
                         </div>
                     </div>
@@ -123,7 +141,9 @@ export default function DistributorNetworkEditor({ section }: Props) {
     const rawContent = section.content?.content as DistributorNetworkContent;
     const rawBanner = rawContent?.banner;
 
-    const { data, setData, put, processing } = useForm<{ content: DistributorNetworkContent }>({
+    const { data, setData, put, processing } = useForm<{
+        content: DistributorNetworkContent;
+    }>({
         content: {
             banner: {
                 type: 'url',
@@ -142,30 +162,39 @@ export default function DistributorNetworkEditor({ section }: Props) {
     });
 
     const handleBannerChange = (updates: Partial<BannerContent>) =>
-        setData('content', { ...data.content, banner: { ...data.content.banner, ...updates } });
+        setData('content', {
+            ...data.content,
+            banner: { ...data.content.banner, ...updates },
+        });
 
     const setFormImage = (file: File | string | null) =>
         setData('content', { ...data.content, form_image: file });
 
     const updateCard = (index: number, patch: Partial<DistributorCard>) => {
-        const updated = [...data.content.cards] as DistributorNetworkContent['cards'];
+        const updated = [
+            ...data.content.cards,
+        ] as DistributorNetworkContent['cards'];
         updated[index] = { ...updated[index], ...patch };
         setData('content', { ...data.content, cards: updated });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Red de distribuidores actualizada correctamente!'),
-            onError: () => toast.error('Error al guardar los cambios.'),
-        });
+        put(
+            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar los cambios.');
+                },
+            },
+        );
     };
 
     return (
         <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-
             {/* Banner Principal Unificado */}
             <ResponsiveBannerEditor
                 title="Banner Principal"
@@ -189,8 +218,12 @@ export default function DistributorNetworkEditor({ section }: Props) {
                             <Image size={20} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">Imagen del formulario</h3>
-                            <p className="text-sm text-slate-500">Imagen lateral para el formulario de contacto.</p>
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Imagen del formulario
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                                Imagen lateral para el formulario de contacto.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -211,8 +244,12 @@ export default function DistributorNetworkEditor({ section }: Props) {
                             <LayoutGrid size={20} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">Tarjetas informativas</h3>
-                            <p className="text-sm text-slate-500">Gestión de las 4 tarjetas de beneficios.</p>
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Tarjetas informativas
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                                Gestión de las 4 tarjetas de beneficios.
+                            </p>
                         </div>
                     </div>
                 </div>

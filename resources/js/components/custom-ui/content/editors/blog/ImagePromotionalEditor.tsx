@@ -22,17 +22,17 @@ export default function ImagePromotionalEditor({ section }: Props) {
 
     const items = data.content.items;
 
-   const updateItem = (index: number, updates: any) => {
-    const updated = [...items];
-    
-    // CORRECCIÓN: Hacemos spread del item existente para NO perder lo que ya tenía
-    updated[index] = {
-        ...updated[index], // Mantenemos id, src_desktop anterior, src_mobile anterior, etc.
-        ...updates,        // Sobrescribimos solo lo que cambió (src_desktop o src_mobile o link_url)
-    };
+    const updateItem = (index: number, updates: any) => {
+        const updated = [...items];
 
-    setData('content', { items: updated });
-};
+        // CORRECCIÓN: Hacemos spread del item existente para NO perder lo que ya tenía
+        updated[index] = {
+            ...updated[index], // Mantenemos id, src_desktop anterior, src_mobile anterior, etc.
+            ...updates, // Sobrescribimos solo lo que cambió (src_desktop o src_mobile o link_url)
+        };
+
+        setData('content', { items: updated });
+    };
 
     const addItem = () => {
         if (items.length >= 2) return;
@@ -61,9 +61,10 @@ export default function ImagePromotionalEditor({ section }: Props) {
             {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () =>
-                    toast.success('Imágenes promocionales actualizadas'),
-                onError: () => toast.error('Error al guardar'),
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar');
+                },
             },
         );
     };

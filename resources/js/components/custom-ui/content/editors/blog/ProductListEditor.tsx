@@ -13,7 +13,7 @@ const DEFAULT_IMAGE =
 
 type Props = TypedSectionProps<'blog_products'> & {
     searchResults?: ProductLite[];
-    initialProducts?: ProductLite[]; 
+    initialProducts?: ProductLite[];
 };
 
 export default function ProductListEditor({
@@ -30,7 +30,8 @@ export default function ProductListEditor({
 
     // --- MEMORIA LOCAL (CACHÉ) ---
     // Guardamos los objetos completos de los productos para que no dependan solo de searchResults
-    const [selectedProductsCache, setSelectedProductsCache] = useState<ProductLite[]>(initialProducts);
+    const [selectedProductsCache, setSelectedProductsCache] =
+        useState<ProductLite[]>(initialProducts);
 
     useEffect(() => {
         const items = section.content?.content.items;
@@ -41,7 +42,9 @@ export default function ProductListEditor({
     // MAPA DE REFERENCIA ACTUALIZADO:
     // Prioriza la caché local + resultados actuales + data inicial del controlador
     const searchMap = new Map<string, ProductLite>(
-        [...initialProducts, ...selectedProductsCache, ...searchResults].map((p) => [p.product_id, p])
+        [...initialProducts, ...selectedProductsCache, ...searchResults].map(
+            (p) => [p.product_id, p],
+        ),
     );
 
     // DATA PARA MOSTRAR: Mapea los IDs guardados con la data real disponible en el Mapa
@@ -49,7 +52,7 @@ export default function ProductListEditor({
         const freshData = searchMap.get(stored.product_id);
         return {
             ...stored,
-            ...(freshData ?? {}), 
+            ...(freshData ?? {}),
         };
     });
 
@@ -57,14 +60,17 @@ export default function ProductListEditor({
         const exists = data.items.some(
             (item: any) => item.product_id === product.product_id,
         );
-        
+
         if (exists) return toast.warning('Este producto ya está en la lista');
 
         // 1. Guardamos el objeto completo en la caché para que no se pierda al limpiar la búsqueda
-        setSelectedProductsCache(prev => [...prev, product]);
+        setSelectedProductsCache((prev) => [...prev, product]);
 
         // 2. Guardamos solo el ID en el formulario (que es lo que va a la DB)
-        const newItems = [...data.items, { product_id: product.product_id }] as any;
+        const newItems = [
+            ...data.items,
+            { product_id: product.product_id },
+        ] as any;
         setData('items', newItems);
     };
 
@@ -74,7 +80,9 @@ export default function ProductListEditor({
             data.items.filter((item: any) => item.product_id !== id) as any,
         );
         // Opcional: limpiar de la caché también
-        setSelectedProductsCache(prev => prev.filter(p => p.product_id !== id));
+        setSelectedProductsCache((prev) =>
+            prev.filter((p) => p.product_id !== id),
+        );
         toast.info('Producto removido de la lista');
     };
 
@@ -88,7 +96,10 @@ export default function ProductListEditor({
             `/content/update/${section.page.slug}/${section.type}/${section.id}`,
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Lista de productos actualizada'),
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar');
+                },
             },
         );
     };
@@ -146,21 +157,25 @@ export default function ProductListEditor({
                                         className="h-full w-full object-cover"
                                         alt={product.product_name ?? 'Producto'}
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                                            (e.target as HTMLImageElement).src =
+                                                DEFAULT_IMAGE;
                                         }}
                                     />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
                                     <h4 className="truncate text-sm leading-tight font-bold text-slate-900">
-                                        {product.product_name ?? 'Cargando producto...'}
+                                        {product.product_name ??
+                                            'Cargando producto...'}
                                     </h4>
                                     <div className="flex items-center gap-3">
-                                        <span className="font-mono text-[10px] text-slate-400 uppercase">
+                                        <span className="font-mono text-[12px] text-slate-400 uppercase">
                                             SKU: {product.sku ?? '---'}
                                         </span>
                                         <span className="text-xs font-bold text-slate-700">
-                                            {product.active_price ? `$${product.active_price}` : '---'}
+                                            {product.active_price
+                                                ? `$${product.active_price}`
+                                                : '---'}
                                         </span>
                                     </div>
                                 </div>
@@ -169,7 +184,9 @@ export default function ProductListEditor({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => removeProduct(product.product_id)}
+                                    onClick={() =>
+                                        removeProduct(product.product_id)
+                                    }
                                     className="h-9 w-9 rounded-full text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
                                 >
                                     <Trash2 size={18} />

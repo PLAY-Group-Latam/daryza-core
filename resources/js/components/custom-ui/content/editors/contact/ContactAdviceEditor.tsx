@@ -1,13 +1,16 @@
 'use client';
 
-import { useForm } from '@inertiajs/react';
-import { Save, Image } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { ContentSectionProps as Props } from '@/types/content/content';
-import { Upload } from '@/components/custom-ui/upload';
-import { ContactAdviceContent, BannerContent } from '@/types/content/content-types';
 import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import { Upload } from '@/components/custom-ui/upload';
+import { Button } from '@/components/ui/button';
+import { ContentSectionProps as Props } from '@/types/content/content';
+import {
+    BannerContent,
+    ContactAdviceContent,
+} from '@/types/content/content-types';
+import { useForm } from '@inertiajs/react';
+import { Image, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Componente Upload para la imagen del formulario ──────────────────────────
 function UploadFormImage({
@@ -20,8 +23,10 @@ function UploadFormImage({
     className?: string;
 }) {
     return (
-        <div className={`rounded-xl border border-dashed border-slate-300 bg-slate-50 overflow-hidden ${className ?? ''}`}>
-            <div className="w-full h-full [&>*]:!w-full [&>*]:!h-full [&_img]:!w-full [&_img]:!h-full [&_img]:!object-cover [&_img]:!rounded-none">
+        <div
+            className={`overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 ${className ?? ''}`}
+        >
+            <div className="h-full w-full [&_img]:!h-full [&_img]:!w-full [&_img]:!rounded-none [&_img]:!object-cover [&>*]:!h-full [&>*]:!w-full">
                 <Upload
                     value={value}
                     onFileChange={onChange}
@@ -37,7 +42,9 @@ export default function ContactAdviceEditor({ section }: Props) {
     const rawContent = section.content?.content as ContactAdviceContent;
     const rawBanner = rawContent?.banner;
 
-    const { data, setData, put, processing } = useForm<{ content: ContactAdviceContent }>({
+    const { data, setData, put, processing } = useForm<{
+        content: ContactAdviceContent;
+    }>({
         content: {
             banner: {
                 type: 'url', // Forzamos comportamiento de imagen con enlace para unificar
@@ -50,24 +57,30 @@ export default function ContactAdviceEditor({ section }: Props) {
     });
 
     const handleBannerChange = (updates: Partial<BannerContent>) =>
-        setData('content', { ...data.content, banner: { ...data.content.banner, ...updates } });
+        setData('content', {
+            ...data.content,
+            banner: { ...data.content.banner, ...updates },
+        });
 
     const setFormImage = (file: File | string | null) =>
         setData('content', { ...data.content, form_image: file });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/content/update/${section.page.slug}/${section.type}/${section.id}`, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Sección de asesoría actualizada!'),
-            onError: () => toast.error('Error al guardar los cambios'),
-        });
+        put(
+            `/content/update/${section.page.slug}/${section.type}/${section.id}`,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onError: (errors) => {
+                    console.error('Errores:', errors);
+                    toast.error('Error al guardar los cambios');
+                },
+            },
+        );
     };
-
     return (
         <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-
             {/* ── Banner Principal Unificado ── */}
             <ResponsiveBannerEditor
                 title="Banner Principal"
@@ -91,8 +104,13 @@ export default function ContactAdviceEditor({ section }: Props) {
                             <Image size={20} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">Imagen del Formulario</h3>
-                            <p className="text-sm text-slate-500">Imagen vertical que aparece al lado izquierdo del formulario.</p>
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Imagen del Formulario
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                                Imagen vertical que aparece al lado izquierdo
+                                del formulario.
+                            </p>
                         </div>
                     </div>
                 </div>

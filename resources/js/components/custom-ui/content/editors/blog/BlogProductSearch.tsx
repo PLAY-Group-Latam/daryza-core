@@ -7,11 +7,11 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
+import { ProductLite } from '@/types/content/content-types';
 import { router } from '@inertiajs/react';
 import debounce from 'lodash/debounce';
 import { Loader2, Plus } from 'lucide-react';
 import * as React from 'react';
-import { ProductLite } from '@/types/content/content-types';
 
 // --- Interfaces ---
 
@@ -21,7 +21,6 @@ interface ProductResult {
     sku: string;
     image?: string | null;
     active_price: number | string;
-  
 }
 
 interface BlogProductSearchProps {
@@ -29,9 +28,13 @@ interface BlogProductSearchProps {
     onSelect: (product: ProductLite) => void;
 }
 
-const DEFAULT_IMAGE = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
+const DEFAULT_IMAGE =
+    'https://placehold.co/400x400/f1f5f9/94a3b8?text=Sin+Imagen';
 
-export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductSearchProps) {
+export function BlogProductSearch({
+    searchResults = [],
+    onSelect,
+}: BlogProductSearchProps) {
     const [open, setOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false);
@@ -137,15 +140,20 @@ export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductS
                                                 setOpen(false);
                                                 setSearchTerm('');
                                             }}
-                                            className="group mb-1 flex cursor-pointer items-center gap-4 rounded-xl border-b border-slate-100 p-3 last:border-0 hover:bg-slate-50 transition-colors"
+                                            className="group mb-1 flex cursor-pointer items-center gap-4 rounded-xl border-b border-slate-100 p-3 transition-colors last:border-0 hover:bg-slate-50"
                                         >
                                             <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                                 <img
-                                                    src={res.image || DEFAULT_IMAGE}
+                                                    src={
+                                                        res.image ||
+                                                        DEFAULT_IMAGE
+                                                    }
                                                     alt={res.product_name}
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                                                        (
+                                                            e.target as HTMLImageElement
+                                                        ).src = DEFAULT_IMAGE;
                                                     }}
                                                 />
                                             </div>
@@ -160,7 +168,7 @@ export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductS
                                                 <span className="text-xs font-bold text-primary">
                                                     S/ {res.active_price}
                                                 </span>
-                                                <span className="font-mono text-[10px] text-slate-400 uppercase">
+                                                <span className="font-mono text-[12px] text-slate-400 uppercase">
                                                     SKU:{' '}
                                                     <Highlight
                                                         text={res.sku}
@@ -169,9 +177,13 @@ export function BlogProductSearch({ searchResults = [], onSelect }: BlogProductS
                                                 </span>
                                             </div>
 
-                                            {/* CIRCULO DE PLUS MODIFICADO: Fondo negro y plus blanco al hacer hover */}
-                                            <div className="flex-shrink-0 rounded-full bg-slate-100 p-2 text-white transition-all duration-200 group-hover:bg-slate-900 group-hover:text-white">
-                                                <Plus size={16} strokeWidth={3} />
+                                            {/* CIRCULO DE PLUS MODIFICADO: Fondo blanco y flecha negra por defecto, pasa a fondo negro y texto blanco al hacer hover */}
+                                            <div className="flex-shrink-0 rounded-full bg-white p-2 text-slate-900 transition-all duration-200 group-hover:bg-slate-900 group-hover:text-white">
+                                                <Plus
+                                                    size={16}
+                                                    strokeWidth={3}
+                                                    className="text-slate-900 transition-colors duration-200 group-hover:text-white"
+                                                />
                                             </div>
                                         </CommandItem>
                                     ))}
