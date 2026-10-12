@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Api\v1\Middleware\JwtFromCookie;
-use App\Http\Api\Support\JwtCookie;
 use App\Http\Web\Middleware\HandleAppearance;
 use App\Http\Web\Middleware\HandleInertiaRequests;
 use App\Http\Api\v1\Middleware\TrackApiEvents;
@@ -55,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated.',
-                ], 401)->withCookie(JwtCookie::forget());
+                ], 401);
             }
         });
         $exceptions->renderable(function (\Tymon\JWTAuth\Exceptions\JWTException $e, $request) {
@@ -63,7 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => 'Sesión inválida.',
-                ], 401)->withCookie(JwtCookie::forget());
+                ], 401);
             }
         });
         $exceptions->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
