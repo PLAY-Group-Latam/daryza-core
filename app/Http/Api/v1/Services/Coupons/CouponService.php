@@ -116,7 +116,15 @@ class CouponService
 
         $couponQuery = Coupon::query()
             ->whereRaw('UPPER(code) = ?', [$normalizedCode])
-            ->with(['products:id', 'categories:id', 'packs:id', 'businessDynamics:id', 'customers:id']);
+            ->with([
+                'products:id',
+                'categories:id',
+                'packs:id',
+                'businessDynamics:id',
+                'customers:id',
+                'excludedProducts:id',
+                'excludedPacks:id',
+            ]);
 
         if ($lockCoupon) {
             $couponQuery->lockForUpdate();
@@ -160,7 +168,18 @@ class CouponService
         }
 
         $eligibleUnits = 0;
-        $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $packs, $items, $eligibleUnits);
+        $exclusionsApply = !in_array(
+            $coupon->scope,
+            [CouponScope::Product->value, CouponScope::Pack->value],
+            true,
+        );
+        $discountableItems = $this->excludeItems(
+            $items,
+            $variants,
+            $exclusionsApply ? $coupon->excludedProducts->pluck('id')->all() : [],
+            $exclusionsApply ? $coupon->excludedPacks->pluck('id')->all() : [],
+        );
+        $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $packs, $discountableItems, $eligibleUnits);
 
         if ($discountableSubtotal <= 0) {
             throw new \InvalidArgumentException('El cupón no aplica a los productos de la orden.');
@@ -213,6 +232,32 @@ class CouponService
         }
 
         return round($subtotal, 2);
+    }
+
+    private function excludeItems(
+        array $items,
+        Collection $variants,
+        array $excludedProductIds,
+        array $excludedPackIds
+    ): array {
+        if (empty($excludedProductIds) && empty($excludedPackIds)) {
+            return $items;
+        }
+
+        return array_values(array_filter($items, function (array $item) use ($variants, $excludedProductIds, $excludedPackIds) {
+            $itemType = (string) ($item['item_type'] ?? '');
+
+            if ($itemType === 'product_pack') {
+                $packId = (string) ($item['pack_id'] ?? '');
+
+                return !in_array($packId, $excludedPackIds, true);
+            }
+
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get((string) ($item['variant_id'] ?? ''));
+
+            return $variant === null || !in_array($variant->product_id, $excludedProductIds, true);
+        }));
     }
 
     private function resolveDiscountableSubtotal(

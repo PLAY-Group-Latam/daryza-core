@@ -73,6 +73,16 @@ class Coupon extends Model
         return $this->belongsToMany(Customer::class, 'coupon_customers', 'coupon_id', 'customer_id');
     }
 
+    public function excludedProducts()
+    {
+        return $this->belongsToMany(Product::class, 'coupon_excluded_products', 'coupon_id', 'product_id');
+    }
+
+    public function excludedPacks()
+    {
+        return $this->belongsToMany(ProductPack::class, 'coupon_excluded_packs', 'coupon_id', 'pack_id');
+    }
+
     public function redemptions()
     {
         return $this->hasMany(CouponRedemption::class);
