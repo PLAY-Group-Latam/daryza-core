@@ -153,7 +153,7 @@ export function AsyncMultiSelectProducts({
             </PopoverTrigger>
 
             <PopoverContent className="w-full max-w-lg p-0" align="start">
-                <Command>
+                <Command shouldFilter={false}>
                     <CommandInput placeholder="Buscar..." value={query} onValueChange={setQuery} autoFocus />
                     <CommandList>
                         {loading && <div className="text-muted-foreground p-4 text-center text-sm">Buscando...</div>}

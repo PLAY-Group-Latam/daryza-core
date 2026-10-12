@@ -6,6 +6,7 @@ use App\Models\Coupons\Coupon;
 use App\Models\Coupons\CouponRedemption;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Models\Customers\Customer;
 use App\Models\Products\DynamicCategory;
 use App\Models\Products\Product;
@@ -107,7 +108,7 @@ class CouponService
             ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
             ->when(
                 $term !== '' && !$isSingleId && count($ids) <= 1,
-                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+                fn($q) => $this->applyNameSearch($q, 'name', $term)
             )
             ->limit(50)
             ->get()
@@ -129,7 +130,7 @@ class CouponService
             ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
             ->when(
                 $term !== '' && !$isSingleId && count($ids) <= 1,
-                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+                fn($q) => $this->applyNameSearch($q, 'name', $term)
             )
             ->limit(50)
             ->get()
@@ -151,9 +152,7 @@ class CouponService
             ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
             ->when(
                 $term !== '' && !$isSingleId && count($ids) <= 1,
-                fn($q) => $q
-                    ->where('is_active', true)
-                    ->where('name', 'ilike', '%' . $term . '%')
+                fn($q) => $this->applyNameSearch($q->where('is_active', true), 'name', $term)
             )
             ->limit(50)
             ->get()
@@ -174,8 +173,7 @@ class CouponService
             ->when(count($ids) > 1, fn($q) => $q->whereIn('id', $ids))
             ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
             ->when($term !== '' && !$isSingleId && count($ids) <= 1,
-                fn($q) => $q
-                    ->where('full_name', 'ilike', '%' . $term . '%'))
+                fn($q) => $this->applyNameSearch($q, 'full_name', $term))
             ->limit(50)
             ->get()
             ->map(fn($c) => [
@@ -196,7 +194,7 @@ class CouponService
             ->when($isSingleId, fn($q) => $q->where('id', $ids[0]))
             ->when(
                 $term !== '' && !$isSingleId && count($ids) <= 1,
-                fn($q) => $q->where('name', 'ilike', '%' . $term . '%')
+                fn($q) => $this->applyNameSearch($q, 'name', $term)
             )
             ->limit(50)
             ->get()
@@ -248,5 +246,33 @@ class CouponService
         $isSingleId = count($ids) === 1 && preg_match(self::ULID_REGEX, $ids[0]) === 1;
 
         return [$term, $ids, $isSingleId];
+    }
+
+    /**
+     * Búsqueda insensible a mayúsculas, tildes y espacios, sin extensiones.
+     * "quimi" encuentra "Químicos", "lejia5" encuentra "Lejía 5%".
+     * $column es siempre un literal interno, nunca input del usuario.
+     */
+    private function applyNameSearch($query, string $column, string $term)
+    {
+        $needle = $this->normalizeTerm($term);
+
+        if ($needle === '') {
+            return $query;
+        }
+
+        return $query->whereRaw(
+            "replace(lower(translate({$column}, 'áàäâéèëêíìïîóòöôúùüûñÁÀÄÂÉÈËÊÍÌÏÎÓÒÖÔÚÙÜÛÑ', 'aaaaeeeeiiiioooouuuunaaaaeeeeiiiioooouuuun')), ' ', '') like ?",
+            ['%' . $needle . '%']
+        );
+    }
+
+    private function normalizeTerm(string $term): string
+    {
+        $term = Str::ascii(mb_strtolower($term));
+        $term = preg_replace('/\s+/', '', $term) ?? '';
+
+        // Escapar comodines de LIKE para buscar % y _ literales.
+        return addcslashes($term, '%_\\');
     }
 }
