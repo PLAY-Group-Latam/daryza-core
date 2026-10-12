@@ -22,7 +22,7 @@ class NotificationService
 
     private function currentVersion(): string
     {
-        return (string) Cache::rememberForever($this->versionKey(), fn () => (string) Str::uuid());
+        return (string) Cache::rememberForever($this->versionKey(), fn() => (string) Str::uuid());
     }
 
     private function cacheKey(string $prefix, ?string $customerId, ?string $visitorId, int $perPage, int $page): string
@@ -145,7 +145,7 @@ class NotificationService
         });
     }
 
-        private function fetchNotifications(?string $customerId, ?string $visitorId, int $perPage, int $page): array
+    private function fetchNotifications(?string $customerId, ?string $visitorId, int $perPage, int $page): array
     {
         $deletedIds = $this->identifierQuery(
             NotificationRead::where('is_deleted', true),
@@ -458,12 +458,11 @@ class NotificationService
 
         // new_product no lleva variant_id — la PDP abre la variante principal por defecto
         $this->upsertNotification('new_product', $title, $message, [
-            'type'        => 'new_product',
-            'title'       => $title,
-            'message'     => $message,
-            'product_id'  => $product->id,
-            'productName' => $product->name,
-            'timestamp'   => now()->toIso8601String(),
+            'type'       => 'new_product',
+            'title'      => $title,
+            'message'    => $message,
+            'product_id' => $product->id,
+            'timestamp'  => now()->toIso8601String(),
         ]);
     }
 
@@ -481,14 +480,14 @@ class NotificationService
         $message = 'Haz clic para conocer más.';
 
         $this->upsertNotification('new_pack', $title, $message, [
-            'type'        => 'new_pack',
-            'title'       => $title,
-            'message'     => $message,
-            'product_id'  => $pack->id,
-            'productName' => $pack->name,
-            'timestamp'   => now()->toIso8601String(),
+            'type'       => 'new_pack',
+            'title'      => $title,
+            'message'    => $message,
+            'product_id' => $pack->id,
+            'timestamp'  => now()->toIso8601String(),
         ]);
     }
+
 
     public function notifyPromotion(Product $product, ProductVariant $variant): void
     {
@@ -501,14 +500,13 @@ class NotificationService
 
         // Guardamos variant_id para que el link lleve directo a esa variante en promo
         $this->upsertNotification('product_promotion', $title, $message, [
-            'type'        => 'product_promotion',
-            'title'       => $title,
-            'message'     => $message,
-            'product_id'  => $product->id,
-            'variant_id'  => $variant->id,
-            'productName' => $product->name,
-            'promoPrice'  => $variant->promo_price,
-            'timestamp'   => now()->toIso8601String(),
+            'type'       => 'product_promotion',
+            'title'      => $title,
+            'message'    => $message,
+            'product_id' => $product->id,
+            'variant_id' => $variant->id,
+            'promoPrice' => $variant->promo_price,
+            'timestamp'  => now()->toIso8601String(),
         ]);
     }
 
@@ -528,13 +526,12 @@ class NotificationService
         $message = 'Haz clic para conocer más.';
 
         $this->upsertNotification('pack_promotion', $title, $message, [
-            'type'        => 'pack_promotion',
-            'title'       => $title,
-            'message'     => $message,
-            'product_id'  => $pack->id,
-            'productName' => $pack->name,
-            'promoPrice'  => $pack->promo_price,
-            'timestamp'   => now()->toIso8601String(),
+            'type'       => 'pack_promotion',
+            'title'      => $title,
+            'message'    => $message,
+            'product_id' => $pack->id,
+            'promoPrice' => $pack->promo_price,
+            'timestamp'  => now()->toIso8601String(),
         ]);
     }
 

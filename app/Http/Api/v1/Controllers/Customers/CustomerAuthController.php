@@ -122,20 +122,20 @@ class CustomerAuthController extends Controller
     );
   }
  
-  public function refresh()
+public function refresh()
 {
     try {
         $oldToken = JWTAuth::getToken();
 
         if (!$oldToken) {
+            logger()->warning('[refresh] sin token', ['has_cookie' => request()->hasCookie(config('jwt.access_cookie_name'))]);
+
             return $this->error('Token no encontrado', null, 401)
                 ->withCookie($this->forgetJwtCookie());
         }
 
         $newToken = JWTAuth::setToken($oldToken)->refresh();
 
-        // El token se pudo renovar, pero el usuario puede haber sido eliminado
-        // (p. ej. tras `migrate:fresh`). Si ya no existe, no renovamos la sesión.
         $payload = JWTAuth::setToken($newToken)->getPayload();
         $user = auth('api')->getProvider()->retrieveById($payload->get('sub'));
 
@@ -145,6 +145,8 @@ class CustomerAuthController extends Controller
             } catch (\Throwable $e) {
                 // noop
             }
+
+            logger()->warning('[refresh] usuario no existe', ['sub' => $payload->get('sub')]);
 
             return $this->error('Sesión inválida, inicia sesión nuevamente', null, 401)
                 ->withCookie($this->forgetJwtCookie());
@@ -156,12 +158,18 @@ class CustomerAuthController extends Controller
             $newToken
         );
     } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+        logger()->warning('[refresh] expirado', ['msg' => $e->getMessage()]);
+
         return $this->error('Sesión expirada, inicia sesión nuevamente', null, 401)
             ->withCookie($this->forgetJwtCookie());
     } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+        logger()->warning('[refresh] inválido', ['class' => get_class($e), 'msg' => $e->getMessage()]);
+
         return $this->error('Token inválido', null, 401)
             ->withCookie($this->forgetJwtCookie());
     } catch (JWTException $e) {
+        logger()->warning('[refresh] jwt exception', ['msg' => $e->getMessage()]);
+
         return $this->error('No se pudo renovar el token', null, 401)
             ->withCookie($this->forgetJwtCookie());
     }

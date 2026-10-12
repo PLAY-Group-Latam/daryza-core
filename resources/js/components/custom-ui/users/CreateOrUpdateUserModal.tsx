@@ -61,11 +61,10 @@ export function CreateOrUpdateUserModal({ user, trigger }: UserModalProps) {
                         <div className="space-y-4">
                             {/* Nombre */}
                             <div className="flex flex-col gap-2">
-                                <Label htmlFor="name">Nombre</Label>
+                                <Label htmlFor="name">Nombre Completo</Label>
                                 <Input
                                     id="name"
                                     name="name"
-                                    placeholder="John Doe"
                                     defaultValue={user?.name ?? ''}
                                     autoFocus
                                 />
@@ -74,12 +73,12 @@ export function CreateOrUpdateUserModal({ user, trigger }: UserModalProps) {
 
                             {/* Email */}
                             <div className="flex flex-col gap-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">Correo</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     name="email"
-                                    placeholder="example@email.com"
+                                    placeholder="correo@ejemplo.com"
                                     defaultValue={user?.email ?? ''}
                                 />
                                 <InputError message={errors.email} />

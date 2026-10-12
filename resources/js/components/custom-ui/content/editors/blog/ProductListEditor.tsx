@@ -36,7 +36,22 @@ export default function ProductListEditor({
     useEffect(() => {
         const items = section.content?.content.items;
         if (!items) return;
-        setData('items', items);
+
+        const existingIds = new Set(initialProducts.map((p) => p.product_id));
+        const valid = items.filter((i: any) => existingIds.has(i.product_id));
+
+        setData('items', valid);
+
+        const removed = items.length - valid.length;
+        if (removed > 0) {
+            toast.warning(
+                removed === 1
+                    ? 'Quitamos 1 producto que ya no existe. Guarda para confirmar el cambio.'
+                    : `Quitamos ${removed} productos que ya no existen. Guarda para confirmar el cambio.`,
+                { id: `orphans-${section.id}` },
+            );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.content, setData]);
 
     // MAPA DE REFERENCIA ACTUALIZADO:

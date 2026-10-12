@@ -59,6 +59,13 @@ class ProductPackObserver
 
     public function updated(ProductPack $pack): void
     {
+        // Nombre/slug/estado se leen en vivo → limpiar caché de notificaciones
+        if ($pack->wasChanged(['name', 'slug', 'is_active'])) {
+            DB::afterCommit(function () {
+                app(NotificationService::class)->clearNotificationCache();
+            });
+        }
+
         $promoFlagChanged  = $pack->wasChanged('is_on_promotion');
         $promoStartChanged = $pack->wasChanged('promo_start_at');
         $promoEndChanged   = $pack->wasChanged('promo_end_at');
@@ -72,10 +79,8 @@ class ProductPackObserver
             $service = app(NotificationService::class);
 
             if ($promoNowActive) {
-                // Promo activa y dentro de rango → notif de oferta
                 $service->notifyPackPromotion($pack);
             } else {
-                // is_on_promotion=false, o fechas fuera de rango → eliminar promo y poner como nuevo
                 $service->removePackPromotion($pack);
             }
         });

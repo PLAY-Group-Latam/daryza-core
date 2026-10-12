@@ -153,21 +153,25 @@ class DashboardService
 
     private function calculateConversion($from, $to): float
     {
-        // 1. EL DENOMINADOR: ¿Cuánta gente entró realmente?
-        // Usamos 'product_view' porque si alguien vio un producto, ya es un "interesado".
-        $totalTraffic = EventLog::where('event_type', 'product_view')
-            ->whereBetween('created_at', [$from, $to])
-            ->distinct('session_id') // Contamos personas únicas por sesión, no solo logueados
-            ->count('session_id');
+        $intending = EventLog::where('event_type', 'add_to_cart')
+            ->whereNotNull('customer_id')
+            ->whereBetween('created_at', [$from, $to]);
 
-        // 2. EL NUMERADOR: ¿Cuántos se convirtieron en clientes reales?
-        // 'order_placed' es el evento que dispara tu Seeder y tu flujo de caja.
-        $conversions = EventLog::where('event_type', 'order_placed')
-            ->whereBetween('created_at', [$from, $to])
-            ->distinct('session_id')
-            ->count('session_id');
+        $intendingCount = (clone $intending)
+            ->distinct('customer_id')
+            ->count('customer_id');
 
-        // 3. LA MAGIA: (Éxitos / Visitas) * 100
-        return $totalTraffic > 0 ? round(($conversions / $totalTraffic) * 100, 2) : 0;
+        if ($intendingCount === 0) {
+            return 0.0;
+        }
+
+        $convertedCount = Order::whereNotIn('state', $this->excludedStates)
+            ->whereNotNull('customer_id')
+            ->whereBetween('created_at', [$from, $to])
+            ->whereIn('customer_id', $intending->select('customer_id'))
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        return round(($convertedCount / $intendingCount) * 100, 2);
     }
 }

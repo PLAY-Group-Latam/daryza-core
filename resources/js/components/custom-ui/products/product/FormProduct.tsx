@@ -42,6 +42,7 @@ export default function FormProduct({
     product,
 }: Props) {
     const isEdit = Boolean(product);
+    const [isSaving, setIsSaving] = useState(false);
     const [showSubmitHelp, setShowSubmitHelp] = useState(false);
 
     const methods = useForm<ProductFormValues>({
@@ -60,14 +61,19 @@ export default function FormProduct({
     }, [product, reset]);
 
     const onSubmit = (data: ProductFormValues) => {
+        if (isSaving) return; // guard contra doble click
+
         setShowSubmitHelp(false);
         const url = isEdit
             ? products.items.update(product!.id).url
             : products.items.store().url;
         const formData = buildFormData(data, isEdit);
+
         router.post(url, formData, {
             preserveScroll: true,
             forceFormData: true,
+            onStart: () => setIsSaving(true),
+            onFinish: () => setIsSaving(false),
         });
     };
 
@@ -122,7 +128,7 @@ export default function FormProduct({
                                 ? products.items.edit(product!.id).url
                                 : products.items.create.url()
                         }
-                        isSubmitting={methods.formState.isSubmitting}
+                        isSubmitting={isSaving || methods.formState.isSubmitting}
                         isEdit={isEdit}
                     />
                 </div>

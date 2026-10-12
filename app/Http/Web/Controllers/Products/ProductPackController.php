@@ -22,26 +22,26 @@ class ProductPackController extends Controller
     /**
      * Listado de packs
      */
- public function index()
-{
-    $perPage = request()->integer('per_page', 10);
-    $search = request()->string('search')->trim()->value();
+    public function index()
+    {
+        $perPage = request()->integer('per_page', 10);
+        $search = request()->string('search')->trim()->value();
 
-    $packs = ProductPack::with(['items.product', 'items.variant'])
-        ->when($search, function ($query, $search) {
-            $query->where('name', 'ilike', "%{$search}%");
-        })
-        ->latest()
-        ->paginate($perPage)
-        ->withQueryString();
+        $packs = ProductPack::with(['items.product', 'items.variant'])
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'ilike', "%{$search}%");
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
 
-    return Inertia::render('products/packs/Index', [
-        'paginatedPacks' => $packs,
-        'filters' => [
-            'search' => $search,
-        ],
-    ]);
-}
+        return Inertia::render('products/packs/Index', [
+            'paginatedPacks' => $packs,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
+    }
 
     /**
      * Mostrar el formulario de creación
@@ -86,7 +86,6 @@ class ProductPackController extends Controller
     {
         $search = trim($request->input('q', ''));
 
-        // 1. Manejo de la búsqueda (idéntico al create para añadir nuevos items)
         $searchResults = $this->searchService->searchVariantsBySku($search);
 
         $pack->load([
@@ -96,23 +95,25 @@ class ProductPackController extends Controller
             'media' => fn($q) => $q->orderBy('order', 'asc'),
         ]);
 
+        // Items cuya variante/producto ya no existe (borrados)
+        [$validItems, $brokenItems] = $pack->items->partition(
+            fn($item) => $item->variant && $item->variant->product
+        );
+
         return Inertia::render('products/packs/Edit', [
             'pack' => [
-                // Pasamos todos los campos del modelo (incluye stock, descripciones, etc.)
                 ...$pack->toArray(),
-                // Formateo específico para JS Date o datetime-local
                 'promo_start_at' => $pack->promo_start_at?->format('Y-m-d\TH:i'),
                 'promo_end_at'   => $pack->promo_end_at?->format('Y-m-d\TH:i'),
-                // Formateamos items para que la tabla en React los maneje fácil
-                'items' => $pack->items->map(fn($item) => [
+                'items' => $validItems->map(fn($item) => [
                     'variant_id'   => $item->variant_id,
                     'product_id'   => $item->product_id,
                     'sku'          => $item->variant->sku,
                     'quantity'     => $item->quantity,
                     'product_name' => $item->variant->product->name,
-                    'variant_name'        => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
+                    'variant_name' => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
                     'image'        => $item->variant->mainImage?->file_path,
-                ]),
+                ])->values(),
                 'media' => $pack->media->map(fn($media) => [
                     'id' => $media->id,
                     'file_path' => $media->file_path,
@@ -120,6 +121,7 @@ class ProductPackController extends Controller
                     'order' => $media->order,
                 ])->values(),
             ],
+            'removedItemsCount' => $brokenItems->count(),
             'searchResults' => $searchResults,
             'filters' => ['q' => $search]
         ]);

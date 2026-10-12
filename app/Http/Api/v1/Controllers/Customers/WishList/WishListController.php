@@ -25,19 +25,23 @@ class WishListController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Obtenemos el ID del usuario autenticado desde el Request
         $customer = $request->user();
 
         if (!$customer) {
             return $this->error('Usuario no autenticado', null, 401);
         }
 
+        // Limpia items que ya no existen y cuenta cuántos quitó
+        $removed  = $this->WishListservice->purgeUnavailable($customer->id);
         $wishlist = $this->WishListservice->getCustomerWishlist($customer->id);
 
-        return $this->success(
-            'Wishlist obtenida correctamente.',
-            WishlistResource::collection($wishlist)
-        );
+        // `data` se mantiene igual (la colección); el conteo va aparte
+        return response()->json([
+            'success'       => true,
+            'message'       => 'Wishlist obtenida correctamente.',
+            'data'          => WishlistResource::collection($wishlist),
+            'removed_count' => $removed,
+        ]);
     }
 
     /**

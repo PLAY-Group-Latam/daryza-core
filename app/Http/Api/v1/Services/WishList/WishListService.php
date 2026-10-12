@@ -10,64 +10,81 @@ class WishListService
 {
 
     public function toggle(string $customerId, string $itemId, string $type)
-{
-    $modelClass = $type === 'pack' ? ProductPack::class : ProductVariant::class;
+    {
+        $modelClass = $type === 'pack' ? ProductPack::class : ProductVariant::class;
 
-    // No se permiten favoritos de ítems inexistentes.
-    if (!$modelClass::query()->whereKey($itemId)->exists()) {
-        throw new \InvalidArgumentException('El ítem no existe.');
-    }
+        // No se permiten favoritos de ítems inexistentes.
+        if (!$modelClass::query()->whereKey($itemId)->exists()) {
+            throw new \InvalidArgumentException('El ítem no existe.');
+        }
 
-    $wishlist = Wishlist::where([
-        'customer_id' => $customerId,
-        'item_id'     => $itemId,
-        'item_type'   => $modelClass
-    ])->first();
+        $wishlist = Wishlist::where([
+            'customer_id' => $customerId,
+            'item_id'     => $itemId,
+            'item_type'   => $modelClass
+        ])->first();
 
-    if ($wishlist) {
-        $wishlist->delete();
+        if ($wishlist) {
+            $wishlist->delete();
+            return [
+                'action'        => 'removed',
+                'message'       => 'Eliminado de tus favoritos.',
+                'current_count' => $this->getCount($customerId),
+            ];
+        }
+
+        Wishlist::create([
+            'customer_id' => $customerId,
+            'item_id'     => $itemId,
+            'item_type'   => $modelClass
+        ]);
+
         return [
-            'action'        => 'removed',
-            'message'       => 'Eliminado de tus favoritos.',
-            'current_count' => $this->getCount($customerId), 
+            'action'        => 'added',
+            'message'       => '¡Guardado en tus favoritos!',
+            'current_count' => $this->getCount($customerId),
         ];
     }
 
-    Wishlist::create([
-        'customer_id' => $customerId,
-        'item_id'     => $itemId,
-        'item_type'   => $modelClass
-    ]);
+    public function getCustomerWishlist(string $customerId)
+    {
+        return Wishlist::where('customer_id', $customerId)
+            ->with([
+                'customer',
+                'item' => function ($query) {
+                    $query->morphWith([
+                        ProductVariant::class => [
+                            'product',
+                            'mainImage',
+                            'selections',
+                            'selections.attributeValue',
+                        ],
+                        ProductPack::class => ['mainImage']
+                    ]);
+                }
+            ])
+            ->latest()
+            ->get()
+            ->filter(fn($wishlist) => $wishlist->item !== null);
+    }
 
-    return [
-        'action'        => 'added',
-        'message'       => '¡Guardado en tus favoritos!',
-        'current_count' => $this->getCount($customerId), 
-    ];
-}
+    /**
+     * Borra de la wishlist los items cuya variante/pack ya no existe
+     * (eliminados o en papelera). Devuelve cuántos quitó.
+     */
+    public function purgeUnavailable(string $customerId): int
+    {
+        $orphans = Wishlist::where('customer_id', $customerId)
+            ->with('item')
+            ->get()
+            ->filter(fn($wishlist) => $wishlist->item === null);
 
-   public function getCustomerWishlist(string $customerId)
-{
-    return Wishlist::where('customer_id', $customerId)
-        ->with([
-            'customer',
-            'item' => function ($query) {
-                $query->morphWith([
-                    ProductVariant::class => [
-                        'product',
-                        'mainImage',
-                        'selections',        
-                        'selections.attributeValue', 
-                    ],
-                    ProductPack::class => ['mainImage']
-                ]);
-            }
-        ])
-        ->latest()
-        ->get()
-        ->filter(fn($wishlist) => $wishlist->item !== null);
-}
+        foreach ($orphans as $wishlist) {
+            $wishlist->delete();
+        }
 
+        return $orphans->count();
+    }
 
     public function getCount(string $customerId): int
     {

@@ -84,35 +84,37 @@ public function index()
    * Formulario de edición
    */
   public function edit(Request $request, DynamicCategory $dynamicCategory): Response
-  {
+{
     $search = trim($request->input('q', ''));
     $searchResults = $this->searchService->searchVariantsBySku($search);
 
-    // Cargamos los items con sus variantes y atributos para el frontend
     $dynamicCategory->load(['items.variant.product', 'items.variant.attributes', 'items.variant.mainImage']);
+
+    // Items cuya variante/producto ya no existe (borrados)
+    [$validItems, $brokenItems] = $dynamicCategory->items->partition(
+        fn($item) => $item->variant && $item->variant->product
+    );
 
     return Inertia::render('products/dynamicCategories/Edit', [
       'category' => [
         ...$dynamicCategory->toArray(),
-        // Formateo para DatePickers de React
         'starts_at' => $dynamicCategory->starts_at?->format('Y-m-d\TH:i'),
         'ends_at'   => $dynamicCategory->ends_at?->format('Y-m-d\TH:i'),
-        // Formateamos para que SelectedVariantsTable lo lea igual que en el buscador
-        'items' => $dynamicCategory->items->map(fn($item) => [
-          'id'           => $item->variant_id, // ID de la variante para el checkbox/remove
+        'items' => $validItems->map(fn($item) => [
+          'id'           => $item->variant_id,
           'variant_id'   => $item->variant_id,
           'product_id'   => $item->product_id,
           'sku'          => $item->variant->sku,
           'product_name' => $item->variant->product->name,
           'variant_name' => "(" . ($item->variant->attributes->pluck('value')->implode('-') ?: 'Única') . ")",
           'image'        => $item->variant->mainImage?->file_path,
-        ]),
-
+        ])->values(),
       ],
+      'removedItemsCount' => $brokenItems->count(),
       'searchResults' => $searchResults,
       'filters' => ['q' => $search]
     ]);
-  }
+}
 
   /**
    * Actualizar Categoría

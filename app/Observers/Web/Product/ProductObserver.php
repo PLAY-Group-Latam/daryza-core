@@ -27,19 +27,26 @@ class ProductObserver
         }
     }
 
-   public function created(Product $product): void
+    public function created(Product $product): void
 
-{
-     if (static::$muteNotifications) return;
-    DB::afterCommit(function () use ($product) {
-        app(NotificationService::class)->notifyNewProduct($product->fresh());
-    });
-}
+    {
+        if (static::$muteNotifications) return;
+        DB::afterCommit(function () use ($product) {
+            app(NotificationService::class)->notifyNewProduct($product->fresh());
+        });
+    }
 
     public function updated(Product $product): void
     {
         app(ProductMainVariantNormalizer::class)->normalize($product);
-        
+
+        // El nombre/slug/estado se leen en vivo en las notificaciones,
+        // así que limpiamos el caché para que se refleje al instante
+        if ($product->wasChanged(['name', 'slug', 'is_active'])) {
+            DB::afterCommit(function () {
+                app(NotificationService::class)->clearNotificationCache();
+            });
+        }
     }
 
     public function deleting(Product $product): void

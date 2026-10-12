@@ -370,12 +370,12 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                                 control={control}
                                 render={({ field }) => (
                                     <div className="flex flex-col gap-2">
-                                        <Label>Imagen principal</Label>
+                                        {/* <Label>Imagen principal</Label>
                                         <Upload
                                             value={field.value}
                                             onFileChange={field.onChange}
                                             previewClassName="w-full h-36"
-                                        />
+                                        /> */}
                                         {errors.image && (
                                             <p className="text-sm text-red-500">
                                                 Imagen inválida

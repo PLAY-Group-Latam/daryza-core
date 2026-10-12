@@ -52,8 +52,9 @@ class OrderService
             $discountTotal = (float) $couponData['discount_total'];
         }
 
-        $netSubtotal = max(0, $subtotal - $discountTotal);
-        $thresholds = $this->resolveOrderThresholds($netSubtotal);
+        // CAMBIO CLAVE: Evaluamos los umbrales usando el $subtotal original (sin descontar el cupón)
+        $thresholds = $this->resolveOrderThresholds($subtotal);
+
         $shipping = null;
         $deliveryCost = 0.0;
         $shippingInput = $this->extractShippingInput($payload);
@@ -63,11 +64,14 @@ class OrderService
                 $shippingInput['department_id'],
                 $shippingInput['province_id'],
                 $shippingInput['district_id'],
-                $netSubtotal,
+                $subtotal, // Pasamos el $subtotal bruto para evaluar envío gratis/mínimo correctamente
                 false
             );
             $deliveryCost = (float) $shipping['delivery_cost'];
         }
+
+        // El neto se calcula después solo para el total final a pagar
+        $netSubtotal = max(0, $subtotal - $discountTotal);
 
         return [
             'currency' => 'PEN',
@@ -78,7 +82,7 @@ class OrderService
             'subtotal' => round($subtotal, 2),
             'delivery_cost' => round($deliveryCost, 2),
             'discount_total' => round($discountTotal, 2),
-            'total' => round(($subtotal - $discountTotal) + $deliveryCost, 2),
+            'total' => round($netSubtotal + $deliveryCost, 2),
             'shipping' => $shipping,
             'coupon' => $couponData ? Arr::except($couponData, ['coupon']) : null,
             'items' => $this->previewItemsPayload($items, $variants, $packs),
@@ -178,21 +182,23 @@ class OrderService
             }
 
             $shippingInput = $payload['shipping_info'];
-            $netSubtotal = max(0, $subtotal - $discountTotal);
+
+            // CAMBIO CLAVE: Cotizamos el envío pasando el $subtotal original en lugar del neto con descuento
             $shipping = $this->resolveShippingQuote(
                 $shippingInput['department_id'],
                 $shippingInput['province_id'],
                 $shippingInput['district_id'],
-                $netSubtotal
+                $subtotal
             );
 
             $paymentInfo = $payload['payment_info'];
-            // Niubiz debe confirmarse por validacion server-to-server, no por payload del cliente.
             $isNiubizApproved = false;
             $orderCode = $this->generateOrderCode();
 
             $customerInfo = $payload['customer_info'];
             $billingInfo = $payload['billing_info'] ?? [];
+
+            $netSubtotal = max(0, $subtotal - $discountTotal);
 
             $order = Order::create([
                 'code' => $orderCode,
@@ -228,7 +234,7 @@ class OrderService
                 'subtotal' => $subtotal,
                 'delivery_cost' => $shipping['delivery_cost'],
                 'discount_total' => $discountTotal,
-                'total' => ($subtotal - $discountTotal) + $shipping['delivery_cost'],
+                'total' => $netSubtotal + $shipping['delivery_cost'], // Total calculado con el neto real
 
                 'payment_method_id' => null,
                 'payment_method_type' => $paymentInfo['method'],
@@ -311,7 +317,6 @@ class OrderService
                     'unit_price' => $unitPrice,
                     'line_total' => $unitPrice * $quantity,
                     'metadata' => [
-                        // Snapshot comercial para auditoria del item al momento de compra.
                         'is_on_promo' => $isPromoActive,
                         'regular_price' => (float) $variant->price,
                         'variant_image' => $variant->mainImage?->file_path,
@@ -415,7 +420,7 @@ class OrderService
             $order->update([
                 'state' => 'cancelled',
                 'cancelled_at' => now(),
-                'notes' => $reason ? trim(($order->notes ? $order->notes."\n" : '').'Cancelada por cliente: '.$reason) : $order->notes,
+                'notes' => $reason ? trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada por cliente: ' . $reason) : $order->notes,
             ]);
 
             $this->restoreStockForOrder($order);
@@ -704,7 +709,7 @@ class OrderService
             $order->update([
                 'state' => 'cancelled',
                 'cancelled_at' => now(),
-                'notes' => trim(($order->notes ? $order->notes."\n" : '').'Cancelada automáticamente por falta de pago pendiente.'),
+                'notes' => trim(($order->notes ? $order->notes . "\n" : '') . 'Cancelada automáticamente por falta de pago pendiente.'),
             ]);
 
             $payment = $order->payments()->latest()->first();
@@ -747,7 +752,7 @@ class OrderService
         ];
 
         $allowedActions = collect($actionsOrder)
-            ->filter(fn (string $action) => $this->canApplyAdminAction($order, $action))
+            ->filter(fn(string $action) => $this->canApplyAdminAction($order, $action))
             ->values()
             ->all();
 
@@ -771,7 +776,7 @@ class OrderService
                     continue;
                 }
                 $rollbackAction = $candidate;
-                $rollbackLabel = 'Regresar a '.$this->stateLabel($rollbackState);
+                $rollbackLabel = 'Regresar a ' . $this->stateLabel($rollbackState);
                 break;
             }
         }
@@ -819,9 +824,9 @@ class OrderService
         $zone = DeliveryZone::query()
             ->where('delivery_cost', '>', 0)
             ->where(function ($query) use ($departmentId, $provinceId, $districtId) {
-                $query->where(fn ($q) => $q->where('zone_type', 'district')->where('zone_id', $districtId))
-                    ->orWhere(fn ($q) => $q->where('zone_type', 'province')->where('zone_id', $provinceId))
-                    ->orWhere(fn ($q) => $q->where('zone_type', 'department')->where('zone_id', $departmentId));
+                $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $districtId))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $provinceId))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'department')->where('zone_id', $departmentId));
             })
             ->orderByRaw("CASE zone_type WHEN 'district' THEN 1 WHEN 'province' THEN 2 ELSE 3 END")
             ->first();
@@ -877,9 +882,9 @@ class OrderService
     {
         $zone = DeliveryZone::query()
             ->where(function ($query) use ($order) {
-                $query->where(fn ($q) => $q->where('zone_type', 'district')->where('zone_id', $order->district_id))
-                    ->orWhere(fn ($q) => $q->where('zone_type', 'province')->where('zone_id', $order->province_id))
-                    ->orWhere(fn ($q) => $q->where('zone_type', 'department')->where('zone_id', $order->department_id));
+                $query->where(fn($q) => $q->where('zone_type', 'district')->where('zone_id', $order->district_id))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'province')->where('zone_id', $order->province_id))
+                    ->orWhere(fn($q) => $q->where('zone_type', 'department')->where('zone_id', $order->department_id));
             })
             ->orderByRaw("CASE zone_type WHEN 'district' THEN 1 WHEN 'province' THEN 2 ELSE 3 END")
             ->first();
@@ -1065,7 +1070,7 @@ class OrderService
                     'quantity' => (int) data_get($item, 'quantity', 0),
                 ];
             })
-            ->groupBy(fn ($item) => $item['item_type'].':'.($item['variant_id'] ?? $item['pack_id']))
+            ->groupBy(fn($item) => $item['item_type'] . ':' . ($item['variant_id'] ?? $item['pack_id']))
             ->map(function ($group) {
                 $first = $group->first();
 
@@ -1073,10 +1078,10 @@ class OrderService
                     'item_type' => $first['item_type'],
                     'variant_id' => $first['variant_id'],
                     'pack_id' => $first['pack_id'],
-                    'quantity' => $group->sum(fn ($item) => (int) ($item['quantity'] ?? 0)),
+                    'quantity' => $group->sum(fn($item) => (int) ($item['quantity'] ?? 0)),
                 ];
             })
-            ->filter(fn ($item) => $item['quantity'] > 0)
+            ->filter(fn($item) => $item['quantity'] > 0)
             ->values()
             ->all();
     }
@@ -1251,10 +1256,10 @@ class OrderService
         };
     }
 
- private function canApplyAdminAction(Order $order, string $action): bool
-{
-    return $this->targetStateFromAction($action) !== null;
-}
+    private function canApplyAdminAction(Order $order, string $action): bool
+    {
+        return $this->targetStateFromAction($action) !== null;
+    }
 
     private function getPreviousStateForRollback(string $state, ?string $paymentMethodType): ?string
     {
@@ -1361,6 +1366,6 @@ class OrderService
             'updated_at' => now(),
         ]);
 
-        return 'DAR-'.str_pad((string) $nextNumber, 12, '0', STR_PAD_LEFT);
+        return 'DAR-' . str_pad((string) $nextNumber, 12, '0', STR_PAD_LEFT);
     }
 }
