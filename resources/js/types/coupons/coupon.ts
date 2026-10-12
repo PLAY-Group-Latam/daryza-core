@@ -1,7 +1,13 @@
 import { Customer } from '../customers';
 
 export type DiscountType = 'fixed' | 'percentage';
-export type CouponScope = 'global' | 'category' | 'product' | 'pack' | 'business_dynamic' | 'customer';
+export type CouponScope =
+    | 'global'
+    | 'category'
+    | 'product'
+    | 'pack'
+    | 'business_dynamic'
+    | 'customer';
 type CouponRelationItem = { id: string; name?: string | null };
 
 export interface CouponRedemption {
@@ -45,6 +51,8 @@ export interface CouponModel {
     packs?: CouponRelationItem[];
     business_dynamics?: CouponRelationItem[];
     customers?: Customer[];
+    excluded_products?: CouponRelationItem[];
+    excluded_packs?: CouponRelationItem[];
     redemptions?: CouponRedemption[];
 }
 

@@ -68,6 +68,13 @@ class CouponRequest extends FormRequest
 
             'customer_ids'      => [Rule::requiredIf($this->input('scope') === 'customer'), 'array'],
             'customer_ids.*'    => ['exists:customers,id'],
+
+            // Exclusiones — opcionales, aplican a cualquier alcance
+            'excluded_product_ids'   => ['nullable', 'array'],
+            'excluded_product_ids.*' => ['exists:products,id'],
+
+            'excluded_pack_ids'      => ['nullable', 'array'],
+            'excluded_pack_ids.*'    => ['exists:product_packs,id'],
         ];
     }
 
@@ -119,6 +126,9 @@ class CouponRequest extends FormRequest
             'business_dynamic_ids.*.exists'  => 'Una dinámica de negocio seleccionada no es válida.',
             'customer_ids.required'       => 'Debes seleccionar al menos un cliente.',
             'customer_ids.*.exists'       => 'Un cliente seleccionado no es válido.',
+
+            'excluded_product_ids.*.exists' => 'Un producto excluido no es válido.',
+            'excluded_pack_ids.*.exists'    => 'Un pack excluido no es válido.',
         ];
     }
 
@@ -150,6 +160,8 @@ class CouponRequest extends FormRequest
             'pack_ids'                => $this->parseArray($data['pack_ids'] ?? null),
             'business_dynamic_ids'    => $this->parseArray($data['business_dynamic_ids'] ?? null),
             'customer_ids'            => $this->parseArray($data['customer_ids'] ?? null),
+            'excluded_product_ids'    => $this->parseArray($data['excluded_product_ids'] ?? null),
+            'excluded_pack_ids'       => $this->parseArray($data['excluded_pack_ids'] ?? null),
         ]);
     }
 

@@ -134,6 +134,8 @@ const couponSchema = z
         pack_ids: z.array(z.string()).optional(),
         business_dynamic_ids: z.array(z.string()).optional(),
         customer_ids: z.array(z.string()).optional(),
+        excluded_product_ids: z.array(z.string()).optional(),
+        excluded_pack_ids: z.array(z.string()).optional(),
     })
 
     // Fechas
@@ -285,6 +287,9 @@ export function CouponForm({ coupon }: CouponFormProps) {
             business_dynamic_ids:
                 coupon?.business_dynamics?.map((b) => b.id) ?? [],
             customer_ids: coupon?.customers?.map((c) => c.id) ?? [],
+            excluded_product_ids:
+                coupon?.excluded_products?.map((p) => p.id) ?? [],
+            excluded_pack_ids: coupon?.excluded_packs?.map((p) => p.id) ?? [],
         },
     });
 
@@ -308,6 +313,8 @@ export function CouponForm({ coupon }: CouponFormProps) {
                     ? data.business_dynamic_ids
                     : [],
             customer_ids: data.scope === 'customer' ? data.customer_ids : [],
+            excluded_product_ids: data.excluded_product_ids ?? [],
+            excluded_pack_ids: data.excluded_pack_ids ?? [],
             maximum_discount_amount:
                 data.discount_type === 'percentage'
                     ? data.maximum_discount_amount
@@ -734,6 +741,49 @@ export function CouponForm({ coupon }: CouponFormProps) {
                                 )}
                             />
                         )}
+
+                        {/* Exclusiones — aplican a todos los alcances */}
+                        <FormField
+                            control={form.control}
+                            name="excluded_product_ids"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Productos Excluidos</FormLabel>
+                                    <FormDescription>
+                                        Estos productos no recibirán el
+                                        descuento, sin importar el alcance.
+                                    </FormDescription>
+                                    <AsyncMultiSelectProducts
+                                        value={field.value || []}
+                                        onChange={field.onChange}
+                                        placeholder="Buscar producto por nombre"
+                                        requestPath="/coupon/search-products"
+                                    />
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="excluded_pack_ids"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Packs Excluidos</FormLabel>
+                                    <FormDescription>
+                                        Estos packs no recibirán el descuento,
+                                        sin importar el alcance.
+                                    </FormDescription>
+                                    <AsyncMultiSelectProducts
+                                        value={field.value || []}
+                                        onChange={field.onChange}
+                                        placeholder="Buscar pack por nombre"
+                                        requestPath="/coupon/search-packs"
+                                    />
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         {/* Fechas */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

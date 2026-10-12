@@ -20,7 +20,7 @@ class CouponService
 
    public function getPaginatedCoupons(int $perPage = 10, ?string $search = null): LengthAwarePaginator
 {
-    return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
+    return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers', 'excludedProducts', 'excludedPacks'])
         ->withCount('redemptions as usage_count')
         ->when($search, function ($query, $search) {
             $query->where('code', 'ilike', "%{$search}%")
@@ -32,7 +32,7 @@ class CouponService
 
     public function getCouponById(string $id): Coupon
     {
-        return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers'])
+    return Coupon::with(['products', 'categories', 'packs', 'businessDynamics', 'customers', 'excludedProducts', 'excludedPacks'])
             ->withCount('redemptions as usage_count')
             ->findOrFail($id);
     }
@@ -59,6 +59,7 @@ class CouponService
             ]);
 
             $this->syncScopeRelations($coupon, $data['scope'], $data);
+            $this->syncExclusionRelations($coupon, $data);
 
             return $coupon;
         });
@@ -86,6 +87,7 @@ class CouponService
             ]);
 
             $this->syncScopeRelations($coupon, $data['scope'], $data);
+            $this->syncExclusionRelations($coupon, $data);
 
             return $coupon;
         });
@@ -229,6 +231,12 @@ class CouponService
                 $coupon->$relation()->detach();
             }
         }
+    }
+
+    private function syncExclusionRelations(Coupon $coupon, array $data): void
+    {
+        $coupon->excludedProducts()->sync($data['excluded_product_ids'] ?? []);
+        $coupon->excludedPacks()->sync($data['excluded_pack_ids'] ?? []);
     }
 
     private function parseSearchInput(?string $query): array
