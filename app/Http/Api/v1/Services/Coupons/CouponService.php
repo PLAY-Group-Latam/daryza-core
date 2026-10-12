@@ -168,11 +168,16 @@ class CouponService
         }
 
         $eligibleUnits = 0;
+        $exclusionsApply = !in_array(
+            $coupon->scope,
+            [CouponScope::Product->value, CouponScope::Pack->value],
+            true,
+        );
         $discountableItems = $this->excludeItems(
             $items,
             $variants,
-            $coupon->excludedProducts->pluck('id')->all(),
-            $coupon->excludedPacks->pluck('id')->all(),
+            $exclusionsApply ? $coupon->excludedProducts->pluck('id')->all() : [],
+            $exclusionsApply ? $coupon->excludedPacks->pluck('id')->all() : [],
         );
         $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $packs, $discountableItems, $eligibleUnits);
 

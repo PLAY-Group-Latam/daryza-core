@@ -235,8 +235,10 @@ class CouponService
 
     private function syncExclusionRelations(Coupon $coupon, array $data): void
     {
-        $coupon->excludedProducts()->sync($data['excluded_product_ids'] ?? []);
-        $coupon->excludedPacks()->sync($data['excluded_pack_ids'] ?? []);
+        $exclusionsApply = !in_array($data['scope'] ?? null, ['product', 'pack'], true);
+
+        $coupon->excludedProducts()->sync($exclusionsApply ? ($data['excluded_product_ids'] ?? []) : []);
+        $coupon->excludedPacks()->sync($exclusionsApply ? ($data['excluded_pack_ids'] ?? []) : []);
     }
 
     private function parseSearchInput(?string $query): array
