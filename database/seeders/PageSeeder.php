@@ -11,7 +11,7 @@ class PageSeeder extends Seeder
 {
     public function run(): void
     {
-            /*
+        /*
             |--------------------------------------------------------------------------
             | 1. HOME
             |--------------------------------------------------------------------------
@@ -23,22 +23,22 @@ class PageSeeder extends Seeder
             | home_attributes     → AtributosEditor
             |--------------------------------------------------------------------------
             */
-            $home = Page::create([
-                'title'  => 'Home',
-                'slug'   => 'home',
-                'type'   => 'system',
-                'status' => 'published',
-            ]);
+        $home = Page::create([
+            'title'  => 'Home',
+            'slug'   => 'home',
+            'type'   => 'system',
+            'status' => 'published',
+        ]);
 
-            $this->createSections($home, [
-                ['home_modal',         'Modal',                  ['max_images' => 1, 'has_dates' => true, 'has_visibility' => true]],
-                ['home_banner',        'Banner Dinámico',        []],
-                ['home_promo_image',   'Imagen Promocional',     []],
-                ['home_promo_dynamic', 'Imágenes Promocionales', ['dynamic' => true]],
-                ['home_attributes',    'Items de Atributos',     ['max_items' => 4]],
-                ['home_section_title',      'Titulo de Sección',[]],
-                ['home_newsletter',    'Newsletter',             []],
-            ]);
+        $this->createSections($home, [
+            ['home_modal',         'Modal',                  ['max_images' => 1, 'has_dates' => true, 'has_visibility' => true]],
+            ['home_banner',        'Banner Dinámico',        []],
+            ['home_promo_image',   'Imagen Promocional',     []],
+            ['home_promo_dynamic', 'Imágenes Promocionales', ['dynamic' => true]],
+            ['home_attributes',    'Items de Atributos',     ['max_items' => 4]],
+            ['home_section_title',      'Titulo de Sección', []],
+            ['home_newsletter',    'Newsletter',             []],
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -64,9 +64,9 @@ class PageSeeder extends Seeder
         $this->createSections($footer, [
             ['footer_logo_header',  'Logo Header',             []],
             ['footer_logo_footer',  'Logo Footer',             []],
-            ['footer_contact_info', 'Información de Contacto', []], 
+            ['footer_contact_info', 'Información de Contacto', []],
             ['footer_socials',        'Redes Sociales',        ['dynamic' => true]],
-            ['faqs_info','Preguntas Frecuentes',[]],
+            ['faqs_info', 'Preguntas Frecuentes', []],
         ]);
 
         /*
@@ -156,10 +156,10 @@ class PageSeeder extends Seeder
         |--------------------------------------------------------------------------
         | 6. BLOG
         |--------------------------------------------------------------------------
-        | blog_banner      → BlogBannerEditor
-        | blog_promos      → BlogPromosEditor     (máx 3)
-        | blog_products    → BlogProductsEditor
-        | blog_post_promos → BlogPostPromosEditor (máx 2)
+        | blog_banner        → BlogBannerEditor
+        | blog_promos        → BlogPromosEditor     (máx 3 - Listado / Inicio del Blog)
+        | blog_products      → BlogProductsEditor
+        | blog_post_promos   → BlogPostPromosEditor (máx 2 - Detalle de Publicación / Post)
         |--------------------------------------------------------------------------
         */
         $blog = Page::create([
@@ -170,12 +170,11 @@ class PageSeeder extends Seeder
         ]);
 
         $this->createSections($blog, [
-            ['blog_banner',      'Banner',                       []],
-            ['blog_promos',      'Imágenes Promocionales',       ['max_items' => 3]],
-            ['blog_products',    'Seleccionar Productos',        []],
-            ['blog_post_promos', 'Imágenes Promo Publicaciones', ['max_items' => 2]],
+            ['blog_banner',      'Banner Principal',                                []],
+            ['blog_promos',      'Promociones - Listado Blog',                      ['max_items' => 3]],
+            ['blog_products',    'Seleccionar Productos',                           []],
+            ['blog_post_promos', 'Promociones - Detalle de Publicación (Post)',    ['max_items' => 2]],
         ]);
-
         /*
         |--------------------------------------------------------------------------
         | 7. SISTEMA
@@ -195,7 +194,7 @@ class PageSeeder extends Seeder
             'title'  => 'Promocionales',
             'slug'   => 'sistema',
             'type'   => 'group',
-            'status' => 'published', 
+            'status' => 'published',
         ]);
 
         $this->createSections($sistema, [
@@ -204,7 +203,7 @@ class PageSeeder extends Seeder
             ['sistema_checkout',       'Checkout',             []],
             ['sistema_perfil',         'Perfil',               []],
             ['sistema_producto',       'Información Producto', []],
-            
+
         ]);
     }
 
@@ -224,7 +223,7 @@ class PageSeeder extends Seeder
                 'sort_order' => $index + 1,
                 'is_active'  => true,
                 'settings'   => empty($settings) ? null : $settings,
-            ]); 
+            ]);
 
             SectionContent::create([
                 'page_section_id' => $section->id,

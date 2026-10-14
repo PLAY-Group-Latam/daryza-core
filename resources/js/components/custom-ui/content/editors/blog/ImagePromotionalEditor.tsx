@@ -1,9 +1,12 @@
 'use client';
 
-import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import SingleImageEditor from './SingleImageEditor';
 import { Button } from '@/components/ui/button';
 import { ContentSectionProps as Props } from '@/types/content/content';
-import { ImagePromotionalContent } from '@/types/content/content-types';
+import {
+    ImagePromotionalContent,
+    PromotionalItem,
+} from '@/types/content/content-types';
 import { useForm } from '@inertiajs/react';
 import { ImagePlus, Plus, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,22 +18,15 @@ export default function ImagePromotionalEditor({ section }: Props) {
         content: ImagePromotionalContent;
     }>({
         content: {
-            // Limitamos a 3 items máximo según tu lógica
             items: rawContent?.items?.slice(0, 2) ?? [],
         },
     });
 
     const items = data.content.items;
 
-    const updateItem = (index: number, updates: any) => {
+    const updateItem = (index: number, updates: Partial<PromotionalItem>) => {
         const updated = [...items];
-
-        // CORRECCIÓN: Hacemos spread del item existente para NO perder lo que ya tenía
-        updated[index] = {
-            ...updated[index], // Mantenemos id, src_desktop anterior, src_mobile anterior, etc.
-            ...updates, // Sobrescribimos solo lo que cambió (src_desktop o src_mobile o link_url)
-        };
-
+        updated[index] = { ...updated[index], ...updates };
         setData('content', { items: updated });
     };
 
@@ -50,8 +46,7 @@ export default function ImagePromotionalEditor({ section }: Props) {
     };
 
     const removeItem = (index: number) => {
-        const updated = items.filter((_, i) => i !== index);
-        setData('content', { items: updated });
+        setData('content', { items: items.filter((_, i) => i !== index) });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -103,7 +98,7 @@ export default function ImagePromotionalEditor({ section }: Props) {
                     )}
                 </div>
 
-                {/* Lista de Promociones mapeando el componente unificado */}
+                {/* Lista */}
                 <div className="divide-y divide-slate-100 bg-slate-50/20">
                     {items.map((item, index) => (
                         <div key={item.id} className="relative bg-white p-8">
@@ -120,22 +115,17 @@ export default function ImagePromotionalEditor({ section }: Props) {
                                 </button>
                             </div>
 
-                            <div className="contents-wrapper !border-0 !p-0 !shadow-none">
-                                <ResponsiveBannerEditor
-                                    title="Imagen promocional"
-                                    description="Imagen promocional para la vista de blog."
-                                    data={{
-                                        src_desktop: item.src_desktop,
-                                        src_mobile: item.src_mobile,
-                                        link_url: item.link_url ?? '',
-                                        type: 'url',
-                                    }}
-                                    onChange={(updates) =>
-                                        updateItem(index, updates)
-                                    }
-                                    showTypeTabs={false}
-                                />
-                            </div>
+                            <SingleImageEditor
+                                title="Imagen promocional"
+                                description="Imagen promocional para la vista de blog."
+                                data={{
+                                    src_desktop: item.src_desktop,
+                                    link_url: item.link_url ?? '',
+                                }}
+                                onChange={(updates) =>
+                                    updateItem(index, updates)
+                                }
+                            />
                         </div>
                     ))}
 
@@ -149,6 +139,7 @@ export default function ImagePromotionalEditor({ section }: Props) {
                                 No hay promociones activas
                             </h4>
                             <Button
+                                type="button"
                                 onClick={addItem}
                                 variant="outline"
                                 className="mt-4 rounded-xl font-bold"

@@ -27,13 +27,13 @@ return [
                 'id'          => '252ca40b-e3b3-4af5-b725-f39341bc3b90',
                 'link_url'    => 'https://daryza.com/',
                 'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-                'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+                // 'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
             ],
             [
                 'id'          => 'a18adb01-bc25-4d7a-abc7-845d6fb00159',
                 'link_url'    => 'https://daryza.com/',
                 'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-                'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+                // 'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
             ],
           
         ],
@@ -57,13 +57,13 @@ return [
             'id'          => 'b4ae424b-96a3-4cfb-9da5-738c08b29226',
             'link_url'    => 'https://www.coolbox.pe/',
             'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            // 'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
         ],
         [
             'id'          => '521fadf3-c278-44ce-9719-5a65fe717f7d',
             'link_url'    => 'https://www.coolbox.pe/',
             'src_desktop' => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
-            'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
+            // 'src_mobile'  => 'https://storage.googleapis.com/daryza/static/fallbacks/fallback_Daryza_i.webp',
         ],
     ],
     'socials' => [

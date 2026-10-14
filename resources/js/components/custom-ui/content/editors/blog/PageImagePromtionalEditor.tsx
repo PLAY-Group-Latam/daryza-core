@@ -1,6 +1,6 @@
 'use client';
 
-import ResponsiveBannerEditor from '@/components/custom-ui/content/ResponsiveBannerEditor';
+import SingleImageEditor from './SingleImageEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ContentSectionProps as Props } from '@/types/content/content';
@@ -198,10 +198,10 @@ export default function CombinedFooterEditor({ section }: Props) {
                             <ImagePlus size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 uppercase italic">
+                            <h2 className="text-xl font-black text-slate-900 uppercase">
                                 Banner Promocional Blog
                             </h2>
-                            <p className="text-sm font-medium text-slate-500 italic">
+                            <p className="text-sm font-medium text-slate-500">
                                 Máximo 2 banners configurables.
                             </p>
                         </div>
@@ -238,19 +238,16 @@ export default function CombinedFooterEditor({ section }: Props) {
                                 <Trash2 size={16} />
                             </button>
 
-                            <ResponsiveBannerEditor
+                            <SingleImageEditor
                                 title={`Banner #0${index + 1}`}
-                                description="Sube las versiones para escritorio y móvil."
+                                description="Sube la imagen del banner."
                                 data={{
                                     src_desktop: item.src_desktop,
-                                    src_mobile: item.src_mobile,
                                     link_url: item.link_url ?? '',
-                                    type: 'url',
                                 }}
                                 onChange={(updates) =>
                                     updatePromo(index, updates)
                                 }
-                                showTypeTabs={false}
                             />
                         </div>
                     ))}
