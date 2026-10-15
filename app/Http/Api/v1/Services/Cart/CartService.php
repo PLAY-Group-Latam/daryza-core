@@ -155,12 +155,23 @@ class CartService
 
     protected function ensureIsPurchasable(object $item, string $type): void
     {
-        if ($type === 'pack' && !$item->is_active) {
-            throw new \InvalidArgumentException('El pack no está disponible.');
+        if ($type === 'pack') {
+            if (!$item->is_active) {
+                throw new \InvalidArgumentException('El pack no está disponible.');
+            }
+            return;
         }
 
-        if ($type === 'product' && !$item->is_active) {
-            throw new \InvalidArgumentException('La variante no está disponible.');
+        if ($type === 'product') {
+            // Validar la variante
+            if (!$item->is_active) {
+                throw new \InvalidArgumentException('La variante no está disponible.');
+            }
+
+            // Validar el producto padre
+            if (!$item->product || !$item->product->is_active) {
+                throw new \InvalidArgumentException('El producto no está publicado o disponible.');
+            }
         }
     }
 
@@ -228,11 +239,23 @@ class CartService
                 ? $item->name
                 : ($item->product?->name ?? $savedName ?? 'Producto');
 
+            // 1. Validar disponibilidad de Pack o Variante
             if (!$item->is_active) {
                 $warnings[] = [
                     'code'         => 'inactive',
                     'product_name' => $name,
                     'message'      => "\"$name\" ya no está disponible y fue eliminado de tu carrito.",
+                ];
+                $cartItem->delete();
+                continue;
+            }
+
+            // 2. NUEVA VALIDACIÓN: Si es variante, validar si el producto padre (Product) está activo/publicado
+            if (!$isPack && (!$item->product || !$item->product->is_active)) {
+                $warnings[] = [
+                    'code'         => 'inactive',
+                    'product_name' => $name,
+                    'message'      => "\"$name\" ya no está disponible en la tienda y fue eliminado de tu carrito.",
                 ];
                 $cartItem->delete();
                 continue;

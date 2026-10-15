@@ -183,10 +183,27 @@ class ProductController extends Controller
             ->with([
                 'brand', // Cargamos la marca del producto
                 'technicalSheets',
+                'categories:id,name,slug,parent_id', // Categorías para la ruta de navegación
                 'recommendedProducts.brand', // Marca para las cards de recomendados
                 'recommendedProducts.mainVariant.mainImage'
             ])
             ->firstOrFail();
+
+        // Ruta de navegación: categoría padre -> subcategoría
+        $parentCategory = $product->categories->first(fn($c) => $c->parent_id === null);
+        $childCategory = $parentCategory
+            ? $product->categories->first(fn($c) => $c->parent_id === $parentCategory->id)
+            : null;
+
+        $breadcrumbCategories = collect([$parentCategory, $childCategory])
+            ->filter()
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'parent_id' => $c->parent_id,
+            ])
+            ->values();
 
         $activeVariants = $product->variants()
             ->where('is_active', true)
@@ -217,6 +234,7 @@ class ProductController extends Controller
                 'description' => $product->description,
                 'technical_sheets' => $product->technicalSheets,
                 'brand' => $product->brand, // Marca enviada en el root del producto
+                'categories' => $breadcrumbCategories, // Ruta de navegación
                 'recommended_products' => $product->recommendedProducts
                     ->map(fn($rp) => $this->mapProductCard($rp))
                     ->values(),

@@ -65,25 +65,63 @@ class WishListService
             ])
             ->latest()
             ->get()
-            ->filter(fn($wishlist) => $wishlist->item !== null);
+            ->filter(fn($wishlist) => $this->isAvailable($wishlist->item));
+    }
+
+    /**
+     * Un item está disponible si existe y está publicado.
+     * Variante: producto padre activo (y no borrado) + variante activa.
+     * Pack: activo.
+     */
+    private function isAvailable($item): bool
+    {
+        if ($item === null) {
+            return false;
+        }
+
+        if ($item instanceof ProductVariant) {
+            // $item->product es null si el padre está en papelera (SoftDeletes)
+            return $item->product !== null
+                && $item->product->is_active
+                && $item->is_active;
+        }
+
+        return $item->is_active ?? true;
     }
 
     /**
      * Borra de la wishlist los items cuya variante/pack ya no existe
-     * (eliminados o en papelera). Devuelve cuántos quitó.
+     * (eliminados o en papelera) y cuenta también los que están
+     * no publicados (se ocultan, pero no se borran).
+     * Devuelve el total de items no disponibles para el toast.
      */
     public function purgeUnavailable(string $customerId): int
     {
-        $orphans = Wishlist::where('customer_id', $customerId)
-            ->with('item')
-            ->get()
-            ->filter(fn($wishlist) => $wishlist->item === null);
+        $wishlists = Wishlist::where('customer_id', $customerId)
+            ->with([
+                'item' => function ($query) {
+                    $query->morphWith([
+                        ProductVariant::class => ['product'],
+                    ]);
+                },
+            ])
+            ->get();
 
-        foreach ($orphans as $wishlist) {
-            $wishlist->delete();
+        $unavailable = 0;
+
+        foreach ($wishlists as $wishlist) {
+            if ($wishlist->item === null) {
+                $wishlist->delete();
+                $unavailable++;
+                continue;
+            }
+
+            if (!$this->isAvailable($wishlist->item)) {
+                $unavailable++;
+            }
         }
 
-        return $orphans->count();
+        return $unavailable;
     }
 
     public function getCount(string $customerId): int
