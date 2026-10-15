@@ -1,16 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
-import { Save } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react'; // 👈 Importamos Loader2
 
 interface WhatsappSettingProps {
     setting: {
         icon_url: string | null;
         phone: string | null;
         welcome_message: string | null;
+        hover_text: string | null;
     };
 }
 
@@ -21,10 +23,12 @@ export default function WhatsappSettings({ setting }: WhatsappSettingProps) {
         icon: File | string | null;
         phone: string;
         welcome_message: string;
+        hover_text: string;
     }>({
         icon: setting.icon_url,
         phone: normalizedPhone,
         welcome_message: setting.welcome_message ?? '',
+        hover_text: setting.hover_text ?? '',
     });
 
     const onSubmit = (e: React.FormEvent) => {
@@ -41,7 +45,7 @@ export default function WhatsappSettings({ setting }: WhatsappSettingProps) {
             <Head title="Configuración WhatsApp" />
 
             <div className="flex h-full flex-1 flex-col gap-4">
-                <h1 className="text-lg font-bold lg:text-2xl">
+                <h1 className="text-lg font-bold lg:text-xl">
                     Configuración de WhatsApp
                 </h1>
 
@@ -70,6 +74,22 @@ export default function WhatsappSettings({ setting }: WhatsappSettingProps) {
                     </div>
 
                     <div className="flex flex-col gap-3.5">
+                        <Label>Texto flotante (Hover / Tooltip)</Label>
+                        <Input
+                            value={data.hover_text}
+                            onChange={(e) =>
+                                setData('hover_text', e.target.value)
+                            }
+                            placeholder="¿Necesitas ayuda?"
+                        />
+                        {errors.hover_text && (
+                            <p className="text-sm text-red-500">
+                                {errors.hover_text}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-3.5">
                         <Label>Mensaje de bienvenida</Label>
                         <textarea
                             value={data.welcome_message}
@@ -85,6 +105,7 @@ export default function WhatsappSettings({ setting }: WhatsappSettingProps) {
                             </p>
                         )}
                     </div>
+
                     <div className="flex max-w-50 flex-col gap-3.5">
                         <Label>Ícono de WhatsApp</Label>
                         <Upload
@@ -105,10 +126,19 @@ export default function WhatsappSettings({ setting }: WhatsappSettingProps) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-black hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <Save className="mr-2 h-4 w-4" />
-                            Guardar configuración
+                            {processing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Guardando configuración...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Guardar configuración
+                                </>
+                            )}
                         </Button>
                     </div>
                 </form>

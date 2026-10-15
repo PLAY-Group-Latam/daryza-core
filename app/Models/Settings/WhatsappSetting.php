@@ -10,6 +10,7 @@ class WhatsappSetting extends Model
         'icon_url',
         'phone',
         'welcome_message',
+        'hover_text',
     ];
 
     public static function instance(): static

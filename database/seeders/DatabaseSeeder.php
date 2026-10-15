@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             CategoriesProductsSeeder::class,
             DeliveryZoneDaryzaSeeder::class,
             AttributesProductSeeder::class,
+            WhatsappSettingSeeder::class,
             // CommercialCatalogCouponSeeder::class,
             PageSeeder::class,
             HomeContentSeeder::class,

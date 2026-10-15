@@ -19,9 +19,18 @@ class WhatsappSettingRequest extends FormRequest
             $phone = substr($phone, 2);
         }
 
+        // Si el 'icon' que llega por el request es una URL (string del bucket), 
+        // lo convertimos a null para que la regla 'image' no falle al editar sin cambiar la imagen.
+        $icon = $this->input('icon');
+        if (is_string($icon)) {
+            $icon = null;
+        }
+
         $this->merge([
             'phone' => $phone,
             'welcome_message' => trim((string) $this->input('welcome_message', '')),
+            'hover_text' => trim((string) $this->input('hover_text', '')),
+            'icon' => $icon,
         ]);
     }
 
@@ -31,6 +40,7 @@ class WhatsappSettingRequest extends FormRequest
             'icon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
             'phone' => ['required', 'regex:/^9\d{8}$/'],
             'welcome_message' => ['required', 'string', 'max:1000'],
+            'hover_text' => ['required', 'string', 'max:50'],
         ];
     }
 
@@ -44,6 +54,8 @@ class WhatsappSettingRequest extends FormRequest
             'phone.regex' => 'El número debe ser de Perú y tener formato 9XXXXXXXX.',
             'welcome_message.required' => 'El mensaje de bienvenida es obligatorio.',
             'welcome_message.max' => 'El mensaje de bienvenida no debe superar 1000 caracteres.',
+            'hover_text.required' => 'El texto flotante es obligatorio.',
+            'hover_text.max' => 'El texto flotante no debe superar los 50 caracteres.',
         ];
     }
 }

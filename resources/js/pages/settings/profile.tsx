@@ -61,7 +61,7 @@ export default function Profile({
                                         name="name"
                                         required
                                         autoComplete="name"
-                                        placeholder="Nombre completo"
+                                      
                                     />
 
                                     <InputError
@@ -72,7 +72,7 @@ export default function Profile({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="email">
-                                        Correo electrónico
+                                        Correo
                                     </Label>
 
                                     <Input
@@ -83,7 +83,7 @@ export default function Profile({
                                         name="email"
                                         required
                                         autoComplete="username"
-                                        placeholder="Correo electrónico"
+                                        placeholder="correo@ejemplo.com"
                                     />
 
                                     <InputError

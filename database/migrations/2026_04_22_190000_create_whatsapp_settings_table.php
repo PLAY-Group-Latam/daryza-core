@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('icon_url')->nullable();
             $table->string('phone', 20)->nullable();
             $table->text('welcome_message')->nullable();
+            $table->string('hover_text')->nullable();
             $table->timestamps();
         });
     }
