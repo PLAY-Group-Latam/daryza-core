@@ -23,7 +23,7 @@ export default function IntroAboutusEditor({ section }: Props) {
     const rawContent = section.content?.content as IntroAboutusContent;
 
     const { data, setData, put, processing } = useForm<{
-        content: IntroAboutusContent & { video_url?: string };
+        content: IntroAboutusContent;
     }>({
         content: {
             video: rawContent?.video ?? null,
@@ -34,9 +34,9 @@ export default function IntroAboutusEditor({ section }: Props) {
         },
     });
 
-    const set = <K extends keyof IntroAboutusContent | 'video_url'>(
+    const set = <K extends keyof IntroAboutusContent>(
         key: K,
-        val: any,
+        val: IntroAboutusContent[K],
     ) => setData('content', { ...data.content, [key]: val });
 
     const handleSubmit = (e: React.FormEvent) => {

@@ -3,7 +3,7 @@
 use App\Http\Web\Controllers\Seo\SeoController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('seo')->name('admin.seo.')->group(function () {
+Route::prefix('seo')->name('admin.seo.')->middleware('auth')->group(function () {
     Route::get('/', [SeoController::class, 'index'])->name('index');
 
     Route::get('/{id}/edit', [SeoController::class, 'edit'])->name('edit');

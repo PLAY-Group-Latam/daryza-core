@@ -2,7 +2,7 @@ export interface Media {
     id: string; // ULID
     mediable_id?: string;
     mediable_type?: string;
-    type: 'image' | 'video' | 'technical_sheet';
+    type: 'image' | 'video' | 'technical_sheet' | 'other';
     file_path: string;
     folder?: string;
     is_main?: boolean;

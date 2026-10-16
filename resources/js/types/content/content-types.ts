@@ -225,6 +225,7 @@ export interface ImageFormContent {
 
 export interface IntroAboutusContent {
   video:       File | string | null;
+  video_url:   string | null;
   subtitulo:   string;
   titulo_bold: string;
   descripcion: string;

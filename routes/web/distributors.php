@@ -3,7 +3,7 @@
 use App\Http\Web\Controllers\Distributors\DistributorController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('distributors')->name('distributors.')->group(function () {
+Route::prefix('distributors')->name('distributors.')->middleware('auth')->group(function () {
 
     Route::get('/', [DistributorController::class, 'index'])
         ->name('index');

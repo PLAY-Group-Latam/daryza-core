@@ -3,7 +3,7 @@
 use App\Http\Web\Controllers\Coupons\CouponController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('coupon')->name('coupons.')->group(function () {
+Route::prefix('coupon')->name('coupons.')->middleware('auth')->group(function () {
     
     Route::get('/search-products', [CouponController::class, 'searchProducts'])->name('search-products');
     Route::get('/search-packs', [CouponController::class, 'searchPacks'])->name('search-packs');

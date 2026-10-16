@@ -55,11 +55,11 @@ const ACTION_HELP: Record<AdminOrderAction, string> = {
     reject_payment: 'Actualiza el estado a Pago no exitoso.',
     reset_to_pending_payment: 'Actualiza el estado a Pendiente de pago (solo transferencia si aplica).',
     start_preparing: 'Actualiza el estado a En preparacion.',
-    schedule_shipping: 'Actualiza el estado a En envio.',
     start_transit: 'Actualiza el estado a En envio.',
     mark_delivered_full: 'Actualiza el estado a Entregado.',
     mark_delivery_failed: 'Actualiza el estado a Entrega fallida.',
     cancel_order: 'Actualiza el estado a Cancelado.',
+    mark_refunded: 'Actualiza el estado a Reembolsado.',
 };
 
 export default function OrderStateDialog({

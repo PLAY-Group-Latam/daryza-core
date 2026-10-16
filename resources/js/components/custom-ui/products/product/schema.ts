@@ -14,20 +14,18 @@ const FileSchema = z.custom<File>(isFileLike, {
     message: 'Archivo inválido',
 });
 
-const ExistingMediaSchema = z
-    .object({
-        id: z.string().optional(),
-        mediable_id: z.string().optional(),
-        mediable_type: z.string().optional(),
-        file_path: z.string().min(1),
-        type: z.enum(['image', 'video', 'technical_sheet', 'other']).optional(),
-        folder: z.string().optional(),
-        is_main: z.boolean().optional(),
-        order: z.number().optional(),
-        created_at: z.string().optional(),
-        updated_at: z.string().optional(),
-    })
-    .passthrough();
+const ExistingMediaSchema = z.object({
+    id: z.string().optional(),
+    mediable_id: z.string().optional(),
+    mediable_type: z.string().optional(),
+    file_path: z.string().min(1),
+    type: z.enum(['image', 'video', 'technical_sheet', 'other']).optional(),
+    folder: z.string().optional(),
+    is_main: z.boolean().optional(),
+    order: z.number().optional(),
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+});
 
 const VariantAttributeSchema = z.object({
     attribute_id: z.string().min(1),

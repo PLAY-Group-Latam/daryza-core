@@ -82,14 +82,12 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const product = row.original;
             const mainVariant = getMainVariant(product);
-            const image = getVariantFirstImage(mainVariant);
+            const firstMedia = mainVariant?.media?.[0];
+            const image = firstMedia?.file_path ?? getVariantFirstImage(mainVariant);
 
-            // 🔍 Buscamos el video dentro del array 'media' donde el tipo sea 'video'
-            const videoMedia =
-                mainVariant?.media?.find((item) => item.type === 'video') ||
-                product?.media?.find((item) => item.type === 'video');
-
-            const videoUrl = videoMedia?.file_path;
+            // 🔍 Mostramos el primer media según su orden (`order`); si es video, se muestra como video.
+            const videoUrl =
+                firstMedia?.type === 'video' ? firstMedia.file_path : null;
 
             return (
                 <div className="flex items-center gap-3">

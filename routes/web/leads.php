@@ -15,7 +15,7 @@ Route::prefix('claims')->name('claims.')->middleware('auth')->group(function () 
     ]);
 });
 
-Route::prefix('contacts')->name('contacts.')->group(function () {
+Route::prefix('contacts')->name('contacts.')->middleware('auth')->group(function () {
     Route::resource('items', ContactController::class)
         ->names('items')
         ->parameters([
@@ -23,7 +23,7 @@ Route::prefix('contacts')->name('contacts.')->group(function () {
         ]);
 });
 
-Route::prefix('aboutus')->name('aboutus.')->group(function () {
+Route::prefix('aboutus')->name('aboutus.')->middleware('auth')->group(function () {
     Route::resource('items', AboutUsController::class)
         ->names('items')
         ->parameters([
@@ -31,7 +31,7 @@ Route::prefix('aboutus')->name('aboutus.')->group(function () {
         ]);
 });
 
-Route::prefix('jobs')->name('jobs.')->group(function(){
+Route::prefix('jobs')->name('jobs.')->middleware('auth')->group(function(){
     Route::resource('items',JobsController::class)
     ->names('items')
     ->parameters([
