@@ -20,9 +20,13 @@ class WhatsappSettingService
     {
         $setting = WhatsappSetting::instance();
 
+        // Limpiamos por si acaso el prefijo +51 para evitar duplicarlo
+        $phone = preg_replace('/^\+?51/', '', (string) Arr::get($data, 'phone'));
+
         $payload = [
-            'phone' => '+51' . Arr::get($data, 'phone'),
+            'phone' => '+51' . $phone,
             'welcome_message' => Arr::get($data, 'welcome_message'),
+            'hover_text' => Arr::get($data, 'hover_text'), // 👈 Añadido aquí para que se guarde en la BD
         ];
 
         if (($data['icon'] ?? null) instanceof UploadedFile) {

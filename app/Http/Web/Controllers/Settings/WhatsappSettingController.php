@@ -22,6 +22,7 @@ class WhatsappSettingController extends Controller
                 'icon_url' => $setting->icon_url,
                 'phone' => $setting->phone,
                 'welcome_message' => $setting->welcome_message,
+                'hover_text' => $setting->hover_text,
             ],
         ]);
     }

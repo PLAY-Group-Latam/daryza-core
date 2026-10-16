@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from '@/components/ui/badge';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown, X } from 'lucide-react';
@@ -13,7 +24,6 @@ interface AsyncMultiSelectProps {
     placeholder?: string;
     requestPath?: string;
 }
-
 
 interface ProductOption {
     id: string;
@@ -45,7 +55,7 @@ export function AsyncMultiSelectProducts({
 
                 const res = await fetch(
                     `${requestPath}?q=${encodeURIComponent(debouncedFilter)}`,
-                    { signal: controller.signal }
+                    { signal: controller.signal },
                 );
 
                 if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -73,7 +83,9 @@ export function AsyncMultiSelectProducts({
         if (value.length === 0) return;
 
         const controller = new AbortController();
-        fetch(`${requestPath}?q=${value.join(',')}`, { signal: controller.signal })
+        fetch(`${requestPath}?q=${value.join(',')}`, {
+            signal: controller.signal,
+        })
             .then((res) => {
                 if (!res.ok) throw new Error(`Error ${res.status}`);
                 return res.json();
@@ -81,12 +93,18 @@ export function AsyncMultiSelectProducts({
             .then((data: ProductOption[]) => {
                 setResults((prev) => {
                     const existingIds = new Set(prev.map((p) => p.id));
-                    return [...prev, ...data.filter((p) => !existingIds.has(p.id))];
+                    return [
+                        ...prev,
+                        ...data.filter((p) => !existingIds.has(p.id)),
+                    ];
                 });
             })
             .catch((err) => {
                 if (err.name !== 'AbortError') {
-                    console.error('Error cargando productos seleccionados:', err);
+                    console.error(
+                        'Error cargando productos seleccionados:',
+                        err,
+                    );
                 }
             });
 
@@ -102,7 +120,9 @@ export function AsyncMultiSelectProducts({
 
     const handleSelect = (valueSelected: string) => {
         const [id] = valueSelected.split('|');
-        onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+        onChange(
+            value.includes(id) ? value.filter((v) => v !== id) : [...value, id],
+        );
     };
 
     const handleRemove = (id: string, e: React.MouseEvent) => {
@@ -116,7 +136,10 @@ export function AsyncMultiSelectProducts({
     }));
     const maxDisplayItems = 3;
     const displayItems = selectedItems.slice(0, maxDisplayItems);
-    const overflowCount = selectedItems.length > maxDisplayItems ? selectedItems.length - maxDisplayItems : 0;
+    const overflowCount =
+        selectedItems.length > maxDisplayItems
+            ? selectedItems.length - maxDisplayItems
+            : 0;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -130,11 +153,17 @@ export function AsyncMultiSelectProducts({
                     <div className="flex flex-1 flex-wrap items-center gap-1 overflow-hidden text-left">
                         {displayItems.length > 0 ? (
                             displayItems.map((item) => (
-                                <Badge key={item.id} variant="secondary" className="flex items-center gap-1 pr-1">
+                                <Badge
+                                    key={item.id}
+                                    variant="secondary"
+                                    className="flex items-center gap-1 pr-1"
+                                >
                                     {item.label}
                                     <button
                                         type="button"
-                                        onClick={(e) => handleRemove(item.id, e)}
+                                        onClick={(e) =>
+                                            handleRemove(item.id, e)
+                                        }
                                         className="rounded-full p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
                                     >
                                         <X className="h-3 w-3" />
@@ -142,10 +171,14 @@ export function AsyncMultiSelectProducts({
                                 </Badge>
                             ))
                         ) : (
-                            <span className="text-muted-foreground">{placeholder}</span>
+                            <span className="text-muted-foreground">
+                                {placeholder}
+                            </span>
                         )}
                         {overflowCount > 0 && (
-                            <Badge variant="secondary" className="px-2.5">+{overflowCount}</Badge>
+                            <Badge variant="secondary" className="px-2.5">
+                                +{overflowCount}
+                            </Badge>
                         )}
                     </div>
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -154,10 +187,21 @@ export function AsyncMultiSelectProducts({
 
             <PopoverContent className="w-full max-w-lg p-0" align="start">
                 <Command shouldFilter={false}>
-                    <CommandInput placeholder="Buscar..." value={query} onValueChange={setQuery} autoFocus />
+                    <CommandInput
+                        placeholder="Buscar..."
+                        value={query}
+                        onValueChange={setQuery}
+                        autoFocus
+                    />
                     <CommandList>
-                        {loading && <div className="text-muted-foreground p-4 text-center text-sm">Buscando...</div>}
-                        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                        {loading && (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                                Buscando...
+                            </div>
+                        )}
+                        <CommandEmpty>
+                            No se encontraron resultados.
+                        </CommandEmpty>
                         <CommandGroup>
                             {options.map((option) => (
                                 <CommandItem
@@ -166,21 +210,36 @@ export function AsyncMultiSelectProducts({
                                     onSelect={() => handleSelect(option.value)}
                                     className="cursor-pointer"
                                 >
-                                    <div className={cn(
-                                        'mr-2 flex h-6 w-6 items-center justify-center overflow-hidden rounded-sm',
-                                        !option.image && 'bg-gray-200 dark:bg-gray-700',
-                                    )}>
-                                        {option.image
-                                            ? <img src={option.image} alt={option.label} className="h-6 w-6 object-cover" loading="lazy" />
-                                            : <div className="h-6 w-6" />
-                                        }
+                                    <div
+                                        className={cn(
+                                            'mr-2 flex h-6 w-6 items-center justify-center overflow-hidden rounded-sm',
+                                            !option.image &&
+                                                'bg-gray-200 dark:bg-gray-700',
+                                        )}
+                                    >
+                                        {option.image ? (
+                                            <img
+                                                src={option.image}
+                                                alt={option.label}
+                                                className="h-6 w-6 object-cover"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="h-6 w-6" />
+                                        )}
                                     </div>
-                                    <span className="flex-1">{option.label}</span>
-                                    <div className={cn(
-                                        'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
-                                        value.includes(option.id) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible',
-                                    )}>
-                                        <Check className="h-4 w-4" />
+                                    <span className="flex-1">
+                                        {option.label}
+                                    </span>
+                                    <div
+                                        className={cn(
+                                            'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                            value.includes(option.id)
+                                                ? 'bg-primary text-white' // Forzamos texto blanco al seleccionarse
+                                                : 'opacity-50 [&_svg]:invisible',
+                                        )}
+                                    >
+                                        <Check className="h-3.5 w-3.5 text-white" />
                                     </div>
                                 </CommandItem>
                             ))}

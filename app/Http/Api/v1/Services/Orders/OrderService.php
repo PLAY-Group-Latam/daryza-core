@@ -9,6 +9,7 @@ use App\Models\Coupons\CouponRedemption;
 use App\Models\Customers\Customer;
 use App\Models\Orders\Order;
 use App\Models\Products\ProductPack;
+use App\Models\Customers\Cart;
 use App\Models\Products\ProductVariant;
 use App\Models\Settings\DeliverySetting;
 use App\Models\Settings\DeliveryZone;
@@ -89,73 +90,160 @@ class OrderService
         ];
     }
 
-    public function repeat(Order $order, string $customerId): array
+    public function repeat(Order $order, string $customerId, bool $replace = false): array
     {
         $this->ensureOwnership($order, $customerId);
 
         $order->load(['items.variant.product', 'items.pack']);
 
+        $shipping = [
+            'department_id' => $order->department_id,
+            'province_id'   => $order->province_id,
+            'district_id'   => $order->district_id,
+            'address_line'  => $order->shipping_address_line,
+            'reference'     => $order->shipping_reference,
+        ];
+
+        // Cantidades actuales del carrito: "clase:id" => cantidad
+        $cartQuantities = $this->currentCartQuantities($customerId);
+
+        // Si pide reemplazar y el carrito ya es exactamente este pedido, no se toca nada
+        if ($replace && $this->cartMatchesOrder($order, $cartQuantities)) {
+            return [
+                'added_count'  => $order->items->count(),
+                'same_as_cart' => true,
+                'merged'       => [],
+                'skipped'      => [],
+                'warnings'     => [],
+                'shipping'     => $shipping,
+            ];
+        }
+
         $skipped = [];
         $warnings = [];
+        $merged = [];
         $added = 0;
+
+        DB::beginTransaction();
+
+        try {
+            if ($replace) {
+                $this->cartService->clear($customerId);
+                $cartQuantities = [];
+            }
+
+            foreach ($order->items as $item) {
+                $isPack = $item->item_type === 'product_pack';
+                $itemId = $isPack ? $item->pack_id : $item->variant_id;
+                $model  = $isPack ? $item->pack : $item->variant;
+
+                if (! $itemId || ! $model) {
+                    $skipped[] = ['name' => $item->product_name, 'message' => 'fue eliminado del catálogo.'];
+                    continue;
+                }
+
+                if (! $isPack && $model->product && ! $model->product->is_active) {
+                    $skipped[] = ['name' => $item->product_name, 'message' => 'ya no está disponible.'];
+                    continue;
+                }
+
+                $key = $this->cartKey($isPack, (string) $itemId);
+                $previousQty = $cartQuantities[$key] ?? 0;
+                $qty = (int) $item->quantity;
+
+                try {
+                    $cart = $this->cartService->addItem(
+                        $customerId,
+                        (string) $itemId,
+                        $isPack ? 'pack' : 'product',
+                        $qty
+                    );
+
+                    $warnings = array_merge($warnings, $cart->cart_warnings ?? []);
+                    $added++;
+
+                    if ($previousQty > 0) {
+                        $merged[] = [
+                            'name'              => $item->product_name,
+                            'previous_quantity' => $previousQty,
+                            'added_quantity'    => $qty,
+                            'new_quantity'      => $previousQty + $qty,
+                        ];
+                    }
+
+                    $cartQuantities[$key] = $previousQty + $qty;
+                } catch (\InvalidArgumentException $e) {
+                    $skipped[] = ['name' => $item->product_name, 'message' => $e->getMessage()];
+                }
+            }
+
+            if ($replace && $added === 0) {
+                DB::rollBack();
+            } else {
+                DB::commit();
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return [
+            'added_count'  => $added,
+            'same_as_cart' => false,
+            'merged'       => $merged,
+            'skipped'      => $skipped,
+            'warnings'     => $warnings,
+            'shipping'     => $shipping,
+        ];
+    }
+
+    private function cartKey(bool $isPack, string $itemId): string
+    {
+        return ($isPack ? ProductPack::class : ProductVariant::class) . ':' . $itemId;
+    }
+
+    /** @return array<string,int> */
+    private function currentCartQuantities(string $customerId): array
+    {
+        $cart = Cart::where('customer_id', $customerId)->first();
+
+        if (! $cart) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($cart->items()->get(['item_id', 'item_type', 'quantity']) as $row) {
+            $result[$row->item_type . ':' . $row->item_id] = (int) $row->quantity;
+        }
+
+        return $result;
+    }
+
+    /** ¿El carrito tiene exactamente los mismos items y cantidades que el pedido? */
+    private function cartMatchesOrder(Order $order, array $cartQuantities): bool
+    {
+        $orderQuantities = [];
 
         foreach ($order->items as $item) {
             $isPack = $item->item_type === 'product_pack';
             $itemId = $isPack ? $item->pack_id : $item->variant_id;
 
-            // Eliminado (soft delete) o sin referencia
-            $model = $isPack ? $item->pack : $item->variant;
-
-            if (! $itemId || ! $model) {
-                $skipped[] = [
-                    'name' => $item->product_name,
-                    'message' => 'fue eliminado del catálogo.',
-                ];
-
-                continue;
+            if (! $itemId) {
+                return false; // el pedido tiene un item eliminado: no puede ser igual
             }
 
-            // Variante activa pero producto padre inactivo
-            if (! $isPack && $model->product && ! $model->product->is_active) {
-                $skipped[] = [
-                    'name' => $item->product_name,
-                    'message' => 'ya no está disponible.',
-                ];
-
-                continue;
-            }
-
-            try {
-                $cart = $this->cartService->addItem(
-                    $customerId,
-                    (string) $itemId,
-                    $isPack ? 'pack' : 'product',
-                    (int) $item->quantity
-                );
-
-                $warnings = array_merge($warnings, $cart->cart_warnings ?? []);
-                $added++;
-            } catch (\InvalidArgumentException $e) {
-                // inactivo o agotado
-                $skipped[] = [
-                    'name' => $item->product_name,
-                    'message' => $e->getMessage(),
-                ];
-            }
+            $key = $this->cartKey($isPack, (string) $itemId);
+            $orderQuantities[$key] = ($orderQuantities[$key] ?? 0) + (int) $item->quantity;
         }
 
-        return [
-            'added_count' => $added,
-            'skipped' => $skipped,
-            'warnings' => $warnings,
-            'shipping' => [
-                'department_id' => $order->department_id,
-                'province_id' => $order->province_id,
-                'district_id' => $order->district_id,
-                'address_line' => $order->shipping_address_line,
-                'reference' => $order->shipping_reference,
-            ],
-        ];
+        if ($orderQuantities === []) {
+            return false;
+        }
+
+        ksort($orderQuantities);
+        ksort($cartQuantities);
+
+        return $orderQuantities === $cartQuantities;
     }
 
     public function create(Customer $customer, array $payload): Order
