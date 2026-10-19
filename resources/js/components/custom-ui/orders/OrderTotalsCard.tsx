@@ -22,12 +22,19 @@ export default function OrderTotalsCard({ order }: { order: OrderDetail }) {
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
-                        Descuento cupón
+                        IGV 18% (incluido en los precios)
                     </span>
-                    <span>- S/ {couponDiscount.toFixed(2)}</span>
                 </div>
+                {couponDiscount > 0 && (
+                    <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                            Descuento cupón
+                        </span>
+                        <span>- S/ {couponDiscount.toFixed(2)}</span>
+                    </div>
+                )}
                 <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Delivery</span>
+                    <span className="text-muted-foreground">Envío</span>
                     <span>{deliveryCost === 0 ? 'Gratis' : `S/ ${deliveryCost.toFixed(2)}`}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-2 font-semibold">

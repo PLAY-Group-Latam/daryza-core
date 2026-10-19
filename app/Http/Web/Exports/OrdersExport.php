@@ -14,7 +14,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
 {
     public function __construct(private readonly array $filters = []) {}
 
-  public function collection()
+    public function collection()
     {
         $query = Order::query()
             ->with(['items.variant.attributes.attribute', 'payments'])
@@ -213,10 +213,15 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
         }
 
         $gatewayBrand = strtolower((string) ($latestPayment['gateway_brand'] ?? ''));
-        $payloadString = strtolower(json_encode($latestPayment['gateway_payload'] ?? []));
 
-        if (str_contains($gatewayBrand, 'yape') || str_contains($payloadString, 'yape')) {
-            return 'Yape';
+        $payload = $latestPayment['gateway_payload'] ?? [];
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true) ?: [];
+        }
+        $yapeId = trim((string) data_get($payload, 'dataMap.YAPE_ID', ''));
+
+        if (str_contains($gatewayBrand, 'yape') || $yapeId !== '') {
+            return 'Tarjeta de Crédito/Débito';
         }
 
         return 'Tarjeta de Crédito/Débito';

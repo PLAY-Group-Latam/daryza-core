@@ -52,6 +52,7 @@ class CouponService
                     $query->orWhere(function ($customerScopeQuery) use ($customerId) {
                         $customerScopeQuery
                             ->where('scope', CouponScope::Customer->value)
+                            ->where('is_public', true)
                             ->whereHas('customers', function ($customerQuery) use ($customerId) {
                                 $customerQuery->where('customers.id', $customerId);
                             });
