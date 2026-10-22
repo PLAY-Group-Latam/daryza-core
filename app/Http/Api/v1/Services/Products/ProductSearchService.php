@@ -69,13 +69,18 @@ class ProductSearchService
     {
         $qClean = $this->sanitizeQuery($q);
 
+       
         // =========================================================
-        // 1. SKU EXACTO (Validando que el producto padre esté activo)
+        // 1. SKU EXACTO / SKU PROVEEDOR (Validando que el producto padre esté activo)
         // =========================================================
 
         $matchingVariants = ProductVariant::query()
             ->where('is_active', true)
-            ->where('sku', 'ILIKE', $q)
+            ->where(
+                fn($query) =>
+                $query->where('sku', 'ILIKE', $q)
+                    ->orWhere('sku_supplier', 'ILIKE', $q)
+            )
             ->whereHas('product', function ($query) {
                 $query->where('is_active', true);
             })

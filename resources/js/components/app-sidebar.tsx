@@ -178,7 +178,7 @@ const mainNavItems: NavItem[] = [
                 href: '/admin/jobs/applications',
             },
                {
-                title: 'Lista de Trabajos',
+                title: 'Solicitudes de trabajo',
                 href: '/jobs/items',
             },
         ],

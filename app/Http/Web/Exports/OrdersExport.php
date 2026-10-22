@@ -17,7 +17,11 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
     public function collection()
     {
         $query = Order::query()
-            ->with(['items.variant.attributes.attribute', 'payments'])
+            ->with([
+                'items.variant.attributes.attribute',
+                'items.product.categories.parent',
+                'payments',
+            ])
             ->orderByDesc('created_at');
 
         $state = $this->filters['state'] ?? null;
@@ -48,6 +52,11 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             foreach ($order->items as $item) {
                 $productDesc = $this->buildProductWithVariant((string) ($item->product_name ?? ''), $item->variant);
 
+                [$categoryName, $subcategoryName] = $this->resolveCategoryColumns($item->product);
+
+                // Subtotal del ítem = cantidad × precio unitario (no el subtotal de la orden)
+                $lineSubtotal = round((float) $item->unit_price * (int) $item->quantity, 2);
+
                 $rows->push([
                     (string) $order->code,
                     $placedAt ? $placedAt->format('d/m/Y H:i') : '',
@@ -64,8 +73,10 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
                     $item->variant_sku ?? '',
                     $item->variant?->sku_supplier ?? '',
                     $productDesc,
+                    $categoryName,
+                    $subcategoryName,
                     (int) $item->quantity,
-                    (float) $order->subtotal,
+                    $lineSubtotal,
                     (float) $order->discount_total,
                     (float) $order->delivery_cost,
                     (float) $order->total,
@@ -83,7 +94,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->getDelegate()->getStyle('A1:W' . ($event->sheet->getHighestRow()))
+                $event->sheet->getDelegate()->getStyle('A1:Y' . ($event->sheet->getHighestRow()))
                     ->getAlignment()
                     ->setWrapText(true);
             },
@@ -108,6 +119,8 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'sku_daryza',
             'sku_proveedor',
             'producto',
+            'categoria',
+            'subcategoria',
             'cantidad',
             'subtotal',
             'descuento',
@@ -116,6 +129,24 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'direccion_de_envio',
             'ruc_facturacion',
             'razon_social_facturacion',
+        ];
+    }
+
+    /**
+     * Categoría (raíz) y subcategoría (hija) asociadas al producto del ítem.
+     * Si el producto solo está en una subcategoría, la categoría sale de su padre.
+     */
+    private function resolveCategoryColumns($product): array
+    {
+        $categories = collect($product?->categories ?? []);
+
+        $subs  = $categories->filter(fn($c) => $c->parent_id !== null);
+        $roots = $categories->filter(fn($c) => $c->parent_id === null)
+            ->concat($subs->map(fn($c) => $c->parent)->filter());
+
+        return [
+            $roots->pluck('name')->unique()->implode(', '),
+            $subs->pluck('name')->unique()->implode(', '),
         ];
     }
 

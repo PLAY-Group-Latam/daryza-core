@@ -233,10 +233,13 @@ class ProductFilterService
                     $like = '%' . $this->escapeLike((string) $term) . '%';
                     $q->where(function (Builder $sub) use ($like) {
                         $sub->where('products.name', 'ILIKE', $like)
-                            // Cualquier variante activa (no solo la principal).
+                            // Cualquier variante activa (no solo la principal): SKU o SKU proveedor.
                             ->orWhereHas(
                                 'variants',
-                                fn($v) => $v->where('is_active', true)->where('sku', 'ILIKE', $like)
+                                fn($v) => $v->where('is_active', true)->where(
+                                    fn($s) => $s->where('sku', 'ILIKE', $like)
+                                        ->orWhere('sku_supplier', 'ILIKE', $like)
+                                )
                             )
                             ->orWhereHas('brand', fn($b) => $b->where('name', 'ILIKE', $like))
                             ->orWhereHas('categories', fn($c) => $c->where('name', 'ILIKE', $like))
