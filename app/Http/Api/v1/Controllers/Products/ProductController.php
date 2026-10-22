@@ -6,8 +6,6 @@ use App\Http\Api\v1\Controllers\Controller;
 use App\Http\Api\v1\Services\Products\ProductVariantResolver;
 use App\Models\Products\Product;
 use App\Models\Products\ProductPack;
-use App\Models\Products\ProductVariant;
-use App\Models\Products\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -29,7 +27,7 @@ class ProductController extends Controller
                 'mainVariant.mainImage' => function ($q) {
                     // 'order' incluido por si mainImage se resuelve ordenando por esa columna
                     $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'order');
-                }
+                },
             ]);
 
         if ($request->has('category_slug')) {
@@ -67,7 +65,7 @@ class ProductController extends Controller
                 'mainVariant.selections.attributeValue.attribute',
                 'mainVariant.mainImage' => function ($q) {
                     $q->select('id', 'mediable_id', 'mediable_type', 'file_path', 'order');
-                }
+                },
             ])
             ->latest()
             ->take($limit)
@@ -185,7 +183,7 @@ class ProductController extends Controller
                 'technicalSheets',
                 'categories:id,name,slug,parent_id', // Categorías para la ruta de navegación
                 'recommendedProducts.brand', // Marca para las cards de recomendados
-                'recommendedProducts.mainVariant.mainImage'
+                'recommendedProducts.mainVariant.mainImage',
             ])
             ->firstOrFail();
 
@@ -207,7 +205,11 @@ class ProductController extends Controller
 
         $activeVariants = $product->variants()
             ->where('is_active', true)
-            ->with(['selections.attributeValue.attribute'])
+            ->with([
+                'selections' => fn($q) => $q->orderBy('id'),
+                'selections.attributeValue.attribute',
+            ])
+            ->orderBy('id')
             ->get();
 
         $showState = $this->variantResolver->resolveShowState(
@@ -268,7 +270,7 @@ class ProductController extends Controller
                 ?->map(function ($selection) {
                     $attributeValue = $selection->attributeValue;
 
-                    if (!$attributeValue || !$attributeValue->attribute) {
+                    if (! $attributeValue || ! $attributeValue->attribute) {
                         return null;
                     }
 

@@ -53,6 +53,6 @@ class DatabaseSeeder extends Seeder
    
         Artisan::call('cache:clear');
         
-        $this->command->info('¡Base de datos sembrada y caché de Redis purgada con éxito! 🚀');
+        $this->command->info('¡Base de datos sembrada y caché de Redis purgada con éxito!');
     }
 }

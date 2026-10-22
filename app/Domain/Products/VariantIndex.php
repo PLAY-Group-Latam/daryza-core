@@ -18,16 +18,8 @@ class VariantIndex
         public ?string $primaryAttributeId,
     ) {}
 
-    public function mainVariantId(): ?string
-    {
-        foreach ($this->variantsById as $variant) {
-            if ($variant['is_main']) {
-                return $variant['id'];
-            }
-        }
-
-        $first = reset($this->variantsById);
-
-        return $first['id'] ?? null;
-    }
+   public function mainVariantId(): ?string
+{
+    return array_key_first($this->variantsById);
+}
 }

@@ -14,6 +14,7 @@ use App\Models\Products\{
   ProductCategory,
   ProductVariant
 };
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ProductImportService
@@ -178,17 +179,22 @@ class ProductImportService
 
 
   /**
-   * Crear variante de producto
+   * Crear o actualizar una variante de producto.
+   *
+   * Identidad de la variante: producto + SKU Daryza + combinación de atributos.
+   * El SKU Daryza PUEDE repetirse dentro del mismo producto (ej. "Unidad" y "Caja x 5"
+   * comparten SKU); lo que no puede repetirse es la combinación de atributos.
+   * El SKU de proveedor es único (lo valida el import y la BD).
    */
   public function createVariant(Product $product, array $data, ?string &$status = null, array $attributes = []): ProductVariant
   {
-    // Buscar variante por producto + SKU (no global)
-    $existingQuery = ProductVariant::withTrashed()
+    $candidates = ProductVariant::withTrashed()
       ->where('product_id', $product->id)
-      ->where('sku', $data['sku_daryza']);
+      ->where('sku', $data['sku_daryza'])
+      ->with('attributes.attribute')
+      ->get();
 
-       // La variante se identifica por producto + SKU; los atributos se actualizan después.
-    $variant = $existingQuery->first();
+    $variant = $this->matchVariantByAttributes($candidates, $attributes);
 
     $variantData = [
       'product_id'     => $product->id,
@@ -224,6 +230,63 @@ class ProductImportService
     $status = 'created';
     return ProductVariant::create($variantData);
   }
+
+  /**
+   * Entre las variantes con el mismo SKU, elige la que tiene la misma combinación de atributos.
+   *
+   * @param Collection<int, ProductVariant> $candidates
+   */
+  protected function matchVariantByAttributes(Collection $candidates, array $attributes): ?ProductVariant
+  {
+    if ($candidates->isEmpty()) {
+      return null;
+    }
+
+    $incoming = $this->normalizeAttributeMap($attributes);
+
+    // Fila sin atributos (producto simple): comportamiento anterior.
+    if ($incoming === []) {
+      return $candidates->first();
+    }
+
+    return $candidates->first(function (ProductVariant $candidate) use ($incoming) {
+      $existing = [];
+      foreach ($candidate->attributes as $attributeValue) {
+        $name = mb_strtolower(trim((string) $attributeValue->attribute?->name));
+        $existing[$name] = mb_strtolower(trim((string) $attributeValue->value));
+      }
+      ksort($existing);
+
+      return $existing === $incoming;
+    });
+  }
+
+  /**
+   * Normaliza atributos entrantes igual que como se guardan en BD
+   * (el color se guarda como hex, ver findOrCreateAttributeValue).
+   *
+   * @return array<string, string>
+   */
+  protected function normalizeAttributeMap(array $attributes): array
+  {
+    $map = [];
+    foreach ($attributes as $name => $value) {
+      if (!$value) continue;
+
+      $key = mb_strtolower(trim((string) $name)) ?: 'sin nombre';
+      $val = trim((string) $value);
+
+      if ($key === 'color') {
+        $val = $this->colorNameToHex(trim(strtolower($val)));
+      }
+
+      $map[$key] = mb_strtolower($val);
+    }
+    ksort($map);
+
+    return $map;
+  }
+
   /**
    * Crea o actualiza la variante principal cuando la fila no trae atributos de variante.
    *
@@ -311,19 +374,34 @@ class ProductImportService
    * Busca una variante (de otro producto o de otra combinación) que ya use el
    * SKU de proveedor indicado. El SKU de proveedor es único.
    */
-  public function findSkuSupplierConflict(string $supplierSku, string $productId, string $sku): ?ProductVariant
-  {
+  public function findSkuSupplierConflict(
+    string $supplierSku,
+    string $productId,
+    string $sku,
+    array $attributes = []
+  ): ?ProductVariant {
     $normalized = trim($supplierSku);
     if ($normalized === '') {
       return null;
     }
 
-    return ProductVariant::withTrashed()
-      ->where('sku_supplier', $normalized)
-      ->whereNot(function ($query) use ($productId, $sku) {
-        $query->where('product_id', $productId)->where('sku', $sku);
-      })
-      ->first();
+    $query = ProductVariant::withTrashed()->where('sku_supplier', $normalized);
+
+    if ($productId !== '') {
+      $candidates = ProductVariant::withTrashed()
+        ->where('product_id', $productId)
+        ->where('sku', $sku)
+        ->with('attributes.attribute')
+        ->get();
+
+      // La variante "propia" es la que tiene la misma combinación de atributos.
+      $own = $this->matchVariantByAttributes($candidates, $attributes);
+      if ($own) {
+        $query->where('id', '!=', $own->id);
+      }
+    }
+
+    return $query->first();
   }
 
 
@@ -366,9 +444,6 @@ class ProductImportService
     );
   }
 
-  /**
-   * Asociar atributos y valores a una variante
-   */
   /**
    * Asociar atributos y valores a una variante
    */
@@ -474,7 +549,6 @@ class ProductImportService
       'oro oscuro' => 'B8860B',
       'gris oscuro' => 'A9A9A9',
       'verde oscuro' => '006400',
-      'gris oscuro' => 'A9A9A9',
       'caqui oscuro' => 'BDB76B',
       'magenta oscuro' => '8B008B',
       'verde oliva oscuro' => '556B2F',
@@ -487,9 +561,8 @@ class ProductImportService
       'gris pizarra oscuro' => '2F4F4F',
       'turquesa oscuro' => '00CED1',
       'violeta oscuro' => '9400D3',
-      'rosa intenso' => 'FF1493',
+      'rosa intenso' => 'FF69B4',
       'azul cielo intenso' => '00BFFF',
-      'gris medio' => '696969',
       'gris medio' => '696969',
       'azul dodger' => '1E90FF',
       'ladrillo' => 'B22222',
@@ -503,13 +576,11 @@ class ProductImportService
       'gris' => '808080',
       'verde' => '008000',
       'verde amarillento' => 'ADFF2F',
-      'gris' => '808080',
       'miel' => 'F0FFF0',
-      'rosa intenso' => 'FF69B4',
       'rojo indio' => 'CD5C5C',
       'índigo' => '4B0082',
       'marfil' => 'FFFFF0',
-      'caqui' => 'F0E68C',
+      'caqui' => 'D2B48C',
       'lavanda' => 'E6E6FA',
       'rubor lavanda' => 'FFF0F5',
       'verde césped' => '7CFC00',
@@ -520,12 +591,10 @@ class ProductImportService
       'amarillo dorado claro' => 'FAFAD2',
       'gris claro' => 'D3D3D3',
       'verde claro' => '90EE90',
-      'gris claro' => 'D3D3D3',
       'rosa claro' => 'FFB6C1',
       'salmón claro' => 'FFA07A',
       'verde mar claro' => '20B2AA',
       'azul cielo claro' => '87CEFA',
-      'gris pizarra claro' => '778899',
       'gris pizarra claro' => '778899',
       'azul acero claro' => 'B0C4DE',
       'amarillo claro' => 'FFFFE0',
@@ -579,11 +648,9 @@ class ProductImportService
       'azul cielo' => '87CEEB',
       'azul pizarra' => '6A5ACD',
       'gris pizarra' => '708090',
-      'gris pizarra' => '708090',
       'nieve' => 'FFFAFA',
       'verde primavera' => '00FF7F',
       'azul acero' => '4682B4',
-      'caqui' => 'D2B48C',
       'verde azulado' => '008080',
       'cardo' => 'D8BFD8',
       'tomate' => 'FF6347',

@@ -357,7 +357,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
                         break;
                     }
 
-                  // 2. Contra la BD (sin withTrashed ya que el modelo no lo usa).
+                    // 2. Contra la BD (sin withTrashed ya que el modelo no lo usa).
                     $existing = ProductCategory::where('slug', $subSlug)->first();
                     if ($existing && $existing->parent_id !== $parentId) {
                         $subConflict = "La subcategoría {$subName} ya existe en el sistema bajo otra categoría principal.";
@@ -604,7 +604,8 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
                 $supplierConflict = $service->findSkuSupplierConflict(
                     $supplierSku,
                     (string) ($productId ?? ''),
-                    (string) $sku_daryza
+                    (string) $sku_daryza,
+                    $mapped['attributes'] ?? []
                 );
 
                 if ($supplierConflict) {
@@ -717,7 +718,8 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
                 $supplierConflict = $service->findSkuSupplierConflict(
                     $supplierSku,
                     (string) $product->id,
-                    (string) $sku_daryza
+                    (string) $sku_daryza,
+                    $mapped['attributes'] ?? []
                 );
 
                 if ($supplierConflict) {
