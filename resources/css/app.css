@@ -165,6 +165,12 @@ button.is-action-loading::after {
     animation: action-loading-spin 0.7s linear infinite;
 }
 
+/* Algunos formularios ya renderizan su propio Spinner/Loader2. */
+button.is-action-loading:has(.animate-spin)::after,
+button.is-action-loading:has([role='status'])::after {
+    display: none;
+}
+
 @keyframes action-loading-spin {
     to {
         transform: rotate(360deg);

@@ -811,6 +811,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
             AfterImport::class => function () {
                 $this->processPendingHeaderRows();
                 $this->processPendingSingleVariantRows();
+                $this->validatePendingRecommendations();
 
                 if ($this->dryRun) {
                     return;
@@ -911,6 +912,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
         $childCategories = trim((string) ($mapped['categories']['children'] ?? ''));
         $parentCategory = trim((string) ($mapped['categories']['parent'] ?? ''));
         $hasAttributes = ! empty($mapped['attributes']);
+        $businessLines = trim((string) ($mapped['business_lines'] ?? ''));
 
         if (($code === '' xor $name === '')) {
             $errors[] = [
@@ -1000,9 +1002,122 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
             ];
         }
 
+        $taxonomyFields = [
+            [
+                'label' => 'la categoría',
+                'value' => $parentCategory,
+                'columns' => [ProductImportRowMapper::HEADER_CATEGORY],
+            ],
+            [
+                'label' => 'las subcategorías',
+                'value' => $childCategories,
+                'columns' => [ProductImportRowMapper::HEADER_SUBCATEGORY],
+            ],
+            [
+                'label' => 'las líneas de negocio',
+                'value' => $businessLines,
+                'columns' => [ProductImportRowMapper::HEADER_BUSINESS_LINE],
+            ],
+        ];
+
+        foreach ($taxonomyFields as $field) {
+            if ($field['value'] === '') {
+                continue;
+            }
+
+            if (str_contains($field['value'], '_')) {
+                $errors[] = [
+                    'message' => "No se permiten guiones bajos (_) en {$field['label']}. Escríbelo sin símbolos extraños, por ejemplo: \"Limpieza Industrial\".",
+                    'columns' => $field['columns'],
+                ];
+                continue;
+            }
+
+            foreach ($this->findInvalidTaxonomyNames($field['value']) as $invalidName) {
+                $errors[] = [
+                    'message' => "El valor \"{$invalidName}\" en {$field['label']} contiene símbolos no permitidos. Usa solo letras, números y espacios.",
+                    'columns' => $field['columns'],
+                ];
+            }
+        }
+
         return $errors;
     }
 
+    private function validatePendingRecommendations(): void
+    {
+        if (empty($this->pendingRecommendationsByProductCode)) {
+            return;
+        }
+
+        $allCodes = collect($this->pendingRecommendationsByProductCode)
+            ->flatten()
+            ->map(fn($c) => trim((string) $c))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($allCodes->isEmpty()) {
+            return;
+        }
+
+        // Existen en la BD o vienen en este mismo Excel.
+        $existingInDb = Product::withTrashed()
+            ->whereIn('code', $allCodes->all())
+            ->pluck('code')
+            ->map(fn($c) => (string) $c)
+            ->all();
+
+        $inFile = array_map('strval', array_keys($this->seenProductCodes));
+        $known = array_flip(array_merge($existingInDb, $inFile));
+
+        foreach ($this->pendingRecommendationsByProductCode as $productCode => $recommendedCodes) {
+            $missing = array_values(array_filter(
+                $recommendedCodes,
+                fn($c) => ! isset($known[trim((string) $c)])
+            ));
+
+            if (empty($missing)) {
+                continue;
+            }
+
+            $this->registerRowError(
+                $this->seenProductCodes[$productCode] ?? 0,
+                'Productos recomendados inexistentes: ' . implode(', ', $missing)
+                    . '. Estos códigos no existen en el sistema ni en el archivo.',
+                [
+                    'codigo' => $productCode,
+                    'recomendados_invalidos' => $missing,
+                ],
+                ['productos_recomendados'],
+                null
+            );
+        }
+    }
+
+    /**
+     * Devuelve los nombres (separados por coma) que tienen caracteres no permitidos.
+     *
+     * @return array<int, string>
+     */
+    private function findInvalidTaxonomyNames(string $value): array
+    {
+        $invalid = [];
+
+        foreach (explode(',', $value) as $name) {
+            $name = trim($name);
+            if ($name === '') {
+                continue;
+            }
+
+            // Letras (con tildes/ñ), números, espacios y algunos signos comunes.
+            if (! preg_match('/^[\p{L}\p{N}\s\-&.\/()\']+$/u', $name)) {
+                $invalid[] = $name;
+            }
+        }
+
+        return $invalid;
+    }
     /**
      * @param  array<string, mixed>  $context
      */
