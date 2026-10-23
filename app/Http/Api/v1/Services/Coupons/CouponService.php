@@ -174,12 +174,12 @@ class CouponService
             [CouponScope::Product->value, CouponScope::Pack->value],
             true,
         );
-        $discountableItems = $this->excludeItems(
-            $items,
-            $variants,
-            $exclusionsApply ? $coupon->excludedProducts->pluck('id')->all() : [],
-            $exclusionsApply ? $coupon->excludedPacks->pluck('id')->all() : [],
-        );
+        $excludedProductIds = $exclusionsApply ? $coupon->excludedProducts->pluck('id')->all() : [];
+        $excludedPackIds = $exclusionsApply ? $coupon->excludedPacks->pluck('id')->all() : [];
+
+        $discountableItems = $this->excludeItems($items, $variants, $excludedProductIds, $excludedPackIds);
+        $excludedItems = $this->listExcludedItems($items, $variants, $packs, $excludedProductIds, $excludedPackIds);
+
         $discountableSubtotal = $this->resolveDiscountableSubtotal($coupon, $variants, $packs, $discountableItems, $eligibleUnits);
 
         if ($discountableSubtotal <= 0) {
@@ -197,7 +197,52 @@ class CouponService
             'discount_amount' => (float) $coupon->discount_amount,
             'discountable_subtotal' => round($discountableSubtotal, 2),
             'discount_total' => round($discount, 2),
+            'excluded_items' => $excludedItems,
         ];
+    }
+
+    private function listExcludedItems(
+        array $items,
+        Collection $variants,
+        Collection $packs,
+        array $excludedProductIds,
+        array $excludedPackIds
+    ): array {
+        if (empty($excludedProductIds) && empty($excludedPackIds)) {
+            return [];
+        }
+
+        $excluded = [];
+
+        foreach ($items as $item) {
+            if (($item['item_type'] ?? '') === 'product_pack') {
+                $packId = (string) ($item['pack_id'] ?? '');
+                if (!in_array($packId, $excludedPackIds, true)) {
+                    continue;
+                }
+
+                $excluded[] = [
+                    'type' => 'pack',
+                    'id' => $packId,
+                    'name' => $packs->get($packId)?->name,
+                ];
+                continue;
+            }
+
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get((string) ($item['variant_id'] ?? ''));
+            if (!$variant || !in_array($variant->product_id, $excludedProductIds, true)) {
+                continue;
+            }
+
+            $excluded[] = [
+                'type' => 'product',
+                'id' => $variant->product_id,
+                'name' => $variant->product?->name,
+            ];
+        }
+
+        return $excluded;
     }
 
     private function calculateSubtotal(Collection $variants, Collection $packs, array $items): float

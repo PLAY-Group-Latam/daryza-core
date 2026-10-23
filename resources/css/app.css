@@ -141,3 +141,32 @@
         @apply bg-background text-foreground;
     }
 }
+
+button:disabled,
+input[type='submit']:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+button.is-action-loading,
+input[type='submit'].is-action-loading {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+button.is-action-loading::after {
+    width: 0.875rem;
+    height: 0.875rem;
+    content: '';
+    flex: 0 0 auto;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 9999px;
+    animation: action-loading-spin 0.7s linear infinite;
+}
+
+@keyframes action-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
