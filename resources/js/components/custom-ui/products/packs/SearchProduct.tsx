@@ -81,8 +81,8 @@ export function PackProductSearch({
                 />
 
                 {showResults && (searchResults.length > 0 || placeholder) && (
-                    <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-md border bg-white shadow-md">
-                        <CommandList className="max-h-[200px]">
+                    <div className="mt-2 w-full overflow-hidden rounded-md border bg-white shadow-md">
+                        <CommandList className="max-h-[200px] overscroll-contain">
                             {searchResults.length === 0 ? (
                                 <CommandEmpty className="p-4 text-sm text-slate-500">
                                     No se encontraron productos.
