@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             ContactContentSeeder::class,
             AboutUsContentSeeder::class,
             BlogContentSeeder::class,
+            WpPostsSeeder::class, // <-- NUEVO: importa blogs + SEO desde WordPress
             // BlogSeeder::class,
             // LandingSeeder::class,
             // LandingLeadSeeder::class,
@@ -50,9 +51,8 @@ class DatabaseSeeder extends Seeder
             DistributorSeeder::class
         ]);
 
-   
         Artisan::call('cache:clear');
-        
+
         $this->command->info('¡Base de datos sembrada y caché de Redis purgada con éxito!');
     }
 }

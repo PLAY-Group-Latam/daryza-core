@@ -29,6 +29,7 @@ class Metadata extends Model
     ];
     protected $casts = [
         'og_type' => OgType::class,
+        'schema' => 'array',
     ];
     protected $hidden = [
         'metadatable_id',

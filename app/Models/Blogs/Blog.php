@@ -6,6 +6,8 @@ use App\Models\Metadata;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Blog extends Model
@@ -46,4 +48,10 @@ class Blog extends Model
       'category_id'
     )->withTimestamps();
   }
+  protected function legacyPath(): Attribute
+{
+    return Attribute::get(fn () => $this->publication_date
+        ? '/' . Carbon::parse($this->publication_date)->format('Y/m/d') . '/' . $this->slug . '/'
+        : null);
+}
 }
