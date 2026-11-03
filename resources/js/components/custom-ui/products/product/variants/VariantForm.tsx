@@ -24,7 +24,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { Attribute } from '@/types/products/attributes';
 import { Link } from '@inertiajs/react';
 import { Boxes, PackagePlus, Settings } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
 import { ProductFormValues } from '../schema';
@@ -36,6 +36,7 @@ interface Props {
     specificationAttributes: Attribute[];
     brands?: { id: string; name: string }[];
     brandId?: string;
+    initialIsSingleProduct?: boolean;
 }
 
 export function VariantForm({
@@ -43,6 +44,7 @@ export function VariantForm({
     specificationAttributes,
     brands = [],
     brandId,
+    initialIsSingleProduct = false,
 }: Props) {
     const {
         control,
@@ -83,28 +85,15 @@ export function VariantForm({
         activeAttributes,
         selectedIds,
     } = useVariantForm(variantAttributes);
-    const [isSingleProduct, setIsSingleProduct] = useState(false);
+    const [isSingleProduct, setIsSingleProduct] = useState(
+        initialIsSingleProduct,
+    );
     const watchedVariants = useWatch({
         control,
         name: 'variants',
         defaultValue: [],
     });
-    const hydrated = useRef(false);
 
-    // Auto-sincroniza el modo "producto único" al cargar/editar:
-    // si hay exactamente una variante y no hay atributos de variante seleccionados,
-    // se considera único para pintar correctamente importados.
-
-    useEffect(() => {
-    if (hydrated.current) return;
-    hydrated.current = true;
-
-    const shouldBeSingle =
-        (watchedVariants?.length ?? 0) === 1 && (selectedIds?.length ?? 0) === 0;
-    setIsSingleProduct(shouldBeSingle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-    
     // Regla de negocio: si existen atributos de variante seleccionados,
     // no puede considerarse "producto único".
     useEffect(() => {

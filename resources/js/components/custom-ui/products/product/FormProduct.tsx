@@ -80,6 +80,14 @@ export default function FormProduct({
     const variantAttributes = attributes.filter((a) => a.is_variant);
     const specificationAttributes = attributes.filter((a) => !a.is_variant);
 
+    // Producto único = exactamente una variante y sin atributos de variante
+    // seleccionados (caso típico de productos importados como producto simple).
+    const initialIsSingleProduct = Boolean(
+        product &&
+            product.variants.length === 1 &&
+            (product.variant_attribute_ids?.length ?? 0) === 0,
+    );
+
     const onError = (errors: FieldErrors<ProductFormValues>) => {
         console.error(
             'Errores de validacion del formulario de producto:',
@@ -109,6 +117,7 @@ export default function FormProduct({
                             specificationAttributes={specificationAttributes}
                             brands={brands}
                             brandId={product?.brand_id ?? undefined}
+                            initialIsSingleProduct={initialIsSingleProduct}
                         />
 
                         <TechnicalSheetsForm />
