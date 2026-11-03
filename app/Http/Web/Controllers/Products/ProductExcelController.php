@@ -80,6 +80,7 @@ class ProductExcelController extends Controller
             $action = $request->string('action')->toString();
             $mode = $action === 'validate' ? 'validate' : 'import';
             $storedPath = $file->store('imports/products');
+            $this->normalizeImportFile(Storage::path($storedPath));
             $totalRows = $this->resolveTotalRows(Storage::path($storedPath));
 
             $session = ProductImportSession::query()->create([
@@ -414,22 +415,76 @@ class ProductExcelController extends Controller
     {
         try {
             $reader = IOFactory::createReaderForFile($path);
-            if (method_exists($reader, 'listWorksheetInfo')) {
-                $worksheetInfo = $reader->listWorksheetInfo($path);
-                $rows = (int) (($worksheetInfo[0]['totalRows'] ?? 0) - 1);
-            } else {
-                $spreadsheet = $reader->load($path);
-                $rows = max(0, $spreadsheet->getActiveSheet()->getHighestDataRow() - 1);
-                $spreadsheet->disconnectWorksheets();
-                unset($spreadsheet);
-            }
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($path);
+            // getHighestDataRow() ignora las filas vacías con formato que pueden
+            // inflar el tamaño declarado de la hoja (ej. una fila fantasma al fondo).
+            $rows = max(0, (int) $spreadsheet->getActiveSheet()->getHighestDataRow() - 1);
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
 
-            return max(0, $rows);
+            return $rows;
         } catch (\Throwable $e) {
             Log::warning('No se pudo estimar total de filas del archivo de importación', [
                 'error' => $e->getMessage(),
             ]);
             return null;
+        }
+    }
+
+    /**
+     * Re-guarda el archivo para eliminar filas vacías "fantasma" que inflan la
+     * dimensión de la hoja (p. ej. una fila vacía en la posición 1,048,576 hace
+     * que la hoja declare ~1M de filas). De lo contrario el import recorre todas
+     * esas filas vacías y se cuelga o excede el tiempo de la cola.
+     */
+    private function normalizeImportFile(string $path): void
+    {
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $writerType = match ($extension) {
+            'xlsx' => 'Xlsx',
+            'xls' => 'Xls',
+            default => null,
+        };
+
+        // CSV no tiene dimensiones, así que no aplica.
+        if ($writerType === null) {
+            return;
+        }
+
+        try {
+            $reader = IOFactory::createReaderForFile($path);
+            $reader->setReadDataOnly(true);
+
+            // El tamaño declarado (listWorksheetInfo) puede estar inflado por
+            // filas vacías con formato hasta el final de la hoja.
+            $declaredRows = (int) ($reader->listWorksheetInfo($path)[0]['totalRows'] ?? 0);
+
+            $spreadsheet = $reader->load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+            $highestDataRow = (int) $sheet->getHighestDataRow();
+
+            // Sin filas fantasma sobrantes: no tocamos el archivo.
+            if ($highestDataRow <= 0 || $declaredRows <= $highestDataRow) {
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+
+                return;
+            }
+
+            // Re-guardar elimina las filas vacías finales y normaliza la dimensión.
+            $writer = IOFactory::createWriter($spreadsheet, $writerType);
+            $writer->save($path);
+
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        } catch (\Throwable $e) {
+            // No bloqueamos la importación si falla la normalización; resolveTotalRows
+            // cuenta las filas con datos reales igualmente.
+            Log::warning('No se pudo normalizar el archivo de importación', [
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

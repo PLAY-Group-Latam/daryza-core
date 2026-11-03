@@ -20,6 +20,9 @@ class ProcessProductImportSessionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    // El import puede ser largo; el retry_after de la cola Redis debe ser mayor
+    // que este timeout para que el worker no re-encolen el trabajo a mitad de
+    // ejecución (config/queue.php: REDIS_QUEUE_RETRY_AFTER).
     public int $timeout = 3600;
 
     public function __construct(

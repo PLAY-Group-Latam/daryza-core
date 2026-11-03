@@ -675,51 +675,65 @@ class ProductImportService
   {
     if (empty(trim($catName))) return;
 
-    $catName = trim($catName);
-    $parentSlug = Str::slug($catName);
-
-    // 1. Buscar primero por slug para evitar colisión de Unique Constraint
-    $parentCategory = ProductCategory::where('slug', $parentSlug)->first();
-
-    if (!$parentCategory) {
-      $parentCategory = ProductCategory::create([
-        'id' => Str::ulid(),
-        'name' => $catName,
-        'slug' => $parentSlug,
-        'parent_id' => null
-      ]);
-    }
-
+    $parentCategory = $this->findOrCreateCategory(trim($catName));
     $categoryIds = [$parentCategory->id];
 
-    // 2. Procesar subcategorías
     if ($subCatNames) {
-      $subCats = array_map('trim', explode(',', $subCatNames));
-
-      foreach ($subCats as $subName) {
+      foreach (array_map('trim', explode(',', $subCatNames)) as $subName) {
         if (empty($subName)) continue;
 
-        $subSlug = Str::slug($subName);
-
-        // Buscar subcategoría que pertenezca a este padre
-        $subCategory = ProductCategory::where('slug', $subSlug)
-          ->where('parent_id', $parentCategory->id)
-          ->first();
-
-        if (!$subCategory) {
-          $subCategory = ProductCategory::create([
-            'id' => Str::ulid(),
-            'name' => $subName,
-            'slug' => $subSlug,
-            'parent_id' => $parentCategory->id
-          ]);
-        }
+        $subCategory = $this->findOrCreateCategory($subName, $parentCategory);
         $categoryIds[] = $subCategory->id;
       }
     }
 
-    // 3. Sincronizar (Reemplaza asociaciones anteriores con las actuales)
+    // Sincronizar (Reemplaza asociaciones anteriores con las actuales)
     $product->categories()->sync($categoryIds);
+  }
+
+  /**
+   * Busca o crea una categoría. El slug de las subcategorías se genera con el
+   * prefijo de su padre (ej. "papeles-y-dispensadores-dispensadores") para que
+   * no choque con el slug global único, aunque exista otra categoría con el
+   * mismo nombre en otra posición.
+   */
+  protected function findOrCreateCategory(string $name, ?ProductCategory $parent = null): ProductCategory
+  {
+    // Reutiliza si ya existe una categoría con el mismo nombre bajo el mismo
+    // padre (así re-importar el mismo archivo es idempotente).
+    $existing = ProductCategory::where('name', $name)
+      ->when(
+        $parent === null,
+        fn($q) => $q->whereNull('parent_id'),
+        fn($q) => $q->where('parent_id', $parent->id)
+      )
+      ->first();
+
+    if ($existing) {
+      return $existing;
+    }
+
+    // Slug base: para la categoría principal es el propio nombre; para una
+    // subcategoría se antepone el slug del padre.
+    $baseSlug = $parent === null
+      ? Str::slug($name)
+      : Str::slug($parent->slug . ' ' . $name);
+    $baseSlug = $baseSlug !== '' ? $baseSlug : 'categoria';
+
+    // Por seguridad, si aun así colisiona, generamos un slug único.
+    $candidate = $baseSlug;
+    $suffix = 2;
+    while (ProductCategory::where('slug', $candidate)->exists()) {
+      $candidate = $baseSlug . '-' . $suffix;
+      $suffix++;
+    }
+
+    return ProductCategory::create([
+      'id' => Str::ulid(),
+      'name' => $name,
+      'slug' => $candidate,
+      'parent_id' => $parent ? $parent->id : null
+    ]);
   }
 
   /**
