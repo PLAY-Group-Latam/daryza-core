@@ -102,7 +102,14 @@ class ProductImportRowMapper
 
     private function normalizeText(mixed $value): string
     {
-        return trim((string) ($value ?? ''));
+        $text = (string) ($value ?? '');
+
+        // Elimina espacios "fantasma" que se ven vacíos pero no lo son:
+        // no-break space, figure space, zero-width space, narrow no-break
+        // space, word joiner y BOM.
+        $text = preg_replace('/[\x{00A0}\x{2007}\x{200B}\x{202F}\x{2060}\x{FEFF}]+/u', '', $text) ?? $text;
+
+        return trim($text);
     }
 
     private function nullableText(mixed $value): ?string

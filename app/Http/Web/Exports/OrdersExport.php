@@ -3,6 +3,7 @@
 namespace App\Http\Web\Exports;
 
 use App\Models\Orders\Order;
+use App\Models\Products\Attribute;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -41,7 +42,9 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
 
         $rows = new Collection();
 
-        $query->get()->each(function (Order $order) use (&$rows) {
+        $variantColumns = $this->variantColumns();
+
+        $query->get()->each(function (Order $order) use (&$rows, $variantColumns) {
             $latestPayment   = $order->payments->sortByDesc('created_at')->first();
             $placedAt        = $order->placed_at ?? $order->created_at;
             $customerName    = trim((string) $order->customer_first_name . ' ' . (string) $order->customer_last_name);
@@ -50,14 +53,15 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             $shippingAddress = $this->buildShippingAddress($order);
 
             foreach ($order->items as $item) {
-                $productDesc = $this->buildProductWithVariant((string) ($item->product_name ?? ''), $item->variant);
+                $productName   = trim((string) ($item->product_name ?? ''));
+                $variantValues = $this->buildVariantAttributesMap($item->variant);
 
                 [$categoryName, $subcategoryName] = $this->resolveCategoryColumns($item->product);
 
                 // Subtotal del ítem = cantidad × precio unitario (no el subtotal de la orden)
                 $lineSubtotal = round((float) $item->unit_price * (int) $item->quantity, 2);
 
-                $rows->push([
+                $row = [
                     (string) $order->code,
                     $placedAt ? $placedAt->format('d/m/Y H:i') : '',
                     $customerName,
@@ -72,18 +76,26 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
                     $paymentStatus,
                     $item->variant_sku ?? '',
                     $item->variant?->sku_supplier ?? '',
-                    $productDesc,
-                    $categoryName,
-                    $subcategoryName,
-                    (int) $item->quantity,
-                    $lineSubtotal,
-                    (float) $order->discount_total,
-                    (float) $order->delivery_cost,
-                    (float) $order->total,
-                    $shippingAddress,
-                    (string) $order->billing_ruc,
-                    (string) $order->billing_social_reason,
-                ]);
+                    $productName,
+                ];
+
+                foreach ($variantColumns as $column) {
+                    $row[] = $variantValues[$column] ?? '';
+                }
+
+                $row[] = $categoryName;
+                $row[] = $subcategoryName;
+                $row[] = (int) $item->quantity;
+                $row[] = (float) $item->unit_price;
+                $row[] = $lineSubtotal;
+                $row[] = (float) $order->discount_total;
+                $row[] = (float) $order->delivery_cost;
+                $row[] = (float) $order->total;
+                $row[] = $shippingAddress;
+                $row[] = (string) $order->billing_ruc;
+                $row[] = (string) $order->billing_social_reason;
+
+                $rows->push($row);
             }
         });
 
@@ -94,7 +106,8 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->getDelegate()->getStyle('A1:Y' . ($event->sheet->getHighestRow()))
+                $sheet = $event->sheet->getDelegate();
+                $sheet->getStyle('A1:' . $sheet->getHighestColumn() . $sheet->getHighestRow())
                     ->getAlignment()
                     ->setWrapText(true);
             },
@@ -103,7 +116,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
 
     public function headings(): array
     {
-        return [
+        $headings = [
             'num_orden',
             'fecha_pedido',
             'cliente',
@@ -119,9 +132,17 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'sku_daryza',
             'sku_proveedor',
             'producto',
+        ];
+
+        foreach ($this->variantColumns() as $column) {
+            $headings[] = $column;
+        }
+
+        return array_merge($headings, [
             'categoria',
             'subcategoria',
             'cantidad',
+            'costo_unidad',
             'subtotal',
             'descuento',
             'costo_de_envio',
@@ -129,7 +150,49 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'direccion_de_envio',
             'ruc_facturacion',
             'razon_social_facturacion',
-        ];
+        ]);
+    }
+
+    /**
+     * Columnas dinámicas para las variantes del producto, una por cada atributo
+     * marcado como variante (ej: Color, Presentación, Aroma, Talla).
+     */
+    private function variantColumns(): array
+    {
+        return Attribute::query()
+            ->where('is_variant', true)
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name) => trim((string) $name))
+            ->filter(fn ($name) => $name !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Mapa atributo => valor para las variantes de un ítem.
+     */
+    private function buildVariantAttributesMap($variant): array
+    {
+        $map = [];
+
+        foreach ($variant?->attributes ?? [] as $attributeValue) {
+            $name  = trim((string) data_get($attributeValue, 'attribute.name'));
+            $value = trim((string) data_get($attributeValue, 'value'));
+
+            if ($name === '' && $value === '') {
+                continue;
+            }
+
+            // Traducir / mapear códigos HEX a nombre de color si es un HEX
+            if (str_starts_with($value, '#')) {
+                $value = $this->convertHexToColorName($value);
+            }
+
+            $map[$name] = $value;
+        }
+
+        return $map;
     }
 
     /**
@@ -180,35 +243,6 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'refunded' => 'Reembolsado',
             default => 'Aprobado',
         };
-    }
-
-    private function buildProductWithVariant(string $productName, $variant): string
-    {
-        $variantAttributes = collect($variant?->attributes ?? [])
-            ->map(function ($attributeValue) {
-                $name = trim((string) data_get($attributeValue, 'attribute.name'));
-                $value = trim((string) data_get($attributeValue, 'value'));
-
-                if ($name === '' && $value === '') {
-                    return null;
-                }
-
-                // Traducir / mapear códigos HEX a nombre de color si es un HEX
-                if (str_starts_with($value, '#')) {
-                    $value = $this->convertHexToColorName($value);
-                }
-
-                return $name !== '' ? "{$name}: {$value}" : $value;
-            })
-            ->filter()
-            ->values()
-            ->implode(', ');
-
-        if ($variantAttributes === '') {
-            return $productName;
-        }
-
-        return trim($productName) . ' (' . $variantAttributes . ')';
     }
 
     /**

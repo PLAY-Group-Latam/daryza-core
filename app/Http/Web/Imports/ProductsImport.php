@@ -5,12 +5,10 @@ namespace App\Http\Web\Imports;
 use App\Http\Web\Services\Products\ProductImportRowMapper;
 use App\Http\Web\Services\Products\ProductImportService;
 use App\Models\Products\Product;
-use App\Models\Products\ProductCategory;
 use App\Models\Products\ProductImportSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -100,11 +98,6 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
      * Estado entre chunks: último código válido procesado.
      */
     private ?string $lastCode = null;
-    /**
-     * Códigos de producto ya vistos en el archivo: código => fila de Excel.
-     *
-     * @var array<string, int>
-     */
 
     /**
      * Combinaciones de atributos ya vistas por producto: código => [combinación => fila de Excel].
@@ -114,20 +107,26 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
     private array $seenVariantCombinations = [];
 
     /**
-     * Subcategorías ya vistas en el archivo: slug => [padre (slug), fila de Excel].
-     *
-     * @var array<string, array{parent: string, row: int}>
-     */
-    private array $seenSubcategoryParents = [];
-
-    /**
      * Productos padre que fallaron validación: código => fila de Excel.
      *
      * @var array<string, int>
      */
     private array $failedProductCodes = [];
 
+    /**
+     * Códigos de producto ya vistos en el archivo: código => fila de Excel.
+     *
+     * @var array<string, int>
+     */
     private array $seenProductCodes = [];
+
+    /**
+     * Nombre normalizado por código de producto ya visto: código => nombre.
+     * Permite detectar un mismo código reutilizado con un nombre distinto.
+     *
+     * @var array<string, string>
+     */
+    private array $seenProductNames = [];
 
     /**
      * Cache de productos ya resueltos/creados durante toda la importación.
@@ -334,85 +333,32 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
                 continue;
             }
 
-            // Una subcategoría (slug único global) no puede colgar de dos padres distintos.
-            if (trim((string) $childCategories) !== '' && trim((string) $parentCategory) !== '') {
-                $parentSlug = Str::slug(trim((string) $parentCategory));
-                $parentId = ProductCategory::where('slug', $parentSlug)->value('id');
-                $subConflict = null;
-
-                foreach (explode(',', (string) $childCategories) as $subName) {
-                    $subName = trim($subName);
-                    if ($subName === '') {
-                        continue;
-                    }
-                    $subSlug = Str::slug($subName);
-
-                    // 1. Contra lo ya visto en el archivo.
-                    if (
-                        isset($this->seenSubcategoryParents[$subSlug])
-                        && $this->seenSubcategoryParents[$subSlug]['parent'] !== $parentSlug
-                    ) {
-                        $seen = $this->seenSubcategoryParents[$subSlug];
-                        $subConflict = "La subcategoría {$subName} ya se usó en la fila {$seen['row']} bajo otra categoría ({$seen['parent']}).";
-                        break;
-                    }
-
-                    // 2. Contra la BD (sin withTrashed ya que el modelo no lo usa).
-                    $existing = ProductCategory::where('slug', $subSlug)->first();
-                    if ($existing && $existing->parent_id !== $parentId) {
-                        $subConflict = "La subcategoría {$subName} ya existe en el sistema bajo otra categoría principal.";
-                        break;
-                    }
-                }
-
-                if ($subConflict !== null) {
-                    $this->registerRowError(
-                        $excelRow,
-                        $subConflict,
-                        [
-                            'codigo' => $code,
-                            'categoria' => $parentCategory,
-                            'sub_categorias' => $childCategories,
-                        ],
-                        [ProductImportRowMapper::HEADER_SUBCATEGORY, ProductImportRowMapper::HEADER_CATEGORY],
-                        $row
-                    );
-                    continue;
-                }
-
-                foreach (explode(',', (string) $childCategories) as $subName) {
-                    $subName = trim($subName);
-                    if ($subName !== '') {
-                        $this->seenSubcategoryParents[Str::slug($subName)] = [
-                            'parent' => $parentSlug,
-                            'row' => $excelRow,
-                        ];
-                    }
-                }
-            }
-
-            // El código de producto debe ser único dentro del archivo.
+            // El código de producto puede repetirse solo si corresponde al mismo
+            // producto (mismo nombre); en ese caso la fila se interpreta como una
+            // variante más. Si reaparece con un nombre distinto, es un error.
             if ($code !== '' && $name !== '') {
-                if (isset($this->seenProductCodes[$code])) {
+                $normalizedName = mb_strtolower(trim($name));
+                $seenName = $this->seenProductNames[$code] ?? null;
+
+                if ($seenName === null) {
+                    $this->seenProductCodes[$code] = $excelRow;
+                    $this->seenProductNames[$code] = $normalizedName;
+                } elseif ($seenName !== $normalizedName) {
                     $this->registerRowError(
                         $excelRow,
-                        "El código de producto {$code} está repetido (ya aparece en la fila {$this->seenProductCodes[$code]}).",
+                        "El código de producto {$code} ya se usó en la fila {$this->seenProductCodes[$code]} con un nombre distinto. Verifica el código o el nombre.",
                         [
                             'codigo' => $code,
                             'nombre' => $name,
+                            'nombre_registrado' => $this->seenProductNames[$code],
                             'fila_original' => $this->seenProductCodes[$code],
                         ],
-                        [ProductImportRowMapper::HEADER_CODE],
+                        [ProductImportRowMapper::HEADER_CODE, ProductImportRowMapper::HEADER_NAME],
                         $row
                     );
 
-                    // Evita que las filas hijas siguientes se cuelguen del producto equivocado.
-                    $this->lastCode = null;
-
                     continue;
                 }
-
-                $this->seenProductCodes[$code] = $excelRow;
             }
 
             if (($code === '' || $name === '') && ($sku_daryza !== '' || $price !== null) && ! $this->lastCode) {
@@ -1459,7 +1405,7 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
 
             $this->registerRowError(
                 $excelRow,
-                $rowErrorMessage,
+                $rowErrorMessage . ' ' . $this->humanizeImportError($e),
                 [
                     ...$context,
                     'error' => $e->getMessage(),
@@ -1470,6 +1416,27 @@ class ProductsImport implements ToCollection, WithChunkReading, WithEvents, With
 
             return null;
         }
+    }
+
+    /**
+     * Convierte una excepción técnica en un mensaje corto y legible para el usuario.
+     */
+    private function humanizeImportError(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        // Duplicado de valor único (ej. categorías/slugs): extraemos lo relevante.
+        if (preg_match('/Key \(([^)]+)\)=\(([^)]*)\) already exists/i', $message, $m)) {
+            return "El valor de {$m[1]} '{$m[2]}' ya está en uso.";
+        }
+
+        if (preg_match('/violates unique constraint "([^"]+)"/i', $message, $m)) {
+            return "Duplicado en la restricción '{$m[1]}'.";
+        }
+
+        $clean = preg_replace('/\s+/', ' ', $message);
+
+        return mb_strlen($clean) > 300 ? mb_substr($clean, 0, 300) . '…' : $clean;
     }
 
     /**

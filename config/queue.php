@@ -68,7 +68,9 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Debe ser mayor que el timeout del trabajo más largo (ProcessProductImportSessionJob
+            // usa 3600s) para evitar que el worker re-encolen un trabajo en curso.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 3700),
             'block_for' => null,
             'after_commit' => false,
         ],
