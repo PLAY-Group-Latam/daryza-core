@@ -76,7 +76,7 @@ export default function Show() {
                                     Descargar CV
                                 </a>
                             </Button>
-                            <Button
+                             {/* <Button
                                 size="sm"
                                 variant="outline"
                                 className="flex-1 sm:flex-none"
@@ -86,7 +86,7 @@ export default function Show() {
                                     <Mail className="mr-2 h-4 w-4" />
                                     Enviar correo
                                 </a>
-                            </Button>
+                            </Button>  */}
                         </div>
                     </div>
                 </div>
@@ -148,9 +148,9 @@ export default function Show() {
                                 <p className="mt-1 text-sm">
                                     {application.job?.place?.name ?? 'No disponible'}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                {/* <p className="text-xs text-muted-foreground">
                                     {application.job?.place?.city ?? '-'}
-                                </p>
+                                </p> */}
                             </div>
                         </div>
                     </section>
@@ -171,14 +171,14 @@ export default function Show() {
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                            {/* <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
                                 <p className="text-xs text-muted-foreground">
                                     ID de postulación
                                 </p>
                                 <p className="mt-1 font-mono text-sm break-all">
                                     {application.id}
                                 </p>
-                            </div>
+                            </div> */}
                             <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
                                 <p className="text-xs text-muted-foreground">
                                     Slug de la oferta
