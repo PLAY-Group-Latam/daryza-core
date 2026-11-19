@@ -25,9 +25,8 @@ import {
     ArrowLeft,
     ArrowRight,
     Bold,
-    Heading1,
-    Heading2,
-    Heading3,
+    ChevronDown,
+    Columns3,
     Highlighter,
     Image as ImageIcon,
     Italic,
@@ -35,7 +34,13 @@ import {
     List,
     ListOrdered,
     Palette,
+    PlusSquare,
+    Rows3,
+    Subscript as SubscriptIcon,
+    Superscript as SuperscriptIcon,
+    Trash2,
     Underline as UnderlineIcon,
+    Unlink,
 } from 'lucide-react';
 
 const COLOR_PALETTE = [
@@ -199,7 +204,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
     const [color, setColor] = useState('#000000');
     const [highlightColor, setHighlightColor] = useState('#ffff00');
     const [activePopover, setActivePopover] = useState<
-        'link' | 'image' | 'color' | 'highlight' | null
+        'heading' | 'table' | 'link' | 'image' | 'color' | 'highlight' | null
     >(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -218,9 +223,13 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
     const applyURL = async () => {
         if (!url.trim()) return;
 
-        // Links normales: insertar directo
         if (activePopover === 'link') {
-            editor.chain().focus().setLink({ href: url }).run();
+            editor
+                .chain()
+                .focus()
+                .extendMarkRange('link')
+                .setLink({ href: url.trim() })
+                .run();
             setUrl('');
             setActivePopover(null);
             return;
@@ -228,7 +237,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
 
         if (activePopover !== 'image') return;
 
-        // URL base64: bloquear siempre
         if (url.startsWith('data:')) {
             toast.error('No se permiten imágenes en Base64.', {
                 description:
@@ -237,7 +245,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             return;
         }
 
-        // URL ya en GCS: insertar directo
         if (isGcsUrl(url)) {
             editor.chain().focus().setImage({ src: url }).run();
             setUrl('');
@@ -245,7 +252,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             return;
         }
 
-        // Si no hay uploadImage configurado, fallback a enlace directo
         if (!uploadImage) {
             editor.chain().focus().setImage({ src: url }).run();
             setUrl('');
@@ -253,7 +259,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             return;
         }
 
-        // URL externa: descargar y subir a GCS
         const uploadToast = toast.loading(
             'Descargando imagen y subiendo a GCS...',
         );
@@ -288,7 +293,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             }
         } catch {
             toast.dismiss(uploadToast);
-            // CORS o error de red → insertar URL directo como fallback
             editor.chain().focus().setImage({ src: url }).run();
             toast.warning('Imagen insertada como enlace externo.', {
                 description:
@@ -342,7 +346,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                 if (fileInputRef.current) fileInputRef.current.value = '';
             }
         } else {
-            // Fallback a Base64 local si no se provee uploadImage
             const reader = new FileReader();
             reader.onload = () => {
                 editor
@@ -356,6 +359,16 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
+
+    const activeHeadingLabel = editor.isActive('heading', { level: 1 })
+        ? 'H1'
+        : editor.isActive('heading', { level: 2 })
+          ? 'H2'
+          : editor.isActive('heading', { level: 3 })
+            ? 'H3'
+            : editor.isActive('heading', { level: 4 })
+              ? 'H4'
+              : 'Texto';
 
     return (
         <TooltipProvider>
@@ -402,37 +415,97 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                     icon={<UnderlineIcon className="h-4 w-4" />}
                     tooltip="Subrayado"
                 />
+                <IconButton
+                    editor={editor}
+                    command={() =>
+                        editor.chain().focus().toggleSubscript().run()
+                    }
+                    isActive={() => editor.isActive('subscript')}
+                    icon={<SubscriptIcon className="h-4 w-4" />}
+                    tooltip="Subíndice"
+                />
+                <IconButton
+                    editor={editor}
+                    command={() =>
+                        editor.chain().focus().toggleSuperscript().run()
+                    }
+                    isActive={() => editor.isActive('superscript')}
+                    icon={<SuperscriptIcon className="h-4 w-4" />}
+                    tooltip="Superíndice"
+                />
 
                 <div className="mx-1 h-5 w-[1px] bg-border" />
 
-                {/* Encabezados */}
-                <IconButton
-                    editor={editor}
-                    command={() =>
-                        editor.chain().focus().toggleHeading({ level: 1 }).run()
+                {/* Encabezados Agrupados (Párrafo, H1, H2, H3, H4) */}
+                <Popover
+                    open={activePopover === 'heading'}
+                    onOpenChange={(open) =>
+                        setActivePopover(open ? 'heading' : null)
                     }
-                    isActive={() => editor.isActive('heading', { level: 1 })}
-                    icon={<Heading1 className="h-4 w-4" />}
-                    tooltip="Encabezado H1"
-                />
-                <IconButton
-                    editor={editor}
-                    command={() =>
-                        editor.chain().focus().toggleHeading({ level: 2 }).run()
-                    }
-                    isActive={() => editor.isActive('heading', { level: 2 })}
-                    icon={<Heading2 className="h-4 w-4" />}
-                    tooltip="Encabezado H2"
-                />
-                <IconButton
-                    editor={editor}
-                    command={() =>
-                        editor.chain().focus().toggleHeading({ level: 3 }).run()
-                    }
-                    isActive={() => editor.isActive('heading', { level: 3 })}
-                    icon={<Heading3 className="h-4 w-4" />}
-                    tooltip="Encabezado H3"
-                />
+                >
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant={
+                                        editor.isActive('heading')
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    className="h-9 gap-1 px-2.5 text-xs font-medium"
+                                >
+                                    <span>{activeHeadingLabel}</span>
+                                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                                </Button>
+                            </PopoverTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Tipo de texto / Encabezado</TooltipContent>
+                    </Tooltip>
+                    <PopoverContent className="w-44 p-1.5" sideOffset={8}>
+                        <div className="flex flex-col gap-1">
+                            <Button
+                                type="button"
+                                variant={
+                                    !editor.isActive('heading')
+                                        ? 'secondary'
+                                        : 'ghost'
+                                }
+                                size="sm"
+                                className="justify-start text-xs"
+                                onClick={() => {
+                                    editor.chain().focus().setParagraph().run();
+                                    setActivePopover(null);
+                                }}
+                            >
+                                Párrafo normal
+                            </Button>
+                            {([1, 2, 3, 4] as const).map((level) => (
+                                <Button
+                                    key={level}
+                                    type="button"
+                                    variant={
+                                        editor.isActive('heading', { level })
+                                            ? 'secondary'
+                                            : 'ghost'
+                                    }
+                                    size="sm"
+                                    className="justify-start text-xs font-semibold"
+                                    onClick={() => {
+                                        editor
+                                            .chain()
+                                            .focus()
+                                            .toggleHeading({ level })
+                                            .run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    Encabezado H{level}
+                                </Button>
+                            ))}
+                        </div>
+                    </PopoverContent>
+                </Popover>
 
                 <div className="mx-1 h-5 w-[1px] bg-border" />
 
@@ -455,6 +528,171 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                     icon={<ListOrdered className="h-4 w-4" />}
                     tooltip="Lista ordenada"
                 />
+
+                <div className="mx-1 h-5 w-[1px] bg-border" />
+
+                {/* Menú de Tabla (Insertar / Filas / Columnas / Eliminar) */}
+                <Popover
+                    open={activePopover === 'table'}
+                    onOpenChange={(open) =>
+                        setActivePopover(open ? 'table' : null)
+                    }
+                >
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant={
+                                        editor.isActive('table')
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                >
+                                    <PlusSquare className="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Tabla</TooltipContent>
+                    </Tooltip>
+                    <PopoverContent className="w-52 p-1.5" sideOffset={8}>
+                        {!editor.isActive('table') ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start gap-2 text-xs"
+                                onClick={() => {
+                                    editor
+                                        .chain()
+                                        .focus()
+                                        .insertTable({
+                                            rows: 3,
+                                            cols: 3,
+                                            withHeaderRow: true,
+                                        })
+                                        .run();
+                                    setActivePopover(null);
+                                }}
+                            >
+                                <PlusSquare className="h-3.5 w-3.5" />
+                                Insertar tabla (3x3)
+                            </Button>
+                        ) : (
+                            <div className="flex flex-col gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs"
+                                    onClick={() => {
+                                        editor.chain().focus().addRowBefore().run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Rows3 className="h-3.5 w-3.5" />
+                                    Agregar fila arriba
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs"
+                                    onClick={() => {
+                                        editor.chain().focus().addRowAfter().run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Rows3 className="h-3.5 w-3.5" />
+                                    Agregar fila abajo
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs"
+                                    onClick={() => {
+                                        editor
+                                            .chain()
+                                            .focus()
+                                            .addColumnBefore()
+                                            .run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Columns3 className="h-3.5 w-3.5" />
+                                    Agregar columna izquierda
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs"
+                                    onClick={() => {
+                                        editor
+                                            .chain()
+                                            .focus()
+                                            .addColumnAfter()
+                                            .run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Columns3 className="h-3.5 w-3.5" />
+                                    Agregar columna derecha
+                                </Button>
+                                <div className="my-1 h-[1px] bg-border" />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                        editor.chain().focus().deleteRow().run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Eliminar fila
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                        editor
+                                            .chain()
+                                            .focus()
+                                            .deleteColumn()
+                                            .run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Eliminar columna
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start gap-2 text-xs text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                        editor
+                                            .chain()
+                                            .focus()
+                                            .deleteTable()
+                                            .run();
+                                        setActivePopover(null);
+                                    }}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Eliminar tabla
+                                </Button>
+                            </div>
+                        )}
+                    </PopoverContent>
+                </Popover>
 
                 <div className="mx-1 h-5 w-[1px] bg-border" />
 
@@ -664,7 +902,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                                                     }}
                                                     title={hex}
                                                 >
-                                                    {/* EVALUACIÓN DIRECTA DESDE TIPTAP */}
                                                     {editor.isActive(
                                                         'highlight',
                                                         { color: hex },
@@ -706,7 +943,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                             </div>
                         </PopoverContent>
                     </Popover>
-                    <TooltipContent>Cdadolor de resaltado</TooltipContent>
+                    <TooltipContent>Color de resaltado</TooltipContent>
                 </Tooltip>
 
                 <div className="mx-1 h-5 w-[1px] bg-border" />
@@ -714,12 +951,25 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                 {/* Popover Enlace */}
                 <Popover
                     open={activePopover === 'link'}
-                    onOpenChange={(open) =>
-                        setActivePopover(open ? 'link' : null)
-                    }
+                    onOpenChange={(open) => {
+                        if (open) {
+                            const currentHref =
+                                editor.getAttributes('link').href || '';
+                            setUrl(currentHref);
+                            setActivePopover('link');
+                        } else {
+                            setActivePopover(null);
+                        }
+                    }}
                 >
                     <PopoverTrigger asChild>
-                        <Button type="button" size="icon" variant="outline">
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant={
+                                editor.isActive('link') ? 'default' : 'outline'
+                            }
+                        >
                             <LinkIcon className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
@@ -730,9 +980,33 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
                             />
-                            <Button type="button" onClick={applyURL}>
-                                Aplicar enlace
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    className="flex-1"
+                                    onClick={applyURL}
+                                >
+                                    Aplicar enlace
+                                </Button>
+                                {editor.isActive('link') && (
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="outline"
+                                        onClick={() => {
+                                            editor
+                                                .chain()
+                                                .focus()
+                                                .unsetLink()
+                                                .run();
+                                            setUrl('');
+                                            setActivePopover(null);
+                                        }}
+                                    >
+                                        <Unlink className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </PopoverContent>
                 </Popover>

@@ -2,10 +2,18 @@
 
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
+import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import {
+    Table,
+    TableCell,
+    TableHeader,
+    TableRow,
+} from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
-import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useRef } from 'react';
@@ -19,6 +27,33 @@ interface RichTextEditorProps {
     onChange: (value: string) => void;
     placeholder?: string;
     readOnly?: boolean;
+    uploadImage?: (file: File) => Promise<string | null>;
+}
+
+function cleanWordPastedHtml(html: string): string {
+    let cleaned = html;
+
+    // Eliminar comentarios condicionales y normales de Word
+    cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, '');
+
+    // Eliminar etiquetas de namespaces de Office (<o:p>, <w:...>, etc.)
+    cleaned = cleaned.replace(/<\/?(?:o|w|m|v):[^>]*>/gi, '');
+
+    // Quitar clases Mso* de Word
+    cleaned = cleaned.replace(/\sclass="[^"]*Mso[^"]*"/gi, '');
+
+    // Quitar dimensiones y estilos inline rígidos en estructuras de tabla
+    cleaned = cleaned.replace(
+        /<(table|thead|tbody|tr|td|th)([^>]*)>/gi,
+        (_match, tag, attrs) => {
+            const cleanedAttrs = attrs
+                .replace(/\s(?:width|height)="[^"]*"/gi, '')
+                .replace(/\sstyle="[^"]*"/gi, '');
+            return `<${tag}${cleanedAttrs}>`;
+        },
+    );
+
+    return cleaned;
 }
 
 export function RichTextEditor({
@@ -26,6 +61,7 @@ export function RichTextEditor({
     onChange,
     placeholder = 'Escribe aquí...',
     readOnly = false,
+    uploadImage,
 }: RichTextEditorProps) {
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isUpdatingRef = useRef(false);
@@ -33,8 +69,16 @@ export function RichTextEditor({
     const editor = useEditor({
         editable: !readOnly,
         extensions: [
-            StarterKit,
-            Underline,
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2, 3, 4],
+                },
+            }),
+            Link.configure({
+                openOnClick: false,
+            }),
+            Subscript,
+            Superscript,
             TextStyle,
             Color,
             Highlight.configure({
@@ -44,8 +88,14 @@ export function RichTextEditor({
                 allowBase64: true,
             }),
             TextAlign.configure({
-                types: ['heading', 'paragraph'],
+                types: ['heading', 'paragraph', 'tableCell', 'tableHeader'],
             }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
             Placeholder.configure({
                 placeholder,
             }),
@@ -66,6 +116,7 @@ export function RichTextEditor({
         },
 
         editorProps: {
+            transformPastedHTML: cleanWordPastedHtml,
             attributes: {
                 class: 'focus:outline-none min-h-[150px] p-3 overflow-y-auto',
                 spellcheck: 'false',
@@ -109,7 +160,7 @@ export function RichTextEditor({
 
     return (
         <div className="rounded-xl border border-input bg-background transition-colors focus-within:ring-1 focus-within:ring-ring">
-            <MenuBar editor={editor} />
+            <MenuBar editor={editor} uploadImage={uploadImage} />
             <div className="px-2 pb-2">
                 <EditorContent
                     editor={editor}

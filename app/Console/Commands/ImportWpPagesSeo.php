@@ -10,37 +10,36 @@ use Illuminate\Support\Facades\Http;
 class ImportWpPagesSeo extends Command
 {
     protected $signature = 'wp:import-pages-seo {--base=https://daryza.com} {--dry : Solo muestra, no guarda ni sube}';
-    protected $description = 'Llena la metadata de las páginas con el SEO real de WordPress y sube sus og:image al bucket';
+    protected $description = 'Llena la metadata de las páginas con el SEO real de WordPress, sube sus og:image al bucket y asigna el logo como og:image por defecto a las páginas sin uno';
 
-    /** ruta vieja en WP => slug de Page. null = no importar */
+    /** og:image por defecto (ya está en el bucket, misma ruta que en WP) */
+    private const DEFAULT_OG = 'https://daryza.com/wp-content/uploads/2021/04/logo-daryza-02.png';
+
+    /** ruta vieja en WP => slug de Page */
     private const PAGES = [
-        '/'                                       => 'home',
-        '/nosotros/'                              => 'nosotros',
-        '/contacto/'                              => 'contacto',
-        '/servicio-al-cliente/'                   => 'servicio-cliente',
-        '/asesoria-comercial/'                    => 'asesoria',
-        '/red-de-distribuidor/'                   => 'red-comercial',
-        '/trabaje-con-nosotros/'                  => 'trabajos',
-        '/terminos-y-condiciones/'                => 'terminos-y-condiciones',
-        '/libro-de-reclamaciones/'                => 'libro-de-reclamaciones',
-        '/blog/'                                  => 'blog',
-        '/politica-anticorrupcion-y-antisoborno/' => null, // 301 a privacidad, pero el contenido no equivale
+        '/'                        => 'home',
+        '/nosotros/'               => 'nosotros',
+        '/contacto/'               => 'contacto',
+        '/servicio-al-cliente/'    => 'servicio-cliente',
+        '/asesoria-comercial/'     => 'asesoria',
+        '/red-de-distribuidor/'    => 'red-comercial',
+        '/trabaje-con-nosotros/'   => 'trabajos',
+        '/terminos-y-condiciones/' => 'terminos-y-condiciones',
+        '/libro-de-reclamaciones/' => 'libro-de-reclamaciones',
+        '/blog/'                   => 'blog',
     ];
 
     private ?GcsService $gcs = null;
 
     public function handle(): int
     {
-        $base = rtrim($this->option('base'), '/');
-        $rows = [];
+        $base   = rtrim($this->option('base'), '/');
+        $dry    = (bool) $this->option('dry');
+        $rows   = [];
+        $withOg = []; // slugs que ya recibieron og:image de WP en esta corrida
 
         foreach (self::PAGES as $path => $slug) {
             $url = $base . $path;
-
-            if ($slug === null) {
-                $rows[] = [$path, '—', '—', '—', 'OMITIDA (definir aparte)'];
-                continue;
-            }
 
             $res = Http::timeout(60)->retry(3, 1000)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (SEO-migration)'])
@@ -73,8 +72,12 @@ class ImportWpPagesSeo extends Command
             $ogImage = $seo['og_image'];
             if (!$ogImage) {
                 $notes[] = 'sin og:image';
-            } elseif (!$this->option('dry') && !$this->moveToBucket($ogImage)) {
+            } elseif (!$dry && !$this->moveToBucket($ogImage)) {
                 $notes[] = 'no pude subir og:image';
+            }
+
+            if ($ogImage) {
+                $withOg[$slug] = true;
             }
 
             $robots = (string) $seo['robots'];
@@ -90,7 +93,7 @@ class ImportWpPagesSeo extends Command
                 'nofollow'         => str_contains($robots, 'nofollow'),
             ]);
 
-            if (!$this->option('dry')) {
+            if (!$dry) {
                 $meta->save();
             }
 
@@ -99,7 +102,35 @@ class ImportWpPagesSeo extends Command
         }
 
         $this->table(['URL vieja', 'Page slug', 'HTTP', 'og_image', 'Resultado'], $rows);
-        $this->info($this->option('dry') ? 'Dry run: no se guardó ni se subió nada.' : 'Metadata actualizada.');
+
+        // Fase 2: páginas del seeder sin og:image (no vienen de WP) usan el logo por defecto
+        $fallbackRows = [];
+        foreach (Page::orderBy('slug')->get() as $page) {
+            if (isset($withOg[$page->slug])) {
+                continue;
+            }
+
+            $meta = $page->metadata;
+            if (!$meta) {
+                $fallbackRows[] = [$page->slug, 'sin metadata (corre SeoPageSeeder)'];
+                continue;
+            }
+            if ($meta->og_image) {
+                continue;
+            }
+
+            $meta->forceFill(['og_image' => self::DEFAULT_OG]);
+            if (!$dry) {
+                $meta->save();
+            }
+            $fallbackRows[] = [$page->slug, 'og_image por defecto: ' . self::DEFAULT_OG];
+        }
+
+        if ($fallbackRows) {
+            $this->table(['Page slug', 'Resultado'], $fallbackRows);
+        }
+
+        $this->info($dry ? 'Dry run: no se guardó ni se subió nada.' : 'Metadata actualizada.');
 
         return self::SUCCESS;
     }
@@ -150,7 +181,8 @@ class ImportWpPagesSeo extends Command
             'og_title'       => $attr('//meta[@property="og:title"]'),
             'og_description' => $attr('//meta[@property="og:description"]'),
             'og_type'        => $attr('//meta[@property="og:type"]'),
-            'og_image'       => $attr('//meta[@property="og:image"]'),
+            // Si hay varios og:image se toma el último (el específico de la página; si hay uno solo, ese)
+            'og_image'       => $attr('(//meta[@property="og:image"])[last()]'),
         ];
     }
 }
