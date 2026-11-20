@@ -162,7 +162,7 @@ class ImportWpPagesSeo extends Command
         }
     }
 
-    private function parse(string $html): array
+       private function parse(string $html): array
     {
         $dom = new \DOMDocument();
         @$dom->loadHTML('<?xml encoding="UTF-8">' . $html);
@@ -174,15 +174,17 @@ class ImportWpPagesSeo extends Command
         };
         $text = fn(string $q) => ($n = $xp->query($q)->item(0)) ? trim(preg_replace('/\s+/', ' ', $n->textContent)) : null;
 
+        // WP repite og:* (tema + Yoast): se toma el último, el específico de la página
+        $last = fn(string $property) => $attr('(//meta[@property="' . $property . '"])[last()]');
+
         return [
             'title'          => $text('//title'),
             'description'    => $attr('//meta[@name="description"]'),
             'robots'         => $attr('//meta[@name="robots"]'),
-            'og_title'       => $attr('//meta[@property="og:title"]'),
-            'og_description' => $attr('//meta[@property="og:description"]'),
-            'og_type'        => $attr('//meta[@property="og:type"]'),
-            // Si hay varios og:image se toma el último (el específico de la página; si hay uno solo, ese)
-            'og_image'       => $attr('(//meta[@property="og:image"])[last()]'),
+            'og_title'       => $last('og:title'),
+            'og_description' => $last('og:description'),
+            'og_type'        => $last('og:type'),
+            'og_image'       => $last('og:image'),
         ];
     }
 }
