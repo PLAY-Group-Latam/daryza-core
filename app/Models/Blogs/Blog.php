@@ -30,6 +30,8 @@ class Blog extends Model
     'publication_date',
   ];
 
+  protected $appends = ['legacy_path'];
+
   public function metadata()
   {
     return $this->morphOne(Metadata::class, 'metadatable');

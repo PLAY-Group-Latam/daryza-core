@@ -42,7 +42,7 @@ class ImportWpPosts extends Command
 
             foreach ($res->json() as $p) {
                 if (! $dry) {
-                    DB::transaction(fn () => $this->importPost($p));
+                    DB::transaction(fn () => $this->importPost($p, $base));
                 }
                 if (! $this->option('skip-media')) {
                     $this->syncMedia($p, $base, $dry);
@@ -63,23 +63,44 @@ class ImportWpPosts extends Command
         return empty($this->stats['failed']) ? self::SUCCESS : self::FAILURE;
     }
 
-    private function importPost(array $p): void
+    /**
+     * Cambia las URLs de WordPress (/wp-content/uploads) por las del bucket.
+     * Funciona sobre una URL suelta o sobre todo un HTML.
+     */
+    private function toBucket(?string $text, string $base): ?string
+    {
+        if ($text === null || $text === '') {
+            return $text;
+        }
+
+        $bucket = rtrim($this->option('bucket-url'), '/');
+
+        return str_replace(
+            [$base . '/wp-content/uploads', str_replace('/', '\/', $base) . '\/wp-content\/uploads'],
+            [$bucket . '/wp-content/uploads', str_replace('/', '\/', $bucket) . '\/wp-content\/uploads'],
+            $text
+        );
+    }
+
+    private function importPost(array $p, string $base): void
     {
         $y     = $p['yoast_head_json'] ?? [];
         $terms = $p['_embedded']['wp:term'] ?? [];
         $media = $p['_embedded']['wp:featuredmedia'][0] ?? null;
 
+        // Imagen original (alta resolución). Next.js la optimiza al tamaño que necesite.
+        // Antes se usaba el tamaño "medium" (300x191), que se veía borroso.
         $image = $media['source_url'] ?? null;
-        $thumb = $media['media_details']['sizes']['medium']['source_url'] ?? $image;
+        $thumb = $image;
 
         $blog = Blog::updateOrCreate(
             ['slug' => $p['slug']],
             [
                 'title'            => html_entity_decode($p['title']['rendered'], ENT_QUOTES | ENT_HTML5),
                 'description'      => html_entity_decode(trim(strip_tags($p['excerpt']['rendered'] ?? '')), ENT_QUOTES | ENT_HTML5),
-                'content'          => $p['content']['rendered'],
-                'image'            => $image,
-                'miniature'        => $thumb,
+                'content'          => $this->toBucket($p['content']['rendered'], $base),
+                'image'            => $this->toBucket($image, $base),
+                'miniature'        => $this->toBucket($thumb, $base),
                 'visibility'       => true,
                 'author'           => $y['author'] ?? 'Daryza',
                 'publication_date' => $p['date'], // hora local de WP, NO convertir
@@ -107,7 +128,7 @@ class ImportWpPosts extends Command
             'meta_keywords'    => $keywords !== '' ? $keywords : null,
             'og_title'         => $y['og_title'] ?? null,
             'og_description'   => $y['og_description'] ?? null,
-            'og_image'         => $y['og_image'][0]['url'] ?? null,
+            'og_image'         => $this->toBucket($y['og_image'][0]['url'] ?? null, $base),
             'og_type'          => $y['og_type'] ?? 'article',
             'canonical_url'    => $y['canonical'] ?? null,
             'noindex'          => ($robots['index'] ?? 'index') === 'noindex',
@@ -133,9 +154,9 @@ class ImportWpPosts extends Command
     }
 
     /**
-     * Rutas /wp-content/uploads/... que usa el post: imagen destacada, miniatura,
+     * Rutas /wp-content/uploads/... que usa el post: imagen destacada,
      * og:image y todo lo que aparezca en el HTML del contenido (incluye srcset).
-     * NO sube los demás tamaños de media_details que nadie referencia.
+     * Siempre se lee del post original de WP (antes de reescribir URLs).
      */
     private function syncMedia(array $p, string $base, bool $dry): void
     {
@@ -144,9 +165,8 @@ class ImportWpPosts extends Command
         $sources = [
             $p['content']['rendered'] ?? '',
             $p['excerpt']['rendered'] ?? '',
-            $media['source_url'] ?? '',                                      // image
-            $media['media_details']['sizes']['medium']['source_url'] ?? '',  // miniature
-            $p['yoast_head_json']['og_image'][0]['url'] ?? '',               // og:image
+            $media['source_url'] ?? '',                        // image + miniature (original)
+            $p['yoast_head_json']['og_image'][0]['url'] ?? '', // og:image
         ];
 
         // Elementor y JSON escapan las barras: https:\/\/daryza.com\/...

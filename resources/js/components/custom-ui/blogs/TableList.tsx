@@ -27,18 +27,24 @@ export const columns: ColumnDef<Blog>[] = [
             const frontendUrl = String(
                 import.meta.env.VITE_FRONTEND_URL ?? '',
             ).replace(/\/$/, '');
-            const publicUrl = `${frontendUrl}/blog/${encodeURIComponent(blog.slug)}`;
+            const publicUrl = blog.legacy_path
+                ? `${frontendUrl}${blog.legacy_path}`
+                : null;
 
             return (
                 <div className="flex flex-col">
-                    <a
-                        href={publicUrl}
-                        className="w-fit font-medium text-blue-600 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        {publicUrl}
-                    </a>
+                    {publicUrl ? (
+                        <a
+                            href={publicUrl}
+                            className="w-fit font-medium text-blue-600 hover:underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {publicUrl}
+                        </a>
+                    ) : (
+                        <span className="w-fit font-medium">{blog.title}</span>
+                    )}
                     <span className="text-sm text-muted-foreground">
                         por {blog.author}
                     </span>

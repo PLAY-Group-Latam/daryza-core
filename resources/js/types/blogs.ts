@@ -18,7 +18,7 @@ export interface Blog {
     content: string;
     image: File | string | undefined;
     miniature: File | string | undefined;
-
+    legacy_path: string | null;
     visibility: boolean;
     featured: boolean;
     publication_date: string;
