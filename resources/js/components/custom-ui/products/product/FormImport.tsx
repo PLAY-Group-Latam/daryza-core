@@ -382,6 +382,21 @@ export default function FormImport() {
                             resolveNextDelay(nextSession.status),
                         );
                     }
+
+                    // Al terminar una importación real, limpiamos el cache de
+                    // prefetch de Inertia para que la lista de productos (y
+                    // demás páginas afectadas) se sirvan con datos frescos al
+                    // navegar, sin necesidad de refrescar manualmente.
+                    if (
+                        !cancelled &&
+                        nextSession.is_finished &&
+                        ['completed', 'completed_with_errors'].includes(
+                            nextSession.status,
+                        )
+                    ) {
+                        router.flushAll();
+                    }
+
                     return;
                 }
             } catch {
