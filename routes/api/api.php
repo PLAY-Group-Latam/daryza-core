@@ -26,4 +26,5 @@ Route::prefix('v1')
     require __DIR__ . '/landings.php';
     require __DIR__ . '/whatsapp.php';
     require __DIR__ . '/healthy.php';
+    require __DIR__ . '/sitemap.php';
   });
