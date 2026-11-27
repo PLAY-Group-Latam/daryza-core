@@ -15,8 +15,10 @@ class ImportWpPosts extends Command
         {--base=https://daryza.com : Origen de WordPress}
         {--bucket-url=https://storage.googleapis.com/daryza : URL pública del bucket (para saber qué ya existe)}
         {--dry : No escribe en BD ni sube al bucket, solo informa}
-        {--skip-media : Importa posts sin subir imágenes}';
-    protected $description = 'Importa posts de WordPress (contenido + SEO de Yoast) a blogs y metadata, y sube sus imágenes al bucket';
+        {--skip-media : Importa posts sin subir imágenes}
+        {--save-snapshot : Guarda los posts traídos de WP en database/data/wp/posts.json}
+        {--offline : No consulta WP, usa directo el JSON guardado}';
+    protected $description = 'Importa posts de WordPress (contenido + SEO de Yoast) a blogs y metadata, y sube sus imágenes al bucket. Si WP no responde, usa el JSON guardado';
 
     private array $stats = ['uploaded' => 0, 'existing' => 0, 'failed' => []];
     private array $seen = [];
@@ -25,34 +27,33 @@ class ImportWpPosts extends Command
     {
         $base  = rtrim($this->option('base'), '/');
         $dry   = (bool) $this->option('dry');
-        $page  = 1;
-        $pages = 1;
         $count = 0;
 
-        do {
-            $res = Http::timeout(60)->retry(3, 1000)->get("$base/wp-json/wp/v2/posts", [
-                'per_page' => 50,
-                'page'     => $page,
-                'orderby'  => 'date',
-                'order'    => 'asc',
-                '_embed'   => 'wp:term,wp:featuredmedia',
-            ])->throw();
+        $posts = $this->option('offline') ? null : $this->fetchPosts($base);
 
-            $pages = (int) $res->header('X-WP-TotalPages');
+        if ($posts === null) {
+            $posts = $this->readSnapshot();
 
-            foreach ($res->json() as $p) {
-                if (! $dry) {
-                    DB::transaction(fn () => $this->importPost($p, $base));
-                }
-                if (! $this->option('skip-media')) {
-                    $this->syncMedia($p, $base, $dry);
-                }
-                $count++;
+            if ($posts === null) {
+                $this->error('WP no respondió y no hay snapshot en ' . $this->snapshotPath());
+                return self::FAILURE;
             }
 
-            $this->info("Página $page/$pages");
-            $page++;
-        } while ($page <= $pages);
+            $this->warn('Usando snapshot local (' . count($posts) . ' posts): ' . $this->snapshotPath());
+        } elseif ($this->option('save-snapshot') && ! $dry) {
+            $this->writeSnapshot($posts);
+            $this->info('Snapshot guardado: ' . $this->snapshotPath());
+        }
+
+        foreach ($posts as $p) {
+            if (! $dry) {
+                DB::transaction(fn () => $this->importPost($p, $base));
+            }
+            if (! $this->option('skip-media')) {
+                $this->syncMedia($p, $base, $dry);
+            }
+            $count++;
+        }
 
         $this->info(($dry ? '[DRY] ' : '') . "Listo: $count posts " . ($dry ? 'revisados.' : 'importados/actualizados.'));
         $this->info("Imágenes: {$this->stats['uploaded']} " . ($dry ? 'por subir' : 'subidas') . ", {$this->stats['existing']} ya existían, " . count($this->stats['failed']) . ' fallidas.');
@@ -61,6 +62,71 @@ class ImportWpPosts extends Command
         }
 
         return empty($this->stats['failed']) ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** Trae todos los posts de WP. Devuelve null si falla (captcha, timeout, HTML en vez de JSON). */
+    private function fetchPosts(string $base): ?array
+    {
+        $all   = [];
+        $page  = 1;
+        $pages = 1;
+
+        try {
+            do {
+                $res = Http::timeout(60)->retry(3, 1000)->get("$base/wp-json/wp/v2/posts", [
+                    'per_page' => 50,
+                    'page'     => $page,
+                    'orderby'  => 'date',
+                    'order'    => 'asc',
+                    '_embed'   => 'wp:term,wp:featuredmedia',
+                ])->throw();
+
+                $json = $res->json();
+
+                // SiteGround devuelve HTML (sgcaptcha) con 200: no es JSON
+                if (! is_array($json) || ! array_is_list($json)) {
+                    return null;
+                }
+
+                $pages = (int) $res->header('X-WP-TotalPages');
+                array_push($all, ...$json);
+
+                $this->info("Página $page/$pages");
+                $page++;
+            } while ($page <= $pages);
+        } catch (\Throwable $e) {
+            $this->warn('WP: ' . $e->getMessage());
+            return null;
+        }
+
+        return $all ?: null;
+    }
+
+    private function snapshotPath(): string
+    {
+        return database_path('data/wp/posts.json');
+    }
+
+    private function readSnapshot(): ?array
+    {
+        $file = $this->snapshotPath();
+        if (! is_file($file)) {
+            return null;
+        }
+
+        $data = json_decode((string) file_get_contents($file), true);
+
+        return is_array($data) && $data ? $data : null;
+    }
+
+    private function writeSnapshot(array $posts): void
+    {
+        $file = $this->snapshotPath();
+        if (! is_dir(dirname($file))) {
+            mkdir(dirname($file), 0755, true);
+        }
+
+        file_put_contents($file, json_encode($posts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     /**

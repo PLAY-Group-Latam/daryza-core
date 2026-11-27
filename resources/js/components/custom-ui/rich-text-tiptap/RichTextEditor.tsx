@@ -6,12 +6,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import {
-    Table,
-    TableCell,
-    TableHeader,
-    TableRow,
-} from '@tiptap/extension-table';
+import { Table, TableCell, TableHeader } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -20,6 +15,7 @@ import { useEffect, useRef } from 'react';
 
 import '../../../../css/tiptap.css';
 import { ImageExtension } from './extension/Image-extension';
+import { ResizableTableRow } from './extension/ResizableTableRow';
 import { MenuBar } from './MenuBar';
 
 interface RichTextEditorProps {
@@ -93,7 +89,7 @@ export function RichTextEditor({
             Table.configure({
                 resizable: true,
             }),
-            TableRow,
+            ResizableTableRow,
             TableHeader,
             TableCell,
             Placeholder.configure({

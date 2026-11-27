@@ -368,7 +368,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
             ? 'H3'
             : editor.isActive('heading', { level: 4 })
               ? 'H4'
-              : 'Texto';
+              : 'Párrafo normal';
 
     return (
         <TooltipProvider>
@@ -460,7 +460,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ editor, uploadImage }) => {
                                 </Button>
                             </PopoverTrigger>
                         </TooltipTrigger>
-                        <TooltipContent>Tipo de texto / Encabezado</TooltipContent>
+                        <TooltipContent>Párrafo normal / Encabezado</TooltipContent>
                     </Tooltip>
                     <PopoverContent className="w-44 p-1.5" sideOffset={8}>
                         <div className="flex flex-col gap-1">

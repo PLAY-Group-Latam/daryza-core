@@ -128,7 +128,7 @@ class OrdersExport implements FromCollection, WithHeadings, ShouldAutoSize, With
             'provincia',
             'distrito',
             'metodo_pago',
-            'estado_pago',
+            'estado_de_pedido',
             'sku_daryza',
             'sku_proveedor',
             'producto',

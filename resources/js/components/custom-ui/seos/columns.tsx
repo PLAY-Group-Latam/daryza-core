@@ -8,6 +8,20 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { formatDate } from '@/lib/helpers/formatDate';
 import { Seo } from '@/types/seo/Seo';
 
+const CLIENT_URL = (import.meta.env.VITE_APP_URL_CLIENT as string | undefined) ?? '';
+
+// Toma solo el path de la canonical y lo pega al dominio del ambiente actual
+const buildClientUrl = (canonical?: string | null): string => {
+    if (!canonical) return '#';
+
+    try {
+        const path = new URL(canonical, 'http://placeholder').pathname.replace(/\/{2,}/g, '/');
+        return `${CLIENT_URL.replace(/\/+$/, '')}${path}`;
+    } catch {
+        return canonical;
+    }
+};
+
 export const columns = (
     onDelete: (id: string) => void
 ): ColumnDef<Seo>[] => [
@@ -16,8 +30,7 @@ export const columns = (
         header: () => <div className="pl-4">Página Relacionada</div>,
         cell: ({ row }) => {
             const seo = row.original;
-            // Usamos la URL canónica directamente
-            const url = seo.canonical_url || '#'; 
+            const url = buildClientUrl(seo.canonical_url);
             const pageTitle = seo.metadatable?.title || 'Sin Título';
 
             return (
