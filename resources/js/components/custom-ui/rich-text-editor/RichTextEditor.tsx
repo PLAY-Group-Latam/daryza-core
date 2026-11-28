@@ -8,49 +8,20 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import { Table, TableCell, TableHeader } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily, FontSize, TextStyle } from '@tiptap/extension-text-style';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import '../../../../css/tiptap.css';
-import { ImageExtension } from './extension/Image-extension';
-import { ResizableTableRow } from './extension/ResizableTableRow';
-import { MenuBar } from './MenuBar';
+import { ImageExtension } from './extensions/ImageExtension';
+import { ResizableTableColumn } from './extensions/ResizableTableColumn';
+import { ResizableTableRow } from './extensions/ResizableTableRow';
+import { MenuBar } from './toolbar/MenuBar';
+import { TableBubbleMenu } from './toolbar/TableBubbleMenu';
+import type { RichTextEditorProps } from './types';
+import { cleanWordPastedHtml } from './utils';
 
-interface RichTextEditorProps {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    readOnly?: boolean;
-    uploadImage?: (file: File) => Promise<string | null>;
-}
-
-function cleanWordPastedHtml(html: string): string {
-    let cleaned = html;
-
-    // Eliminar comentarios condicionales y normales de Word
-    cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, '');
-
-    // Eliminar etiquetas de namespaces de Office (<o:p>, <w:...>, etc.)
-    cleaned = cleaned.replace(/<\/?(?:o|w|m|v):[^>]*>/gi, '');
-
-    // Quitar clases Mso* de Word
-    cleaned = cleaned.replace(/\sclass="[^"]*Mso[^"]*"/gi, '');
-
-    // Quitar dimensiones y estilos inline rígidos en estructuras de tabla
-    cleaned = cleaned.replace(
-        /<(table|thead|tbody|tr|td|th)([^>]*)>/gi,
-        (_match, tag, attrs) => {
-            const cleanedAttrs = attrs
-                .replace(/\s(?:width|height)="[^"]*"/gi, '')
-                .replace(/\sstyle="[^"]*"/gi, '');
-            return `<${tag}${cleanedAttrs}>`;
-        },
-    );
-
-    return cleaned;
-}
+import './rich-text-editor.css';
 
 export function RichTextEditor({
     value,
@@ -61,10 +32,13 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isUpdatingRef = useRef(false);
+    // Contenido inicial capturado una sola vez (TipTap solo lo usa al crear el editor).
+    const [initialContent] = useState(() => value);
 
-    const editor = useEditor({
-        editable: !readOnly,
-        extensions: [
+    // Las extensiones se memoizan para que TipTap no reconstruya plugins/estado
+    // en cada render (comparación por referencia en `setOptions`).
+    const extensions = useMemo(
+        () => [
             StarterKit.configure({
                 heading: {
                     levels: [1, 2, 3, 4],
@@ -77,6 +51,8 @@ export function RichTextEditor({
             Superscript,
             TextStyle,
             Color,
+            FontFamily,
+            FontSize,
             Highlight.configure({
                 multicolor: true, // Permite usar cualquier color en el resaltador
             }),
@@ -87,17 +63,35 @@ export function RichTextEditor({
                 types: ['heading', 'paragraph', 'tableCell', 'tableHeader'],
             }),
             Table.configure({
-                resizable: true,
+                resizable: false,
+                cellMinWidth: 40,
             }),
             ResizableTableRow,
+            ResizableTableColumn,
             TableHeader,
             TableCell,
             Placeholder.configure({
                 placeholder,
             }),
         ],
-        content: value || '',
+        [placeholder],
+    );
 
+    const editorProps = useMemo(
+        () => ({
+            transformPastedHTML: cleanWordPastedHtml,
+            attributes: {
+                class: 'focus:outline-none min-h-[150px] p-3 overflow-y-auto',
+                spellcheck: 'false',
+            },
+        }),
+        [],
+    );
+
+    const editor = useEditor({
+        editable: !readOnly,
+        extensions,
+        content: initialContent,
         onUpdate: ({ editor }) => {
             if (isUpdatingRef.current) return;
 
@@ -110,14 +104,7 @@ export function RichTextEditor({
                 onChange(cleanHtml);
             }, 300);
         },
-
-        editorProps: {
-            transformPastedHTML: cleanWordPastedHtml,
-            attributes: {
-                class: 'focus:outline-none min-h-[150px] p-3 overflow-y-auto',
-                spellcheck: 'false',
-            },
-        },
+        editorProps,
     });
 
     // Sincronización bidireccional limpia (External Value -> TipTap)
@@ -147,7 +134,7 @@ export function RichTextEditor({
         };
     }, []);
 
-    // Actualización dinámicas del modo editable/readOnly
+    // Actualización dinámica del modo editable/readOnly
     useEffect(() => {
         if (editor && editor.isEditable !== !readOnly) {
             editor.setEditable(!readOnly);
@@ -163,6 +150,7 @@ export function RichTextEditor({
                     className="rich-editor not-prose prose-sm max-w-none"
                 />
             </div>
+            {editor && <TableBubbleMenu editor={editor} />}
         </div>
     );
 }

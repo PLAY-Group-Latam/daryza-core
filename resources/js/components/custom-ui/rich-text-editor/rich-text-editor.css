@@ -30,10 +30,30 @@
     letter-spacing: -0.01em;
 }
 
-.rich-editor h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
-.rich-editor h2 { font-size: 1.5rem;   line-height: 2rem;    font-weight: 600; margin: 1.25rem 0 0.5rem; }
-.rich-editor h3 { font-size: 1.25rem;  line-height: 1.75rem; font-weight: 600; margin: 1rem 0 0.5rem; }
-.rich-editor h4 { font-size: 1.125rem; line-height: 1.5rem;  font-weight: 600; margin: 0.875rem 0 0.5rem; }
+.rich-editor h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+}
+.rich-editor h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+}
+.rich-editor h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+}
+.rich-editor h4 {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    margin: 0.875rem 0 0.5rem;
+}
 
 .rich-editor .ProseMirror > :first-child {
     margin-top: 0;
@@ -109,21 +129,16 @@
     color: #1d4ed8;
 }
 
-/* resaltado de texto */
+/* resaltado de texto (estilo Word: fondo plano, sin padding ni radio) */
 .rich-editor mark {
-    background-color: var(--tt-highlight-color, #ffe066);
+    background-color: var(--tt-highlight-color, #ffff00);
     color: inherit !important;
-    padding: 0.1em 0.25em;
-    border-radius: 0.2rem;
-}
-
-.rich-editor mark[style] {
-    border-radius: 0.2rem;
-    padding: 0.1em 0.25em;
+    padding: 0;
+    border-radius: 0;
 }
 
 /* color de texto personalizado */
-.rich-editor span[style*="color"] {
+.rich-editor span[style*='color'] {
     display: inline;
 }
 
@@ -207,35 +222,49 @@
     pointer-events: none;
 }
 
-/* tablas */
+/* tablas: bordes y columnas simétricos (estilo Word) */
 .rich-editor .ProseMirror .tableWrapper {
-    overflow-x: auto;
+    overflow-x: hidden;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
     margin: 1rem 0;
+    padding-right: 1px;
 }
 
 .rich-editor .ProseMirror table {
-    border-collapse: separate;
+    border-collapse: collapse;
     border-spacing: 0;
     table-layout: fixed;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     margin: 0;
-    border-top: 1px solid #d4d4d8;
-    border-left: 1px solid #d4d4d8;
+}
+
+.rich-editor .ProseMirror colgroup {
+    max-width: 100%;
+}
+
+.rich-editor .ProseMirror col {
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
 .rich-editor .ProseMirror th,
 .rich-editor .ProseMirror td {
-    border-right: 1px solid #d4d4d8;
-    border-bottom: 1px solid #d4d4d8;
+    border: 1px solid #d4d4d8;
     box-sizing: border-box;
-    min-width: 80px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.55rem;
     position: relative;
     vertical-align: top;
-    overflow-wrap: break-word;
-    word-break: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     text-align: left;
     line-height: 1.5;
+    min-width: 0;
 }
 
 .rich-editor .ProseMirror th {
@@ -243,28 +272,18 @@
     font-weight: 600;
 }
 
-.rich-editor .ProseMirror tbody tr:nth-child(even) td {
-    background-color: #fafafa;
-}
-
-/* esquinas redondeadas */
-.rich-editor .ProseMirror tr:first-child > :first-child { border-top-left-radius: 8px; }
-.rich-editor .ProseMirror tr:first-child > :last-child  { border-top-right-radius: 8px; }
-.rich-editor .ProseMirror tr:last-child > :first-child  { border-bottom-left-radius: 8px; }
-.rich-editor .ProseMirror tr:last-child > :last-child   { border-bottom-right-radius: 8px; }
-
-/* quita el espacio extra dentro de las celdas */
 .rich-editor .ProseMirror th > *,
 .rich-editor .ProseMirror td > * {
     margin-top: 0;
     margin-bottom: 0;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .rich-editor .ProseMirror th > * + *,
 .rich-editor .ProseMirror td > * + * {
     margin-top: 0.4rem;
 }
-
 .rich-editor .ProseMirror .selectedCell::after {
     background: rgba(59, 130, 246, 0.14);
     content: '';
@@ -274,14 +293,31 @@
     z-index: 2;
 }
 
-.rich-editor .ProseMirror .column-resize-handle {
-    background-color: #3b82f6;
-    bottom: -2px;
-    pointer-events: none;
+/* handle de columna en hover: borde derecho de la celda */
+.rich-editor .ProseMirror td.column-resize-hover::after,
+.rich-editor .ProseMirror th.column-resize-hover::after {
+    content: '';
     position: absolute;
-    right: -2px;
     top: 0;
-    width: 4px;
+    right: -2px;
+    bottom: -1px;
+    width: 3px;
+    border-radius: 2px;
+    background-color: #3b82f6;
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* cursor de resize de columnas */
+.rich-editor .ProseMirror.column-resize-cursor,
+.rich-editor .ProseMirror.column-resize-cursor * {
+    cursor: col-resize;
+}
+
+.rich-editor .ProseMirror.column-resizing,
+.rich-editor .ProseMirror.column-resizing * {
+    cursor: col-resize;
+    user-select: none;
 }
 
 .rich-editor .ProseMirror.resize-cursor {
@@ -292,6 +328,50 @@
 .rich-editor .ProseMirror.row-resize-cursor,
 .rich-editor .ProseMirror.row-resize-cursor * {
     cursor: row-resize;
+}
+
+.rich-editor .ProseMirror.row-resizing,
+.rich-editor .ProseMirror.row-resizing * {
+    cursor: row-resize;
+    user-select: none;
+}
+
+.rich-editor .ProseMirror tr.row-resizing > td,
+.rich-editor .ProseMirror tr.row-resizing > th {
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+/* indicador visual del borde que se va a redimensionar */
+.rich-editor .ProseMirror tr.row-resize-hover > td::after,
+.rich-editor .ProseMirror tr.row-resize-hover > th::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: #3b82f6;
+    pointer-events: none;
+}
+
+/* línea guía global que se muestra mientras se redimensiona el alto de una fila */
+.table-row-resize-guide {
+    position: fixed;
+    height: 2px;
+    background-color: #3b82f6;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+/* línea guía global que se muestra mientras se redimensiona el ancho de una columna */
+.table-column-resize-guide {
+    position: fixed;
+    width: 2px;
+    background-color: #3b82f6;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
 }
 
 /* subíndice y superíndice */

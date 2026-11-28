@@ -1,6 +1,6 @@
 'use client';
 
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ContentSectionProps as Props } from '@/types/content/content';

@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { DatePicker } from '../DatePicker';
 import { MultiSelect } from '../MultiSelect';
-import { RichTextEditor } from '../rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '../rich-text-editor';
 import { SeoMetadataFields } from '../seo/SeoMetadataFields';
 import { SlugInput } from '../slug-text';
 import { Upload } from '../upload';
@@ -172,7 +172,7 @@ export default function BlogForm({ categories, blog }: BlogFormProps) {
                 )}
                 <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_0.5fr]">
                     {/* ================= LEFT ================= */}
-                    <div className="space-y-10">
+                    <div className="min-w-0 space-y-10">
                         {/* INFO GENERAL */}
                         <section>
                             <p className="mb-4 text-xs font-bold tracking-widest uppercase">

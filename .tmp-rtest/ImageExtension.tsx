@@ -27,7 +27,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
-import { cn, duplicateContent } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+
+import { duplicateContent } from '../utils';
 
 export const ImageExtension = Image.extend({
     addAttributes() {
@@ -64,7 +66,9 @@ function TiptapImage(props: NodeViewProps) {
     const imageRef = useRef<HTMLImageElement | null>(null);
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const [resizing, setResizing] = useState(false);
-    const [resizingPosition, setResizingPosition] = useState<'left' | 'right'>('left');
+    const [resizingPosition, setResizingPosition] = useState<'left' | 'right'>(
+        'left',
+    );
     const [resizeInitialWidth, setResizeInitialWidth] = useState(0);
     const [resizeInitialMouseX, setResizeInitialMouseX] = useState(0);
 
@@ -177,8 +181,11 @@ function TiptapImage(props: NodeViewProps) {
                 node.attrs.align === 'center' && 'left-1/2 -translate-x-1/2',
                 node.attrs.align === 'right' && 'left-full -translate-x-full',
             )}
-            style={{ 
-                width: typeof node.attrs.width === 'number' ? `${node.attrs.width}px` : node.attrs.width 
+            style={{
+                width:
+                    typeof node.attrs.width === 'number'
+                        ? `${node.attrs.width}px`
+                        : node.attrs.width,
             }}
         >
             <div className="group relative flex flex-col rounded-md">
@@ -192,7 +199,7 @@ function TiptapImage(props: NodeViewProps) {
 
                 {/* Remplazado NodeViewContent por renderizado standard */}
                 {node.attrs.title && (
-                    <span className="mt-1 text-center text-xs text-muted-foreground block">
+                    <span className="mt-1 block text-center text-xs text-muted-foreground">
                         {node.attrs.title}
                     </span>
                 )}

@@ -5,7 +5,7 @@ import { Save, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ContentSectionProps as Props } from '@/types/content/content';
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-editor';
 import { TermsContent } from '@/types/content/content-types';
 
 

@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { BackButton } from '@/components/custom-ui/PageHeader';
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-editor';
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Upload } from '@/components/custom-ui/upload';
 import { Button } from '@/components/ui/button';
@@ -136,7 +136,7 @@ export default function Create() {
                         onSubmit={form.handleSubmit(onSubmit)}
                         className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_0.42fr]"
                     >
-                        <div className="space-y-6">
+                        <div className="min-w-0 space-y-6">
                             <FormField
                                 control={form.control}
                                 name="title"

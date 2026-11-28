@@ -2,7 +2,7 @@
 
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
-import { RichTextEditor } from '@/components/custom-ui/rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '@/components/custom-ui/rich-text-editor';
 import { SlugInput } from '@/components/custom-ui/slug-text';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

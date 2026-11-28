@@ -15,7 +15,6 @@ import { UploadMultiple } from '@/components/custom-ui/UploadMultiple';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RichTextEditor } from '../../rich-text-tiptap/RichTextEditor';
 import { Switch } from '@/components/ui/switch';
 import {
     Table,
@@ -31,6 +30,7 @@ import { ProductPack } from '@/types/products/packs';
 import { VariantSearchResult } from '@/types/products/search';
 import { Package, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
+import { RichTextEditor } from '../../rich-text-editor';
 import { SlugInput } from '../../slug-text';
 import { VariantIdentity } from '../shared/VariantIdentity';
 import { PackProductSearch } from './SearchProduct';
@@ -177,7 +177,7 @@ export default function EditPackForm({ pack, searchResults = [] }: Props) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_350px]">
-                    <div className="space-y-8">
+                    <div className="min-w-0 space-y-8">
                         {/* 1. IDENTIDAD Y DESCRIPCIONES */}
                         <div className="space-y-6">
                             <Controller

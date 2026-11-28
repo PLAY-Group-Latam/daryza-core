@@ -29,7 +29,7 @@ import products from '@/routes/products';
 import { VariantSearchResult } from '@/types/products/search';
 import { PackagePlus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../../DatePicker';
-import { RichTextEditor } from '../../rich-text-tiptap/RichTextEditor';
+import { RichTextEditor } from '../../rich-text-editor';
 import { SlugInput } from '../../slug-text';
 import { VariantIdentity } from '../shared/VariantIdentity';
 import { PackProductSearch } from './SearchProduct';
@@ -178,7 +178,7 @@ export default function CreatePackForm({ searchResults = [] }: Props) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_350px]">
-                    <div className="space-y-8">
+                    <div className="min-w-0 space-y-8">
                         {/* SECCIÓN: IDENTIDAD */}
                         <div className="space-y-6">
                             <Controller
